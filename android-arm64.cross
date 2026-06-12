@@ -1,0 +1,33 @@
+[binaries]
+c       = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android28-clang'
+cpp     = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android28-clang++'
+ar      = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+strip   = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+ranlib  = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib'
+nm      = '/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm'
+pkg-config = 'false'
+
+[host_machine]
+system     = 'android'
+cpu_family = 'aarch64'
+cpu        = 'aarch64'
+endian     = 'little'
+
+[built-in options]
+c_args      = ['-DANDROID', '-fPIC', '-Os']
+c_link_args = ['-fPIC']
+
+[properties]
+sizeof_size_t    = 8
+sizeof_int       = 4
+sizeof_long      = 8
+sizeof_long_long = 8
+sizeof_void_p    = 8
+sizeof_wchar_t   = 4
+
+have_posix_threads = true
+
+have_libelf   = false
+have_libmount = false
+have_selinux  = false
+have_xattr    = false
