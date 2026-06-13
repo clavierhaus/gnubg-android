@@ -315,6 +315,96 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
     g_mutex_unlock(&barrier->mutex);
 }
 
+
+
+#include <unistd.h>
+
+/* ── Thread-Local Storage (TLS) Allocator ───────────────────────────────── */
+static void gnubg_tls_destructor(gpointer data) {
+    ThreadLocalData *tld = (ThreadLocalData *)data;
+    if (tld) {
+        for (int i = 0; i < 3; i++) {
+            g_free(tld->pnnState[i].savedBase);
+            g_free(tld->pnnState[i].savedIBase);
+        }
+        g_free(tld->pnnState);
+        g_free(tld->aMoves);
+        g_free(tld);
+    }
+}
+
+GPrivate gnubg_tls_key = G_PRIVATE_INIT(gnubg_tls_destructor);
+GPrivate gnubg_rng_key = G_PRIVATE_INIT(NULL); /* Isolated TLS for RNG contexts */
+
+void *TLSGet(void *item) {
+    ThreadLocalData *tld = g_private_get(&gnubg_tls_key);
+    if (tld == NULL) {
+        tld = g_malloc0(sizeof(ThreadLocalData));
+        tld->aMoves = g_malloc0(sizeof(move) * MAX_MOVES);
+        tld->pnnState = g_malloc0(sizeof(NNState) * 3);
+        
+        for (int i = 0; i < 3; i++) {
+            tld->pnnState[i].state = NNSTATE_NONE;
+            tld->pnnState[i].savedBase = g_malloc(nnContact.cHidden * sizeof(float));
+            tld->pnnState[i].savedIBase = g_malloc(nnContact.cInput * sizeof(float));
+        }
+        g_private_set(&gnubg_tls_key, tld);
+    }
+    return tld;
+}
+
+void gnubg_init_tld(void) {
+    /* With GPrivate, initialization is lazy. No global setup needed. */
+}
+
+/* ── Rollout Infrastructure ─────────────────────────────────────────────── */
+static GThreadPool *rollout_pool = NULL;
+
+typedef struct {
+    float arOutput[NUM_ROLLOUT_OUTPUTS];
+    float arStdDev[NUM_ROLLOUT_OUTPUTS]; 
+} __attribute__((aligned(64))) RolloutResult;
+
+typedef struct {
+    GMutex mutex;
+    GCond cond;
+    gint tasks_remaining;
+    RolloutResult *results;
+    const cubeinfo *pci;
+    rolloutcontext *prc;
+    const unsigned int (*anBoard)[25]; /* Matches the decayed pointer type */
+} RolloutBarrier;
+
+static void rollout_worker_func(gpointer data, gpointer user_data) {
+    int task_index = GPOINTER_TO_INT(data);
+    RolloutBarrier *barrier = (RolloutBarrier *)user_data;
+    
+    /* Retrieve Thread-Local Move/NN Buffers */
+    ThreadLocalData *tld = TLSGet(NULL);
+    
+    /* Retrieve Thread-Local RNG context safely */
+    rngcontext *local_rng = g_private_get(&gnubg_rng_key);
+    if (!local_rng) {
+        local_rng = CopyRNGContext(rngctxRollout);
+        g_private_set(&gnubg_rng_key, local_rng);
+    }
+    
+    /* Execute the single game iteration */
+    BasicCubefulRolloutNoLocking((TanBoard*)barrier->anBoard, 
+                                 barrier->results[task_index].arOutput,
+                                 barrier->results[task_index].arStdDev,
+                                 barrier->pci, barrier->prc, 
+                                 local_rng);
+
+    /* Signal Completion */
+    g_mutex_lock(&barrier->mutex);
+    barrier->tasks_remaining--;
+    if (barrier->tasks_remaining == 0) {
+        g_cond_signal(&barrier->cond);
+    }
+    g_mutex_unlock(&barrier->mutex);
+}
+
 void gnubg_init_rollout(void) {
     if (!rngctxRollout && rngctxCurrent)
         rngctxRollout = CopyRNGContext(rngctxCurrent);
@@ -335,7 +425,7 @@ int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], f
     barrier.tasks_remaining = prc->nTrials;
     barrier.pci = pci;
     barrier.prc = prc;
-    barrier.anBoard = &anBoard;
+    barrier.anBoard = anBoard; /* Decays cleanly into const unsigned int (*)[25] */
     
     /* Allocate cache-aligned results array */
     if (posix_memalign((void**)&barrier.results, 64, prc->nTrials * sizeof(RolloutResult)) != 0) {

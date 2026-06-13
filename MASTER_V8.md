@@ -708,3 +708,23 @@ Modified from upstream: `NeuralNetEvaluateSSE` function has its VLA replaced wit
 ---
 
 *GNU Backgammon Android Port — MASTER V8 — clavierhaus.at — June 2026*
+
+### Phase 9: Multi-threaded Rollout (Completed)
+
+Phase 9 re-enables `USE_MULTITHREAD` and implements a production-quality
+parallel rollout engine using GLib's `GThreadPool` and `GPrivate` TLS.
+
+**Architecture:** A persistent `GThreadPool` is created at `gnubg_init_rollout()`
+time with `g_get_num_processors()` threads. Each rollout trial is dispatched as
+an independent task. Each worker thread maintains its own `ThreadLocalData`
+via `GPrivate`, including an isolated `rngcontext` (copied from the main context
+at thread creation) to guarantee RNG integrity. Results are written to a
+per-trial scatter array; the main thread merges after `g_thread_pool_free(..., TRUE)`.
+
+**Key implementation details in stubs.c:**
+- `GPrivate gnubg_tls_key` with destructor `free_thread_local_data()`
+- `MT_CreateThreadLocalData()` allocates per-thread `aMoves`, `pnnState`,
+  and a private `rngcontext` copy
+- `gnubg_rollout()` uses scatter-gather: per-trial result structs eliminate
+  write contention during computation
+- Cache-line alignment (64 bytes) on result structs prevents false sharing
