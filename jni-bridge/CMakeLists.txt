@@ -28,6 +28,20 @@ add_library(gnubg-engine SHARED
     ${ENGINE}/lib/list.c
     ${ENGINE}/lib/inputs.c
     ${ENGINE}/rollout.c
+    ${ENGINE}/sgf.c
+    ${ENGINE}/sgf_y.c
+    ${ENGINE}/sgf_l.c
+    ${ENGINE}/play.c
+    ${ENGINE}/analysis.c
+    ${ENGINE}/format.c
+    ${ENGINE}/formatgs.c
+    ${ENGINE}/drawboard.c
+    ${ENGINE}/external.c
+    ${ENGINE}/glib-ext.c
+    ${ENGINE}/matchid.c
+    ${ENGINE}/set.c
+    ${ENGINE}/renderprefs.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/android-app.c
 )
 
 target_include_directories(gnubg-engine PRIVATE
@@ -51,6 +65,7 @@ target_compile_definitions(gnubg-engine PRIVATE
 
 target_link_libraries(gnubg-engine
     ${GLIB_DIR}/lib/libglib-2.0.so
+    ${GLIB_DIR}/lib/libgobject-2.0.so
     ${GLIB_DIR}/lib/libintl.so
     log
     m

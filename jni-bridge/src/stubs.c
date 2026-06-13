@@ -129,13 +129,13 @@ void ProgressEnd(void)                   {}
 void ProgressValueAdd(int val)           {}
 
 /* ── Misc engine callbacks ───────────────────────────────────────────────── */
-void LogCube(void)                       {}
+/* LogCube: provided by set.c */
 int GetManualDice(unsigned int anDice[2]) { return 0; }
-void SetRNG(rng *prng, rngcontext *rngctx, rng rngNew, char *szSeed) {}
-void ChangeGame(listOLD *plGameNew) {}
+/* SetRNG: provided by set.c */
+/* ChangeGame: provided by play.c */
 double get_time(void) { return 0.0; }
-void FormatMove(void)                    {}
-moverecord *get_current_moverecord(int *pfHistory) { return NULL; }
+/* FormatMove: provided by format.c */
+/* get_current_moverecord: provided by play.c */
 
 /* ── randomorg — network dice unavailable on Android ─────────────────────── */
 void RandomorgDice(void)                               {}
@@ -210,9 +210,9 @@ rngcontext *rngctxRollout = NULL;
 int fAutoCrawford    = 1;
 int fAutoSaveRollout = 0;
 int fShowProgress    = 0;
-int fOutputMWC       = 0;
-int fOutputWinPC     = 0;
-int fOutputMatchPC   = 0;
+/* fOutputMWC: provided by android-app.c */
+/* fOutputWinPC: provided by android-app.c */
+/* fOutputMatchPC: provided by android-app.c */
 
 /* ── QuasiRandomSeed — copied from rollout.c (static there) ─────────────────
  * Uses irandinit/irand from lib/isaac.c (already in build).
@@ -306,3 +306,6 @@ int gnubg_rollout(const TanBoard anBoard,
     }
     return 0;
 }
+
+/* MT_WaitForTasks: provided by multithread.c */
+
