@@ -26,10 +26,9 @@
 #undef HAVE_SQLITE
 #undef HAVE_CANBERRA
 
-/* ARM NEON SIMD acceleration — mandatory on aarch64 */
-//#define USE_SIMD_INSTRUCTIONS 1
-//#define HAVE_NEON 1
-//#define USE_NEON 1
+/* ARM NEON SIMD: enabled via CMakeLists.txt target_compile_definitions.
+ * USE_SIMD_INSTRUCTIONS, HAVE_NEON, USE_NEON are passed as -D flags.
+ * Do not define them here to avoid double-definition warnings. */
 
 /* Disable GLib assertions — alignment asserts in NeuralNetEvaluateSSE
  * fire on aarch64 due to VLA alignment not guaranteed by clang.
