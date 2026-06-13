@@ -77,6 +77,16 @@ object Engine {
             fun fromInt(v: Int) = entries.firstOrNull { it.value == v } ?: NOT_AVAILABLE
         }
     }
+    /**
+     * Load a match from an SGF file.
+     */
+    external fun loadSGF(path: String): Boolean
+
+    /**
+     * Save the current match to an SGF file.
+     */
+    external fun saveSGF(path: String): Boolean
+
 }
 
     /**
@@ -92,3 +102,20 @@ object Engine {
      *   Returns null on error.
      */
     external fun rollout(board: IntArray, trials: Int = 144): FloatArray?
+
+    /**
+     * Load a match from an SGF file into the engine match state.
+     * After loading, [getBoard] reflects the current position.
+     *
+     * @param path Absolute path to the .sgf file on device storage
+     * @return true on success, false if file not found or parse error
+     */
+    external fun loadSGF(path: String): Boolean
+
+    /**
+     * Save the current match to an SGF file.
+     *
+     * @param path Absolute path for the output .sgf file
+     * @return true on success, false if no game in progress or write error
+     */
+    external fun saveSGF(path: String): Boolean

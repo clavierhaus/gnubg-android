@@ -374,3 +374,42 @@ Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
     (*env)->SetFloatArrayRegion(env, result, 0, 14, buf);
     return result;
 }
+
+/* ── SGF Import / Export ─────────────────────────────────────────────────── */
+extern void CommandLoadMatch(char *sz);
+extern void CommandSaveMatch(char *sz);
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_loadSGF(JNIEnv *env, jobject thiz, jstring path) {
+    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
+    if (!szPath) return JNI_FALSE;
+
+    pthread_mutex_lock(&gnubg_lock);
+    
+    /* Command handlers tokenize the string in place, so we must pass a mutable copy */
+    char *szCopy = strdup(szPath);
+    CommandLoadMatch(szCopy);
+    free(szCopy);
+    
+    pthread_mutex_unlock(&gnubg_lock);
+
+    (*env)->ReleaseStringUTFChars(env, path, szPath);
+    return JNI_TRUE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_saveSGF(JNIEnv *env, jobject thiz, jstring path) {
+    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
+    if (!szPath) return JNI_FALSE;
+
+    pthread_mutex_lock(&gnubg_lock);
+    
+    char *szCopy = strdup(szPath);
+    CommandSaveMatch(szCopy);
+    free(szCopy);
+    
+    pthread_mutex_unlock(&gnubg_lock);
+
+    (*env)->ReleaseStringUTFChars(env, path, szPath);
+    return JNI_TRUE;
+}
