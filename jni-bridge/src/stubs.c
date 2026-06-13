@@ -147,31 +147,6 @@ int  NetworkDice(unsigned int *pdice, int ndice)       { return -1; }
  * before any move generation occurs (i.e. before any 1-ply evaluation).
  * Called once from Engine.initialise() via gnubg_init_tld().
  */
-static ThreadLocalData gnubg_tld;
-static NNState gnubg_nn_states[3];
-static move gnubg_moves[MAX_MOVES];
-
-void gnubg_init_tld(void) {
-    unsigned int i;
-
-    gnubg_tld.aMoves = gnubg_moves;
-    gnubg_tld.pnnState = gnubg_nn_states;
-    td.tld = &gnubg_tld;
-
-    /* Allocate savedBase (cHidden floats) and savedIBase (cInput floats)
-     * for each NNState entry. Sizes come from the loaded networks:
-     *   [0] = nnContact/nnCrashed: cHidden, cInput
-     *   [1] = nnRace
-     *   [2] = nnCrashed
-     * Use the largest network dimensions to cover all cases safely.
-     * nnContact has the most inputs (NUM_INPUTS > NUM_RACE_INPUTS).
-     */
-    for (i = 0; i < 3; i++) {
-        gnubg_nn_states[i].state     = NNSTATE_NONE;
-        gnubg_nn_states[i].savedBase  = (float *)g_malloc(nnContact.cHidden * sizeof(float));
-        gnubg_nn_states[i].savedIBase = (float *)g_malloc(nnContact.cInput  * sizeof(float));
-    }
-}
 
 /* ── Rollout global state ────────────────────────────────────────────────────
  * Docking points between the engine and the UI layer.
@@ -245,67 +220,162 @@ void QuasiRandomSeed(perArray * pArray, int n) {
  * Allocates and seeds the rollout RNG context.
  * Called after EvalInitialise().
  */
-void gnubg_init_rollout(void) {
-    if (!rngctxRollout && rngctxCurrent)
-        rngctxRollout = CopyRNGContext(rngctxCurrent);
-}
 
 /* ── gnubg_rollout ───────────────────────────────────────────────────────────
  * Synchronous rollout bypassing MT task queue.
  * Calls BasicCubefulRolloutNoLocking directly for nTrials games.
  */
-int gnubg_rollout(const TanBoard anBoard,
-                  float arOutput[NUM_ROLLOUT_OUTPUTS],
-                  float arStdDev[NUM_ROLLOUT_OUTPUTS],
-                  const cubeinfo *pci, rolloutcontext *prc) {
-    unsigned int i;
-    unsigned int nTrials = prc->nTrials;
-
-    double adSum[NUM_ROLLOUT_OUTPUTS]  = {0};
-    double adSum2[NUM_ROLLOUT_OUTPUTS] = {0};
-
-    perArray dicePerms;
-    dicePerms.nPermutationSeed = -1;
-    QuasiRandomSeed(&dicePerms, (int)prc->nSeed);
-
-    cubeinfo aci[1];
-    memcpy(&aci[0], pci, sizeof(cubeinfo));
-    int afCubeDecTop[1] = {0};
-
-    unsigned int aanBoard[1][2][25];
-    float aarOutput[1][NUM_ROLLOUT_OUTPUTS];
-    rolloutstat aarsStats[1][2];
-    memset(aarsStats, 0, sizeof(aarsStats));
-
-    for (i = 0; i < nTrials; i++) {
-        memcpy(aanBoard[0], anBoard, 25 * 2 * sizeof(unsigned int));
-        memset(aarOutput[0], 0, sizeof(aarOutput[0]));
-
-        if (BasicCubefulRolloutNoLocking(aanBoard, aarOutput,
-                                          0, (int)i, aci, afCubeDecTop, 1,
-                                          prc, aarsStats, 0,
-                                          &dicePerms, rngctxRollout, NULL) < 0)
-            return -1;
-
-        unsigned int j;
-        for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
-            adSum[j]  += aarOutput[0][j];
-            adSum2[j] += aarOutput[0][j] * aarOutput[0][j];
-        }
-    }
-
-    unsigned int j;
-    for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
-        arOutput[j] = (float)(adSum[j] / nTrials);
-        if (nTrials > 1) {
-            double var = (adSum2[j] - adSum[j]*adSum[j]/nTrials) / (nTrials-1);
-            arStdDev[j] = (float)(var > 0 ? sqrt(var) / sqrt((double)nTrials) : 0);
-        } else {
-            arStdDev[j] = 0.0f;
-        }
-    }
-    return 0;
-}
 
 /* MT_WaitForTasks: provided by multithread.c */
 
+
+#include <unistd.h>
+
+/* ── Thread-Local Storage (TLS) Allocator ───────────────────────────────── */
+static void gnubg_tls_destructor(gpointer data) {
+    ThreadLocalData *tld = (ThreadLocalData *)data;
+    if (tld) {
+        for (int i = 0; i < 3; i++) {
+            g_free(tld->pnnState[i].savedBase);
+            g_free(tld->pnnState[i].savedIBase);
+        }
+        g_free(tld->pnnState);
+        g_free(tld->aMoves);
+        if (tld->rngctx) FreeRNGContext(tld->rngctx);
+        g_free(tld);
+    }
+}
+
+GPrivate gnubg_tls_key = G_PRIVATE_INIT(gnubg_tls_destructor);
+
+void *TLSGet(void *item) {
+    ThreadLocalData *tld = g_private_get(&gnubg_tls_key);
+    if (tld == NULL) {
+        tld = g_malloc0(sizeof(ThreadLocalData));
+        tld->aMoves = g_malloc0(sizeof(move) * MAX_MOVES);
+        tld->pnnState = g_malloc0(sizeof(NNState) * 3);
+        
+        for (int i = 0; i < 3; i++) {
+            tld->pnnState[i].state = NNSTATE_NONE;
+            tld->pnnState[i].savedBase = g_malloc(nnContact.cHidden * sizeof(float));
+            tld->pnnState[i].savedIBase = g_malloc(nnContact.cInput * sizeof(float));
+        }
+        
+        /* Critical: Each thread gets its own isolated copy of the RNG context */
+        if (rngctxRollout) tld->rngctx = CopyRNGContext(rngctxRollout);
+        
+        g_private_set(&gnubg_tls_key, tld);
+    }
+    return tld;
+}
+
+void gnubg_init_tld(void) {
+    /* With GPrivate, initialization is lazy. No global setup needed. */
+    td.tlsItem = NULL; 
+}
+
+/* ── Rollout Infrastructure ─────────────────────────────────────────────── */
+static GThreadPool *rollout_pool = NULL;
+
+typedef struct {
+    float arOutput[NUM_ROLLOUT_OUTPUTS];
+    float arStdDev[NUM_ROLLOUT_OUTPUTS]; 
+} __attribute__((aligned(64))) RolloutResult;
+
+typedef struct {
+    GMutex mutex;
+    GCond cond;
+    gint tasks_remaining;
+    RolloutResult *results;
+    const cubeinfo *pci;
+    rolloutcontext *prc;
+    const TanBoard *anBoard;
+} RolloutBarrier;
+
+static void rollout_worker_func(gpointer data, gpointer user_data) {
+    int task_index = GPOINTER_TO_INT(data);
+    RolloutBarrier *barrier = (RolloutBarrier *)user_data;
+    
+    /* Retrieve Thread-Local Storage (allocates lazily on first run) */
+    ThreadLocalData *tld = TLSGet(NULL);
+    
+    /* Execute the single game iteration */
+    BasicCubefulRolloutNoLocking((TanBoard*)barrier->anBoard, 
+                                 barrier->results[task_index].arOutput,
+                                 barrier->results[task_index].arStdDev,
+                                 barrier->pci, barrier->prc, 
+                                 tld->rngctx);
+
+    /* Signal Completion */
+    g_mutex_lock(&barrier->mutex);
+    barrier->tasks_remaining--;
+    if (barrier->tasks_remaining == 0) {
+        g_cond_signal(&barrier->cond);
+    }
+    g_mutex_unlock(&barrier->mutex);
+}
+
+void gnubg_init_rollout(void) {
+    if (!rngctxRollout && rngctxCurrent)
+        rngctxRollout = CopyRNGContext(rngctxCurrent);
+        
+    if (!rollout_pool) {
+        gint max_threads = sysconf(_SC_NPROCESSORS_ONLN);
+        if (max_threads < 1) max_threads = 4;
+        rollout_pool = g_thread_pool_new(rollout_worker_func, NULL, max_threads, FALSE, NULL);
+    }
+}
+
+int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], float arStdDev[NUM_ROLLOUT_OUTPUTS], const cubeinfo *pci, rolloutcontext *prc) {
+    if (!rollout_pool) gnubg_init_rollout();
+    
+    RolloutBarrier barrier;
+    g_mutex_init(&barrier.mutex);
+    g_cond_init(&barrier.cond);
+    barrier.tasks_remaining = prc->nTrials;
+    barrier.pci = pci;
+    barrier.prc = prc;
+    barrier.anBoard = &anBoard;
+    
+    /* Allocate cache-aligned results array */
+    if (posix_memalign((void**)&barrier.results, 64, prc->nTrials * sizeof(RolloutResult)) != 0) {
+        return -1;
+    }
+    
+    /* Initialize the results array to zero */
+    memset(barrier.results, 0, prc->nTrials * sizeof(RolloutResult));
+    
+    /* Dispatch tasks */
+    for (int i = 0; i < prc->nTrials; i++) {
+        g_thread_pool_push(rollout_pool, GINT_TO_POINTER(i), NULL);
+    }
+    
+    /* Wait for completion */
+    g_mutex_lock(&barrier.mutex);
+    while (barrier.tasks_remaining > 0) {
+        g_cond_wait(&barrier.cond, &barrier.mutex);
+    }
+    g_mutex_unlock(&barrier.mutex);
+    
+    /* Accumulate results (scatter-gather merge) */
+    for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+        arOutput[j] = 0.0f;
+        arStdDev[j] = 0.0f;
+    }
+    
+    for (int i = 0; i < prc->nTrials; i++) {
+        for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+            arOutput[j] += barrier.results[i].arOutput[j];
+        }
+    }
+    
+    for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+        arOutput[j] /= prc->nTrials;
+    }
+    
+    free(barrier.results);
+    g_mutex_clear(&barrier.mutex);
+    g_cond_clear(&barrier.cond);
+    
+    return 0;
+}
