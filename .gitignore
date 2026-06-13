@@ -144,3 +144,4 @@ test-harness/test_runner
 # ─── gnubg data files (obtain from gnubg distribution) ───────────────────────
 engine-core/*.bd
 engine-core/*.weights
+test-harness/build/
