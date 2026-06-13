@@ -27,6 +27,7 @@ add_library(gnubg-engine SHARED
     ${ENGINE}/lib/isaac.c
     ${ENGINE}/lib/list.c
     ${ENGINE}/lib/inputs.c
+    ${ENGINE}/rollout.c
 )
 
 target_include_directories(gnubg-engine PRIVATE

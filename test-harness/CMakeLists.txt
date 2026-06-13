@@ -29,6 +29,7 @@ add_executable(test_runner
     ${ENGINE}/lib/isaac.c
     ${ENGINE}/lib/list.c
     ${ENGINE}/lib/inputs.c
+    ${ENGINE}/rollout.c
 )
 
 target_include_directories(test_runner PRIVATE

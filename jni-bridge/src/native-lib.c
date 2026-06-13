@@ -22,6 +22,8 @@
 #include "positionid.h"
 #include "backgammon.h"
 extern void gnubg_init_tld(void);
+extern void gnubg_init_rollout(void);
+extern int gnubg_rollout(const TanBoard anBoard, float arOutput[], float arStdDev[], const cubeinfo *pci, rolloutcontext *prc);
 
 #define LOG_TAG "gnubg-jni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
@@ -100,6 +102,7 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
     (*env)->ReleaseStringUTFChars(env, jWeightsPath, weightsPath);
 
     gnubg_init_tld();
+    gnubg_init_rollout();
     gnubg_initialised = 1;
     pthread_mutex_unlock(&gnubg_lock);
 
@@ -318,5 +321,56 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
     buf[14] = (jint)cd;
     buf[15] = 0;
     (*env)->SetIntArrayRegion(env, result, 0, 16, buf);
+    return result;
+}
+
+/*
+ * Engine.rollout(board: IntArray, trials: Int): FloatArray?
+ *
+ * Runs a synchronous cubeful rollout on the given position.
+ * Returns FloatArray[14]:
+ *   [0..6]  arOutput[0..6]  — equity outputs
+ *   [7..13] arStdDev[0..6] — standard deviations
+ */
+JNIEXPORT jfloatArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
+                                           jintArray jboard,
+                                           jint trials) {
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (!gnubg_initialised) {
+        LOGE("rollout called before initialise()");
+        pthread_mutex_unlock(&gnubg_lock);
+        return NULL;
+    }
+
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+
+    rolloutcontext rc_ro = rcRollout;
+    rc_ro.nTrials  = (unsigned int)(trials > 0 ? trials : 144);
+    rc_ro.fCubeful = 1;
+    rc_ro.fVarRedn = 1;
+
+    float arOutput[NUM_ROLLOUT_OUTPUTS] = {0};
+    float arStdDev[NUM_ROLLOUT_OUTPUTS] = {0};
+
+    int ret = gnubg_rollout((ConstTanBoard)anBoard, arOutput, arStdDev,
+                             &ci_default, &rc_ro);
+
+    pthread_mutex_unlock(&gnubg_lock);
+
+    if (ret != 0) {
+        LOGE("gnubg_rollout failed: %d", ret);
+        return NULL;
+    }
+
+    jfloatArray result = (*env)->NewFloatArray(env, 14);
+    jfloat buf[14];
+    for (int i = 0; i < 7; i++) {
+        buf[i]     = arOutput[i];
+        buf[7 + i] = arStdDev[i];
+    }
+    (*env)->SetFloatArrayRegion(env, result, 0, 14, buf);
     return result;
 }

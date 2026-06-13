@@ -78,3 +78,17 @@ object Engine {
         }
     }
 }
+
+    /**
+     * Run a cubeful rollout on a position.
+     *
+     * @param board  50-element board encoding
+     * @param trials Number of rollout trials (default 144; use 1296 for
+     *               publication-quality results — takes several minutes on device)
+     *
+     * @return FloatArray[14]:
+     *   [0..6]  equity outputs (same order as evaluatePosition)
+     *   [7..13] standard deviations for each output
+     *   Returns null on error.
+     */
+    external fun rollout(board: IntArray, trials: Int = 144): FloatArray?
