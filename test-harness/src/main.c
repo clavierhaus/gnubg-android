@@ -47,14 +47,12 @@ int main(int argc, char *argv[]) {
     evalcontext ec1 = { 0, 1, 0, 1, 0.0f };
 
     printf("[3] EvaluatePosition 1-ply cubeless...\n"); fflush(stdout);
-    int rc = EvaluatePositionNoLocking(NULL, (ConstTanBoard)anBoard,
-                                        arOutput, &ci, &ec1);
+    EvaluatePositionNoLocking(NULL, (ConstTanBoard)anBoard, arOutput, &ci, &ec1);
     printf("    Win prob:        %.4f  (expected ~0.5000)\n", arOutput[0]);
     printf("    Win gammon:      %.4f  (expected ~0.1200)\n", arOutput[1]);
     printf("    Win backgammon:  %.4f  (expected ~0.0100)\n", arOutput[2]);
     printf("    Lose gammon:     %.4f  (expected ~0.1200)\n", arOutput[3]);
     printf("    Lose backgammon: %.4f  (expected ~0.0100)\n", arOutput[4]);
-
     float equity = arOutput[0] - (1.0f - arOutput[0])
                  + arOutput[1] - arOutput[3]
                  + arOutput[2] - arOutput[4];
@@ -63,13 +61,48 @@ int main(int argc, char *argv[]) {
     printf("[4] FindBestMove for 3-1...\n"); fflush(stdout);
     int anMove[8];
     memset(anMove, -1, sizeof(anMove));
-    rc = FindBestMoveNoLocking(anMove, 3, 1, anBoard, &ci, &ec1, defaultFilters);
+    FindBestMoveNoLocking(anMove, 3, 1, anBoard, &ci, &ec1, defaultFilters);
     printf("    Move: ");
     for (int i = 0; i < 8; i += 2) {
         if (anMove[i] < 0) break;
         printf("%d/%d ", anMove[i] + 1, anMove[i + 1] + 1);
     }
     printf("(expected 8/5 6/5)\n\n");
+
+    printf("[5] Cube decision (money game, centred cube)...\n"); fflush(stdout);
+    cubeinfo ci_money;
+    int anScore2[2] = {0, 0};
+    SetCubeInfo(&ci_money, 1, -1, 0, 0, anScore2, 0, 0, 0, VARIATION_STANDARD);
+
+    evalsetup es;
+    memset(&es, 0, sizeof(es));
+    es.et = EVAL_EVAL;
+    es.ec = ec1;
+
+    float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
+    memset(aarOutput, 0, sizeof(aarOutput));
+    int rccd = GeneralCubeDecisionENoLocking(aarOutput,
+                                              (ConstTanBoard)anBoard,
+                                              &ci_money, &ec1, &es);
+    printf("    GeneralCubeDecisionE returned %d\n", rccd);
+
+    float arDouble[4];
+    cubedecision cd = FindCubeDecision(arDouble, aarOutput, &ci_money);
+
+    const char *cdNames[] = {
+        "DOUBLE_TAKE", "DOUBLE_PASS", "NODOUBLE_TAKE", "TOOGOOD_TAKE",
+        "TOOGOOD_PASS", "DOUBLE_BEAVER", "NODOUBLE_BEAVER", "REDOUBLE_TAKE",
+        "REDOUBLE_PASS", "NO_REDOUBLE_TAKE", "TOOGOODRE_TAKE", "TOOGOODRE_PASS",
+        "NO_REDOUBLE_BEAVER", "NODOUBLE_DEADCUBE", "NO_REDOUBLE_DEADCUBE",
+        "NOT_AVAILABLE", "OPTIONAL_DOUBLE_TAKE", "OPTIONAL_REDOUBLE_TAKE",
+        "OPTIONAL_DOUBLE_BEAVER", "OPTIONAL_DOUBLE_PASS", "OPTIONAL_REDOUBLE_PASS"
+    };
+    printf("    Cube decision: %d (%s)\n", cd,
+           (cd >= 0 && cd <= 20) ? cdNames[cd] : "UNKNOWN");
+    printf("    No double equity:   %.4f\n", arDouble[0]);
+    printf("    Double/take equity: %.4f\n", arDouble[1]);
+    printf("    Double/pass equity: %.4f\n", arDouble[2]);
+    printf("    (expected: NODOUBLE_TAKE for opening position)\n\n");
 
     printf("=== All tests passed ===\n");
     return 0;

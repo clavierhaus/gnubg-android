@@ -232,3 +232,91 @@ Java_com_clavierhaus_gnubg_Engine_applyMove(JNIEnv *env, jobject thiz,
     pthread_mutex_unlock(&gnubg_lock);
     return result;
 }
+
+/*
+ * Engine.cubeDecision(board: IntArray, cubeValue: Int, cubeOwner: Int,
+ *                     matchTo: Int, score0: Int, score1: Int,
+ *                     crawford: Int): IntArray?
+ *
+ * Returns IntArray[16]:
+ *   [0..6]  aarOutput[0] — equity outputs if double
+ *   [7..13] aarOutput[1] — equity outputs if no double
+ *   [14]    cubedecision enum value
+ *   [15]    reserved (0)
+ *
+ * cubedecision values:
+ *   0=DOUBLE_TAKE  1=DOUBLE_PASS  2=NODOUBLE_TAKE  3=TOOGOOD_TAKE
+ *   4=TOOGOOD_PASS 5=DOUBLE_BEAVER 6=NODOUBLE_BEAVER 7=REDOUBLE_TAKE
+ *   8=REDOUBLE_PASS 9=NO_REDOUBLE_TAKE ... (see eval.h cubedecision enum)
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
+                                                jintArray jboard,
+                                                jint cubeValue,
+                                                jint cubeOwner,
+                                                jint matchTo,
+                                                jint score0,
+                                                jint score1,
+                                                jint crawford) {
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (!gnubg_initialised) {
+        LOGE("cubeDecision called before initialise()");
+        pthread_mutex_unlock(&gnubg_lock);
+        return NULL;
+    }
+
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+
+    cubeinfo ci;
+    int anScore[2] = { (int)score0, (int)score1 };
+    SetCubeInfo(&ci,
+                (int)cubeValue,
+                (int)cubeOwner,
+                0,
+                (int)matchTo,
+                anScore,
+                (int)crawford,
+                0, 0,
+                VARIATION_STANDARD);
+
+    evalsetup es;
+    memset(&es, 0, sizeof(es));
+    es.et = EVAL_EVAL;
+    es.ec = ec_default;
+
+    float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
+    memset(aarOutput, 0, sizeof(aarOutput));
+
+    int rc = GeneralCubeDecisionENoLocking(aarOutput,
+                                            (ConstTanBoard)anBoard,
+                                            &ci, &ec_default, &es);
+
+    if (rc != 0) {
+        LOGE("GeneralCubeDecisionE failed: %d", rc);
+        pthread_mutex_unlock(&gnubg_lock);
+        return NULL;
+    }
+
+    float arDouble[4];
+    cubedecision cd = FindCubeDecision(arDouble, aarOutput, &ci);
+
+    pthread_mutex_unlock(&gnubg_lock);
+
+    /* Pack results into IntArray[16] using float bits for equity values */
+    jintArray result = (*env)->NewIntArray(env, 16);
+    jint buf[16];
+    for (int i = 0; i < 7; i++) {
+        /* Store float bits as int — Kotlin unpacks with Float.fromBits() */
+        int bits;
+        memcpy(&bits, &aarOutput[0][i], sizeof(int));
+        buf[i] = bits;
+        memcpy(&bits, &aarOutput[1][i], sizeof(int));
+        buf[7 + i] = bits;
+    }
+    buf[14] = (jint)cd;
+    buf[15] = 0;
+    (*env)->SetIntArrayRegion(env, result, 0, 16, buf);
+    return result;
+}
