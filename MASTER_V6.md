@@ -1,7 +1,7 @@
 # GNU Backgammon Android Port — MASTER V6
 
 **GNU Backgammon by clavierhaus.at**  
-Clavierhaus Vienna GmbH · Rosensteingasse 40/4 · 1170 Wien · Austria  
+clavierhaus.at · Vienna · Austria  
 June 2026
 
 ---
@@ -25,6 +25,7 @@ This document covers the complete build history, all architectural decisions, ev
 | Minimum Android API | 28 (Android 9.0, Pie) |
 | Target ABI | `arm64-v8a` |
 | Engine source | GNU Backgammon upstream (gnubg.org) |
+| Repository | https://github.com/clavierhaus/gnubg-android |
 
 ---
 
@@ -56,6 +57,22 @@ The GLib source was obtained from the Fedora 44 SRPM (`glib2-2.88.1-1.fc44`), en
 
 Phase 5 constructed the JNI bridge layer (`native-lib.c`, `stubs.c`, `Engine.kt`) and CMake build pipeline producing `libgnubg-engine.so`, verified as ELF 64-bit ARM aarch64 for Android 28.
 
+### Phase 6: NEON Acceleration & Device Verification (Completed)
+
+Phase 6 enabled ARM NEON SIMD acceleration and verified the engine running correctly on a Pixel 8 Pro (aarch64, Android 16) via adb test harness. Two critical bugs were discovered and fixed during device testing; see §5.5 and §5.6.
+
+**Verified results on device (opening position, 1-ply cubeless):**
+
+| Output | Value | Expected |
+|---|---|---|
+| `ClassifyPosition` | 10 (CLASS_CONTACT) | correct |
+| Win probability | 0.5269 | ~0.50 |
+| Win gammon | 0.1478 | ~0.12 |
+| Win backgammon | 0.0085 | ~0.01 |
+| Lose gammon | 0.1285 | ~0.12 |
+| Lose backgammon | 0.0049 | ~0.01 |
+| `FindBestMove` 3-1 | 8/5 6/5 | correct (textbook) |
+
 ---
 
 ## 3. Architecture
@@ -79,11 +96,18 @@ All project artefacts reside under `/home/erweitert/gnubg-android/`:
     config.h                 <- Shadow config.h for engine-core/*.c
     external/glib/           <- Installed GLib (headers + .so files)
     src/native-lib.c         <- JNI entry points
-    src/stubs.c              <- UI/threading layer stubs
+    src/stubs.c              <- UI/threading layer stubs + TLD init
     src/com/clavierhaus/gnubg/Engine.kt  <- Kotlin JNI declarations
     build/libgnubg-engine.so <- Final deliverable
+  test-harness/              <- Android adb test harness
+    CMakeLists.txt           <- Builds standalone Android executable
+    src/main.c               <- Test entry point
+    src/stubs.c              <- Same stubs as jni-bridge
   android-arm64.cross        <- Meson cross-file for GLib build
   build_glib_android.sh      <- GLib cross-build script
+  doc/                       <- Documentation
+    Makefile                 <- make / make pdf / make tex
+    gnubg.tex                <- XeLaTeX template
 ```
 
 ### 3.2 Build Toolchain
@@ -100,6 +124,7 @@ All project artefacts reside under `/home/erweitert/gnubg-android/`:
 | GLib | 2.88.1 (Fedora SRPM `glib2-2.88.1-1.fc44`) |
 | Target ABI | `arm64-v8a` (`aarch64-linux-android28`) |
 | Android API level | 28 (Android 9.0 Pie) |
+| Test device | Pixel 8 Pro (aarch64, Android 16) |
 
 ---
 
@@ -150,10 +175,11 @@ The GLib build installs to `jni-bridge/external/glib/` and provides:
 | File | Purpose |
 |---|---|
 | `jni-bridge/CMakeLists.txt` | NDK CMake build definition. Lists all compiled source files, include paths, compile definitions, and linked libraries. |
-| `jni-bridge/config.h` | Shadow `config.h` for `engine-core/*.c` files. Includes `../engine-core/config.h` then removes Android-incompatible flags. See §5.3. |
+| `jni-bridge/config.h` | Shadow `config.h` for `engine-core/*.c` files. Includes `../engine-core/config.h` then removes Android-incompatible flags and adds NEON defines. See §5.3. |
 | `engine-core/config.h` | Host-generated autotools config, patched to remove flags invalid on Android. Canonical config for the build. |
 | `engine-core/lib/config.h` | Single-line wrapper: `#include "../config.h"`. Intercepts quoted `#include "config.h"` from files in `engine-core/lib/`. |
-| `jni-bridge/src/stubs.c` | Provides storage and stub implementations for all gnubg symbols belonging to the GTK/UI/desktop/threading layer. See §5.4. |
+| `engine-core/lib/neuralnetsse.c` | Modified: `NeuralNetEvaluateSSE` VLA replaced with `posix_memalign`. See §5.6. |
+| `jni-bridge/src/stubs.c` | Provides storage, stub implementations, and thread-local data initialisation. See §5.4 and §5.5. |
 | `jni-bridge/src/native-lib.c` | JNI entry points. Exposes `EvalInitialise`, `EvaluatePosition`, `FindBestMove`, `ClassifyPosition`, and `ApplyMove` to Kotlin. |
 | `jni-bridge/src/com/clavierhaus/gnubg/Engine.kt` | Kotlin object declaring all external (JNI) functions. Loads `libgnubg-engine` via `System.loadLibrary`. |
 
@@ -172,8 +198,8 @@ The following `engine-core` source files are compiled into `libgnubg-engine.so`:
 | `multithread.c` | Threading infrastructure (single-threaded on Android; `USE_MULTITHREAD` disabled) |
 | `lib/output.c` | Output formatting |
 | `lib/SFMT.c` | SIMD-oriented Fast Mersenne Twister (primary RNG) |
-| `lib/neuralnet.c` | Neural network evaluation (SIMD disabled on aarch64; plain C path) |
-| `lib/neuralnetsse.c` | SSE neural net variant (compiled; SIMD paths inactive on aarch64) |
+| `lib/neuralnet.c` | Neural network evaluation — plain C path at 0-ply, NEON path at 1-ply |
+| `lib/neuralnetsse.c` | NEON neural net implementation (patched; see §5.6) |
 | `lib/cache.c`, `lib/md5.c`, `lib/isaac.c`, `lib/list.c` | Supporting data structures |
 | `lib/inputs.c` | Neural net input feature computation (`baseInputs()`) |
 
@@ -196,14 +222,31 @@ The upstream `engine-core/config.h` is generated by GNU autotools `./configure` 
 
 These flags cannot be overridden via `-U` on the compiler command line because the C standard specifies that `#include "file.h"` (quoted include) searches the source file's own directory before any `-I` paths. This means `eval.c`'s `#include "config.h"` resolves to `engine-core/config.h` regardless of any `-I` flags pointing elsewhere.
 
-**The solution — the shadow file mechanism:** a file named `config.h` is placed in each directory from which source files perform a quoted `config.h` include. Each shadow file includes the real `config.h` via a relative path and then undefines the invalid flags. Since the shadow file's own directory is searched first, it is found before the real `config.h`.
+**The solution — the shadow file mechanism:** a file named `config.h` is placed in each directory from which source files perform a quoted `config.h` include. Each shadow file includes the real `config.h` via a relative path, undefines the invalid flags, and adds Android-specific defines.
 
 Two shadow files are required:
 
 - `jni-bridge/config.h` — intercepts includes from `engine-core/*.c`
 - `engine-core/lib/config.h` — intercepts includes from `engine-core/lib/*.c`
 
-The real `engine-core/config.h` is also regenerated without the invalid flags using `grep -v`, making the shadow undefines redundant but retained as defense-in-depth. **This approach requires no modification to any upstream source file.**
+The current shadow config adds NEON defines after stripping x86 SIMD:
+
+```c
+#include "../engine-core/config.h"
+#undef HAVE_LIBGMP
+#undef LIBCURL_PROTOCOL_HTTPS
+#undef HAVE_LIBCURL
+#undef USE_SIMD_INSTRUCTIONS   // strip x86 SIMD first
+#undef HAVE_SSE
+#undef USE_SSE2
+#undef USE_AVX
+// ARM NEON — mandatory on aarch64, replaces x86 SIMD:
+#define USE_SIMD_INSTRUCTIONS 1
+#define HAVE_NEON 1
+#define USE_NEON 1
+```
+
+The real `engine-core/config.h` is also regenerated without the invalid flags using `grep -v`, making the shadow undefines redundant but retained as defense-in-depth. **This approach requires no modification to any upstream source file** (except `neuralnetsse.c`; see §5.6).
 
 ### 5.4 stubs.c Design
 
@@ -214,7 +257,7 @@ Several gnubg globals are declared `extern` in headers but their storage is defi
 - `matchstate ms` — the global match state struct
 - `player ap[2]` — the two player structs
 - `int positions[2][30][3]` — board position geometry array (from `boardpos.h`)
-- `ThreadData td` — the thread pool state struct (zero-initialised)
+- `ThreadData td` — the thread pool state struct (zero-initialised at declaration; populated by `gnubg_init_tld()`)
 - `const char *szHomeDirectory`, `char *szCurrentFileName` — path globals
 
 #### 5.4.2 Function Stubs
@@ -233,10 +276,76 @@ Functions belonging to the GTK/UI/desktop layer are stubbed with signatures matc
 | Feature | Reason disabled | Re-enablement |
 |---|---|---|
 | GMP/BBS RNG (`dice.c`) | Requires `libgmp`, unavailable on Android | Add libgmp cross-build; restore `HAVE_LIBGMP` in `config.h` |
-| x86 SIMD (`neuralnet.c`) | `USE_SIMD_INSTRUCTIONS`, `HAVE_SSE`, `USE_SSE2`, `USE_AVX` invalid on aarch64 | Enable `HAVE_NEON` for ARM NEON path (already present in `neuralnet.c`) |
-| GNU Multithread pool | `USE_MULTITHREAD` requires GLib thread pool integration | Re-enable `USE_MULTITHREAD`; implement proper `ThreadData` initialisation |
+| x86 SIMD | `HAVE_SSE`, `USE_SSE2`, `USE_AVX` invalid on aarch64 | N/A — replaced by NEON |
+| GNU Multithread pool | `USE_MULTITHREAD` requires GLib thread pool integration | Re-enable `USE_MULTITHREAD`; extend `gnubg_init_tld()` accordingly |
 | libcurl / random.org | `LIBCURL_PROTOCOL_HTTPS` / `HAVE_LIBCURL` removed; `randomorg.c` excluded | Cross-compile libcurl for Android; restore flags and add `randomorg.c` to build |
 | Rollout (`rollout.c`) | Not included in build | Add `rollout.c` to `CMakeLists.txt`; implement required stubs |
+
+### 5.5 Thread-Local Data Initialisation (Critical)
+
+**Background:** When `USE_MULTITHREAD` is disabled, gnubg's move generation and scoring macros expand as follows:
+
+```c
+#define MT_Get_aMoves()   td.tld->aMoves
+#define MT_Get_nnState()  td.tld->pnnState
+```
+
+Both dereference `td.tld`, a `ThreadLocalData *` inside the global `ThreadData td`. At program start, `td` is zero-initialised, making `td.tld = NULL`. The first call to 1-ply evaluation triggers `GenerateMoves` → `MT_Get_aMoves()` → null dereference at offset 0x8. Similarly, `ScoreMoves` calls `MT_Get_nnState()` → `td.tld->pnnState`, also null, causing a write through null at offset 0x40 into the NNState array.
+
+**The fix — `gnubg_init_tld()`:** A function in `stubs.c` that must be called once after `EvalInitialise()` and before any evaluation:
+
+```c
+static ThreadLocalData gnubg_tld;
+static NNState         gnubg_nn_states[3];
+static move            gnubg_moves[MAX_MOVES];
+
+void gnubg_init_tld(void) {
+    unsigned int i;
+
+    gnubg_tld.aMoves    = gnubg_moves;
+    gnubg_tld.pnnState  = gnubg_nn_states;
+    td.tld              = &gnubg_tld;
+
+    /* Allocate savedBase (cHidden floats) and savedIBase (cInput floats)
+     * for each NNState entry. Sizes are read from nnContact after weight load.
+     * Three entries cover CLASS_RACE, CLASS_CRASHED, CLASS_CONTACT offsets. */
+    for (i = 0; i < 3; i++) {
+        gnubg_nn_states[i].state     = NNSTATE_NONE;
+        gnubg_nn_states[i].savedBase  = g_malloc(nnContact.cHidden * sizeof(float));
+        gnubg_nn_states[i].savedIBase = g_malloc(nnContact.cInput  * sizeof(float));
+    }
+}
+```
+
+**Why 3 NNState entries:** `ScoreMoves` accesses `nnStates[0..2]` directly, and `EvaluatePositionFull` indexes by `pc - CLASS_RACE` where `pc` ranges from `CLASS_RACE` (8) to `CLASS_CONTACT` (10), giving offsets 0, 1, 2.
+
+**Call site in native-lib.c:** `gnubg_init_tld()` must be called inside `Java_com_clavierhaus_gnubg_Engine_initialise` after `EvalInitialise()` returns, while `gnubg_lock` is held.
+
+**Call site in test harness:** Called immediately after `EvalInitialise()` in `main()`.
+
+### 5.6 NeuralNetEvaluateSSE VLA Alignment Patch
+
+**Background:** `NeuralNetEvaluateSSE` in `neuralnetsse.c` declares its hidden-layer activation buffer as a Variable Length Array with an alignment attribute:
+
+```c
+SSE_ALIGN(float ar[pnn->cHidden]);
+// expands to: float ar[pnn->cHidden] __attribute__((aligned(16)));
+```
+
+On aarch64 with Clang 18, the `__attribute__((aligned(16)))` on a VLA is not guaranteed to be honoured. The NEON intrinsics (`vld1q_f32`, `vst1q_f32`) then operate on a potentially misaligned buffer, causing a SIGSEGV.
+
+**The fix:** Replace the VLA with a heap-allocated aligned buffer:
+
+```c
+float *ar = NULL;
+if (posix_memalign((void **)&ar, ALIGN_SIZE, pnn->cHidden * sizeof(float)) != 0)
+    return -1;
+EvaluateSSE(pnn, arInput, ar, arOutput);
+free(ar);
+return 0;
+```
+
+`posix_memalign` guarantees `ALIGN_SIZE` (16 bytes for NEON) alignment. This is the only modification made to a file in `engine-core/lib/` beyond the shadow `config.h`. It is documented in `PROVENANCE.md`.
 
 ---
 
@@ -253,7 +362,7 @@ The board is passed as a `jintArray` of 50 elements encoding `TanBoard anBoard[2
 
 | Method | Description |
 |---|---|
-| `initialise(weightsPath: String): Boolean` | Must be called once before any evaluation. Pass the absolute path to `gnubg.weights` extracted to internal storage. Calls `EvalInitialise()` and `SetCubeInfo()` to establish cubeless default context. |
+| `initialise(weightsPath: String): Boolean` | Must be called once before any evaluation. Pass the absolute path to `gnubg.weights` extracted to internal storage. Calls `EvalInitialise()`, `SetCubeInfo()`, and `gnubg_init_tld()`. |
 | `evaluatePosition(board: IntArray): FloatArray?` | Returns `FloatArray[5]`: `[winNormal, winGammon, winBackgammon, loseGammon, loseBackgammon]`. Null on engine error. Uses 1-ply cubeless `evalcontext`. |
 | `findBestMove(board: IntArray, die0: Int, die1: Int): IntArray?` | Returns `IntArray[8]` encoding `anMove[8]`; unused slots are -1. Null on error. |
 | `classifyPosition(board: IntArray): Int` | Returns the `positionclass` integer (race, contact, bearoff etc). Returns -1 if not initialised. |
@@ -268,9 +377,14 @@ All JNI entry points acquire a static `pthread_mutex_t` (`gnubg_lock`) before ca
 The engine requires the following files at runtime, extracted from app assets to internal storage before calling `Engine.initialise()`:
 
 - `gnubg.weights` — trained neural network weights (~6 MB). Primary source of playing strength.
-- `gnubg_os0.bd`, `gnubg_ts0.bd` — bearoff databases (optional but required for accurate bearoff evaluation)
+- `gnubg_os0.bd` — small one-sided bearoff database (~1.4 MB). Loaded into `pbc1`.
+- `gnubg_ts0.bd` — small two-sided bearoff database (~6.8 MB). Loaded into `pbc2`.
+- `gnubg_os.bd` — large one-sided bearoff database. Loaded into `pbcOS`. **Not yet deployed.**
+- `gnubg_ts.bd` — large two-sided bearoff database. Loaded into `pbcTS`. **Not yet deployed.**
 
 The `AC_PKGDATADIR` path is compiled in as `/data/data/com.clavierhaus.gnubg/files` and must match the actual extraction location.
+
+**Note on bearoff databases:** `pbcOS` and `pbcTS` are currently null (the large databases are absent). gnubg falls back gracefully to the neural net for bearoff positions, but accuracy in late-game positions is reduced. The large databases are generated with `makebearoff` or obtained from the gnubg distribution.
 
 ---
 
@@ -295,8 +409,6 @@ cd /home/erweitert/gnubg-android
 
 On success: `jni-bridge/external/glib/lib/libglib-2.0.so` is created (ELF 64-bit ARM aarch64, Android 28).
 
-The script applies Fedora patches, patches GLib's `meson.build` for Android iconv-in-libc, runs `meson setup` with the `android-arm64.cross` cross-file, builds with ninja, and installs to `jni-bridge/external/glib/`. Safe to re-run: cleans the build directory first.
-
 ### 7.3 Build libgnubg-engine.so
 
 ```bash
@@ -310,14 +422,11 @@ cmake .. \
 cmake --build . 2>&1 | tee /home/erweitert/gnubg-android/jni-build.log
 ```
 
-On success: `jni-bridge/build/libgnubg-engine.so` is created.
-
 ### 7.4 Verification
 
 ```bash
 file jni-bridge/build/libgnubg-engine.so
-# Expected: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV),
-#           dynamically linked, for Android 28
+# Expected: ELF 64-bit LSB shared object, ARM aarch64, for Android 28
 
 nm jni-bridge/build/libgnubg-engine.so | grep "T Java_"
 # Expected (5 JNI entry points):
@@ -326,6 +435,52 @@ nm jni-bridge/build/libgnubg-engine.so | grep "T Java_"
 #   T Java_com_clavierhaus_gnubg_Engine_evaluatePosition
 #   T Java_com_clavierhaus_gnubg_Engine_findBestMove
 #   T Java_com_clavierhaus_gnubg_Engine_initialise
+
+nm jni-bridge/build/libgnubg-engine.so | grep "NeuralNetEvaluateSSE"
+# Expected: T NeuralNetEvaluateSSE  (confirms NEON path active)
+```
+
+### 7.5 Android adb Test Harness
+
+The test harness in `test-harness/` builds as a standalone Android executable and exercises the engine end-to-end on a connected device.
+
+```bash
+# Build
+cd /home/erweitert/gnubg-android/test-harness
+rm -rf build && mkdir build && cd build
+cmake .. \
+  -DCMAKE_TOOLCHAIN_FILE=/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-28 \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build .
+
+# Push to device
+adb push test_runner /data/local/tmp/gnubg-test_runner
+adb push /path/to/gnubg.weights   /data/local/tmp/gnubg.weights
+adb push /path/to/gnubg_os0.bd   /data/local/tmp/gnubg_os0.bd
+adb push /path/to/gnubg_ts0.bd   /data/local/tmp/gnubg_ts0.bd
+adb push jni-bridge/external/glib/lib/libglib-2.0.so /data/local/tmp/
+adb push jni-bridge/external/glib/lib/libintl.so     /data/local/tmp/
+adb shell chmod +x /data/local/tmp/gnubg-test_runner
+
+# Run
+adb shell "LD_LIBRARY_PATH=/data/local/tmp \
+    /data/local/tmp/gnubg-test_runner /data/local/tmp/gnubg.weights"
+```
+
+Expected output:
+```
+=== GNU Backgammon Android Test Harness ===
+[1] Initialising engine... OK
+[2] ClassifyPosition = 10 (expected 10 = CLASS_CONTACT)
+[3] EvaluatePosition 1-ply cubeless...
+    Win prob:        0.5269
+    Win gammon:      0.1478
+    ...
+[4] FindBestMove for 3-1...
+    Move: 8/5 6/5 (expected 8/5 6/5)
+=== All tests passed ===
 ```
 
 ---
@@ -343,20 +498,22 @@ These are the capabilities that define gnubg's world-class playing strength and 
 
 ### 8.2 Immediate Next Steps
 
+- **Large bearoff databases:** Obtain or generate `gnubg_os.bd` and `gnubg_ts.bd` to populate `pbcOS` and `pbcTS`. This improves accuracy in late-game bearoff positions.
+- **`gnubg_init_tld()` in native-lib.c:** The JNI bridge `initialise()` function must call `gnubg_init_tld()` after `EvalInitialise()`. Currently only the test harness does this.
 - **Android Studio project:** Create an Android app project, add `libgnubg-engine.so` and `libglib-2.0.so`/`libintl.so` as prebuilt native libraries, add `Engine.kt` to the source set.
-- **Asset packaging:** Add `gnubg.weights` (and optionally bearoff databases) to the app's assets. Implement extraction to `context.filesDir` on first launch.
-- **Integration test:** Call `Engine.initialise()` then `Engine.evaluatePosition()` with a known starting position and verify output against known gnubg values.
-- **Strip debug info:** `libgnubg-engine.so` currently carries `debug_info`. Add `CMAKE_C_FLAGS "-Os"` and strip after build to reduce `.so` size.
+- **Asset packaging:** Add `gnubg.weights` and bearoff databases to the app's assets. Implement extraction to `context.filesDir` on first launch.
+- **Strip debug info:** `libgnubg-engine.so` currently carries `debug_info`. Build with `Release` and strip to reduce `.so` size.
 
 ### 8.3 Performance
 
-- **ARM NEON SIMD:** `lib/neuralnet.c` already contains a `HAVE_NEON` path. Enabling it requires defining `HAVE_NEON`; `arm_neon.h` is available in the NDK sysroot. This would significantly accelerate neural network inference on aarch64.
-- **Multi-threading:** The GLib threading layer is present and functional (`GThread`, `GMutex`, `GCond` all in `libglib-2.0.so`). Re-enabling `USE_MULTITHREAD` would allow gnubg's thread pool to distribute rollout work across cores.
+- **ARM NEON SIMD:** Enabled. `NeuralNetEvaluateSSE` confirmed exported and active. `CheckNEON()` always returns 1 on aarch64 since NEON is mandatory in the architecture spec.
+- **Multi-threading:** The GLib threading layer is present and functional. Re-enabling `USE_MULTITHREAD` would allow gnubg's thread pool to distribute rollout work across cores. Requires extending `gnubg_init_tld()` to handle the full `ThreadData` struct initialisation.
 
 ### 8.4 Known Warnings
 
-- **`multithread.c`:** 6 instances of incompatible pointer types passing `pthread_mutex_t *` to `Mutex *`. Arise because `patch_multithread.sh` replaced GLib mutex types with pthread types in the struct but function signatures still reference the GLib `Mutex` typedef. Harmless: `USE_MULTITHREAD` is disabled and this code path is never executed.
+- **`multithread.c`:** 6 instances of incompatible pointer types passing `pthread_mutex_t *` to `Mutex *`. Harmless: `USE_MULTITHREAD` is disabled and this code path is never executed.
 - **CMake deprecation warnings** from the NDK toolchain file regarding `cmake_minimum_required VERSION < 3.10`. In the NDK's own toolchain file; cannot be fixed from the project.
+- **`pbcOS=NULL`, `pbcTS=NULL`:** Large bearoff databases not deployed. gnubg falls back to neural net evaluation for bearoff positions; accuracy slightly reduced.
 
 ---
 
@@ -374,12 +531,18 @@ Meson cross-file for the GLib build. Specifies NDK 27 toolchain binaries (`aarch
 
 NDK CMake build file for `libgnubg-engine.so`. Enumerates all compiled source files, sets include paths (`jni-bridge/` first for shadow `config.h` interception, then `engine-core/`, `engine-core/lib/`, GLib headers), defines `AC_DATADIR`/`AC_PKGDATADIR`/`AC_DOCDIR` for Android, and links against `libglib-2.0.so`, `libintl.so`, `liblog`, and `libm`.
 
+### jni-bridge/src/stubs.c
+
+Provides global variable storage, function stubs for the GTK/UI layer, and the critical `gnubg_init_tld()` function. Must be kept in sync with `test-harness/src/stubs.c` — they are identical files serving the same purpose in different build contexts.
+
 ### engine-core/config.h
 
-Host-generated autotools `config.h`, regenerated by `grep -v` to strip Android-incompatible flags. Stripped flags: `HAVE_LIBGMP`, `USE_SIMD_INSTRUCTIONS`, `HAVE_SSE`, `USE_SSE2`, `USE_AVX`, `LIBCURL_PROTOCOL_HTTPS`, `HAVE_LIBCURL`, `USE_MULTITHREAD`, `HAVE_PYTHON`, `HAVE_SQLITE`, `HAVE_CANBERRA`.
+Host-generated autotools `config.h`, regenerated by `grep -v` to strip Android-incompatible flags. **Important:** if `engine-core/` is refreshed from upstream, this file must be regenerated and re-patched using the `grep -v` pipeline documented in §5.3.
 
-> **Important:** if `engine-core/` is refreshed from upstream, this file must be regenerated and re-patched using the `grep -v` pipeline documented in §5.3.
+### engine-core/lib/neuralnetsse.c
+
+Modified from upstream: `NeuralNetEvaluateSSE` function has its VLA replaced with `posix_memalign` allocation for correct 16-byte alignment on aarch64. See §5.6 and `PROVENANCE.md` for full documentation of this change.
 
 ---
 
-*GNU Backgammon Android Port — MASTER V6 — Clavierhaus Vienna GmbH — June 2026*
+*GNU Backgammon Android Port — MASTER V6 — clavierhaus.at — June 2026*

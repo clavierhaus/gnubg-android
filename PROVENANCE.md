@@ -97,6 +97,49 @@ for the full shadow mechanism documentation.
 `engine-core/lib/`, which would otherwise resolve to a non-existent or
 unpatched config in that subdirectory. See `MASTER_V6.md §5.3`.
 
+### engine-core/lib/neuralnetsse.c
+
+**Origin:** Copied verbatim from `gnubg/lib/neuralnetsse.c` (upstream version
+1.08.003), then modified.
+
+**Modification:** The function `NeuralNetEvaluateSSE` had its hidden-layer
+activation buffer changed from a Variable Length Array with alignment attribute
+to a heap-allocated aligned buffer via `posix_memalign`.
+
+**Original code:**
+```c
+SSE_ALIGN(float ar[pnn->cHidden]);
+```
+
+**Replacement code:**
+```c
+float *ar = NULL;
+if (posix_memalign((void **)&ar, ALIGN_SIZE, pnn->cHidden * sizeof(float)) != 0)
+    return -1;
+EvaluateSSE(pnn, arInput, ar, arOutput);
+free(ar);
+return 0;
+```
+
+**Rationale:** On aarch64 with Clang 18 (NDK r27), the
+`__attribute__((aligned(16)))` attribute on a VLA is not guaranteed to produce
+a 16-byte aligned stack allocation. The ARM NEON intrinsics (`vld1q_f32`,
+`vst1q_f32`) used in `EvaluateSSE` operate on the `ar` buffer; a misaligned
+buffer causes a SIGSEGV at the first NEON store instruction. `posix_memalign`
+guarantees `ALIGN_SIZE` (16 bytes for NEON) alignment. This was discovered
+and confirmed via tombstone analysis and `llvm-addr2line` symbolication during
+device testing on a Pixel 8 Pro (aarch64, Android 16).
+
+**Scope:** The modification is confined to a single function
+(`NeuralNetEvaluateSSE`) within a single file. The `EvaluateSSE` function
+itself and all NEON intrinsic code paths are unchanged.
+
+**To verify the diff:**
+```bash
+git clone https://gitlab.com/gnubg/gnubg upstream-verify/
+diff upstream-verify/gnubg/lib/neuralnetsse.c engine-core/lib/neuralnetsse.c
+```
+
 ## Files added (not from upstream)
 
 The following files in `engine-core/` have no upstream counterpart and were
@@ -109,14 +152,19 @@ created entirely for this Android port:
 ## Unmodified upstream files
 
 All files listed in the "What was copied" tables above are byte-for-byte
-identical to their upstream counterparts **except** `config.h` and
-`engine-core/lib/config.h` as documented above.
+identical to their upstream counterparts **except**:
 
-To verify, clone the upstream repository and diff against `engine-core/`:
+- `engine-core/config.h` — patched as documented above
+- `engine-core/lib/config.h` — created for this port (not in upstream)
+- `engine-core/lib/neuralnetsse.c` — one function modified as documented above
+
+To verify unmodified files, clone the upstream repository and diff:
 
 ```bash
 git clone https://gitlab.com/gnubg/gnubg upstream-verify/
 diff upstream-verify/gnubg/eval.c engine-core/eval.c
+# Expected: no output (files identical)
+diff upstream-verify/gnubg/lib/neuralnet.c engine-core/lib/neuralnet.c
 # Expected: no output (files identical)
 ```
 
