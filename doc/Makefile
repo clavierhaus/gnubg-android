@@ -22,7 +22,7 @@
 PANDOC     := pandoc
 PDF_ENGINE := xelatex
 
-SRC        := ../MASTER_V6.md
+SRC        := ../MASTER_V8.md
 TEMPLATE   := gnubg.tex
 OUT_TEX    := MASTER_V6.tex
 OUT_PDF    := MASTER_V6.pdf

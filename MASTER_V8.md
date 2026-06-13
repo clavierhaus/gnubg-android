@@ -1,4 +1,4 @@
-# GNU Backgammon Android Port — MASTER V6
+# GNU Backgammon Android Port — MASTER V8
 
 **GNU Backgammon by clavierhaus.at**  
 clavierhaus.at · Vienna · Austria  
@@ -707,4 +707,4 @@ Modified from upstream: `NeuralNetEvaluateSSE` function has its VLA replaced wit
 
 ---
 
-*GNU Backgammon Android Port — MASTER V6 — clavierhaus.at — June 2026*
+*GNU Backgammon Android Port — MASTER V8 — clavierhaus.at — June 2026*
