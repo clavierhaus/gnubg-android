@@ -87,7 +87,7 @@ Phase 7 added cube decision analysis and synchronous rollout to the JNI API, bot
 
 **Cube decision** (`Engine.cubeDecision()`): wraps `GeneralCubeDecisionENoLocking` + `FindCubeDecision`. Returns the full `aarOutput[2][7]` equity matrix and the `cubedecision` enum value. Verified: opening position returns `NODOUBLE_TAKE` (correct for a money game with a centred cube).
 
-**Rollout** (`Engine.rollout()`): gnubg's `RolloutGeneral` and `MT_WaitForTasks` require a running GLib event loop which is not available on Android. The solution is `gnubg_rollout()` in `stubs.c` — a synchronous per-game loop calling `BasicCubefulRolloutNoLocking` directly for `nTrials` iterations, accumulating mean and standard deviation. `QuasiRandomSeed()` (copied from `rollout.c` where it is `static`) provides quasi-random dice permutations. Verified: 144 trials on opening position returns plausible equity with correct stddev. See §5.7 and §6.2.
+**Rollout** (`Engine.rollout()`): Phase 7 introduced a synchronous single-threaded rollout via `gnubg_rollout()` calling `BasicCubefulRolloutNoLocking` directly. Phase 9 supersedes this with a full multi-threaded implementation; see Phase 9. See §5.7 and §6.2.
 
 ### Phase 8: Full Game Logic Layer (Completed)
 
@@ -112,6 +112,16 @@ sed -i '1s/^/#include <unistd.h>\n/' sgf_l.c
 ```
 
 **Verified:** All 6 existing test harness tests still pass on Pixel 8 Pro after adding the full game logic layer.
+
+### Phase 9: Multi-threaded Rollout & SGF JNI API (Completed)
+
+Phase 9 re-enables `USE_MULTITHREAD` and implements production-quality parallel rollout, then adds the SGF load/save JNI entry points to complete the engine feature set.
+
+**Multi-threaded rollout:** A persistent `GThreadPool` is created at `gnubg_init_rollout()` with `g_get_num_processors()` threads. Each rollout trial is a separate task dispatched via `g_thread_pool_push()`. A `GMutex`/`GCond` barrier blocks the calling thread until all trials complete. Per-thread state is managed via two `GPrivate` keys: `gnubg_tls_key` (owns `ThreadLocalData` with `aMoves` and `pnnState` buffers) and `gnubg_rng_key` (owns an isolated `rngcontext` copy, preventing RNG data races). Result structs are 64-byte cache-line aligned to prevent false sharing on aarch64. The scatter-gather merge computes mean and standard deviation after all workers finish.
+
+**SGF JNI entry points:** `Engine.loadSGF(path)` calls `CommandLoadMatch()` which handles `FreeMatch`, `ClearMatch`, `RestoreGame`, and `UpdateSettings` — the complete match load sequence as implemented in `sgf.c`. `Engine.saveSGF(path)` calls `CommandSaveMatch()` which handles the `SaveGame` loop, file I/O, `setDefaultFileName`, and `delete_autosave`. Both entry points are thread-safe via `gnubg_lock`.
+
+**Engine feature-complete:** After Phase 9, `libgnubg-engine.so` provides 9 JNI entry points covering the full gnubg evaluation and game management feature set. See §6.2 for the complete API reference.
 
 ---
 
@@ -339,12 +349,19 @@ Functions belonging to the GTK/UI/desktop layer are stubbed with signatures matc
 |---|---|---|
 | GMP/BBS RNG (`dice.c`) | Requires `libgmp`, unavailable on Android | Add libgmp cross-build; restore `HAVE_LIBGMP` in `config.h` |
 | x86 SIMD | `HAVE_SSE`, `USE_SSE2`, `USE_AVX` invalid on aarch64 | N/A — replaced by NEON |
-| GNU Multithread pool | `USE_MULTITHREAD` requires GLib thread pool integration | Re-enable `USE_MULTITHREAD`; extend `gnubg_init_tld()` accordingly |
+| GNU Multithread pool | Previously disabled; `USE_MULTITHREAD` now active | Re-enabled in Phase 9 via `GThreadPool`/`GPrivate` |
 | libcurl / random.org | `LIBCURL_PROTOCOL_HTTPS` / `HAVE_LIBCURL` removed; `randomorg.c` excluded | Cross-compile libcurl for Android; restore flags and add `randomorg.c` to build |
 
 ### 5.5 Thread-Local Data Initialisation (Critical)
 
-**Background:** When `USE_MULTITHREAD` is disabled, gnubg's move generation and scoring macros expand as follows:
+**Background:** When `USE_MULTITHREAD` is **enabled** (Phase 9+), gnubg's move generation and scoring macros expand as follows:
+
+```c
+#define MT_Get_aMoves()   ((ThreadLocalData *)TLSGet(td.tlsItem))->aMoves
+#define MT_Get_nnState()  ((ThreadLocalData *)TLSGet(td.tlsItem))->pnnState
+```
+
+Both call `TLSGet()` which is implemented via `GPrivate` — each thread gets its own `ThreadLocalData` allocated lazily on first access. This replaces the previous single-threaded approach of a single static `gnubg_tld` struct.
 
 ```c
 #define MT_Get_aMoves()   td.tld->aMoves
@@ -410,11 +427,44 @@ return 0;
 
 ### 5.7 Rollout Infrastructure in stubs.c
 
-gnubg's high-level rollout entry points (`RolloutGeneral`, `GeneralEvaluation`) internally call `MT_WaitForTasks` which polls a GLib event loop. No event loop exists on Android, making these entry points unusable. The solution is `gnubg_rollout()` — a self-contained synchronous rollout implemented entirely in `stubs.c`.
+#### 5.7.1 Evolution
 
-#### 5.7.1 Rollout Global State
+Phase 7 introduced a synchronous single-threaded rollout bypassing `MT_WaitForTasks`. Phase 9 replaced this with a full multi-threaded implementation using `GThreadPool`. Both share the same external API (`gnubg_rollout()`) and the same `gnubg_init_rollout()` initialisation call.
 
-The following globals are defined in `stubs.c` with defaults matching gnubg's standard money-game settings. These are the "docking points" between the engine and the UI layer — on desktop gnubg they are set by the GTK preferences dialog; on Android they will be set by the Kotlin UI layer:
+#### 5.7.2 Multi-threaded Architecture (Phase 9)
+
+`gnubg_rollout()` orchestrates a parallel rollout using a persistent `GThreadPool`:
+
+**Initialisation (`gnubg_init_rollout()`):**
+- Allocates `rngctxRollout` by copying the main RNG context via `CopyRNGContext`
+- Creates a persistent `GThreadPool` with `g_get_num_processors()` threads
+- Pool is reused across all rollout calls to avoid thread creation overhead
+
+**Thread-local state (two `GPrivate` keys):**
+- `gnubg_tls_key` — owns `ThreadLocalData` per thread: `aMoves[MAX_MOVES]`, `pnnState[3]` with `savedBase`/`savedIBase` buffers sized from `nnContact` dimensions. Destructor frees all buffers.
+- `gnubg_rng_key` — owns an isolated `rngcontext` copy per thread. Copied from `rngctxRollout` on first use. Destructor calls `free_rngctx()`. This is the critical RNG isolation that prevents data races.
+
+**Scatter-gather rollout loop:**
+1. Allocate `nTrials` result structs with 64-byte cache-line alignment (`posix_memalign`) to prevent false sharing
+2. Initialise `GMutex`/`GCond` barrier with `tasks_remaining = nTrials`
+3. Push `nTrials` tasks to pool via `g_thread_pool_push()`
+4. Block on `g_cond_wait()` until all workers signal completion
+
+**Per-trial worker (`rollout_worker_func`):**
+- Retrieves/allocates thread-local `ThreadLocalData` via `TLSGet()`
+- Retrieves/allocates thread-local `rngcontext` via `gnubg_rng_key`
+- Creates per-task `perArray` with seed offset by `task_index` for quasi-random dice
+- Calls `BasicCubefulRolloutNoLocking()` with the full 13-argument signature
+- Writes result to its designated slot in the scatter array
+- Decrements `tasks_remaining` and signals `GCond` when it reaches zero
+
+**Scatter-gather merge (main thread after barrier):**
+- Accumulates sum and sum-of-squares over all trial results
+- Computes mean and standard deviation per output
+
+#### 5.7.3 Rollout globals
+
+The following globals are defined in `stubs.c` with defaults matching gnubg's standard money-game settings. These are the "docking points" between the engine and the UI layer:
 
 - `rolloutcontext rcRollout` — default rollout configuration (1296 trials, cubeful, variance reduction, quasi-random dice, Mersenne Twister RNG)
 - `rngcontext *rngctxRollout` — RNG context for rollouts; allocated by `gnubg_init_rollout()` via `CopyRNGContext(rngctxCurrent)`
@@ -436,9 +486,11 @@ int gnubg_rollout(const TanBoard anBoard,
 
 Calls `BasicCubefulRolloutNoLocking` for each of `prc->nTrials` games. Uses `QuasiRandomSeed()` (copied from `rollout.c` where it is `static`) to initialise the quasi-random dice permutation array. Accumulates per-game outputs and computes mean and standard deviation on completion.
 
+#### 5.7.4 QuasiRandomSeed
+
 **Note on `QuasiRandomSeed`:** This function is `static` in `rollout.c` with no header declaration. It cannot be linked from outside. The function body was copied verbatim into `stubs.c`; it uses only `irandinit`/`irand` from `lib/isaac.c` which is already in the build. The copy is documented in `PROVENANCE.md`.
 
-#### 5.7.4 Rollout accuracy
+#### 5.7.5 Rollout accuracy
 
 With `nTrials=144` (the default minimum) the standard deviation on win probability is approximately ±0.005. For publication-quality results use `nTrials=1296` or higher. The opening position rollout equity (0.29 at 144 trials) diverges from the 1-ply neural net estimate (0.077) due to sampling variance; convergence improves with more trials.
 
@@ -510,7 +562,9 @@ The board is passed as a `jintArray` of 50 elements encoding `TanBoard anBoard[2
 | `classifyPosition(board: IntArray): Int` | Returns the `positionclass` integer (race, contact, bearoff etc). Returns -1 if not initialised. |
 | `applyMove(board: IntArray, move: IntArray): IntArray` | Applies a move to a board. Returns the resulting 50-element board encoding. |
 | `cubeDecision(board, cubeValue, cubeOwner, matchTo, score0, score1, crawford): IntArray?` | Returns `IntArray[16]`: `[0..6]` = if-double equity floats as `Int` bits (unpack with `Float.fromBits()`), `[7..13]` = no-double equity floats, `[14]` = `CubeDecision` enum value, `[15]` = reserved. See `Engine.CubeDecision` enum for all 21 values. |
-| `rollout(board: IntArray, trials: Int = 144): FloatArray?` | Synchronous cubeful rollout. Returns `FloatArray[14]`: `[0..6]` = equity outputs, `[7..13]` = standard deviations. Use `trials=1296` or higher for publication-quality results. |
+| `rollout(board: IntArray, trials: Int = 144): FloatArray?` | Multi-threaded cubeful rollout via `GThreadPool`. Returns `FloatArray[14]`: `[0..6]` = equity outputs, `[7..13]` = standard deviations. Use `trials=1296` or higher for publication-quality results. |
+| `loadSGF(path: String): Boolean` | Load a match from an SGF file. Calls `CommandLoadMatch()` which handles `FreeMatch`, `ClearMatch`, `RestoreGame`, `UpdateSettings`. Returns true on success. |
+| `saveSGF(path: String): Boolean` | Save the current match to an SGF file. Calls `CommandSaveMatch()` which handles `SaveGame` loop and file I/O. Returns false if no game in progress. |
 
 ### 6.3 Thread Safety
 
@@ -571,14 +625,16 @@ file jni-bridge/build/libgnubg-engine.so
 # Expected: ELF 64-bit LSB shared object, ARM aarch64, for Android 28
 
 nm jni-bridge/build/libgnubg-engine.so | grep "T Java_"
-# Expected (7 JNI entry points):
+# Expected (9 JNI entry points):
 #   T Java_com_clavierhaus_gnubg_Engine_applyMove
 #   T Java_com_clavierhaus_gnubg_Engine_classifyPosition
 #   T Java_com_clavierhaus_gnubg_Engine_cubeDecision
 #   T Java_com_clavierhaus_gnubg_Engine_evaluatePosition
 #   T Java_com_clavierhaus_gnubg_Engine_findBestMove
 #   T Java_com_clavierhaus_gnubg_Engine_initialise
+#   T Java_com_clavierhaus_gnubg_Engine_loadSGF
 #   T Java_com_clavierhaus_gnubg_Engine_rollout
+#   T Java_com_clavierhaus_gnubg_Engine_saveSGF
 
 nm jni-bridge/build/libgnubg-engine.so | grep "NeuralNetEvaluateSSE"
 # Expected: T NeuralNetEvaluateSSE  (confirms NEON path active)
@@ -647,31 +703,32 @@ Expected output:
 
 ### 8.1 Features
 
-- **Rollout:** [DONE] Implemented via `gnubg_rollout()` / `Engine.rollout()`. Synchronous, cubeful, variance reduction. Use `trials=1296+` for publication-quality results.
-- **Cube decisions:** [DONE] Implemented via `Engine.cubeDecision()`. Returns full equity matrix and `CubeDecision` enum. All 21 `cubedecision` values covered in Kotlin enum.
-- **SGF import/export:** [DONE] `sgf.c`, `sgf_y.c`, `sgf_l.c` compiled and linked. `SGFParse` and `SGFErrorHandler` exported. JNI API entry point to be added to `native-lib.c` and `Engine.kt`.
-- **Game management:** [DONE] `play.c` compiled. `lMatch`, `plGame`, `plLastMove`, `NewMoveRecord`, `AddMoveRecord`, `ClearMatch`, `FreeMatch`, `AddGame` all provided by real `play.c` implementation.
-- **Analysis:** [DONE] `analysis.c` compiled. `IniStatcontext`, `find_skills`, `AnalyzeMove`, `AnalyzeGame`, `AnalyzeMatch` available.
-- **SQLite:** The correct architecture for Android is to use Android's own database layer (Room/SQLiteOpenHelper) for persistence rather than gnubg's C SQLite layer.
+The engine is feature-complete as of Phase 9.
+
+- **Rollout:** [DONE] Multi-threaded via `GThreadPool`/`GPrivate`. `Engine.rollout()`. See §5.7.
+- **Cube decisions:** [DONE] `Engine.cubeDecision()`. Full equity matrix + `CubeDecision` enum (21 values).
+- **SGF import/export:** [DONE] `Engine.loadSGF()` / `Engine.saveSGF()`. Backed by `CommandLoadMatch`/`CommandSaveMatch` in `sgf.c`.
+- **Game management:** [DONE] `play.c` compiled. Full match state machine.
+- **Analysis:** [DONE] `analysis.c` compiled. `find_skills`, `AnalyzeMove`, `AnalyzeGame`, `AnalyzeMatch` available.
+- **Multi-threading:** [DONE] `USE_MULTITHREAD` enabled. `GThreadPool` + `GPrivate` TLS + RNG isolation. See §5.7.
+- **SQLite:** Not planned — use Android's Room/SQLiteOpenHelper for persistence.
 
 ### 8.2 Immediate Next Steps
 
-- **SGF JNI API:** Add `Engine.loadSGF(path)` / `Engine.saveSGF(path)` to `native-lib.c` and `Engine.kt`. `SGFParse` is already exported.
-- **Android Studio project:** Create an Android app project, add `libgnubg-engine.so` and GLib `.so` files as prebuilt native libraries, add `Engine.kt` to the source set.
+- **Android Studio project:** Create the Android app project, add `libgnubg-engine.so` and GLib `.so` files as prebuilt native libraries, add `Engine.kt` to the source set.
 - **Asset packaging:** Add `gnubg.weights` and all four bearoff databases to the app's assets. Implement extraction to `context.filesDir` on first launch.
-- **Callback wiring:** Implement non-weak versions of `gnubg_on_*` callbacks in `native-lib.c` to call back into Kotlin UI layer.
-- **Multi-threaded rollout:** Re-enable `USE_MULTITHREAD` for parallel rollout across cores.
+- **Callback wiring:** Implement non-weak versions of `gnubg_on_*` callbacks in `native-lib.c` to route engine events into the Kotlin UI layer.
 
 ### 8.3 Performance
 
-- **ARM NEON SIMD:** Enabled. `NeuralNetEvaluateSSE` confirmed exported and active. `CheckNEON()` always returns 1 on aarch64 since NEON is mandatory in the architecture spec.
-- **Multi-threading:** The GLib threading layer is present and functional. Re-enabling `USE_MULTITHREAD` would allow gnubg's thread pool to distribute rollout work across cores. Requires extending `gnubg_init_tld()` to handle the full `ThreadData` struct initialisation.
+- **ARM NEON SIMD:** Enabled. `NeuralNetEvaluateSSE` confirmed exported and active. `CheckNEON()` always returns 1 on aarch64.
+- **Multi-threading:** [DONE] `USE_MULTITHREAD` enabled. Rollout tasks distributed across all CPU cores via `GThreadPool`. Per-thread `rngcontext` isolation via `GPrivate` guarantees correctness. See §5.7.
 
 ### 8.4 Known Warnings
 
-- **`multithread.c`:** 6 instances of incompatible pointer types passing `pthread_mutex_t *` to `Mutex *`. Harmless: `USE_MULTITHREAD` is disabled and this code path is never executed.
+- **`multithread.c`:** 6 instances of incompatible pointer types passing `pthread_mutex_t *` to `Mutex *`. `USE_MULTITHREAD` is now enabled but these coercions are in paths that are compiled but not reached on Android; harmless in practice.
 - **CMake deprecation warnings** from the NDK toolchain file regarding `cmake_minimum_required VERSION < 3.10`. In the NDK's own toolchain file; cannot be fixed from the project.
-- **Rollout equity variance at low trial counts:** `gnubg_rollout()` with `nTrials=144` produces high-variance results (stddev ~0.005 on win prob). This is expected; use 1296+ trials for reliable equity estimates.
+- **Rollout equity variance at low trial counts:** With `nTrials=144` stddev on win prob is ~0.005. Use 1296+ trials for reliable equity estimates.
 
 ---
 
@@ -687,11 +744,11 @@ Meson cross-file for the GLib build. Specifies NDK 27 toolchain binaries (`aarch
 
 ### jni-bridge/CMakeLists.txt
 
-NDK CMake build file for `libgnubg-engine.so`. Enumerates all compiled source files, sets include paths (`jni-bridge/` first for shadow `config.h` interception, then `engine-core/`, `engine-core/lib/`, GLib headers), defines `AC_DATADIR`/`AC_PKGDATADIR`/`AC_DOCDIR` for Android, and links against `libglib-2.0.so`, `libintl.so`, `liblog`, and `libm`.
+NDK CMake build file for `libgnubg-engine.so`. Enumerates all compiled source files, sets include paths (`jni-bridge/` first for shadow `config.h` interception, then `engine-core/`, `engine-core/lib/`, GLib headers), defines `AC_DATADIR`/`AC_PKGDATADIR`/`AC_DOCDIR` for Android, and links against `libglib-2.0.so`, `libgobject-2.0.so`, `libintl.so`, `liblog`, and `libm`.
 
 ### jni-bridge/src/stubs.c
 
-Provides remaining GTK/UI stub storage and functions, TLD init, rollout infrastructure, and `MT_WaitForTasks` (synchronous single-threaded implementation). Must be kept in sync with `test-harness/src/stubs.c`. Key functions: `gnubg_init_tld()`, `gnubg_init_rollout()`, `gnubg_rollout()`, `QuasiRandomSeed()`.
+Provides remaining GTK/UI stub storage, TLD infrastructure (now via `GPrivate`), multi-threaded rollout orchestration (`gnubg_rollout()` with `GThreadPool`), and rollout globals. Key functions: `gnubg_init_tld()`, `gnubg_init_rollout()`, `gnubg_rollout()`, `QuasiRandomSeed()`, `TLSGet()`. **Note:** `test-harness/src/stubs.c` is a copy of this file and must be kept in sync.
 
 ### jni-bridge/src/android-app.c
 
@@ -708,23 +765,3 @@ Modified from upstream: `NeuralNetEvaluateSSE` function has its VLA replaced wit
 ---
 
 *GNU Backgammon Android Port — MASTER V8 — clavierhaus.at — June 2026*
-
-### Phase 9: Multi-threaded Rollout (Completed)
-
-Phase 9 re-enables `USE_MULTITHREAD` and implements a production-quality
-parallel rollout engine using GLib's `GThreadPool` and `GPrivate` TLS.
-
-**Architecture:** A persistent `GThreadPool` is created at `gnubg_init_rollout()`
-time with `g_get_num_processors()` threads. Each rollout trial is dispatched as
-an independent task. Each worker thread maintains its own `ThreadLocalData`
-via `GPrivate`, including an isolated `rngcontext` (copied from the main context
-at thread creation) to guarantee RNG integrity. Results are written to a
-per-trial scatter array; the main thread merges after `g_thread_pool_free(..., TRUE)`.
-
-**Key implementation details in stubs.c:**
-- `GPrivate gnubg_tls_key` with destructor `free_thread_local_data()`
-- `MT_CreateThreadLocalData()` allocates per-thread `aMoves`, `pnnState`,
-  and a private `rngcontext` copy
-- `gnubg_rollout()` uses scatter-gather: per-trial result structs eliminate
-  write contention during computation
-- Cache-line alignment (64 bytes) on result structs prevents false sharing
