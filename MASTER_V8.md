@@ -647,11 +647,11 @@ Expected output:
 
 ### 8.1 Features
 
-- **Rollout:** ✅ Implemented via `gnubg_rollout()` / `Engine.rollout()`. Synchronous, cubeful, variance reduction. Use `trials=1296+` for publication-quality results.
-- **Cube decisions:** ✅ Implemented via `Engine.cubeDecision()`. Returns full equity matrix and `CubeDecision` enum. All 21 `cubedecision` values covered in Kotlin enum.
-- **SGF import/export:** ✅ `sgf.c`, `sgf_y.c`, `sgf_l.c` compiled and linked. `SGFParse` and `SGFErrorHandler` exported. JNI API entry point to be added to `native-lib.c` and `Engine.kt`.
-- **Game management:** ✅ `play.c` compiled. `lMatch`, `plGame`, `plLastMove`, `NewMoveRecord`, `AddMoveRecord`, `ClearMatch`, `FreeMatch`, `AddGame` all provided by real `play.c` implementation.
-- **Analysis:** ✅ `analysis.c` compiled. `IniStatcontext`, `find_skills`, `AnalyzeMove`, `AnalyzeGame`, `AnalyzeMatch` available.
+- **Rollout:** [DONE] Implemented via `gnubg_rollout()` / `Engine.rollout()`. Synchronous, cubeful, variance reduction. Use `trials=1296+` for publication-quality results.
+- **Cube decisions:** [DONE] Implemented via `Engine.cubeDecision()`. Returns full equity matrix and `CubeDecision` enum. All 21 `cubedecision` values covered in Kotlin enum.
+- **SGF import/export:** [DONE] `sgf.c`, `sgf_y.c`, `sgf_l.c` compiled and linked. `SGFParse` and `SGFErrorHandler` exported. JNI API entry point to be added to `native-lib.c` and `Engine.kt`.
+- **Game management:** [DONE] `play.c` compiled. `lMatch`, `plGame`, `plLastMove`, `NewMoveRecord`, `AddMoveRecord`, `ClearMatch`, `FreeMatch`, `AddGame` all provided by real `play.c` implementation.
+- **Analysis:** [DONE] `analysis.c` compiled. `IniStatcontext`, `find_skills`, `AnalyzeMove`, `AnalyzeGame`, `AnalyzeMatch` available.
 - **SQLite:** The correct architecture for Android is to use Android's own database layer (Room/SQLiteOpenHelper) for persistence rather than gnubg's C SQLite layer.
 
 ### 8.2 Immediate Next Steps

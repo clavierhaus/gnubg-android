@@ -24,8 +24,8 @@ PDF_ENGINE := xelatex
 
 SRC        := ../MASTER_V8.md
 TEMPLATE   := gnubg.tex
-OUT_TEX    := MASTER_V6.tex
-OUT_PDF    := MASTER_V6.pdf
+OUT_TEX    := MASTER_V8.tex
+OUT_PDF    := MASTER_V8.pdf
 
 PANDOC_FLAGS := \
 	--from markdown \
@@ -35,7 +35,7 @@ PANDOC_FLAGS := \
 	--toc-depth=3 \
 	--number-sections \
 	--metadata title="GNU Backgammon Android Port" \
-	--metadata author="Clavierhaus Vienna GmbH" \
+	--metadata author="clavierhaus.at" \
 	--metadata date="$(shell date +'%B %Y')"
 
 .PHONY: all pdf tex clean view
