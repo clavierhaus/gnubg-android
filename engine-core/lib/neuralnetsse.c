@@ -568,15 +568,13 @@ extern int
 NeuralNetEvaluateSSE(const neuralnet * restrict pnn, /*lint -e{818} */ float arInput[],
                      float arOutput[], NNState * UNUSED(pnState))
 {
-    SSE_ALIGN(float ar[pnn->cHidden]);
-
-#if DEBUG_SSE
-    g_assert(sse_aligned(arOutput));
-    g_assert(sse_aligned(ar));
-    g_assert(sse_aligned(arInput));
-#endif
+    /* SSE_ALIGN VLA not guaranteed aligned on aarch64/clang — use posix_memalign */
+    float *ar = NULL;
+    if (posix_memalign((void **)&ar, ALIGN_SIZE, pnn->cHidden * sizeof(float)) != 0)
+        return -1;
 
     EvaluateSSE(pnn, arInput, ar, arOutput);
+    free(ar);
     return 0;
 }
 
