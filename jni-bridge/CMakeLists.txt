@@ -43,6 +43,9 @@ target_compile_definitions(gnubg-engine PRIVATE
     AC_DATADIR="/data/data/com.clavierhaus.gnubg/files"
     AC_PKGDATADIR="/data/data/com.clavierhaus.gnubg/files"
     AC_DOCDIR="/data/data/com.clavierhaus.gnubg/files"
+    USE_SIMD_INSTRUCTIONS
+    HAVE_NEON
+    USE_NEON
 )
 
 target_link_libraries(gnubg-engine

@@ -25,3 +25,8 @@
 #undef HAVE_PYTHON
 #undef HAVE_SQLITE
 #undef HAVE_CANBERRA
+
+/* ARM NEON SIMD acceleration — mandatory on aarch64 */
+#define USE_SIMD_INSTRUCTIONS 1
+#define HAVE_NEON 1
+#define USE_NEON 1
