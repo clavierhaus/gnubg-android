@@ -21,6 +21,7 @@
 #include "eval.h"
 #include "positionid.h"
 #include "backgammon.h"
+extern void gnubg_init_tld(void);
 
 #define LOG_TAG "gnubg-jni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
@@ -98,6 +99,7 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
 
     (*env)->ReleaseStringUTFChars(env, jWeightsPath, weightsPath);
 
+    gnubg_init_tld();
     gnubg_initialised = 1;
     pthread_mutex_unlock(&gnubg_lock);
 

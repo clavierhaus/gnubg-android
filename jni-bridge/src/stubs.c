@@ -137,3 +137,35 @@ moverecord *get_current_moverecord(int *pfHistory) { return NULL; }
 /* ── randomorg — network dice unavailable on Android ─────────────────────── */
 void RandomorgDice(void)                               {}
 int  NetworkDice(unsigned int *pdice, int ndice)       { return -1; }
+
+/* ── Thread-local data initialisation ───────────────────────────────────────
+ * MT_Get_aMoves() expands to td.tld->aMoves when USE_MULTITHREAD is off.
+ * td.tld must point to a valid ThreadLocalData with an allocated aMoves buffer
+ * before any move generation occurs (i.e. before any 1-ply evaluation).
+ * Called once from Engine.initialise() via gnubg_init_tld().
+ */
+static ThreadLocalData gnubg_tld;
+static NNState gnubg_nn_states[3];
+static move gnubg_moves[MAX_MOVES];
+
+void gnubg_init_tld(void) {
+    unsigned int i;
+
+    gnubg_tld.aMoves = gnubg_moves;
+    gnubg_tld.pnnState = gnubg_nn_states;
+    td.tld = &gnubg_tld;
+
+    /* Allocate savedBase (cHidden floats) and savedIBase (cInput floats)
+     * for each NNState entry. Sizes come from the loaded networks:
+     *   [0] = nnContact/nnCrashed: cHidden, cInput
+     *   [1] = nnRace
+     *   [2] = nnCrashed
+     * Use the largest network dimensions to cover all cases safely.
+     * nnContact has the most inputs (NUM_INPUTS > NUM_RACE_INPUTS).
+     */
+    for (i = 0; i < 3; i++) {
+        gnubg_nn_states[i].state     = NNSTATE_NONE;
+        gnubg_nn_states[i].savedBase  = (float *)g_malloc(nnContact.cHidden * sizeof(float));
+        gnubg_nn_states[i].savedIBase = (float *)g_malloc(nnContact.cInput  * sizeof(float));
+    }
+}
