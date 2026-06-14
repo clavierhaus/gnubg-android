@@ -1,6 +1,8 @@
 package com.clavierhaus.gnubg.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,8 +15,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.material3.MaterialTheme
-import com.clavierhaus.gnubg.engine.BoardTheme
+import androidx.compose.ui.input.pointer.pointerInput
 import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
@@ -32,13 +33,6 @@ private const val MID_X   = (LEFT_X + RIGHT_X) / 2f
 private const val HALF_W  = (RIGHT_X - LEFT_X - BAR_W) / 2f
 private const val PT_W    = HALF_W / 6f
 private const val DIE_W   = PT_W * 0.8f
-
-private val STARTING_POSITION = mapOf(
-    24 to Pair(0, 2), 13 to Pair(0, 5),
-    8  to Pair(0, 3), 6  to Pair(0, 5),
-    1  to Pair(1, 2), 12 to Pair(1, 5),
-    17 to Pair(1, 3), 19 to Pair(1, 5)
-)
 
 private val PIP_POSITIONS = mapOf(
     1 to listOf(Pair(0.5f, 0.5f)),
@@ -64,215 +58,209 @@ fun BackgammonBoard(
     gameState: BoardState = BoardState(),
     viewModel: GameViewModel? = null
 ) {
-    val cs = MaterialTheme.colorScheme
-    val p = if (settings.boardTheme == BoardTheme.SYSTEM) {
-        BoardPalette(
-            frame            = cs.surface,
-            boardField       = cs.tertiaryContainer,
-            triangleA        = cs.tertiary,
-            triangleB        = cs.tertiaryContainer.copy(alpha = 0.6f),
-            bar              = cs.surfaceVariant,
-            bearoff          = cs.secondaryContainer,
-            numbers          = cs.onSecondaryContainer,
-            checkerDark      = cs.primary,
-            checkerDarkRim   = cs.onPrimary.copy(alpha = 0.5f),
-            checkerLight     = cs.primaryContainer,
-            checkerLightRim  = cs.primary.copy(alpha = 0.5f),
-            checkerHighlight = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.28f),
-            diceDark         = cs.secondary,
-            diceLight        = cs.secondaryContainer,
-            dicePip          = cs.onSecondary,
-            cubeFace         = cs.tertiary,
-            cubeDot          = cs.onTertiary,
-            cubeText         = cs.onTertiary,
-            pipText          = cs.onSurfaceVariant,
-            trayOutline      = cs.onSurface.copy(alpha = 0.3f),
-            trayDarkBorder   = cs.surface,
-        )
-    } else {
-        BoardPalettes.from(settings.boardTheme)
-    }
+    val p = BoardPalettes.from(settings.boardTheme)
 
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val sx = size.width  / TOT_W
-        val sy = size.height / TOT_H
-        fun ux(u: Float) = u * sx
-        fun uy(u: Float) = u * sy
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .pointerInput(gameState.phase, gameState.remainingDice) {
+            detectTapGestures { offset ->
+                android.util.Log.d("gnubg-ui", "tap at ${offset.x},${offset.y}")
+                if (viewModel == null) return@detectTapGestures
+                val sx = size.width.toFloat() / TOT_W
+                val sy = size.height.toFloat() / TOT_H
+                val x = offset.x / sx
+                val y = offset.y / sy
 
-        val r    = uy(PT_H) / 10f
-        val step = uy(PT_H) / 5f
+                // Check dice tap (swap)
+                val boardCY = TOT_H / 2f
+                if (y >= boardCY - DIE_W * 2 && y <= boardCY + DIE_W * 2 &&
+                    x >= RIGHT_X - DIE_W * 5 && x <= RIGHT_X) {
+                    viewModel.swapDice()
+                    return@detectTapGestures
+                }
 
-        // 1. Frame
-        drawRect(p.frame, size = size)
-
-        // 2. Board field
-        drawRect(p.boardField,
-            topLeft = Offset(ux(BRD_W), uy(BRD_H)),
-            size = Size(ux(TOT_W - 2 * BRD_W), uy(TOT_H - 2 * BRD_H)))
-
-        // 3. Triangles
-        for (n in 1..24) {
-            val x = pointX(n)
-            val color = if (n % 2 == 0) p.triangleA else p.triangleB
-            drawTriangle(color, ux(x), uy(BRD_H), ux(PT_W), uy(PT_H), true)
-            drawTriangle(color, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
+                // Find tapped point
+                var tapped = -1
+                for (n in 1..24) {
+                    val px = pointX(n)
+                    val isTop = n in 13..24
+                    val py = if (isTop) BRD_H else TOT_H - BRD_H - PT_H
+                    if (x >= px && x <= px + PT_W && y >= py && y <= py + PT_H) {
+                        tapped = n
+                        break
+                    }
+                }
+                android.util.Log.d("gnubg-ui", "tapped=$tapped x=$x y=$y")
+                if (tapped >= 0) viewModel.tapSource(tapped)
+            }
         }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val sx = size.width  / TOT_W
+            val sy = size.height / TOT_H
+            fun ux(u: Float) = u * sx
+            fun uy(u: Float) = u * sy
 
-        // 4. Bearoff trays
-        val tx      = ux(RIGHT_X)
-        val tw      = ux(BRF_W)
-        val trayGap = uy(6f)
-        val trayH   = (uy(TOT_H - 2 * BRD_H) - trayGap) / 2f
-        val topTrayY = uy(BRD_H)
-        val botTrayY = uy(BRD_H) + trayH + trayGap
-        val ol = 1.5f
+            val r    = uy(PT_H) / 10f
+            val step = uy(PT_H) / 5f
 
-        listOf(topTrayY, botTrayY).forEach { ty ->
-            drawRect(p.bearoff, topLeft = Offset(tx, ty), size = Size(tw, trayH))
-            drawRect(p.trayDarkBorder, topLeft = Offset(tx, ty), size = Size(tw, trayH),
-                style = Stroke(width = 1f))
-            drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + ol, ty + trayH - ol), ol)
-            drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + tw, ty + ol), ol)
-            drawLine(p.trayOutline, Offset(tx + ol, ty + trayH - ol), Offset(tx + tw, ty + trayH - ol), ol)
-        }
+            // 1. Frame
+            drawRect(p.frame, size = size)
 
-        // Bearoff checkers — example
-        val trayR    = tw * 0.42f
-        val trayStep = trayR * 2.1f
-        val trayCX   = tx + tw / 2f
-        val slotPad = ol * 3f
-        val slotH  = trayH / 18f
-        val slotG  = trayH / 90f
-        val slotW  = tw - slotPad * 2f
-        val slotX  = tx + slotPad
-        for (i in 0 until 3) {
-            val slotY = topTrayY + slotPad + i * (slotH + slotG)
-            drawTrayChecker(slotX, slotY, slotW, slotH, p.checkerLight, p.checkerLightRim)
-        }
-        for (i in 0 until 4) {
-            val slotY = botTrayY + trayH - slotPad - (i + 1) * slotH - i * slotG
-            drawTrayChecker(slotX, slotY, slotW, slotH, p.checkerDark, p.checkerDarkRim)
-        }
+            // 2. Board field
+            drawRect(p.boardField,
+                topLeft = Offset(ux(BRD_W), uy(BRD_H)),
+                size = Size(ux(TOT_W - 2 * BRD_W), uy(TOT_H - 2 * BRD_H)))
 
-        // 5. Bar
-        drawRect(p.bar,
-            topLeft = Offset(ux(MID_X - BAR_W / 2f), uy(BRD_H)),
-            size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H)))
+            // 3. Triangles
+            for (n in 1..24) {
+                val x = pointX(n)
+                val color = if (n % 2 == 0) p.triangleA else p.triangleB
+                drawTriangle(color, ux(x), uy(BRD_H), ux(PT_W), uy(PT_H), true)
+                drawTriangle(color, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
+            }
 
-        // 6. Checkers from live board state
-        // gnubg board encoding:
-        //   anBoard[0][0..23] = opponent checkers, index 0 = opponent's point 1 (= our point 24)
-        //   anBoard[1][0..23] = current player checkers, index 0 = our point 1
-        // In our UI: human = light (player 1), engine = dark (player 0)
-        // board[0..24]  = anBoard[0] = engine's perspective of opponent (human/light)
-        // board[25..49] = anBoard[1] = engine's perspective of self (engine/dark)
-        // Point n in UI maps to:
-        //   human (light): board[n-1]          (anBoard[0][n-1])
-        //   engine (dark): board[25 + (24-n)]  (anBoard[1][24-n], mirrored)
-        for (n in 1..24) {
-            val cx    = ux(pointCentreX(n))
-            val isTop = n in 13..24
+            // 4. Bearoff trays
+            val tx      = ux(RIGHT_X)
+            val tw      = ux(BRF_W)
+            val trayGap = uy(6f)
+            val trayH   = (uy(TOT_H - 2 * BRD_H) - trayGap) / 2f
+            val topTrayY = uy(BRD_H)
+            val botTrayY = uy(BRD_H) + trayH + trayGap
+            val ol = 1.5f
 
-            // Human/light checkers: anBoard[0][n-1]
-            val humanCount = gameState.board[n - 1]
-            if (humanCount > 0) {
-                for (i in 0 until humanCount) {
-                    val cy = if (isTop) uy(BRD_H) + r + i * step
-                             else       uy(TOT_H - BRD_H) - r - i * step
-                    drawChecker(cx, cy, r, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+            listOf(topTrayY, botTrayY).forEach { ty ->
+                drawRect(p.bearoff, topLeft = Offset(tx, ty), size = Size(tw, trayH))
+                drawRect(p.trayDarkBorder, topLeft = Offset(tx, ty), size = Size(tw, trayH),
+                    style = Stroke(width = 1f))
+                drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + ol, ty + trayH - ol), ol)
+                drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + tw, ty + ol), ol)
+                drawLine(p.trayOutline, Offset(tx + ol, ty + trayH - ol), Offset(tx + tw, ty + trayH - ol), ol)
+            }
+
+            // Bearoff checkers
+            val slotPad = ol * 3f
+            val slotH   = trayH / 18f
+            val slotG   = trayH / 90f
+            val slotW   = tw - slotPad * 2f
+            val slotX   = tx + slotPad
+            for (i in 0 until 3) {
+                drawTrayChecker(slotX, topTrayY + slotPad + i * (slotH + slotG),
+                    slotW, slotH, p.checkerLight, p.checkerLightRim)
+            }
+            for (i in 0 until 4) {
+                drawTrayChecker(slotX, botTrayY + trayH - slotPad - (i + 1) * slotH - i * slotG,
+                    slotW, slotH, p.checkerDark, p.checkerDarkRim)
+            }
+
+            // 5. Bar
+            drawRect(p.bar,
+                topLeft = Offset(ux(MID_X - BAR_W / 2f), uy(BRD_H)),
+                size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H)))
+
+            // 6. Checkers from live board state
+            for (n in 1..24) {
+                val cx    = ux(pointCentreX(n))
+                val isTop = n in 13..24
+
+                // anBoard[0] = engine/dark: index (n-1) → UI point n
+                val engineCount = gameState.board[24 - n]
+                if (engineCount > 0) {
+                    for (i in 0 until engineCount) {
+                        val cy = if (isTop) uy(BRD_H) + r + i * step
+                                 else       uy(TOT_H - BRD_H) - r - i * step
+                        drawChecker(cx, cy, r, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
+                    }
+                }
+
+                // anBoard[1] = human/light: index (24-n) → UI point n (mirrored)
+                val humanCount = gameState.board[24 + n]
+                if (humanCount > 0) {
+                    for (i in 0 until humanCount) {
+                        val cy = if (isTop) uy(BRD_H) + r + i * step
+                                 else       uy(TOT_H - BRD_H) - r - i * step
+                        drawChecker(cx, cy, r, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+                    }
+                }
+
+                // Highlight points with moves in history
+                if (gameState.moveHistory.isNotEmpty() && false) {
+                    drawRect(
+                        color = Color.White.copy(alpha = 0.25f),
+                        topLeft = Offset(ux(pointX(n)), uy(BRD_H)),
+                        size = Size(ux(PT_W), uy(TOT_H - 2 * BRD_H))
+                    )
                 }
             }
 
-            // Engine/dark checkers: anBoard[1][24-n] (mirrored perspective)
-            val engineCount = gameState.board[25 + (24 - n)]
-            if (engineCount > 0) {
-                for (i in 0 until engineCount) {
-                    val cy = if (isTop) uy(BRD_H) + r + i * step
-                             else       uy(TOT_H - BRD_H) - r - i * step
-                    drawChecker(cx, cy, r, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
+            // 7. Dice
+            gameState.dice?.let { (d0, d1) ->
+                val isDoubles = d0 == d1
+                val diceToShow = if (isDoubles) listOf(d0, d0, d0, d0) else listOf(d0, d1)
+                val usedCount = diceToShow.size - gameState.remainingDice.size
+                val dw  = ux(DIE_W)
+                val dh  = ux(DIE_W)
+                val gap = ux(PT_W * 0.15f)
+                val boardCentreY = uy(TOT_H / 2f)
+
+                if (gameState.turn == 0) {
+                    val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
+                    val startX = ux(RIGHT_X) - totalW - gap * 2
+                    diceToShow.forEachIndexed { i, face ->
+                        val isUsed = i < usedCount
+                        val dieColor = if (isUsed) p.diceLight.copy(alpha = 0.35f) else p.diceLight
+                        drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
+                            dw, dh, face, dieColor, p.dicePip, p.frame)
+                    }
+                } else {
+                    val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
+                    val startX = ux(MID_X - BAR_W / 2f) - gap - totalW
+                    diceToShow.forEachIndexed { i, face ->
+                        val isUsed = i < usedCount
+                        val dieColor = if (isUsed) p.diceDark.copy(alpha = 0.35f) else p.diceDark
+                        drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
+                            dw, dh, face, dieColor, p.dicePip, p.frame)
+                    }
                 }
             }
 
-            // Highlight selected point
-            if (false) {
-                drawRect(
-                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.25f),
-                    topLeft = Offset(ux(pointX(n)), uy(BRD_H)),
-                    size = Size(ux(PT_W), uy(TOT_H - 2 * BRD_H))
-                )
-            }
-        }
+            // 8. Cube + pip counts
+            val barCX    = ux(MID_X)
+            val barCY    = uy(TOT_H / 2f)
+            val cubeSize = ux(BAR_W * 0.75f)
+            drawCube(barCX - cubeSize / 2f, barCY - cubeSize / 2f, cubeSize, 64,
+                p.cubeFace, p.cubeDot, p.cubeText)
 
-        // 7. Dice — from live game state
-        val dw  = ux(DIE_W); val dh = ux(DIE_W)
-        val gap = ux(PT_W * 0.15f)
-        val boardCentreY = uy(TOT_H / 2f)
-        val rightHalfCX  = ux((MID_X + BAR_W / 2f + RIGHT_X) / 2f)
-        val leftHalfCX   = ux((LEFT_X + MID_X - BAR_W / 2f) / 2f)
+            val pipTextSize = ux(BAR_W * 0.35f)
+            val topPipY     = uy(BRD_H + 5f)
+            val botPipY     = uy(TOT_H - BRD_H - 3.5f)
 
-        gameState.dice?.let { (d0, d1) ->
-            val isDoubles = d0 == d1
-            val diceToShow = if (isDoubles) listOf(d0, d0, d0, d0) else listOf(d0, d1)
-            val usedCount = diceToShow.size - gameState.remainingDice.size
-
-            if (gameState.turn == 0) {
-                // Human dice — right half, just right of bar
-                val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
-                val startX = ux(RIGHT_X) - totalW - gap * 2
-                diceToShow.forEachIndexed { i, face ->
-                    val isUsed = i < usedCount
-                    val dieColor = if (isUsed) p.diceLight.copy(alpha = 0.35f) else p.diceLight
-                    drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
-                        dw, dh, face, dieColor, p.dicePip, p.frame)
+            drawIntoCanvas { canvas ->
+                val pipPaint = android.graphics.Paint().apply {
+                    color = p.pipText.toArgb()
+                    textSize = pipTextSize
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    isAntiAlias = true; isFakeBoldText = true
                 }
-            } else {
-                // Engine dice — left half, just left of bar
-                val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
-                val startX = ux(MID_X - BAR_W / 2f) - gap - totalW
-                diceToShow.forEachIndexed { i, face ->
-                    val isUsed = i < usedCount
-                    val dieColor = if (isUsed) p.diceDark.copy(alpha = 0.35f) else p.diceDark
-                    drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
-                        dw, dh, face, dieColor, p.dicePip, p.frame)
+                if (settings.showPipCount) {
+                    canvas.nativeCanvas.drawText("${gameState.pipCountHuman}", barCX, topPipY, pipPaint)
+                    canvas.nativeCanvas.drawText("${gameState.pipCountEngine}", barCX, botPipY, pipPaint)
+                }
+                val numPaint = android.graphics.Paint().apply {
+                    color = p.numbers.toArgb()
+                    textSize = uy(BRD_H) * 0.75f
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    isAntiAlias = true
+                }
+                if (settings.showPointNumbers) {
+                    for (n in 13..24) canvas.nativeCanvas.drawText(
+                        n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, numPaint)
+                    for (n in 12 downTo 1) canvas.nativeCanvas.drawText(
+                        n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, numPaint)
                 }
             }
-        }
-
-        // 8. Cube + pip counts
-        val barCX    = ux(MID_X)
-        val barCY    = uy(TOT_H / 2f)
-        val cubeSize = ux(BAR_W * 0.75f)
-        drawCube(barCX - cubeSize / 2f, barCY - cubeSize / 2f, cubeSize, 64, p.cubeFace, p.cubeDot, p.cubeText)
-
-        val pipTextSize = ux(BAR_W * 0.35f)
-        val topPipY     = uy(BRD_H + 5f)
-        val botPipY     = uy(TOT_H - BRD_H - 3.5f)
-
-        drawIntoCanvas { canvas ->
-            val pipPaint = android.graphics.Paint().apply {
-                color = p.pipText.toArgb()
-                textSize = pipTextSize
-                textAlign = android.graphics.Paint.Align.CENTER
-                isAntiAlias = true; isFakeBoldText = true
-            }
-            if (settings.showPipCount) {
-                canvas.nativeCanvas.drawText("${gameState.pipCountHuman}", barCX, topPipY, pipPaint)
-                canvas.nativeCanvas.drawText("${gameState.pipCountEngine}", barCX, botPipY, pipPaint)
-            }
-            val numPaint = android.graphics.Paint().apply {
-                color = p.numbers.toArgb()
-                textSize = uy(BRD_H) * 0.75f
-                textAlign = android.graphics.Paint.Align.CENTER
-                isAntiAlias = true
-            }
-            if (settings.showPointNumbers) {
-                for (n in 13..24) canvas.nativeCanvas.drawText(
-                    n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, numPaint)
-                for (n in 12 downTo 1) canvas.nativeCanvas.drawText(
-                    n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, numPaint)
-            }
-        }
-    }
+        } // end Canvas
+    } // end Box
 }
 
 private fun DrawScope.drawCube(
@@ -334,8 +322,7 @@ private fun DrawScope.drawDie(
 
 private fun DrawScope.drawChecker(
     cx: Float, cy: Float, r: Float,
-    fill: Color, rim: Color, highlight: Boolean,
-    highlightColor: Color
+    fill: Color, rim: Color, highlight: Boolean, highlightColor: Color
 ) {
     drawCircle(fill, r, Offset(cx, cy))
     drawCircle(rim, r, Offset(cx, cy), style = Stroke(width = r * 0.08f))
@@ -347,8 +334,7 @@ private fun DrawScope.drawChecker(
 }
 
 private fun DrawScope.drawTrayChecker(
-    left: Float, top: Float, w: Float, h: Float,
-    fill: Color, rim: Color
+    left: Float, top: Float, w: Float, h: Float, fill: Color, rim: Color
 ) {
     val corner = h * 0.3f
     val path = Path().apply {

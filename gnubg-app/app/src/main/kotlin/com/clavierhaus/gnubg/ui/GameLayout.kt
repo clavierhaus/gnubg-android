@@ -65,21 +65,23 @@ fun GameLayout(viewModel: GameViewModel) {
                                 GameButton("Roll", Color(0xFF1976D2)) { viewModel.rollDice() }
                             }
                             gameState.phase == GamePhase.HUMAN_MOVING -> {
-                                // Commit button
-                                GameButton(
-                                    label = "Commit",
-                                    color = if (gameState.canCommit) Color(0xFF2E7D32)
-                                            else Color(0xFF444444),
-                                    enabled = gameState.canCommit
-                                ) { viewModel.commitMove() }
-
-                                // Cancel button
-                                GameButton(
-                                    label = "Cancel",
-                                    color = if (gameState.canCancel) Color(0xFF8B1A1A)
-                                            else Color(0xFF444444),
-                                    enabled = gameState.canCancel
-                                ) { viewModel.cancelMove() }
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    GameButton(
+                                        label = "✓",
+                                        color = if (gameState.canCommit) Color(0xFF2E7D32)
+                                                else Color(0xFF444444),
+                                        enabled = gameState.canCommit
+                                    ) { viewModel.commitMove() }
+                                    GameButton(
+                                        label = "✕",
+                                        color = if (gameState.canCancel) Color(0xFF8B1A1A)
+                                                else Color(0xFF444444),
+                                        enabled = gameState.canCancel
+                                    ) { viewModel.cancelMove() }
+                                }
                             }
                         }
 

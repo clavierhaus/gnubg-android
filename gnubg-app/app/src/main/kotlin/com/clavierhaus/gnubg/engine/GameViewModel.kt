@@ -71,6 +71,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             Engine.initialise(weightsPath)
             _engineReady.value = true
             val startBoard = Engine.newGame()
+            android.util.Log.d("gnubg-board", "b0=${startBoard.slice(0..24)}")
+            android.util.Log.d("gnubg-board", "b1=${startBoard.slice(25..49)}")
             _gameState.value = BoardState(
                 board = startBoard,
                 turn = 0,
@@ -95,6 +97,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.turn == 0) {
                 val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
                 val legal = Engine.getLegalMoves(state.board, d0, d1)
+                android.util.Log.d("gnubg-ui", "rolled d0=$d0 d1=$d1 legal.size=${legal.size}")
                 _gameState.value = state.copy(
                     dice = Pair(d0, d1),
                     remainingDice = remaining,
@@ -102,8 +105,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     legalMoves = legal,
                     moveHistory = emptyList(),
                     diceHistory = emptyList(),
-                    phase = if (legal.isEmpty()) GamePhase.WAITING_FOR_ROLL
-                            else GamePhase.HUMAN_MOVING
+                    phase = GamePhase.HUMAN_MOVING
                 )
             } else {
                 _gameState.value = state.copy(
@@ -118,25 +120,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun tapSource(point: Int) {
         val state = _gameState.value
+        android.util.Log.d("gnubg-ui", "tapSource: point=$point phase=${state.phase} remainingDice=${state.remainingDice}")
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.remainingDice.isEmpty()) return
 
         viewModelScope.launch(engineThread) {
             val die = state.remainingDice.first()
             val isDoubles = state.dice?.let { it.first == it.second } ?: false
-            // point is 1-indexed UI point; gnubg uses 0-indexed
-            val src = point - 1
-            val dest = src - die
-            if (dest < 0) return@launch
+            // Human (anBoard[1]) moves from high UI points to low
+            // gnubg move encoding: src = UI point - 1 (0-indexed), dest = src - die
+            val gnubgSrc = point - 1
+            val gnubgDest = gnubgSrc - die
+            if (gnubgDest < 0) return@launch
 
-            val move = intArrayOf(src, dest, -1, -1, -1, -1, -1, -1)
+            val move = intArrayOf(gnubgSrc, gnubgDest, -1, -1, -1, -1, -1, -1)
             val newBoard = Engine.applyMove(state.board, move)
 
             if (isDoubles && state.remainingDice.size >= 2) {
-                // Doubles: move TWO checkers (two dice consumed)
-                val dest2 = dest - die
+                val dest2 = gnubgDest - die
                 if (dest2 >= 0) {
-                    val move2 = intArrayOf(src, dest2, -1, -1, -1, -1, -1, -1)
+                    val move2 = intArrayOf(gnubgSrc, dest2, -1, -1, -1, -1, -1, -1)
                     val newBoard2 = Engine.applyMove(newBoard, move2)
                     val newRemaining = state.remainingDice.drop(2)
                     val winner = Engine.isGameOver(newBoard2)
