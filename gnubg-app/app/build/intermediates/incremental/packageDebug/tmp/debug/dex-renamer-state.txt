@@ -1,0 +1,19 @@
+#Sun Jun 14 10:33:56 CEST 2026
+base.0=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes.dex
+base.1=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
+base.2=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/10/classes.dex
+base.3=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/2/classes.dex
+base.4=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/9/classes.dex
+base.5=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes2.dex
+path.0=classes.dex
+path.1=0/classes.dex
+path.2=10/classes.dex
+path.3=2/classes.dex
+path.4=9/classes.dex
+path.5=classes2.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex
+renamed.3=classes4.dex
+renamed.4=classes5.dex
+renamed.5=classes6.dex
