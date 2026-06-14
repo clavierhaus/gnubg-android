@@ -22,10 +22,10 @@
 PANDOC     := pandoc
 PDF_ENGINE := xelatex
 
-SRC        := ../MASTER_V8.md
+SRC        := ../MASTER_V0.9.md
 TEMPLATE   := gnubg.tex
-OUT_TEX    := MASTER_V8.tex
-OUT_PDF    := MASTER_V8.pdf
+OUT_TEX    := MASTER_V0.9.tex
+OUT_PDF    := MASTER_V0.9.pdf
 
 PANDOC_FLAGS := \
 	--from markdown \
