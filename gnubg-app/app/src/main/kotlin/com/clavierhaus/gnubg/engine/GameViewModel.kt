@@ -3,10 +3,16 @@ package com.clavierhaus.gnubg.engine
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clavierhaus.gnubg.Engine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
 
 enum class BoardTheme { OCEAN, CLASSIC, FOREST, SYSTEM }
 
@@ -40,6 +46,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _settings = MutableStateFlow(GameSettings())
     val settings: StateFlow<GameSettings> = _settings.asStateFlow()
 
+    private val _gameState = MutableStateFlow(BoardState())
+    val gameState: StateFlow<BoardState> = _gameState.asStateFlow()
+
+    private val _engineReady = MutableStateFlow(false)
+    val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
+
+    // Single persistent thread for all engine calls
+    // gnubg TLS is bound to the thread that calls TLSGet — must always be same thread
+    private val engineThread = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "gnubg-engine-thread")
+    }.asCoroutineDispatcher()
+
     init {
         // Load persisted theme on startup
         viewModelScope.launch {
@@ -47,6 +65,142 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 _settings.value = _settings.value.copy(boardTheme = theme)
             }
         }
+        // Initialise engine on background thread then start new game
+        viewModelScope.launch(engineThread) {
+            val weightsPath = AssetExtractor.extractWeights(application)
+            Engine.initialise(weightsPath)
+            _engineReady.value = true
+            val startBoard = Engine.newGame()
+            _gameState.value = BoardState(
+                board = startBoard,
+                turn = 0,
+                phase = GamePhase.WAITING_FOR_ROLL,
+                pipCountHuman = calcPips(startBoard, 0),
+                pipCountEngine = calcPips(startBoard, 1)
+            )
+        }
+    }
+
+    // ── Game loop ─────────────────────────────────────────────────────────────
+
+    fun rollDice() {
+        val state = _gameState.value
+        if (state.phase != GamePhase.WAITING_FOR_ROLL) return
+
+        viewModelScope.launch(engineThread) {
+            val dice = Engine.rollDice()
+            val d0 = dice[0]; val d1 = dice[1]
+            val legal = Engine.getLegalMoves(state.board, d0, d1)
+
+            if (state.turn == 0) {
+                // Human turn
+                _gameState.value = state.copy(
+                    dice = Pair(d0, d1),
+                    legalMoves = legal,
+                    phase = if (legal.isEmpty()) GamePhase.WAITING_FOR_ROLL else GamePhase.HUMAN_MOVING
+                )
+            } else {
+                // Engine turn
+                _gameState.value = state.copy(
+                    dice = Pair(d0, d1),
+                    phase = GamePhase.ENGINE_THINKING
+                )
+                delay(500) // brief pause so player can see the roll
+                engineMove(d0, d1)
+            }
+        }
+    }
+
+    fun selectPoint(point: Int) {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        _gameState.value = state.copy(selectedPoint = point)
+    }
+
+    fun moveTo(destPoint: Int) {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        val from = state.selectedPoint
+        if (from < 0) return
+
+        val (d0, d1) = state.dice ?: return
+
+        // Find the matching legal move
+        val nMoves = state.legalMoves.size / 8
+        for (i in 0 until nMoves) {
+            val move = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
+            // Check if first sub-move matches from→dest
+            if (move[0] == from && move[1] == destPoint) {
+                viewModelScope.launch(engineThread) {
+                    val newBoard = Engine.applyMove(state.board, move)
+                    val winner = Engine.isGameOver(newBoard)
+                    if (winner != 0) {
+                        _gameState.value = state.copy(
+                            board = newBoard,
+                            phase = GamePhase.GAME_OVER,
+                            winner = if (winner == 1) 0 else 1,
+                            selectedPoint = -1
+                        )
+                        return@launch
+                    }
+                    // Switch to engine turn
+                    _gameState.value = state.copy(
+                        board = newBoard,
+                        turn = 1,
+                        dice = null,
+                        selectedPoint = -1,
+                        phase = GamePhase.WAITING_FOR_ROLL,
+                        pipCountHuman = calcPips(newBoard, 0),
+                        pipCountEngine = calcPips(newBoard, 1)
+                    )
+                }
+                return
+            }
+        }
+        // No matching move — deselect
+        _gameState.value = state.copy(selectedPoint = -1)
+    }
+
+    private suspend fun engineMove(d0: Int, d1: Int) {
+        val state = _gameState.value
+        val move = withContext(engineThread) {
+            Engine.findBestMove(state.board, d0, d1)
+        } ?: return
+
+        val newBoard = withContext(engineThread) {
+            Engine.applyMove(state.board, move)
+        }
+
+        val winner = Engine.isGameOver(newBoard)
+        if (winner != 0) {
+            _gameState.value = state.copy(
+                board = newBoard,
+                phase = GamePhase.GAME_OVER,
+                winner = if (winner == 1) 0 else 1
+            )
+            return
+        }
+
+        _gameState.value = state.copy(
+            board = newBoard,
+            turn = 0,
+            dice = null,
+            phase = GamePhase.WAITING_FOR_ROLL,
+            pipCountHuman = calcPips(newBoard, 0),
+            pipCountEngine = calcPips(newBoard, 1)
+        )
+    }
+
+    // Pip count: sum of (point_index + 1) * checker_count for each point
+    private fun calcPips(board: IntArray, player: Int): Int {
+        var pips = 0
+        val offset = player * 25
+        for (i in 0 until 24) {
+            pips += board[offset + i] * (i + 1)
+        }
+        // Bar checkers count as 25
+        pips += board[offset + 24] * 25
+        return pips
     }
 
     fun setMatchLength(n: Int)           { _settings.value = _settings.value.copy(matchLength = n) }

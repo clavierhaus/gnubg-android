@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material3.MaterialTheme
 import com.clavierhaus.gnubg.engine.BoardTheme
+import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GameSettings
+import com.clavierhaus.gnubg.engine.GameViewModel
 
 private const val TOT_W  = 102f
 private const val TOT_H  = 82f
@@ -57,7 +59,11 @@ private fun pointX(n: Int): Float = when {
 private fun pointCentreX(n: Int): Float = pointX(n) + PT_W / 2f
 
 @Composable
-fun BackgammonBoard(settings: GameSettings = GameSettings()) {
+fun BackgammonBoard(
+    settings: GameSettings = GameSettings(),
+    gameState: BoardState = BoardState(),
+    viewModel: GameViewModel? = null
+) {
     val cs = MaterialTheme.colorScheme
     val p = if (settings.boardTheme == BoardTheme.SYSTEM) {
         BoardPalette(
@@ -153,30 +159,68 @@ fun BackgammonBoard(settings: GameSettings = GameSettings()) {
             topLeft = Offset(ux(MID_X - BAR_W / 2f), uy(BRD_H)),
             size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H)))
 
-        // 6. Checkers
-        for ((point, playerCount) in STARTING_POSITION) {
-            val (player, count) = playerCount
-            val cx    = ux(pointCentreX(point))
-            val isTop = point in 13..24
-            val fill  = if (player == 0) p.checkerDark  else p.checkerLight
-            val rim   = if (player == 0) p.checkerDarkRim else p.checkerLightRim
-            for (i in 0 until count) {
-                val cy = if (isTop) uy(BRD_H) + r + i * step
-                         else       uy(TOT_H - BRD_H) - r - i * step
-                drawChecker(cx, cy, r, fill, rim, player == 1, p.checkerHighlight)
+        // 6. Checkers from live board state
+        // gnubg board encoding:
+        //   anBoard[0][0..23] = opponent checkers, index 0 = opponent's point 1 (= our point 24)
+        //   anBoard[1][0..23] = current player checkers, index 0 = our point 1
+        // In our UI: human = light (player 1), engine = dark (player 0)
+        // board[0..24]  = anBoard[0] = engine's perspective of opponent (human/light)
+        // board[25..49] = anBoard[1] = engine's perspective of self (engine/dark)
+        // Point n in UI maps to:
+        //   human (light): board[n-1]          (anBoard[0][n-1])
+        //   engine (dark): board[25 + (24-n)]  (anBoard[1][24-n], mirrored)
+        for (n in 1..24) {
+            val cx    = ux(pointCentreX(n))
+            val isTop = n in 13..24
+
+            // Human/light checkers: anBoard[0][n-1]
+            val humanCount = gameState.board[n - 1]
+            if (humanCount > 0) {
+                for (i in 0 until humanCount) {
+                    val cy = if (isTop) uy(BRD_H) + r + i * step
+                             else       uy(TOT_H - BRD_H) - r - i * step
+                    drawChecker(cx, cy, r, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+                }
+            }
+
+            // Engine/dark checkers: anBoard[1][24-n] (mirrored perspective)
+            val engineCount = gameState.board[25 + (24 - n)]
+            if (engineCount > 0) {
+                for (i in 0 until engineCount) {
+                    val cy = if (isTop) uy(BRD_H) + r + i * step
+                             else       uy(TOT_H - BRD_H) - r - i * step
+                    drawChecker(cx, cy, r, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
+                }
+            }
+
+            // Highlight selected point
+            if (n == gameState.selectedPoint) {
+                drawRect(
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.25f),
+                    topLeft = Offset(ux(pointX(n)), uy(BRD_H)),
+                    size = Size(ux(PT_W), uy(TOT_H - 2 * BRD_H))
+                )
             }
         }
 
-        // 7. Dice — placeholder 3-1
+        // 7. Dice — from live game state
         val dw  = ux(DIE_W); val dh = ux(DIE_W)
         val gap = ux(PT_W * 0.15f)
         val boardCentreY = uy(TOT_H / 2f)
         val rightHalfCX  = ux((MID_X + BAR_W / 2f + RIGHT_X) / 2f)
         val leftHalfCX   = ux((LEFT_X + MID_X - BAR_W / 2f) / 2f)
-        drawDie(rightHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, p.diceDark,  p.dicePip, p.frame)
-        drawDie(rightHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, p.diceDark,  p.dicePip, p.frame)
-        drawDie(leftHalfCX  - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, p.diceLight, p.dicePip, p.frame)
-        drawDie(leftHalfCX  + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, p.diceLight, p.dicePip, p.frame)
+
+        gameState.dice?.let { (d0, d1) ->
+            if (gameState.turn == 0) {
+                // Human dice — light, shown in right half
+                drawDie(rightHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, d0, p.diceLight, p.dicePip, p.frame)
+                drawDie(rightHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, d1, p.diceLight, p.dicePip, p.frame)
+            } else {
+                // Engine dice — dark, shown in left half
+                drawDie(leftHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, d0, p.diceDark, p.dicePip, p.frame)
+                drawDie(leftHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, d1, p.diceDark, p.dicePip, p.frame)
+            }
+        }
 
         // 8. Cube + pip counts
         val barCX    = ux(MID_X)
@@ -196,8 +240,8 @@ fun BackgammonBoard(settings: GameSettings = GameSettings()) {
                 isAntiAlias = true; isFakeBoldText = true
             }
             if (settings.showPipCount) {
-                canvas.nativeCanvas.drawText("167", barCX, topPipY, pipPaint)
-                canvas.nativeCanvas.drawText("167", barCX, botPipY, pipPaint)
+                canvas.nativeCanvas.drawText("${gameState.pipCountHuman}", barCX, topPipY, pipPaint)
+                canvas.nativeCanvas.drawText("${gameState.pipCountEngine}", barCX, botPipY, pipPaint)
             }
             val numPaint = android.graphics.Paint().apply {
                 color = p.numbers.toArgb()

@@ -190,9 +190,10 @@ extern int asyncRet;
 #define MT_SafeSet(x, y) ((*x) = y)
 #define MT_SafeCompare(x, y) ((*x) == y)
 #define MT_GetThreadID() 0
-#define MT_Get_nnState() td.tld->pnnState
-#define MT_Get_aMoves() td.tld->aMoves
-#define MT_GetTLD() td.tld
+extern void *TLSGet(void *item);
+#define MT_Get_nnState() ((ThreadLocalData *)TLSGet(NULL))->pnnState
+#define MT_Get_aMoves() ((ThreadLocalData *)TLSGet(NULL))->aMoves
+#define MT_GetTLD() ((ThreadLocalData *)TLSGet(NULL))
 
 #endif
 

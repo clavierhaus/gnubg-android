@@ -3,22 +3,29 @@ package com.clavierhaus.gnubg.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
 
 @Composable
 fun GameLayout(viewModel: GameViewModel) {
     var showSettings by remember { mutableStateOf(false) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val gameState by viewModel.gameState.collectAsStateWithLifecycle()
+    val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
 
     if (showSettings) {
         SettingsScreen(
@@ -29,18 +36,70 @@ fun GameLayout(viewModel: GameViewModel) {
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
+                // Player panel — left 25%
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(0.25f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        // Roll button
+                        if (engineReady &&
+                            gameState.phase == GamePhase.WAITING_FOR_ROLL &&
+                            gameState.turn == 0) {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        Color(0xFF1976D2),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { viewModel.rollDice() }
+                                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Roll", color = Color.White,
+                                    fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        if (gameState.phase == GamePhase.ENGINE_THINKING) {
+                            Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
+                        }
+
+                        if (gameState.phase == GamePhase.GAME_OVER) {
+                            Text(
+                                if (gameState.winner == 0) "You win!" else "Engine wins!",
+                                color = Color.White, fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Turn indicator
+                        Text(
+                            text = when (gameState.turn) {
+                                0 -> "Your turn"
+                                else -> "Engine"
+                            },
+                            color = Color(0xFFB3C9F0),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // Board — right 75%
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth()
                 ) {
-                    BackgammonBoard(settings)
+                    BackgammonBoard(settings, gameState, viewModel)
                 }
             }
 

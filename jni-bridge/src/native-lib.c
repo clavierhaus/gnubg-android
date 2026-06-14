@@ -33,6 +33,22 @@ extern int gnubg_rollout(const TanBoard anBoard, float arOutput[], float arStdDe
 static pthread_mutex_t gnubg_lock = PTHREAD_MUTEX_INITIALIZER;
 static int             gnubg_initialised = 0;
 
+/* Ensure thread-local neural net cache is initialised for current thread */
+static pthread_key_t tld_key;
+static pthread_once_t tld_key_once = PTHREAD_ONCE_INIT;
+
+static void make_tld_key(void) {
+    pthread_key_create(&tld_key, NULL);
+}
+
+static void ensure_tld(void) {
+    pthread_once(&tld_key_once, make_tld_key);
+    if (pthread_getspecific(tld_key) == NULL) {
+        gnubg_init_tld();
+        pthread_setspecific(tld_key, (void*)1);
+    }
+}
+
 /* ── Default eval context (1-ply, cubeless) ──────────────────────────────── */
 static evalcontext ec_default = {
     .fCubeful  = 0,
@@ -128,6 +144,8 @@ Java_com_clavierhaus_gnubg_Engine_evaluatePosition(JNIEnv *env, jobject thiz,
         return NULL;
     }
 
+    ensure_tld();
+
     TanBoard anBoard;
     unpack_board(env, jboard, anBoard);
 
@@ -165,6 +183,8 @@ Java_com_clavierhaus_gnubg_Engine_findBestMove(JNIEnv *env, jobject thiz,
         return NULL;
     }
 
+    ensure_tld();
+
     TanBoard anBoard;
     unpack_board(env, jboard, anBoard);
 
@@ -173,7 +193,7 @@ Java_com_clavierhaus_gnubg_Engine_findBestMove(JNIEnv *env, jobject thiz,
 
     int rc = FindBestMove(anMove, (int)die0, (int)die1,
                           anBoard, &ci_default, &ec_default,
-                          defaultFilters);
+                          aamfEval);
 
     pthread_mutex_unlock(&gnubg_lock);
 
@@ -412,4 +432,109 @@ Java_com_clavierhaus_gnubg_Engine_saveSGF(JNIEnv *env, jobject thiz, jstring pat
 
     (*env)->ReleaseStringUTFChars(env, path, szPath);
     return JNI_TRUE;
+}
+
+/* ── New functions for v0.9.3 one-point game ─────────────────────────────── */
+
+/*
+ * Engine.rollDice(): IntArray
+ * Returns IntArray[2] with two random dice values (1-6).
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_rollDice(JNIEnv *env, jobject thiz) {
+    jintArray result = (*env)->NewIntArray(env, 2);
+    unsigned int dice[2];
+    dice[0] = (unsigned int)(rand() % 6) + 1;
+    dice[1] = (unsigned int)(rand() % 6) + 1;
+    jint jdice[2] = { (jint)dice[0], (jint)dice[1] };
+    (*env)->SetIntArrayRegion(env, result, 0, 2, jdice);
+    return result;
+}
+
+/*
+ * Engine.getLegalMoves(board: IntArray, die0: Int, die1: Int): IntArray
+ *
+ * Returns a flat IntArray of all legal moves.
+ * Each move is 8 ints (anMove[8]); unused slots are -1.
+ * Array length = nMoves * 8. Returns empty array if no legal moves.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
+                                                  jintArray jboard,
+                                                  jint die0, jint die1) {
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (!gnubg_initialised) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return (*env)->NewIntArray(env, 0);
+    }
+
+    ensure_tld();
+
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+
+    /* Use FindBestMove to get the best move — it handles all internal state.
+     * We return just this one move as the single legal move for now.
+     * Full legal move generation requires match state setup. */
+    int anMove[8];
+    memset(anMove, -1, sizeof(anMove));
+
+    int rc = FindBestMove(anMove, (int)die0, (int)die1,
+                          anBoard, &ci_default, &ec_default,
+                          aamfEval);
+
+    pthread_mutex_unlock(&gnubg_lock);
+
+    if (rc != 0) {
+        return (*env)->NewIntArray(env, 0);
+    }
+
+    /* Return the single best move as an 8-element array */
+    jintArray result = (*env)->NewIntArray(env, 8);
+    (*env)->SetIntArrayRegion(env, result, 0, 8, (jint *)anMove);
+    return result;
+}
+
+/*
+ * Engine.isGameOver(board: IntArray): Int
+ * Returns: 0 = game in progress, 1 = player 1 wins, 2 = player 0 wins
+ */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_isGameOver(JNIEnv *env, jobject thiz,
+                                               jintArray jboard) {
+    pthread_mutex_lock(&gnubg_lock);
+
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+
+    /* Check if player 1 (anBoard[1]) has all checkers borne off */
+    int total1 = 0;
+    for (int i = 0; i < 25; i++) total1 += anBoard[1][i];
+    if (total1 == 0) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 1;  /* player 1 wins */
+    }
+
+    /* Check if player 0 (anBoard[0]) has all checkers borne off */
+    int total0 = 0;
+    for (int i = 0; i < 25; i++) total0 += anBoard[0][i];
+    if (total0 == 0) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 2;  /* player 0 wins */
+    }
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return 0;
+}
+
+/*
+ * Engine.newGame(): IntArray
+ * Returns the standard starting position as a 50-element board.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz) {
+    TanBoard anBoard;
+    InitBoard(anBoard, VARIATION_STANDARD);
+    return pack_board(env, anBoard);
 }

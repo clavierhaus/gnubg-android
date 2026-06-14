@@ -266,6 +266,7 @@ void *TLSGet(void *item) {
             tld->pnnState[i].savedIBase = g_malloc(nnContact.cInput * sizeof(float));
         }
         g_private_set(&gnubg_tls_key, tld);
+        td.tld = tld;
     }
     return tld;
 }
