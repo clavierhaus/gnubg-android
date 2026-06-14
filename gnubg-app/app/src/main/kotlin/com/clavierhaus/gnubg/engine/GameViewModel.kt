@@ -77,8 +77,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 board = startBoard,
                 turn = 0,
                 phase = GamePhase.WAITING_FOR_ROLL,
-                pipCountHuman = calcPips(startBoard, 0),
-                pipCountEngine = calcPips(startBoard, 1)
+                pipCountHuman = Engine.pipCount(startBoard)[1],
+                pipCountEngine = Engine.pipCount(startBoard)[0]
             )
         }
     }
@@ -97,8 +97,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.turn == 0) {
                 val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
                 val legal = Engine.getLegalMoves(state.board, d0, d1)
-                val testCount = Engine.testGenerateMoves(state.board, d0, d1)
-                android.util.Log.d("gnubg-ui", "rolled d0=$d0 d1=$d1 legal.size=${legal.size} testCount=$testCount")
+                android.util.Log.d("gnubg-ui", "rolled d0=$d0 d1=$d1 legal.size=${legal.size}")
                 android.util.Log.d("gnubg-ui", "board[0..24]=${state.board.slice(0..24)}")
                 android.util.Log.d("gnubg-ui", "board[25..49]=${state.board.slice(25..49)}")
                 _gameState.value = state.copy(
@@ -128,63 +127,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.remainingDice.isEmpty()) return
 
         viewModelScope.launch(engineThread) {
-            val die = state.remainingDice.first()
-            val isDoubles = state.dice?.let { it.first == it.second } ?: false
-            // Human (anBoard[1]) moves from high UI points to low
-            // gnubg move encoding: src = UI point - 1 (0-indexed), dest = src - die
-            val gnubgSrc = point - 1
-            val gnubgDest = gnubgSrc - die
-            if (gnubgDest < 0) return@launch
+            // Use gnubg legal moves exclusively — no manual move computation
+            val humanOnBar = state.board[49]
+            val gnubgSrc = if (humanOnBar > 0) 24 else point - 1
 
-            // Validate against legal moves — check any sub-move pair
             val nLegal = state.legalMoves.size / 8
-            android.util.Log.d("gnubg-move", "checking $gnubgSrc->$gnubgDest against $nLegal moves")
-            var found = false
-            for (i in 0 until nLegal) {
+            android.util.Log.d("gnubg-move", "tap point=$point gnubgSrc=$gnubgSrc nLegal=$nLegal")
+
+            // Find first legal sub-move from gnubgSrc
+            var matchedMove: IntArray? = null
+            outer@ for (i in 0 until nLegal) {
                 val m = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
-                // Each move has up to 4 sub-moves: [src0,dst0, src1,dst1, src2,dst2, src3,dst3]
                 for (j in 0..3) {
-                    if (m[j*2] == gnubgSrc && m[j*2+1] == gnubgDest) {
-                        found = true; break
+                    if (m[j*2] == gnubgSrc && m[j*2+1] >= 0) {
+                        matchedMove = intArrayOf(m[j*2], m[j*2+1], -1, -1, -1, -1, -1, -1)
+                        break@outer
                     }
                 }
-                if (found) break
             }
-            if (!found) {
-                android.util.Log.d("gnubg-move", "REJECTED $gnubgSrc->$gnubgDest")
+
+            if (matchedMove == null) {
+                android.util.Log.d("gnubg-move", "no legal move from $gnubgSrc")
                 return@launch
             }
 
-            val move = intArrayOf(gnubgSrc, gnubgDest, -1, -1, -1, -1, -1, -1)
-            val newBoard = Engine.applyMove(state.board, move)
-
-            if (isDoubles && state.remainingDice.size >= 2) {
-                val dest2 = gnubgDest - die
-                if (dest2 >= 0) {
-                    val move2 = intArrayOf(gnubgSrc, dest2, -1, -1, -1, -1, -1, -1)
-                    val newBoard2 = Engine.applyMove(newBoard, move2)
-                    val newRemaining = state.remainingDice.drop(2)
-                    val winner = Engine.isGameOver(newBoard2)
-                    if (winner != 0) {
-                        _gameState.value = state.copy(board = newBoard2,
-                            phase = GamePhase.GAME_OVER,
-                            winner = if (winner == 1) 0 else 1)
-                        return@launch
-                    }
-                    _gameState.value = state.copy(
-                        board = newBoard2,
-                        remainingDice = newRemaining,
-                        moveHistory = state.moveHistory + listOf(state.board),
-                        diceHistory = state.diceHistory + listOf(state.remainingDice),
-                        pipCountHuman = calcPips(newBoard2, 0),
-                        pipCountEngine = calcPips(newBoard2, 1)
-                    )
-                    return@launch
-                }
-            }
-
-            // Single die move
+            android.util.Log.d("gnubg-move", "applying ${matchedMove[0]}->${matchedMove[1]}")
+            val newBoard = Engine.applyMove(state.board, matchedMove)
             val newRemaining = state.remainingDice.drop(1)
+
             val winner = Engine.isGameOver(newBoard)
             if (winner != 0) {
                 _gameState.value = state.copy(board = newBoard,
@@ -192,24 +162,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     winner = if (winner == 1) 0 else 1)
                 return@launch
             }
-            // Refresh legal moves for remaining dice
+
             val newLegal = when {
                 newRemaining.size >= 2 -> Engine.getLegalMoves(newBoard, newRemaining[0], newRemaining[1])
                 newRemaining.size == 1 -> Engine.getLegalMoves(newBoard, newRemaining[0], newRemaining[0])
                 else -> IntArray(0)
             }
-            android.util.Log.d("gnubg-move", "after move: remaining=$newRemaining newLegal.size=${newLegal.size}")
             _gameState.value = state.copy(
                 board = newBoard,
                 remainingDice = newRemaining,
                 legalMoves = newLegal,
                 moveHistory = state.moveHistory + listOf(state.board),
                 diceHistory = state.diceHistory + listOf(state.remainingDice),
-                pipCountHuman = calcPips(newBoard, 0),
-                pipCountEngine = calcPips(newBoard, 1)
+                pipCountHuman = Engine.pipCount(newBoard)[1],
+                pipCountEngine = Engine.pipCount(newBoard)[0]
             )
         }
     }
+
 
     fun swapDice() {
         val state = _gameState.value
@@ -239,8 +209,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 legalMoves = legal,
                 moveHistory = state.moveHistory.dropLast(1),
                 diceHistory = state.diceHistory.dropLast(1),
-                pipCountHuman = calcPips(prevBoard, 0),
-                pipCountEngine = calcPips(prevBoard, 1)
+                pipCountHuman = Engine.pipCount(prevBoard)[1],
+                pipCountEngine = Engine.pipCount(prevBoard)[0]
             )
         }
     }
@@ -256,8 +226,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 moveHistory = emptyList(),
                 diceHistory = emptyList(),
                 phase = GamePhase.WAITING_FOR_ROLL,
-                pipCountHuman = calcPips(state.board, 0),
-                pipCountEngine = calcPips(state.board, 1)
+                pipCountHuman = Engine.pipCount(state.board)[1],
+                pipCountEngine = Engine.pipCount(state.board)[0]
             )
             delay(500)
             rollDice()
@@ -266,8 +236,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun engineMove(d0: Int, d1: Int) {
         val state = _gameState.value
-        val move = Engine.findBestMove(state.board, d0, d1) ?: return
-        val newBoard = Engine.applyMove(state.board, move)
+        // Swap board so engine checkers are in anBoard[1] (moving player perspective)
+        val swapped = Engine.swapBoard(state.board)
+        val move = Engine.findBestMove(swapped, d0, d1) ?: return
+        // Apply move to swapped board, then swap back
+        val newBoardSwapped = Engine.applyMove(swapped, move)
+        val newBoard = Engine.swapBoard(newBoardSwapped)
         val winner = Engine.isGameOver(newBoard)
         if (winner != 0) {
             _gameState.value = state.copy(board = newBoard,
@@ -281,18 +255,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             dice = null,
             remainingDice = emptyList(),
             phase = GamePhase.WAITING_FOR_ROLL,
-            pipCountHuman = calcPips(newBoard, 0),
-            pipCountEngine = calcPips(newBoard, 1)
+            pipCountHuman = Engine.pipCount(newBoard)[1],
+            pipCountEngine = Engine.pipCount(newBoard)[0]
         )
     }
 
-    private fun calcPips(board: IntArray, player: Int): Int {
-        var pips = 0
-        val offset = player * 25
-        for (i in 0 until 24) { pips += board[offset + i] * (i + 1) }
-        pips += board[offset + 24] * 25
-        return pips
-    }
 
     fun newGame() {
         viewModelScope.launch(engineThread) {
@@ -301,8 +268,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 board = startBoard,
                 turn = 0,
                 phase = GamePhase.WAITING_FOR_ROLL,
-                pipCountHuman = calcPips(startBoard, 0),
-                pipCountEngine = calcPips(startBoard, 1)
+                pipCountHuman = Engine.pipCount(startBoard)[1],
+                pipCountEngine = Engine.pipCount(startBoard)[0]
             )
         }
     }

@@ -158,6 +158,23 @@ fun BackgammonBoard(
                 topLeft = Offset(ux(MID_X - BAR_W / 2f), uy(BRD_H)),
                 size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H)))
 
+            // Bar checkers
+            // anBoard[0][24] = engine/dark checkers on bar (shown in top half)
+            // anBoard[1][24] = human/light checkers on bar (shown in bottom half)
+            val barCentreX = ux(MID_X)
+            val engineOnBar = gameState.board[24]
+            val humanOnBar  = gameState.board[49]
+            val barR = r * 0.9f
+
+            for (i in 0 until engineOnBar) {
+                val cy = uy(BRD_H) + barR + i * barR * 2.1f
+                drawChecker(barCentreX, cy, barR, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
+            }
+            for (i in 0 until humanOnBar) {
+                val cy = uy(TOT_H - BRD_H) - barR - i * barR * 2.1f
+                drawChecker(barCentreX, cy, barR, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+            }
+
             // 6. Checkers from live board state
             for (n in 1..24) {
                 val cx    = ux(pointCentreX(n))
