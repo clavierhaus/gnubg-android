@@ -1,0 +1,2561 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifXeTeX
+  \usepackage{fontspec}
+  \setmainfont{TeX Gyre Pagella}
+  \setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\fi
+
+\usepackage[a4paper, top=25mm, bottom=25mm, left=28mm, right=28mm]{geometry}
+\usepackage{xcolor}
+\definecolor{headingblue}{RGB}{31,56,100}
+\definecolor{ruleblue}{RGB}{46,90,156}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\usepackage{longtable,booktabs,array,calc,multirow}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{5pt}
+
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\usepackage{framed}
+\newenvironment{Shaded}{%
+  \setlength{\FrameSep}{4pt}%
+  \definecolor{shadecolor}{RGB}{245,245,245}%
+  \begin{snugshade}\footnotesize
+}{\end{snugshade}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{%
+  breaklines,breakanywhere,commandchars=\\\{\}}
+
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{headingblue}}{\thesection.}{0.6em}{}[\vspace{-4pt}\color{ruleblue}\rule{\linewidth}{0.6pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{headingblue}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titlespacing{\section}{0pt}{18pt}{6pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+\titlespacing{\subsubsection}{0pt}{10pt}{3pt}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.25}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=ruleblue,
+  urlcolor=ruleblue,
+  pdftitle={GNU Backgammon Android Port -- MASTER v0.9.4},
+  pdfauthor={clavierhaus.at},
+}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray}GNU Backgammon Android Port --- MASTER v0.9.4}
+\fancyhead[R]{\small\color{gray}clavierhaus.at}
+\fancyfoot[C]{\small\color{gray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\title{\textbf{GNU Backgammon Android Port}}
+\author{clavierhaus.at}
+\date{Juni 2026}
+
+\begin{document}
+
+\maketitle\thispagestyle{fancy}
+
+\tableofcontents\newpage
+
+\section{GNU Backgammon Android Port --- MASTER v0.9.4}\label{gnu-backgammon-android-port-master-v09}
+
+\textbf{GNU Backgammon by clavierhaus.at}\\
+clavierhaus.at · Vienna · Austria\\
+June 2026
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{1. Introduction \& Project
+Objective}\label{introduction-project-objective}
+
+The objective of this project is to produce a \textbf{true port} of GNU
+Backgammon to the Android platform --- not a stripped-down evaluator,
+but a complete port that mirrors 100\% of the functionality of the PC
+version. This includes full game management, SGF import/export,
+analysis, rollout, cube decisions, tutor mode, and the complete match
+state machine.
+
+The primary constraint is the monolithic nature of the original gnubg
+desktop codebase, which is tightly coupled with GTK/GNOME UI components,
+file I/O, global configuration state, and platform-specific threading
+primitives. The approach is to compile the genuine gnubg engine source
+--- every file that is portable --- and replace only what is inherently
+GTK-specific with Android equivalents via a clean architectural
+boundary: \texttt{android-app.c}.
+
+\textbf{The key architectural insight:} gnubg's codebase separates
+cleanly into three layers:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Mathematical engine} (\texttt{eval.c}, \texttt{rollout.c},
+  \texttt{dice.c}, \texttt{bearoff.c} etc.) --- pure computation, zero
+  UI dependencies, 100\% portable
+\item
+  \textbf{Game logic layer} (\texttt{play.c}, \texttt{analysis.c},
+  \texttt{sgf.c}, \texttt{set.c}, \texttt{format.c} etc.) --- all GTK
+  references are behind \texttt{\#if\ defined(USE\_GTK)} guards,
+  portable when compiled without \texttt{USE\_GTK}
+\item
+  \textbf{GTK application shell} (\texttt{gnubg.c}, \texttt{progress.c},
+  \texttt{gtk/*.c}) --- not portable, replaced by \texttt{android-app.c}
+\end{enumerate}
+
+Every stub that silently drops functionality is a hole in the port. The
+goal is to minimise stubs to only what is genuinely GTK-specific
+rendering code.
+
+\subsubsection{1.1 Scope}\label{scope}
+
+This document covers the complete build history, all architectural
+decisions, every obstacle encountered and its resolution, and the exact
+current state of the project as of Version 6. It is intended as a
+working reference for any software engineer picking up or contributing
+to this project.
+
+\subsubsection{1.2 App Identity}\label{app-identity}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Property & Value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+App name & GNU Backgammon by clavierhaus.at \\
+Android package & \texttt{com.clavierhaus.gnubg} \\
+Minimum Android API & 31 (Android 12.0, Snow Cone) \\
+Target ABI & \texttt{arm64-v8a} \\
+Engine source & GNU Backgammon upstream (gnubg.org) \\
+Repository & https://github.com/clavierhaus/gnubg-android \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{2. Narrative of Progress}\label{narrative-of-progress}
+
+\subsubsection{Phase 1: Monolithic Analysis \&
+Prototype}\label{phase-1-monolithic-analysis-prototype}
+
+Initial efforts focused on analysing the upstream GNU Backgammon source.
+Attempts to build the full desktop environment proved unsustainable due
+to deep dependencies on GTK, GLib, and global UI state variables
+(\texttt{ms}, \texttt{ap}, \texttt{positions}). A ``Frankenstein'' build
+approach --- attempting to stub these dependencies incrementally ---
+established that the mathematical evaluation logic was sound in
+isolation, but produced a fragile, non-portable build environment that
+could not be taken further.
+
+\subsubsection{Phase 2: Redesign --- Deterministic
+Engineering}\label{phase-2-redesign-deterministic-engineering}
+
+Phase 2 pivoted to a ``Clean-Room'' architecture. The attempt to port
+the desktop environment was discarded entirely. The ``Core Engine'' was
+isolated: a strict build hierarchy was established in which the upstream
+source acts as a read-only reference, and the \texttt{engine-core/}
+directory contains only the verified, essential mathematical components.
+
+This phase established the orchestration scripts
+(\texttt{pull\_dependencies.sh}, \texttt{patch\_engine.sh},
+\texttt{build\_all.sh}) and the Patch Registry: surgical, idempotent
+fixes for POSIX/Android compliance.
+
+\subsubsection{Phase 3: The Pristine Headless Build
+(Completed)}\label{phase-3-the-pristine-headless-build-completed}
+
+Phase 3 achieved a fully hermetic host build of the mathematical core,
+confirming that the engine compiles and links cleanly on Linux when
+detached from the GTK/GNOME infrastructure.
+
+When cross-compilation for Android NDK was attempted, the shim approach
+collapsed. The root cause: gnubg uses GLib for threading primitives
+(\texttt{GMutex}, \texttt{GCond}, \texttt{GThread}), dynamic data
+structures (\texttt{GList}, \texttt{GArray}, \texttt{GHashTable}), and
+character encoding conversion. Shimming these by hand created an
+infinite chain of type collisions. This is not a sustainable path; it is
+an attempt to reconstruct the Linux runtime inside the Android NDK.
+
+\subsubsection{Phase 4: GLib Cross-Compilation for Android
+(Completed)}\label{phase-4-glib-cross-compilation-for-android-completed}
+
+The architectural decision was made to cross-compile a minimal but real
+GLib 2.88.1 for \texttt{arm64-v8a} Android API 28, rather than shimming
+GLib. This provides the full, tested GLib API that gnubg requires, with
+no behavioral deviations from upstream.
+
+The GLib source was obtained from the Fedora 44 SRPM
+(\texttt{glib2-2.88.1-1.fc44}), ensuring Fedora's tested patches were
+applied. The result is \texttt{libglib-2.0.so} verified as ELF 64-bit
+ARM aarch64 for Android 28.
+
+\subsubsection{Phase 5: JNI Bridge \& libgnubg-engine.so
+(Completed)}\label{phase-5-jni-bridge-libgnubg-engine.so-completed}
+
+Phase 5 constructed the JNI bridge layer (\texttt{native-lib.c},
+\texttt{stubs.c}, \texttt{Engine.kt}) and CMake build pipeline producing
+\texttt{libgnubg-engine.so}, verified as ELF 64-bit ARM aarch64 for
+Android 28.
+
+\subsubsection{Phase 6: NEON Acceleration \& Device Verification
+(Completed)}\label{phase-6-neon-acceleration-device-verification-completed}
+
+Phase 6 enabled ARM NEON SIMD acceleration and verified the engine
+running correctly on a Pixel 8 Pro (aarch64, Android 16) via adb test
+harness. Two critical bugs were discovered and fixed during device
+testing; see §5.5 and §5.6.
+
+\textbf{Verified results on device (opening position, 1-ply cubeless):}
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Output & Value & Expected \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{ClassifyPosition} & 10 (CLASS\_CONTACT) & correct \\
+Win probability & 0.5269 & \textasciitilde0.50 \\
+Win gammon & 0.1478 & \textasciitilde0.12 \\
+Win backgammon & 0.0085 & \textasciitilde0.01 \\
+Lose gammon & 0.1285 & \textasciitilde0.12 \\
+Lose backgammon & 0.0049 & \textasciitilde0.01 \\
+\texttt{FindBestMove} 3-1 & 8/5 6/5 & correct (textbook) \\
+\end{longtable}
+
+\subsubsection{Phase 7: Cube Decisions \& Rollout
+(Completed)}\label{phase-7-cube-decisions-rollout-completed}
+
+Phase 7 added cube decision analysis and synchronous rollout to the JNI
+API, both verified on device.
+
+\textbf{Cube decision} (\texttt{Engine.cubeDecision()}): wraps
+\texttt{GeneralCubeDecisionENoLocking} + \texttt{FindCubeDecision}.
+Returns the full \texttt{aarOutput{[}2{]}{[}7{]}} equity matrix and the
+\texttt{cubedecision} enum value. Verified: opening position returns
+\texttt{NODOUBLE\_TAKE} (correct for a money game with a centred cube).
+
+\textbf{Rollout} (\texttt{Engine.rollout()}): Phase 7 introduced a
+synchronous single-threaded rollout via \texttt{gnubg\_rollout()}
+calling \texttt{BasicCubefulRolloutNoLocking} directly. Phase 9
+supersedes this with a full multi-threaded implementation; see Phase 9.
+See §5.7 and §6.2.
+
+\subsubsection{Phase 8: Full Game Logic Layer
+(Completed)}\label{phase-8-full-game-logic-layer-completed}
+
+Phase 8 is the pivotal phase --- the port moves from ``evaluator with
+stubs'' to ``genuine gnubg port.'' The game logic layer
+(\texttt{play.c}, \texttt{analysis.c}, \texttt{sgf.c} and all their
+dependencies) is compiled into \texttt{libgnubg-engine.so}.
+
+\textbf{The android-app.c architecture:} Rather than adding
+\texttt{gnubg.c} (the GTK application shell, \textasciitilde8000 lines,
+deeply GTK-dependent), a new file \texttt{jni-bridge/src/android-app.c}
+was created as the Android equivalent. It contains: - Functions
+extracted verbatim from \texttt{gnubg.c}: \texttt{InitBoard},
+\texttt{NextToken}, \texttt{NextTokenGeneral}, \texttt{DisectPath},
+\texttt{ParseNumber}, \texttt{ParseReal}, \texttt{ParsePosition},
+\texttt{ParseKeyValue}, \texttt{ParsePlayer}, \texttt{SetToggle},
+\texttt{CompareNames}, \texttt{GetMatchStateCubeInfo},
+\texttt{find\_skills}, \texttt{swapGame}, \texttt{NameIsKey},
+\texttt{AddKeyName}, \texttt{DeleteKeyName},
+\texttt{CommandSwapPlayers}, \texttt{SmartSit}, \texttt{asyncEvalRoll},
+\texttt{asyncMoveDecisionE}, \texttt{asyncFindMove},
+\texttt{asyncCubeDecision}, \texttt{asyncAnalyzeMove},
+\texttt{GetEvalChequer}, \texttt{GetEvalCube},
+\texttt{GetEvalMoveFilter} - Android replacements for GTK functions:
+\texttt{playSound→gnubg\_on\_sound\_event},
+\texttt{ShowBoard→gnubg\_on\_board\_changed},
+\texttt{UpdateSetting→gnubg\_on\_setting\_changed},
+\texttt{CommandFirstGame/Move→gnubg\_on\_navigation\_event},
+\texttt{GiveAdvice→gnubg\_on\_navigation\_event},
+\texttt{RunAsyncProcess} (synchronous), \texttt{get\_input\_discard}
+(returns TRUE), \texttt{confirmOverwrite} (returns TRUE) -
+\texttt{RolloutProgressStart/Progress/End} replacing \texttt{progress.c}
+(deeply GTK) - Sound infrastructure replacing \texttt{sound.c} - All
+globals previously in \texttt{gnubg.c}
+
+\textbf{Source files added to build:} \texttt{play.c},
+\texttt{analysis.c}, \texttt{format.c}, \texttt{formatgs.c},
+\texttt{drawboard.c}, \texttt{external.c}, \texttt{glib-ext.c},
+\texttt{matchid.c}, \texttt{set.c}, \texttt{renderprefs.c},
+\texttt{sgf.c}, \texttt{sgf\_y.c} (bison-generated), \texttt{sgf\_l.c}
+(flex-generated)
+
+\textbf{SGF parser generation:} \texttt{sgf\_y.y} and \texttt{sgf\_l.l}
+are yacc/lex source files. They must be processed before building:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\BuiltInTok{cd}\NormalTok{ engine{-}core}
+\FunctionTok{bison} \AttributeTok{{-}d} \AttributeTok{{-}o}\NormalTok{ sgf\_y.c sgf\_y.y}
+\FunctionTok{flex} \AttributeTok{{-}o}\NormalTok{ lex.yy.c sgf\_l.l }\KeywordTok{\&\&} \FunctionTok{mv}\NormalTok{ lex.yy.c sgf\_l.c}
+\FunctionTok{sed} \AttributeTok{{-}i} \StringTok{\textquotesingle{}1s/\^{}/\#include \textless{}unistd.h\textgreater{}\textbackslash{}n/\textquotesingle{}}\NormalTok{ sgf\_l.c}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Verified:} All 6 existing test harness tests still pass on Pixel
+8 Pro after adding the full game logic layer.
+
+\subsubsection{Phase 9: Multi-threaded Rollout \& SGF JNI API
+(Completed)}\label{phase-9-multi-threaded-rollout-sgf-jni-api-completed}
+
+Phase 9 re-enables \texttt{USE\_MULTITHREAD} and implements
+production-quality parallel rollout, then adds the SGF load/save JNI
+entry points to complete the engine feature set.
+
+\textbf{Multi-threaded rollout:} A persistent \texttt{GThreadPool} is
+created at \texttt{gnubg\_init\_rollout()} with
+\texttt{g\_get\_num\_processors()} threads. Each rollout trial is a
+separate task dispatched via \texttt{g\_thread\_pool\_push()}. A
+\texttt{GMutex}/\texttt{GCond} barrier blocks the calling thread until
+all trials complete. Per-thread state is managed via two
+\texttt{GPrivate} keys: \texttt{gnubg\_tls\_key} (owns
+\texttt{ThreadLocalData} with \texttt{aMoves} and \texttt{pnnState}
+buffers) and \texttt{gnubg\_rng\_key} (owns an isolated
+\texttt{rngcontext} copy, preventing RNG data races). Result structs are
+64-byte cache-line aligned to prevent false sharing on aarch64. The
+scatter-gather merge computes mean and standard deviation after all
+workers finish.
+
+\textbf{SGF JNI entry points:} \texttt{Engine.loadSGF(path)} calls
+\texttt{CommandLoadMatch()} which handles \texttt{FreeMatch},
+\texttt{ClearMatch}, \texttt{RestoreGame}, and \texttt{UpdateSettings}
+--- the complete match load sequence as implemented in \texttt{sgf.c}.
+\texttt{Engine.saveSGF(path)} calls \texttt{CommandSaveMatch()} which
+handles the \texttt{SaveGame} loop, file I/O,
+\texttt{setDefaultFileName}, and \texttt{delete\_autosave}. Both entry
+points are thread-safe via \texttt{gnubg\_lock}.
+
+\textbf{Engine feature-complete:} After Phase 9,
+\texttt{libgnubg-engine.so} provides 9 JNI entry points covering the
+full gnubg evaluation and game management feature set. See §6.2 for the
+complete API reference.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{3. Architecture}\label{architecture}
+
+\subsubsection{3.1 Directory Structure}\label{directory-structure}
+
+All project artefacts reside under
+\texttt{/home/erweitert/gnubg-android/}:
+
+\begin{verbatim}
+/home/erweitert/gnubg-android/
+  android-sdk/               <- Android SDK & NDK (NDK 27.0.11718014)
+  engine-core/               <- gnubg source (config.h is Android-patched)
+    lib/                     <- gnubg math library (neuralnet, SFMT, cache...)
+    config.h                 <- PATCHED: host-generated flags removed
+    lib/config.h             <- Wrapper: #include "../config.h"
+  upstream-source/gnubg/     <- Unmodified upstream reference
+  glib-2.88.1/               <- GLib source (Fedora SRPM, patched)
+  glib-android-build/        <- Meson build directory (out-of-tree)
+  jni-bridge/                <- JNI bridge layer
+    CMakeLists.txt           <- NDK CMake build
+    config.h                 <- Shadow config.h for engine-core/*.c
+    external/glib/           <- Installed GLib (headers + .so files)
+    src/native-lib.c         <- JNI entry points
+    src/stubs.c              <- UI/threading layer stubs + TLD init
+    src/com/clavierhaus/gnubg/Engine.kt  <- Kotlin JNI declarations
+    build/libgnubg-engine.so <- Final deliverable
+  test-harness/              <- Android adb test harness
+    CMakeLists.txt           <- Builds standalone Android executable
+    src/main.c               <- Test entry point
+    src/stubs.c              <- Same stubs as jni-bridge
+  android-arm64.cross        <- Meson cross-file for GLib build
+  build_glib_android.sh      <- GLib cross-build script
+  doc/                       <- Documentation
+    Makefile                 <- make / make pdf / make tex
+    gnubg.tex                <- XeLaTeX template
+\end{verbatim}
+
+\subsubsection{3.2 Build Toolchain}\label{build-toolchain}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Component & Version / Detail \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Host OS & Fedora 44, KDE Plasma 6/Wayland \\
+Compiler (host) & GCC 16.1.1 (Red Hat) \\
+Compiler (Android) & Clang 18.0.1 (NDK r27-beta1, build 11718014) \\
+NDK & 27.0.11718014 at \texttt{android-sdk/ndk/27.0.11718014/} \\
+Meson & 1.11.1 (Fedora package) \\
+Ninja & 1.13.2 (Fedora package) \\
+CMake & 4.3.0 (Fedora package) \\
+GLib & 2.88.1 (Fedora SRPM \texttt{glib2-2.88.1-1.fc44}) \\
+Target ABI & \texttt{arm64-v8a} (\texttt{aarch64-linux-android28}) \\
+Android API level & 28 (Android 9.0 Pie) \\
+Test device & Pixel 8 Pro (aarch64, Android 16) \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{4. GLib Cross-Compilation for
+Android}\label{glib-cross-compilation-for-android}
+
+\subsubsection{4.1 Rationale}\label{rationale}
+
+gnubg's engine uses GLib for: threading primitives (\texttt{GMutex},
+\texttt{GCond}, \texttt{GThread}); dynamic data structures
+(\texttt{GList}, \texttt{GArray}, \texttt{GHashTable}); character
+encoding conversion (iconv wrapper); memory allocation wrappers;
+assertion macros; and logging. The engine cannot function without these.
+Shimming them by hand is not viable: each shim requires further GLib
+internals, leading to infinite type collision regression.
+
+Cross-compiling real GLib for Android provides the full, tested
+implementation that gnubg was written against, with no behavioral
+deviation. The investment is a one-time build; the resulting
+\texttt{.so} files are reused for all future engine builds.
+
+\subsubsection{4.2 Meson Cross-File
+(android-arm64.cross)}\label{meson-cross-file-android-arm64.cross}
+
+The cross-file specifies the NDK toolchain binaries, target machine
+description, and platform properties that Meson cannot auto-detect in a
+cross build. Critical design points:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Do NOT define \texttt{\_\_ANDROID\_API\_\_} in
+  \texttt{c\_args}:} The compiler binary
+  \texttt{aarch64-linux-android28-clang} already encodes API level 28.
+  NDK clang 18 defines it internally; a redefinition causes
+  \texttt{-Werror} failures in Meson's size detection probes.
+\item
+  \textbf{Explicit \texttt{sizeof\_*} properties:} Provided to bypass
+  Meson's cross-detection probes, which fail because they attempt to run
+  target binaries on the host.
+\item
+  \textbf{\texttt{pkg-config} disabled:} Set to \texttt{false} to
+  prevent Meson from accidentally finding host-side \texttt{.pc} files.
+\end{itemize}
+
+\subsubsection{4.3 Key Build Obstacles \&
+Resolutions}\label{key-build-obstacles-resolutions}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Obstacle
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Resolution
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Unknown option \texttt{iconv} & GLib 2.88 removed \texttt{-Diconv} as a
+Meson option. iconv detection is now via
+\texttt{dependency(\textquotesingle{}iconv\textquotesingle{})}
+internally. \\
+\texttt{size\_t} detection failure & Caused by
+\texttt{-D\_\_ANDROID\_API\_\_=26} in \texttt{c\_args} conflicting with
+the compiler's built-in definition. Removed the redundant define. \\
+iconv not found (API 26) & Bionic declares iconv under
+\texttt{\#if\ \_\_ANDROID\_API\_\_\ \textgreater{}=\ 28}. Bumped target
+from API 26 to API 28, which is the correct minimum for this project. \\
+\texttt{dependency(\textquotesingle{}iconv\textquotesingle{})} fails on
+Android & GLib's Meson uses \texttt{clang++} to probe
+\texttt{iconv\_open()}, but Bionic's \texttt{iconv.h} lacks
+\texttt{extern\ "C"} linkage for C++ probing. Patched GLib's
+\texttt{meson.build} to use \texttt{declare\_dependency()} on Android
+since iconv is in Bionic libc with no separate library. \\
+\texttt{libintl.h} not found & GLib's \texttt{gi18n.h} requires
+\texttt{libintl.h}. The GLib build's \texttt{proxy-libintl} subproject
+provides both the header and \texttt{libintl.so}. Added
+\texttt{external/glib/include} to the CMake include path. \\
+\end{longtable}
+
+\subsubsection{4.4 Installed Artefacts}\label{installed-artefacts}
+
+The GLib build installs to \texttt{jni-bridge/external/glib/} and
+provides:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{lib/libglib-2.0.so} --- core GLib (the primary dependency)
+\item
+  \texttt{lib/libintl.so} --- proxy-libintl stub (required by
+  \texttt{gi18n.h} / gettext macros)
+\item
+  \texttt{lib/libffi.so} --- libffi (GLib closure support)
+\item
+  \texttt{lib/libgio-2.0.so}, \texttt{libgobject-2.0.so},
+  \texttt{libgmodule-2.0.so}, \texttt{libgthread-2.0.so} --- GLib
+  sublibraries
+\item
+  \texttt{include/glib-2.0/} --- GLib headers
+\item
+  \texttt{include/libintl.h} --- proxy-libintl header
+\item
+  \texttt{lib/glib-2.0/include/glibconfig.h} --- platform-specific GLib
+  configuration
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{5. JNI Bridge Construction}\label{jni-bridge-construction}
+
+\subsubsection{5.1 Source File Inventory}\label{source-file-inventory}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+File
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Purpose
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{jni-bridge/CMakeLists.txt} & NDK CMake build definition. Lists
+all compiled source files, include paths, compile definitions, and
+linked libraries. \\
+\texttt{jni-bridge/config.h} & Shadow \texttt{config.h} for
+\texttt{engine-core/*.c} files. See §5.3. \\
+\texttt{jni-bridge/format.h} & Empty stub header --- \texttt{rollout.c}
+includes it but uses no symbols. Prevents GTK chain. \\
+\texttt{jni-bridge/matchid.h} & Empty stub header --- same rationale as
+\texttt{format.h}. \\
+\texttt{jni-bridge/analysis.h} & Minimal stub --- \texttt{sgf.c}
+includes it; \texttt{RestoreDoubleAnalysis}/\texttt{RestoreMoveAnalysis}
+are defined within \texttt{sgf.c} itself. \\
+\texttt{jni-bridge/drawboard.h} & Stub defining
+\texttt{FORMATEDMOVESIZE\ 29}. Prevents GTK rendering chain. \\
+\texttt{jni-bridge/render.h} & Minimal stub for \texttt{renderprefs.h}
+include chain. \\
+\texttt{jni-bridge/renderprefs.h} & Minimal stub --- \texttt{play.c}
+includes it but uses no rendering symbols. \\
+\texttt{jni-bridge/sound.h} & Not needed --- real
+\texttt{engine-core/sound.h} exists and is used. \\
+\texttt{engine-core/config.h} & Host-generated autotools config, patched
+to remove flags invalid on Android. \\
+\texttt{engine-core/lib/config.h} & Single-line wrapper:
+\texttt{\#include\ "../config.h"}. \\
+\texttt{engine-core/lib/neuralnetsse.c} & Modified: VLA replaced with
+\texttt{posix\_memalign}. See §5.6. \\
+\texttt{jni-bridge/src/stubs.c} & Remaining GTK/UI stubs, TLD init,
+rollout infrastructure. See §5.4, §5.5, §5.7. \\
+\texttt{jni-bridge/src/android-app.c} & \textbf{Android application
+shell} replacing \texttt{gnubg.c}. See §5.8. \\
+\texttt{jni-bridge/src/native-lib.c} & JNI entry points for all Engine
+methods. \\
+\texttt{jni-bridge/src/com/clavierhaus/gnubg/Engine.kt} & Kotlin object
+declaring all external (JNI) functions. \\
+\end{longtable}
+
+\subsubsection{5.2 Engine Source Files in
+Build}\label{engine-source-files-in-build}
+
+The following \texttt{engine-core} source files are compiled into
+\texttt{libgnubg-engine.so}:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+File
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Role
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{eval.c} & Evaluation engine core, neural network inference, move
+generation \\
+\texttt{dice.c} & Dice RNG (SFMT/Mersenne Twister; GMP/BBS and
+random.org disabled) \\
+\texttt{bearoff.c}, \texttt{bearoffgammon.c} & Bearoff database \\
+\texttt{positionid.c} & Position ID encoding/decoding \\
+\texttt{matchequity.c}, \texttt{mec.c} & Match equity tables \\
+\texttt{util.c}, \texttt{file.c}, \texttt{boardpos.c} & Utility
+functions \\
+\texttt{multithread.c} & Threading infrastructure (single-threaded on
+Android) \\
+\texttt{rollout.c} & Monte Carlo rollout engine \\
+\texttt{sgf.c} & SGF file handling \\
+\texttt{sgf\_y.c} & SGF parser (bison-generated from
+\texttt{sgf\_y.y}) \\
+\texttt{sgf\_l.c} & SGF lexer (flex-generated from \texttt{sgf\_l.l}) \\
+\texttt{play.c} & Game state machine, match management, move records \\
+\texttt{analysis.c} & Position analysis, skill classification \\
+\texttt{format.c} & Move and equity formatting \\
+\texttt{formatgs.c} & Game statistics formatting \\
+\texttt{drawboard.c} & Board ASCII rendering and move formatting
+(\texttt{FormatMove}) \\
+\texttt{external.c} & External player protocol (POSIX sockets) \\
+\texttt{glib-ext.c} & GLib extension utilities (GValue/GObject
+helpers) \\
+\texttt{matchid.c} & Match ID encoding/decoding \\
+\texttt{set.c} & Settings commands and configuration \\
+\texttt{renderprefs.c} & Render preferences (GTK sections guarded) \\
+\texttt{lib/output.c} & Output formatting \\
+\texttt{lib/SFMT.c} & SIMD-oriented Fast Mersenne Twister \\
+\texttt{lib/neuralnet.c} & Neural network evaluation \\
+\texttt{lib/neuralnetsse.c} & NEON neural net implementation
+(patched) \\
+\texttt{lib/cache.c}, \texttt{lib/md5.c}, \texttt{lib/isaac.c},
+\texttt{lib/list.c} & Supporting data structures \\
+\texttt{lib/inputs.c} & Neural net input feature computation \\
+\end{longtable}
+
+\subsubsection{5.3 The config.h Shadow
+Mechanism}\label{the-config.h-shadow-mechanism}
+
+This is the most architecturally significant decision in the JNI bridge
+build.
+
+The upstream \texttt{engine-core/config.h} is generated by GNU autotools
+\texttt{./configure} on the Fedora host. It contains \texttt{\#define}
+flags for features present on Fedora that do not exist on Android:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\PreprocessorTok{\#define HAVE\_LIBGMP }\DecValTok{1}\PreprocessorTok{            }\CommentTok{// GMP (dice.c BBS RNG)}
+\PreprocessorTok{\#define USE\_SIMD\_INSTRUCTIONS }\DecValTok{1}\PreprocessorTok{  }\CommentTok{// x86 SSE/AVX — invalid on aarch64}
+\PreprocessorTok{\#define HAVE\_SSE }\DecValTok{1}
+\PreprocessorTok{\#define USE\_SSE2 }\DecValTok{1}
+\PreprocessorTok{\#define USE\_AVX }\DecValTok{1}
+\PreprocessorTok{\#define LIBCURL\_PROTOCOL\_HTTPS }\DecValTok{1}\PreprocessorTok{ }\CommentTok{// randomorg.c}
+\PreprocessorTok{\#define HAVE\_LIBCURL }\DecValTok{1}
+\PreprocessorTok{\#define USE\_MULTITHREAD }\DecValTok{1}\PreprocessorTok{        }\CommentTok{// GLib{-}based thread pool}
+\end{Highlighting}
+\end{Shaded}
+
+These flags cannot be overridden via \texttt{-U} on the compiler command
+line because the C standard specifies that \texttt{\#include\ "file.h"}
+(quoted include) searches the source file's own directory before any
+\texttt{-I} paths. This means \texttt{eval.c}'s
+\texttt{\#include\ "config.h"} resolves to \texttt{engine-core/config.h}
+regardless of any \texttt{-I} flags pointing elsewhere.
+
+\textbf{The solution --- the shadow file mechanism:} a file named
+\texttt{config.h} is placed in each directory from which source files
+perform a quoted \texttt{config.h} include. Each shadow file includes
+the real \texttt{config.h} via a relative path, undefines the invalid
+flags, and adds Android-specific defines.
+
+Two shadow files are required:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{jni-bridge/config.h} --- intercepts includes from
+  \texttt{engine-core/*.c}
+\item
+  \texttt{engine-core/lib/config.h} --- intercepts includes from
+  \texttt{engine-core/lib/*.c}
+\end{itemize}
+
+The current shadow config adds NEON defines after stripping x86 SIMD:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\PreprocessorTok{\#include }\ImportTok{"../engine{-}core/config.h"}
+\PreprocessorTok{\#undef HAVE\_LIBGMP}
+\PreprocessorTok{\#undef LIBCURL\_PROTOCOL\_HTTPS}
+\PreprocessorTok{\#undef HAVE\_LIBCURL}
+\PreprocessorTok{\#undef USE\_SIMD\_INSTRUCTIONS   }\CommentTok{// strip x86 SIMD first}
+\PreprocessorTok{\#undef HAVE\_SSE}
+\PreprocessorTok{\#undef USE\_SSE2}
+\PreprocessorTok{\#undef USE\_AVX}
+\CommentTok{// ARM NEON — mandatory on aarch64, replaces x86 SIMD:}
+\PreprocessorTok{\#define USE\_SIMD\_INSTRUCTIONS }\DecValTok{1}
+\PreprocessorTok{\#define HAVE\_NEON }\DecValTok{1}
+\PreprocessorTok{\#define USE\_NEON }\DecValTok{1}
+\end{Highlighting}
+\end{Shaded}
+
+The real \texttt{engine-core/config.h} is also regenerated without the
+invalid flags using \texttt{grep\ -v}, making the shadow undefines
+redundant but retained as defense-in-depth. \textbf{This approach
+requires no modification to any upstream source file} (except
+\texttt{neuralnetsse.c}; see §5.6).
+
+\subsubsection{5.4 stubs.c Design}\label{stubs.c-design}
+
+\paragraph{5.4.1 Global Variable Storage}\label{global-variable-storage}
+
+Several gnubg globals are declared \texttt{extern} in headers but their
+storage is defined in desktop-layer source files not in the Android
+build. \texttt{stubs.c} provides the storage with correct types:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{matchstate\ ms} --- the global match state struct
+\item
+  \texttt{player\ ap{[}2{]}} --- the two player structs
+\item
+  \texttt{int\ positions{[}2{]}{[}30{]}{[}3{]}} --- board position
+  geometry array (from \texttt{boardpos.h})
+\item
+  \texttt{ThreadData\ td} --- the thread pool state struct
+  (zero-initialised at declaration; populated by
+  \texttt{gnubg\_init\_tld()})
+\item
+  \texttt{const\ char\ *szHomeDirectory},
+  \texttt{char\ *szCurrentFileName} --- path globals
+\end{itemize}
+
+\paragraph{5.4.2 Function Stubs}\label{function-stubs}
+
+Functions belonging to the GTK/UI/desktop layer are stubbed with
+signatures matching the header declarations exactly:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Threading:} \texttt{Mutex\_Lock}, \texttt{Mutex\_Release},
+  \texttt{ResetManualEvent}, \texttt{SetManualEvent},
+  \texttt{WaitForManualEvent}, \texttt{InitManualEvent},
+  \texttt{FreeManualEvent}, \texttt{InitMutex}, \texttt{CloseThread},
+  \texttt{TLSSetValue}, \texttt{MT\_CreateThreadLocalData}
+\item
+  \textbf{Locking wrappers (EXP\_LOCK\_FUN):}
+  \texttt{EvaluatePositionWithLocking},
+  \texttt{FindBestMoveWithLocking},
+  \texttt{FindnSaveBestMovesWithLocking},
+  \texttt{GeneralCubeDecisionEWithLocking},
+  \texttt{GeneralEvaluationEWithLocking}, \texttt{ScoreMoveWithLocking},
+  \texttt{BasicCubefulRolloutWithLocking} --- each delegates to the
+  corresponding \texttt{NoLocking} variant (single-threaded evaluation)
+\item
+  \textbf{UI/progress:} \texttt{ProcessEvents}, \texttt{ProgressValue},
+  \texttt{ProgressStart}, \texttt{ProgressEnd},
+  \texttt{ProgressValueAdd}
+\item
+  \textbf{Callbacks:} \texttt{LogCube}, \texttt{SetRNG},
+  \texttt{ChangeGame}, \texttt{FormatMove},
+  \texttt{get\_current\_moverecord}
+\item
+  \textbf{Network dice:} \texttt{RandomorgDice}, \texttt{NetworkDice}
+  (returns -1; requires libcurl)
+\item
+  \textbf{Match state:} \texttt{save\_autosave}, \texttt{msBoard}
+\end{itemize}
+
+\paragraph{5.4.3 Disabled Features}\label{disabled-features}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Feature
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Reason disabled
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Re-enablement
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+GMP/BBS RNG (\texttt{dice.c}) & Requires \texttt{libgmp}, unavailable on
+Android & Add libgmp cross-build; restore \texttt{HAVE\_LIBGMP} in
+\texttt{config.h} \\
+x86 SIMD & \texttt{HAVE\_SSE}, \texttt{USE\_SSE2}, \texttt{USE\_AVX}
+invalid on aarch64 & N/A --- replaced by NEON \\
+GNU Multithread pool & Previously disabled; \texttt{USE\_MULTITHREAD}
+now active & Re-enabled in Phase 9 via
+\texttt{GThreadPool}/\texttt{GPrivate} \\
+libcurl / random.org & \texttt{LIBCURL\_PROTOCOL\_HTTPS} /
+\texttt{HAVE\_LIBCURL} removed; \texttt{randomorg.c} excluded &
+Cross-compile libcurl for Android; restore flags and add
+\texttt{randomorg.c} to build \\
+\end{longtable}
+
+\subsubsection{5.5 Thread-Local Data Initialisation
+(Critical)}\label{thread-local-data-initialisation-critical}
+
+\textbf{Background:} When \texttt{USE\_MULTITHREAD} is \textbf{enabled}
+(Phase 9+), gnubg's move generation and scoring macros expand as
+follows:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\PreprocessorTok{\#define MT\_Get\_aMoves}\OperatorTok{()}\PreprocessorTok{   }\OperatorTok{((}\PreprocessorTok{ThreadLocalData }\OperatorTok{*)}\PreprocessorTok{TLSGet}\OperatorTok{(}\PreprocessorTok{td}\OperatorTok{.}\PreprocessorTok{tlsItem}\OperatorTok{)){-}\textgreater{}}\PreprocessorTok{aMoves}
+\PreprocessorTok{\#define MT\_Get\_nnState}\OperatorTok{()}\PreprocessorTok{  }\OperatorTok{((}\PreprocessorTok{ThreadLocalData }\OperatorTok{*)}\PreprocessorTok{TLSGet}\OperatorTok{(}\PreprocessorTok{td}\OperatorTok{.}\PreprocessorTok{tlsItem}\OperatorTok{)){-}\textgreater{}}\PreprocessorTok{pnnState}
+\end{Highlighting}
+\end{Shaded}
+
+Both call \texttt{TLSGet()} which is implemented via \texttt{GPrivate}
+--- each thread gets its own \texttt{ThreadLocalData} allocated lazily
+on first access. This replaces the previous single-threaded approach of
+a single static \texttt{gnubg\_tld} struct.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\PreprocessorTok{\#define MT\_Get\_aMoves}\OperatorTok{()}\PreprocessorTok{   td}\OperatorTok{.}\PreprocessorTok{tld}\OperatorTok{{-}\textgreater{}}\PreprocessorTok{aMoves}
+\PreprocessorTok{\#define MT\_Get\_nnState}\OperatorTok{()}\PreprocessorTok{  td}\OperatorTok{.}\PreprocessorTok{tld}\OperatorTok{{-}\textgreater{}}\PreprocessorTok{pnnState}
+\end{Highlighting}
+\end{Shaded}
+
+Both dereference \texttt{td.tld}, a \texttt{ThreadLocalData\ *} inside
+the global \texttt{ThreadData\ td}. At program start, \texttt{td} is
+zero-initialised, making \texttt{td.tld\ =\ NULL}. The first call to
+1-ply evaluation triggers \texttt{GenerateMoves} →
+\texttt{MT\_Get\_aMoves()} → null dereference at offset 0x8. Similarly,
+\texttt{ScoreMoves} calls \texttt{MT\_Get\_nnState()} →
+\texttt{td.tld-\textgreater{}pnnState}, also null, causing a write
+through null at offset 0x40 into the NNState array.
+
+\textbf{The fix --- \texttt{gnubg\_init\_tld()}:} A function in
+\texttt{stubs.c} that must be called once after
+\texttt{EvalInitialise()} and before any evaluation:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DataTypeTok{static}\NormalTok{ ThreadLocalData gnubg\_tld}\OperatorTok{;}
+\DataTypeTok{static}\NormalTok{ NNState         gnubg\_nn\_states}\OperatorTok{[}\DecValTok{3}\OperatorTok{];}
+\DataTypeTok{static}\NormalTok{ move            gnubg\_moves}\OperatorTok{[}\NormalTok{MAX\_MOVES}\OperatorTok{];}
+
+\DataTypeTok{void}\NormalTok{ gnubg\_init\_tld}\OperatorTok{(}\DataTypeTok{void}\OperatorTok{)} \OperatorTok{\{}
+    \DataTypeTok{unsigned} \DataTypeTok{int}\NormalTok{ i}\OperatorTok{;}
+
+\NormalTok{    gnubg\_tld}\OperatorTok{.}\NormalTok{aMoves    }\OperatorTok{=}\NormalTok{ gnubg\_moves}\OperatorTok{;}
+\NormalTok{    gnubg\_tld}\OperatorTok{.}\NormalTok{pnnState  }\OperatorTok{=}\NormalTok{ gnubg\_nn\_states}\OperatorTok{;}
+\NormalTok{    td}\OperatorTok{.}\NormalTok{tld              }\OperatorTok{=} \OperatorTok{\&}\NormalTok{gnubg\_tld}\OperatorTok{;}
+
+    \CommentTok{/* Allocate savedBase (cHidden floats) and savedIBase (cInput floats)}
+\CommentTok{     * for each NNState entry. Sizes are read from nnContact after weight load.}
+\CommentTok{     * Three entries cover CLASS\_RACE, CLASS\_CRASHED, CLASS\_CONTACT offsets. */}
+    \ControlFlowTok{for} \OperatorTok{(}\NormalTok{i }\OperatorTok{=} \DecValTok{0}\OperatorTok{;}\NormalTok{ i }\OperatorTok{\textless{}} \DecValTok{3}\OperatorTok{;}\NormalTok{ i}\OperatorTok{++)} \OperatorTok{\{}
+\NormalTok{        gnubg\_nn\_states}\OperatorTok{[}\NormalTok{i}\OperatorTok{].}\NormalTok{state     }\OperatorTok{=}\NormalTok{ NNSTATE\_NONE}\OperatorTok{;}
+\NormalTok{        gnubg\_nn\_states}\OperatorTok{[}\NormalTok{i}\OperatorTok{].}\NormalTok{savedBase  }\OperatorTok{=}\NormalTok{ g\_malloc}\OperatorTok{(}\NormalTok{nnContact}\OperatorTok{.}\NormalTok{cHidden }\OperatorTok{*} \KeywordTok{sizeof}\OperatorTok{(}\DataTypeTok{float}\OperatorTok{));}
+\NormalTok{        gnubg\_nn\_states}\OperatorTok{[}\NormalTok{i}\OperatorTok{].}\NormalTok{savedIBase }\OperatorTok{=}\NormalTok{ g\_malloc}\OperatorTok{(}\NormalTok{nnContact}\OperatorTok{.}\NormalTok{cInput  }\OperatorTok{*} \KeywordTok{sizeof}\OperatorTok{(}\DataTypeTok{float}\OperatorTok{));}
+    \OperatorTok{\}}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Why 3 NNState entries:} \texttt{ScoreMoves} accesses
+\texttt{nnStates{[}0..2{]}} directly, and \texttt{EvaluatePositionFull}
+indexes by \texttt{pc\ -\ CLASS\_RACE} where \texttt{pc} ranges from
+\texttt{CLASS\_RACE} (8) to \texttt{CLASS\_CONTACT} (10), giving offsets
+0, 1, 2.
+
+\textbf{Call site in native-lib.c:} \texttt{gnubg\_init\_tld()} must be
+called inside \texttt{Java\_com\_clavierhaus\_gnubg\_Engine\_initialise}
+after \texttt{EvalInitialise()} returns, while \texttt{gnubg\_lock} is
+held.
+
+\textbf{Call site in test harness:} Called immediately after
+\texttt{EvalInitialise()} in \texttt{main()}.
+
+\subsubsection{5.6 NeuralNetEvaluateSSE VLA Alignment
+Patch}\label{neuralnetevaluatesse-vla-alignment-patch}
+
+\textbf{Background:} \texttt{NeuralNetEvaluateSSE} in
+\texttt{neuralnetsse.c} declares its hidden-layer activation buffer as a
+Variable Length Array with an alignment attribute:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{SSE\_ALIGN}\OperatorTok{(}\DataTypeTok{float}\NormalTok{ ar}\OperatorTok{[}\NormalTok{pnn}\OperatorTok{{-}\textgreater{}}\NormalTok{cHidden}\OperatorTok{]);}
+\CommentTok{// expands to: float ar[pnn{-}\textgreater{}cHidden] \_\_attribute\_\_((aligned(16)));}
+\end{Highlighting}
+\end{Shaded}
+
+On aarch64 with Clang 18, the \texttt{\_\_attribute\_\_((aligned(16)))}
+on a VLA is not guaranteed to be honoured. The NEON intrinsics
+(\texttt{vld1q\_f32}, \texttt{vst1q\_f32}) then operate on a potentially
+misaligned buffer, causing a SIGSEGV.
+
+\textbf{The fix:} Replace the VLA with a heap-allocated aligned buffer:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DataTypeTok{float} \OperatorTok{*}\NormalTok{ar }\OperatorTok{=}\NormalTok{ NULL}\OperatorTok{;}
+\ControlFlowTok{if} \OperatorTok{(}\NormalTok{posix\_memalign}\OperatorTok{((}\DataTypeTok{void} \OperatorTok{**)\&}\NormalTok{ar}\OperatorTok{,}\NormalTok{ ALIGN\_SIZE}\OperatorTok{,}\NormalTok{ pnn}\OperatorTok{{-}\textgreater{}}\NormalTok{cHidden }\OperatorTok{*} \KeywordTok{sizeof}\OperatorTok{(}\DataTypeTok{float}\OperatorTok{))} \OperatorTok{!=} \DecValTok{0}\OperatorTok{)}
+    \ControlFlowTok{return} \OperatorTok{{-}}\DecValTok{1}\OperatorTok{;}
+\NormalTok{EvaluateSSE}\OperatorTok{(}\NormalTok{pnn}\OperatorTok{,}\NormalTok{ arInput}\OperatorTok{,}\NormalTok{ ar}\OperatorTok{,}\NormalTok{ arOutput}\OperatorTok{);}
+\NormalTok{free}\OperatorTok{(}\NormalTok{ar}\OperatorTok{);}
+\ControlFlowTok{return} \DecValTok{0}\OperatorTok{;}
+\end{Highlighting}
+\end{Shaded}
+
+\texttt{posix\_memalign} guarantees \texttt{ALIGN\_SIZE} (16 bytes for
+NEON) alignment. This is the only modification made to a file in
+\texttt{engine-core/lib/} beyond the shadow \texttt{config.h}. It is
+documented in \texttt{PROVENANCE.md}.
+
+\subsubsection{5.7 Rollout Infrastructure in
+stubs.c}\label{rollout-infrastructure-in-stubs.c}
+
+\paragraph{5.7.1 Evolution}\label{evolution}
+
+Phase 7 introduced a synchronous single-threaded rollout bypassing
+\texttt{MT\_WaitForTasks}. Phase 9 replaced this with a full
+multi-threaded implementation using \texttt{GThreadPool}. Both share the
+same external API (\texttt{gnubg\_rollout()}) and the same
+\texttt{gnubg\_init\_rollout()} initialisation call.
+
+\paragraph{5.7.2 Multi-threaded Architecture (Phase
+9)}\label{multi-threaded-architecture-phase-9}
+
+\texttt{gnubg\_rollout()} orchestrates a parallel rollout using a
+persistent \texttt{GThreadPool}:
+
+\textbf{Initialisation (\texttt{gnubg\_init\_rollout()}):} - Allocates
+\texttt{rngctxRollout} by copying the main RNG context via
+\texttt{CopyRNGContext} - Creates a persistent \texttt{GThreadPool} with
+\texttt{g\_get\_num\_processors()} threads - Pool is reused across all
+rollout calls to avoid thread creation overhead
+
+\textbf{Thread-local state (two \texttt{GPrivate} keys):} -
+\texttt{gnubg\_tls\_key} --- owns \texttt{ThreadLocalData} per thread:
+\texttt{aMoves{[}MAX\_MOVES{]}}, \texttt{pnnState{[}3{]}} with
+\texttt{savedBase}/\texttt{savedIBase} buffers sized from
+\texttt{nnContact} dimensions. Destructor frees all buffers. -
+\texttt{gnubg\_rng\_key} --- owns an isolated \texttt{rngcontext} copy
+per thread. Copied from \texttt{rngctxRollout} on first use. Destructor
+calls \texttt{free\_rngctx()}. This is the critical RNG isolation that
+prevents data races.
+
+\textbf{Scatter-gather rollout loop:} 1. Allocate \texttt{nTrials}
+result structs with 64-byte cache-line alignment
+(\texttt{posix\_memalign}) to prevent false sharing 2. Initialise
+\texttt{GMutex}/\texttt{GCond} barrier with
+\texttt{tasks\_remaining\ =\ nTrials} 3. Push \texttt{nTrials} tasks to
+pool via \texttt{g\_thread\_pool\_push()} 4. Block on
+\texttt{g\_cond\_wait()} until all workers signal completion
+
+\textbf{Per-trial worker (\texttt{rollout\_worker\_func}):} -
+Retrieves/allocates thread-local \texttt{ThreadLocalData} via
+\texttt{TLSGet()} - Retrieves/allocates thread-local \texttt{rngcontext}
+via \texttt{gnubg\_rng\_key} - Creates per-task \texttt{perArray} with
+seed offset by \texttt{task\_index} for quasi-random dice - Calls
+\texttt{BasicCubefulRolloutNoLocking()} with the full 13-argument
+signature - Writes result to its designated slot in the scatter array -
+Decrements \texttt{tasks\_remaining} and signals \texttt{GCond} when it
+reaches zero
+
+\textbf{Scatter-gather merge (main thread after barrier):} - Accumulates
+sum and sum-of-squares over all trial results - Computes mean and
+standard deviation per output
+
+\paragraph{5.7.3 Rollout globals}\label{rollout-globals}
+
+The following globals are defined in \texttt{stubs.c} with defaults
+matching gnubg's standard money-game settings. These are the ``docking
+points'' between the engine and the UI layer:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{rolloutcontext\ rcRollout} --- default rollout configuration
+  (1296 trials, cubeful, variance reduction, quasi-random dice, Mersenne
+  Twister RNG)
+\item
+  \texttt{rngcontext\ *rngctxRollout} --- RNG context for rollouts;
+  allocated by \texttt{gnubg\_init\_rollout()} via
+  \texttt{CopyRNGContext(rngctxCurrent)}
+\item
+  \texttt{int\ fAutoCrawford}, \texttt{fAutoSaveRollout},
+  \texttt{fShowProgress} --- match/UI state flags
+\item
+  \texttt{int\ fOutputMWC}, \texttt{fOutputWinPC},
+  \texttt{fOutputMatchPC} --- output format flags (declared in
+  \texttt{format.h} which is stubbed)
+\end{itemize}
+
+\paragraph{5.7.2 gnubg\_init\_rollout()}\label{gnubg_init_rollout}
+
+Must be called after \texttt{EvalInitialise()} and
+\texttt{gnubg\_init\_tld()}. Allocates \texttt{rngctxRollout} by copying
+the current RNG context established during engine initialisation.
+\texttt{rngcontext} is an opaque type defined privately in
+\texttt{dice.c}; \texttt{CopyRNGContext} is the only correct way to
+create an instance from outside that translation unit.
+
+\paragraph{5.7.3 gnubg\_rollout()}\label{gnubg_rollout}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DataTypeTok{int}\NormalTok{ gnubg\_rollout}\OperatorTok{(}\DataTypeTok{const}\NormalTok{ TanBoard anBoard}\OperatorTok{,}
+                  \DataTypeTok{float}\NormalTok{ arOutput}\OperatorTok{[}\NormalTok{NUM\_ROLLOUT\_OUTPUTS}\OperatorTok{],}
+                  \DataTypeTok{float}\NormalTok{ arStdDev}\OperatorTok{[}\NormalTok{NUM\_ROLLOUT\_OUTPUTS}\OperatorTok{],}
+                  \DataTypeTok{const}\NormalTok{ cubeinfo }\OperatorTok{*}\NormalTok{pci}\OperatorTok{,}\NormalTok{ rolloutcontext }\OperatorTok{*}\NormalTok{prc}\OperatorTok{);}
+\end{Highlighting}
+\end{Shaded}
+
+Calls \texttt{BasicCubefulRolloutNoLocking} for each of
+\texttt{prc-\textgreater{}nTrials} games. Uses
+\texttt{QuasiRandomSeed()} (copied from \texttt{rollout.c} where it is
+\texttt{static}) to initialise the quasi-random dice permutation array.
+Accumulates per-game outputs and computes mean and standard deviation on
+completion.
+
+\paragraph{5.7.4 QuasiRandomSeed}\label{quasirandomseed}
+
+\textbf{Note on \texttt{QuasiRandomSeed}:} This function is
+\texttt{static} in \texttt{rollout.c} with no header declaration. It
+cannot be linked from outside. The function body was copied verbatim
+into \texttt{stubs.c}; it uses only \texttt{irandinit}/\texttt{irand}
+from \texttt{lib/isaac.c} which is already in the build. The copy is
+documented in \texttt{PROVENANCE.md}.
+
+\paragraph{5.7.5 Rollout accuracy}\label{rollout-accuracy}
+
+With \texttt{nTrials=144} (the default minimum) the standard deviation
+on win probability is approximately ±0.005. For publication-quality
+results use \texttt{nTrials=1296} or higher. The opening position
+rollout equity (0.29 at 144 trials) diverges from the 1-ply neural net
+estimate (0.077) due to sampling variance; convergence improves with
+more trials.
+
+\subsubsection{5.8 android-app.c --- The Android Application
+Shell}\label{android-app.c-the-android-application-shell}
+
+\texttt{jni-bridge/src/android-app.c} is the architectural centrepiece
+of Phase 8. It replaces \texttt{gnubg.c} (the GTK application shell,
+\textasciitilde8000 lines) on Android.
+
+\paragraph{5.8.1 Design Principle}\label{design-principle}
+
+On desktop gnubg, \texttt{gnubg.c} serves two roles: 1. \textbf{Portable
+application logic} --- \texttt{InitBoard}, \texttt{NextToken},
+\texttt{ParseNumber}, \texttt{find\_skills},
+\texttt{GetMatchStateCubeInfo} etc. --- pure C with no GTK dependency 2.
+\textbf{GTK application shell} --- \texttt{main()}, GTK initialisation,
+window management, signal handlers, readline, Python module, curl
+
+On Android, role 1 is extracted verbatim into \texttt{android-app.c}.
+Role 2 is replaced by Android callbacks that post events to the Kotlin
+layer. \texttt{progress.c} (GTK rollout progress dialog) and
+\texttt{sound.c} are also replaced here.
+
+\paragraph{5.8.2 Android Callback
+Architecture}\label{android-callback-architecture}
+
+Six weak-symbol callbacks form the interface between the C engine and
+the Android UI layer:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_sound\_event}\OperatorTok{(}\NormalTok{gnubgsound gs}\OperatorTok{);}
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_setting\_changed}\OperatorTok{(}\DataTypeTok{void} \OperatorTok{*}\NormalTok{pv}\OperatorTok{);}
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_board\_changed}\OperatorTok{(}\DataTypeTok{void}\OperatorTok{);}
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_navigation\_event}\OperatorTok{(}\DataTypeTok{int}\NormalTok{ ev}\OperatorTok{);}
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_filename\_changed}\OperatorTok{(}\DataTypeTok{const} \DataTypeTok{char} \OperatorTok{*}\NormalTok{sz}\OperatorTok{);}
+\DataTypeTok{void}\NormalTok{ gnubg\_on\_rollout\_progress}\OperatorTok{(}\DataTypeTok{int}\NormalTok{ iGame}\OperatorTok{,} \DataTypeTok{int}\NormalTok{ nTrials}\OperatorTok{,} \DataTypeTok{float}\NormalTok{ rJsd}\OperatorTok{,} \DataTypeTok{int}\NormalTok{ fStopped}\OperatorTok{);}
+\end{Highlighting}
+\end{Shaded}
+
+Declared \texttt{\_\_attribute\_\_((weak))} with no-op defaults.
+\texttt{native-lib.c} overrides them with implementations that call back
+into the JVM.
+
+\paragraph{5.8.3 Stub Policy}\label{stub-policy}
+
+The principle: \textbf{stub only what is genuinely GTK rendering code.}
+Everything else is real implementation.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Function
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Status
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Future
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{playSound} & Routes to \texttt{gnubg\_on\_sound\_event} &
+Android SoundPool \\
+\texttt{ShowBoard} & Routes to \texttt{gnubg\_on\_board\_changed} &
+Android board view \\
+\texttt{UpdateSetting} & Routes to \texttt{gnubg\_on\_setting\_changed}
+& Android settings binding \\
+\texttt{get\_input\_discard} & Returns TRUE & Android confirmation
+dialog \\
+\texttt{confirmOverwrite} & Returns TRUE & Android file dialog \\
+\texttt{GiveAdvice} & Routes to navigation callback & Android tutor
+dialog \\
+\texttt{GetInputYN} & Returns TRUE & Android yes/no dialog \\
+\texttt{CommandFirstGame/Move} & Routes to navigation callback & Android
+navigation \\
+\texttt{RolloutProgressStart/Progress/End} & Routes to rollout progress
+callback & Android progress UI \\
+\texttt{HandleCommand} & No-op & Android command layer \\
+\texttt{hint\_double/take/move} & No-op & Android tutor hints \\
+\texttt{ExtInitParse/ExtStartParse/ExtDestroyParse} & Stubs & External
+player protocol \\
+\texttt{SetupLanguage} & Returns NULL & Android locale system \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{6. JNI API Reference}\label{jni-api-reference}
+
+\subsubsection{6.1 Board Encoding}\label{board-encoding}
+
+The board is passed as a \texttt{jintArray} of 50 elements encoding
+\texttt{TanBoard\ anBoard{[}2{]}{[}25{]}}:
+
+\begin{itemize}
+\tightlist
+\item
+  Elements 0--24: \texttt{anBoard{[}0{]}{[}i{]}} --- opponent's checker
+  counts
+\item
+  Elements 25--49: \texttt{anBoard{[}1{]}{[}i{]}} --- current player's
+  checker counts
+\end{itemize}
+
+\subsubsection{6.2 Kotlin API (Engine
+object)}\label{kotlin-api-engine-object}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Method
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Description
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{initialise(weightsPath:\ String):\ Boolean} & Must be called
+once before any evaluation. Pass the absolute path to
+\texttt{gnubg.weights} extracted to internal storage. Calls
+\texttt{EvalInitialise()}, \texttt{SetCubeInfo()},
+\texttt{gnubg\_init\_tld()}, and \texttt{gnubg\_init\_rollout()}. \\
+\texttt{evaluatePosition(board:\ IntArray):\ FloatArray?} & Returns
+\texttt{FloatArray{[}5{]}}:
+\texttt{{[}winNormal,\ winGammon,\ winBackgammon,\ loseGammon,\ loseBackgammon{]}}.
+Null on engine error. Uses 1-ply cubeless \texttt{evalcontext}. \\
+\texttt{findBestMove(board:\ IntArray,\ die0:\ Int,\ die1:\ Int):\ IntArray?}
+& Returns \texttt{IntArray{[}8{]}} encoding \texttt{anMove{[}8{]}};
+unused slots are -1. Null on error. \\
+\texttt{classifyPosition(board:\ IntArray):\ Int} & Returns the
+\texttt{positionclass} integer (race, contact, bearoff etc). Returns -1
+if not initialised. \\
+\texttt{applyMove(board:\ IntArray,\ move:\ IntArray):\ IntArray} &
+Applies a move to a board. Returns the resulting 50-element board
+encoding. \\
+\texttt{cubeDecision(board,\ cubeValue,\ cubeOwner,\ matchTo,\ score0,\ score1,\ crawford):\ IntArray?}
+& Returns \texttt{IntArray{[}16{]}}: \texttt{{[}0..6{]}} = if-double
+equity floats as \texttt{Int} bits (unpack with
+\texttt{Float.fromBits()}), \texttt{{[}7..13{]}} = no-double equity
+floats, \texttt{{[}14{]}} = \texttt{CubeDecision} enum value,
+\texttt{{[}15{]}} = reserved. See \texttt{Engine.CubeDecision} enum for
+all 21 values. \\
+\texttt{rollout(board:\ IntArray,\ trials:\ Int\ =\ 144):\ FloatArray?}
+& Multi-threaded cubeful rollout via \texttt{GThreadPool}. Returns
+\texttt{FloatArray{[}14{]}}: \texttt{{[}0..6{]}} = equity outputs,
+\texttt{{[}7..13{]}} = standard deviations. Use \texttt{trials=1296} or
+higher for publication-quality results. \\
+\texttt{loadSGF(path:\ String):\ Boolean} & Load a match from an SGF
+file. Calls \texttt{CommandLoadMatch()} which handles
+\texttt{FreeMatch}, \texttt{ClearMatch}, \texttt{RestoreGame},
+\texttt{UpdateSettings}. Returns true on success. \\
+\texttt{saveSGF(path:\ String):\ Boolean} & Save the current match to an
+SGF file. Calls \texttt{CommandSaveMatch()} which handles
+\texttt{SaveGame} loop and file I/O. Returns false if no game in
+progress. \\
+\end{longtable}
+
+\subsubsection{6.3 Thread Safety}\label{thread-safety}
+
+All JNI entry points acquire a static \texttt{pthread\_mutex\_t}
+(\texttt{gnubg\_lock}) before calling any engine function and release it
+on return. The gnubg evaluation engine uses global state (NNState,
+bearoff database handles, weight arrays) that is not safe to access
+concurrently.
+
+\subsubsection{6.4 Initialisation \& Data
+Files}\label{initialisation-data-files}
+
+The engine requires the following files at runtime, extracted from app
+assets to internal storage before calling \texttt{Engine.initialise()}:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{gnubg.weights} --- trained neural network weights
+  (\textasciitilde6 MB). Primary source of playing strength.
+\item
+  \texttt{gnubg\_os0.bd} --- small one-sided bearoff database
+  (\textasciitilde1.4 MB, 6pt/15ch). Loaded into \texttt{pbc1}.
+\item
+  \texttt{gnubg\_ts0.bd} --- small two-sided bearoff database
+  (\textasciitilde6.8 MB, 6pt/6ch). Loaded into \texttt{pbc2}.
+\item
+  \texttt{gnubg\_os.bd} --- larger one-sided bearoff database
+  (\textasciitilde4.8 MB, 7pt/15ch). Loaded into \texttt{pbcOS}.
+  Generated via
+  \texttt{makebearoff\ -o\ 7\ -O\ gnubg\_os0.bd\ -f\ gnubg\_os.bd}.
+\item
+  \texttt{gnubg\_ts.bd} --- two-sided bearoff database
+  (\textasciitilde6.6 MB, 6pt/6ch copy). Loaded into \texttt{pbcTS}.
+  Copy of \texttt{gnubg\_ts0.bd}.
+\end{itemize}
+
+All four databases are deployed and confirmed loading on device
+(\texttt{pbc1}, \texttt{pbc2}, \texttt{pbcOS}, \texttt{pbcTS} all
+non-null). The \texttt{AC\_PKGDATADIR} path is compiled in as
+\texttt{/data/data/com.clavierhaus.gnubg/files} and must match the
+actual extraction location.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{7. Build Instructions}\label{build-instructions}
+
+\subsubsection{7.1 Prerequisites (Fedora
+44)}\label{prerequisites-fedora-44}
+
+All prerequisites are available via dnf. No pip, npm, or external
+package managers are required:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sudo}\NormalTok{ dnf install meson ninja{-}build cmake glib2{-}devel}
+\end{Highlighting}
+\end{Shaded}
+
+NDK location:
+\texttt{/home/erweitert/gnubg-android/android-sdk/ndk/27.0.11718014/}
+
+\subsubsection{7.2 Build GLib for Android (one-time, \textasciitilde3--5
+minutes)}\label{build-glib-for-android-one-time-35-minutes}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\BuiltInTok{cd}\NormalTok{ /home/erweitert/gnubg{-}android}
+\ExtensionTok{./build\_glib\_android.sh} \DecValTok{2}\OperatorTok{\textgreater{}\&}\DecValTok{1} \KeywordTok{|} \FunctionTok{tee}\NormalTok{ glib{-}build.log}
+\end{Highlighting}
+\end{Shaded}
+
+On success: \texttt{jni-bridge/external/glib/lib/libglib-2.0.so} is
+created (ELF 64-bit ARM aarch64, Android 28).
+
+\subsubsection{7.3 Build
+libgnubg-engine.so}\label{build-libgnubg-engine.so}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\BuiltInTok{cd}\NormalTok{ /home/erweitert/gnubg{-}android/jni{-}bridge}
+\FunctionTok{rm} \AttributeTok{{-}rf}\NormalTok{ build }\KeywordTok{\&\&} \FunctionTok{mkdir}\NormalTok{ build }\KeywordTok{\&\&} \BuiltInTok{cd}\NormalTok{ build}
+\FunctionTok{cmake}\NormalTok{ .. }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DCMAKE\_TOOLCHAIN\_FILE}\OperatorTok{=}\NormalTok{/home/erweitert/gnubg{-}android/android{-}sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DANDROID\_ABI}\OperatorTok{=}\NormalTok{arm64{-}v8a }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DANDROID\_PLATFORM}\OperatorTok{=}\NormalTok{android{-}28 }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DCMAKE\_BUILD\_TYPE}\OperatorTok{=}\NormalTok{Release}
+\FunctionTok{cmake} \AttributeTok{{-}{-}build}\NormalTok{ . }\DecValTok{2}\OperatorTok{\textgreater{}\&}\DecValTok{1} \KeywordTok{|} \FunctionTok{tee}\NormalTok{ /home/erweitert/gnubg{-}android/jni{-}build.log}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{7.4 Verification}\label{verification}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{file}\NormalTok{ jni{-}bridge/build/libgnubg{-}engine.so}
+\CommentTok{\# Expected: ELF 64{-}bit LSB shared object, ARM aarch64, for Android 28}
+
+\FunctionTok{nm}\NormalTok{ jni{-}bridge/build/libgnubg{-}engine.so }\KeywordTok{|} \FunctionTok{grep} \StringTok{"T Java\_"}
+\CommentTok{\# Expected (9 JNI entry points):}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_applyMove}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_classifyPosition}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_cubeDecision}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_evaluatePosition}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_findBestMove}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_initialise}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_loadSGF}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_rollout}
+\CommentTok{\#   T Java\_com\_clavierhaus\_gnubg\_Engine\_saveSGF}
+
+\FunctionTok{nm}\NormalTok{ jni{-}bridge/build/libgnubg{-}engine.so }\KeywordTok{|} \FunctionTok{grep} \StringTok{"NeuralNetEvaluateSSE"}
+\CommentTok{\# Expected: T NeuralNetEvaluateSSE  (confirms NEON path active)}
+
+\FunctionTok{nm}\NormalTok{ jni{-}bridge/build/libgnubg{-}engine.so }\KeywordTok{|} \FunctionTok{grep} \StringTok{"gnubg\_rollout\textbackslash{}|BasicCubefulRollout"}
+\CommentTok{\# Expected: T gnubg\_rollout, T BasicCubefulRolloutNoLocking}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{7.5 Android adb Test
+Harness}\label{android-adb-test-harness}
+
+The test harness in \texttt{test-harness/} builds as a standalone
+Android executable and exercises the engine end-to-end on a connected
+device.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Build}
+\BuiltInTok{cd}\NormalTok{ /home/erweitert/gnubg{-}android/test{-}harness}
+\FunctionTok{rm} \AttributeTok{{-}rf}\NormalTok{ build }\KeywordTok{\&\&} \FunctionTok{mkdir}\NormalTok{ build }\KeywordTok{\&\&} \BuiltInTok{cd}\NormalTok{ build}
+\FunctionTok{cmake}\NormalTok{ .. }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DCMAKE\_TOOLCHAIN\_FILE}\OperatorTok{=}\NormalTok{/home/erweitert/gnubg{-}android/android{-}sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DANDROID\_ABI}\OperatorTok{=}\NormalTok{arm64{-}v8a }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DANDROID\_PLATFORM}\OperatorTok{=}\NormalTok{android{-}28 }\DataTypeTok{\textbackslash{}}
+  \AttributeTok{{-}DCMAKE\_BUILD\_TYPE}\OperatorTok{=}\NormalTok{Release}
+\FunctionTok{cmake} \AttributeTok{{-}{-}build}\NormalTok{ .}
+
+\CommentTok{\# Push to device}
+\ExtensionTok{adb}\NormalTok{ push test\_runner /data/local/tmp/gnubg{-}test\_runner}
+\ExtensionTok{adb}\NormalTok{ push /path/to/gnubg.weights   /data/local/tmp/gnubg.weights}
+\ExtensionTok{adb}\NormalTok{ push /path/to/gnubg\_os0.bd   /data/local/tmp/gnubg\_os0.bd}
+\ExtensionTok{adb}\NormalTok{ push /path/to/gnubg\_ts0.bd   /data/local/tmp/gnubg\_ts0.bd}
+\ExtensionTok{adb}\NormalTok{ push jni{-}bridge/external/glib/lib/libglib{-}2.0.so /data/local/tmp/}
+\ExtensionTok{adb}\NormalTok{ push jni{-}bridge/external/glib/lib/libintl.so     /data/local/tmp/}
+\ExtensionTok{adb}\NormalTok{ shell chmod +x /data/local/tmp/gnubg{-}test\_runner}
+
+\CommentTok{\# Run}
+\ExtensionTok{adb}\NormalTok{ shell }\StringTok{"LD\_LIBRARY\_PATH=/data/local/tmp }\DataTypeTok{\textbackslash{}}
+\StringTok{    /data/local/tmp/gnubg{-}test\_runner /data/local/tmp/gnubg.weights"}
+\end{Highlighting}
+\end{Shaded}
+
+Expected output:
+
+\begin{verbatim}
+=== GNU Backgammon Android Test Harness ===
+[1] Initialising engine...
+    pbc1=0x... pbc2=0x... pbcOS=0x... pbcTS=0x...  (all non-null)
+[2] ClassifyPosition = 10 (expected 10 = CLASS_CONTACT)
+[3] EvaluatePosition 1-ply cubeless...
+    Win prob:        0.5269
+    Win gammon:      0.1478
+    ...
+    Cubeless equity: 0.0768
+[4] FindBestMove for 3-1...
+    Move: 8/5 6/5 (expected 8/5 6/5)
+[5] Cube decision (money game, centred cube)...
+    Cube decision: 2 (NODOUBLE_TAKE)
+    No double equity:   0.4260
+    Double/take equity: 0.4260
+    Double/pass equity: 0.2950
+[6] Rollout (144 trials, cubeful variance reduction)...
+    gnubg_rollout returned 0
+    Win prob:  ~0.59  stddev: ~0.005
+    Equity:    ~0.29  (converges toward 1-ply with more trials)
+=== All tests passed ===
+\end{verbatim}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{8. Open Items \& Roadmap}\label{open-items-roadmap}
+
+\subsubsection{8.1 Features}\label{features}
+
+The engine is feature-complete as of Phase 9.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Rollout:} {[}DONE{]} Multi-threaded via
+  \texttt{GThreadPool}/\texttt{GPrivate}. \texttt{Engine.rollout()}. See
+  §5.7.
+\item
+  \textbf{Cube decisions:} {[}DONE{]} \texttt{Engine.cubeDecision()}.
+  Full equity matrix + \texttt{CubeDecision} enum (21 values).
+\item
+  \textbf{SGF import/export:} {[}DONE{]} \texttt{Engine.loadSGF()} /
+  \texttt{Engine.saveSGF()}. Backed by
+  \texttt{CommandLoadMatch}/\texttt{CommandSaveMatch} in \texttt{sgf.c}.
+\item
+  \textbf{Game management:} {[}DONE{]} \texttt{play.c} compiled. Full
+  match state machine.
+\item
+  \textbf{Analysis:} {[}DONE{]} \texttt{analysis.c} compiled.
+  \texttt{find\_skills}, \texttt{AnalyzeMove}, \texttt{AnalyzeGame},
+  \texttt{AnalyzeMatch} available.
+\item
+  \textbf{Multi-threading:} {[}DONE{]} \texttt{USE\_MULTITHREAD}
+  enabled. \texttt{GThreadPool} + \texttt{GPrivate} TLS + RNG isolation.
+  See §5.7.
+\item
+  \textbf{SQLite:} Not planned --- use Android's Room/SQLiteOpenHelper
+  for persistence.
+\end{itemize}
+
+\subsubsection{8.2 Immediate Next Steps}\label{immediate-next-steps}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Android Studio project:} Create the Android app project, add
+  \texttt{libgnubg-engine.so} and GLib \texttt{.so} files as prebuilt
+  native libraries, add \texttt{Engine.kt} to the source set.
+\item
+  \textbf{Asset packaging:} Add \texttt{gnubg.weights} and all four
+  bearoff databases to the app's assets. Implement extraction to
+  \texttt{context.filesDir} on first launch.
+\item
+  \textbf{Callback wiring:} Implement non-weak versions of
+  \texttt{gnubg\_on\_*} callbacks in \texttt{native-lib.c} to route
+  engine events into the Kotlin UI layer.
+\end{itemize}
+
+\subsubsection{8.3 Performance}\label{performance}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{ARM NEON SIMD:} Enabled. \texttt{NeuralNetEvaluateSSE}
+  confirmed exported and active. \texttt{CheckNEON()} always returns 1
+  on aarch64.
+\item
+  \textbf{Multi-threading:} {[}DONE{]} \texttt{USE\_MULTITHREAD}
+  enabled. Rollout tasks distributed across all CPU cores via
+  \texttt{GThreadPool}. Per-thread \texttt{rngcontext} isolation via
+  \texttt{GPrivate} guarantees correctness. See §5.7.
+\end{itemize}
+
+\subsubsection{8.4 Known Warnings}\label{known-warnings}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\texttt{multithread.c}:} 6 instances of incompatible pointer
+  types passing \texttt{pthread\_mutex\_t\ *} to \texttt{Mutex\ *}.
+  \texttt{USE\_MULTITHREAD} is now enabled but these coercions are in
+  paths that are compiled but not reached on Android; harmless in
+  practice.
+\item
+  \textbf{CMake deprecation warnings} from the NDK toolchain file
+  regarding
+  \texttt{cmake\_minimum\_required\ VERSION\ \textless{}\ 3.10}. In the
+  NDK's own toolchain file; cannot be fixed from the project.
+\item
+  \textbf{Rollout equity variance at low trial counts:} With
+  \texttt{nTrials=144} stddev on win prob is \textasciitilde0.005. Use
+  1296+ trials for reliable equity estimates.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{9. Key File Reference}\label{key-file-reference}
+
+\subsubsection{build\_glib\_android.sh}\label{build_glib_android.sh}
+
+Orchestrates the complete GLib cross-build: applies Fedora SRPM patches,
+patches \texttt{meson.build} for Android iconv-in-libc, runs
+\texttt{meson\ setup} with \texttt{android-arm64.cross}, builds with
+ninja, installs to \texttt{jni-bridge/external/glib/}. Safe to re-run.
+
+\subsubsection{android-arm64.cross}\label{android-arm64.cross}
+
+Meson cross-file for the GLib build. Specifies NDK 27 toolchain binaries
+(\texttt{aarch64-linux-android28-clang}), target machine
+(android/aarch64/little-endian), compile flags
+(\texttt{-DANDROID\ -fPIC\ -Os}), and platform size properties. API
+level 28 is encoded in the compiler binary name, not as a \texttt{-D}
+flag.
+
+\subsubsection{jni-bridge/CMakeLists.txt}\label{jni-bridgecmakelists.txt}
+
+NDK CMake build file for \texttt{libgnubg-engine.so}. Enumerates all
+compiled source files, sets include paths (\texttt{jni-bridge/} first
+for shadow \texttt{config.h} interception, then \texttt{engine-core/},
+\texttt{engine-core/lib/}, GLib headers), defines
+\texttt{AC\_DATADIR}/\texttt{AC\_PKGDATADIR}/\texttt{AC\_DOCDIR} for
+Android, and links against \texttt{libglib-2.0.so},
+\texttt{libgobject-2.0.so}, \texttt{libintl.so}, \texttt{liblog}, and
+\texttt{libm}.
+
+\subsubsection{jni-bridge/src/stubs.c}\label{jni-bridgesrcstubs.c}
+
+Provides remaining GTK/UI stub storage, TLD infrastructure (now via
+\texttt{GPrivate}), multi-threaded rollout orchestration
+(\texttt{gnubg\_rollout()} with \texttt{GThreadPool}), and rollout
+globals. Key functions: \texttt{gnubg\_init\_tld()},
+\texttt{gnubg\_init\_rollout()}, \texttt{gnubg\_rollout()},
+\texttt{QuasiRandomSeed()}, \texttt{TLSGet()}. \textbf{Note:}
+\texttt{test-harness/src/stubs.c} is a copy of this file and must be
+kept in sync.
+
+\subsubsection{jni-bridge/src/android-app.c}\label{jni-bridgesrcandroid-app.c}
+
+The Android application shell replacing \texttt{gnubg.c}. Contains
+functions extracted verbatim from \texttt{gnubg.c} (see §5.8) plus
+Android callbacks for sound, board, settings, navigation, and rollout
+progress. All globals previously in \texttt{gnubg.c} are defined here.
+
+\subsubsection{engine-core/config.h}\label{engine-coreconfig.h}
+
+Host-generated autotools \texttt{config.h}, regenerated by
+\texttt{grep\ -v} to strip Android-incompatible flags.
+\textbf{Important:} if \texttt{engine-core/} is refreshed from upstream,
+this file must be regenerated and re-patched using the \texttt{grep\ -v}
+pipeline documented in §5.3.
+
+\subsubsection{engine-core/lib/neuralnetsse.c}\label{engine-corelibneuralnetsse.c}
+
+Modified from upstream: \texttt{NeuralNetEvaluateSSE} function has its
+VLA replaced with \texttt{posix\_memalign} allocation for correct
+16-byte alignment on aarch64. See §5.6 and \texttt{PROVENANCE.md} for
+full documentation of this change.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{10. Android UI --- IDE Decision, Design Philosophy \& Way
+Forward}\label{android-ui-ide-decision-design-philosophy}
+
+\subsubsection{10.1 Milestone: Engine
+Complete}\label{milestone-engine-complete}
+
+As of Phase 9, \texttt{libgnubg-engine.so} is feature-complete. All 9
+JNI entry points are implemented and verified on a Pixel 8 Pro (aarch64,
+Android 16). The engine milestone closes the native layer of the project.
+Version v0.9 marks the transition from engine development to Android UI
+development, targeting a 1.0 release.
+
+\subsubsection{10.2 IDE Decision: No IDE --- Pure Terminal
+Workflow}\label{ide-decision-no-ide}
+
+After evaluating all options, the decision is to use a \textbf{pure
+terminal workflow} with no Android Studio or other IDE involved at any
+stage. The rationale:
+
+\begin{itemize}
+\tightlist
+\item
+  Android Studio requires a GUI session, significant RAM overhead, and
+  account/sign-in infrastructure that adds friction without benefit for
+  this project.
+\item
+  The entire build is driven by \texttt{gradle assembleDebug} from the
+  terminal --- the same Gradle invocation Android Studio uses internally.
+\item
+  All source files are plain Kotlin and are edited in any text editor.
+  The project has no XML layouts (see §10.3).
+\item
+  The keyboard-operator workflow (human pastes commands, observes
+  output) is better served by explicit, auditable shell commands than by
+  IDE wizards.
+\end{itemize}
+
+The project structure is a bare Gradle project (\texttt{gnubg-app/})
+created entirely from the terminal. No \texttt{.idea/} directory, no
+Gradle wrapper magic, no IDE-generated boilerplate beyond what is
+explicitly documented here.
+
+\subsubsection{10.3 UI Toolkit: Jetpack
+Compose}\label{ui-toolkit-jetpack-compose}
+
+The Android UI is built exclusively with \textbf{Jetpack Compose} ---
+Android's modern declarative UI toolkit. XML layouts are explicitly
+excluded. Rationale:
+
+\begin{itemize}
+\tightlist
+\item
+  Compose maps directly to the terminal/text-editor workflow: every UI
+  element is a Kotlin \texttt{@Composable} function. There are no
+  parallel XML resource files to maintain.
+\item
+  Material You dynamic colour (\texttt{dynamicColorScheme()}) is
+  first-class in Compose. All colour tokens defined in §10.5 are
+  available as \texttt{MaterialTheme.colorScheme.*} with no additional
+  plumbing.
+\item
+  The board is drawn via Compose's \texttt{Canvas} composable --- the
+  same drawing model as Cairo/SVG, accepting the boarddim.h geometry
+  directly.
+\item
+  Animation (checker movement, dice roll) is \texttt{ObjectAnimator}
+  over Compose state --- no separate animation framework needed.
+\end{itemize}
+
+\subsubsection{10.4 Build Configuration}\label{build-configuration}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Parameter & Value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{minSdk} & 31 (Android 12 --- dynamic colour guaranteed on all supported devices) \\
+\texttt{targetSdk} & 35 (Android 15 --- current Play Store requirement) \\
+\texttt{compileSdk} & 35 \\
+Kotlin & 2.0.21 \\
+Compose BOM & 2024.09.03 (ships Compose 1.7) \\
+AGP & 8.5.2 \\
+Gradle wrapper & 8.7 \\
+\end{longtable}
+
+\texttt{minSdk = 31} means \texttt{dynamicColorScheme()} is available on
+every supported device with no API version guards. Play Store reach at
+Android 12+ is approximately 75\% of active devices --- acceptable for a
+serious backgammon application not targeting the mass casual market.
+
+\subsubsection{10.5 Design Philosophy}\label{design-philosophy}
+
+\paragraph{Orientation}\label{orientation}
+
+Landscape only. No portrait mode is available or planned.
+\texttt{android:screenOrientation="landscape"} is set in
+\texttt{AndroidManifest.xml}. This fixes the aspect ratio and eliminates
+all layout reflow complexity.
+
+\paragraph{Board Geometry}\label{board-geometry}
+
+The board geometry is derived directly from \texttt{boarddim.h} in the
+gnubg source. The canonical coordinate system is a 108×82 unit grid
+(aspect ratio 1.317:1). All element positions --- point triangles, bar,
+bearoff trays, checker stacks, cube, hinges --- are computed from the
+\texttt{POINT\_X()}, \texttt{TOP\_POINT\_Y}, \texttt{BOT\_POINT\_Y},
+\texttt{CHEQUER\_HEIGHT}, and \texttt{CHEQUER\_WIDTH} macros already
+present in the source. This is a one-time translation; the geometry is
+gnubg's own, faithfully reproduced.
+
+\paragraph{Material You Colour
+System}\label{material-you-colour-system}
+
+The board colour system is built entirely on Android's Material You
+dynamic colour API (\texttt{DynamicColors}, \texttt{dynamicColorScheme}).
+The device wallpaper seed generates the full tonal palette
+automatically. Three user-selectable seed overrides are offered:
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Name & Seed & Character \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Dynamic & Device wallpaper & Default --- fully personalised \\
+Classic & \texttt{\#5D4037} & Warm brown → amber/ochre tones \\
+Ocean & \texttt{\#1565C0} & Deep blue (BG Galaxy territory) \\
+\end{longtable}
+
+Colour role assignments for board elements:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Element & Material You Role \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Board field & \texttt{tertiaryContainer} \\
+Triangle A (dominant) & \texttt{tertiary} \\
+Triangle B (recessive) & \texttt{tertiaryContainer} at 60\% \\
+Bar & \texttt{surface} darkened \\
+Border/frame & \texttt{secondaryContainer} \\
+Point numbers & \texttt{onSecondaryContainer} \\
+Dark checker fill & \texttt{primary} at P-20 \\
+Light checker fill & \texttt{primary} at P-90 \\
+Checker highlight & white at 25--30\% opacity, offset top-left \\
+Cube fill & \texttt{secondaryContainer} \\
+Cube number & \texttt{onSecondaryContainer} \\
+Die fill & \texttt{secondary} \\
+Die pips & \texttt{onSecondary} \\
+\end{longtable}
+
+\textbf{Rationale for tertiary board / primary checkers:} Using
+\texttt{tertiary} for the board field and \texttt{primary} for the
+checkers guarantees perceptual distinctness across all wallpaper seeds,
+because Material You's algorithm explicitly assigns Primary and Tertiary
+to different hue regions. Both checker colours (P-20 and P-90) are
+within the same Primary hue family, giving a coherent monochromatic
+checker aesthetic while remaining legible against the Tertiary board.
+
+\paragraph{Depth Treatment}\label{depth-treatment}
+
+Checkers, cube, and dice share a consistent, minimal depth language:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Base shape} --- circle (checkers) or rounded-rect (cube/dice),
+  solid fill.
+\item
+  \textbf{Rim} --- 1.5px stroke, one tonal step darker than fill.
+\item
+  \textbf{Highlight ellipse} --- white at 25--30\% opacity, positioned
+  at \texttt{(cx\ -\ 0.28r,\ cy\ -\ 0.28r)}, sized at
+  \texttt{0.76r\ ×\ 0.38r}. Simulates a diffuse overhead-left light
+  source.
+\end{enumerate}
+
+No drop shadows, no gradients, no bevels. The result reads as material
+without crossing into skeuomorphic excess.
+
+\paragraph{Point Numbers}\label{point-numbers}
+
+Point numbers are placed \textbf{outside} the board border, in the
+frame area above and below the playing surface. They do not appear on
+the playing surface. This costs less than 5\% of screen width and
+eliminates distraction during play. Players who do not use point numbers
+are unaffected.
+
+\paragraph{UI Layer Architecture}\label{ui-layer-architecture}
+
+The Compose UI separates into two layers:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Static board layer} --- a single \texttt{Canvas} composable
+  drawing the board field, triangles, bar, bearoff trays, border, and
+  point numbers. Drawn once; does not change during a game.
+\item
+  \textbf{Dynamic piece layer} --- checkers, dice, cube, legal-move
+  highlights, and last-move trail. Positioned programmatically from
+  \texttt{ChequerPosition()} and \texttt{CubePosition()} in
+  \texttt{boardpos.c} via JNI. Checker movement is an
+  \texttt{ObjectAnimator} over Compose state.
+\end{itemize}
+
+This separation means animations touch only the dynamic layer; the board
+surface is never redrawn during play.
+
+\paragraph{Functionality Philosophy}\label{functionality-philosophy}
+
+The UI presents a clean, modern surface while exposing 100\% of gnubg's
+analytical depth. Two access modes:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Standard mode} --- board, dice, cube controls, score display.
+  Clean and uncluttered.
+\item
+  \textbf{Expert/Advanced mode} --- analysis panel showing equity, error
+  classification, rollout button, hint mode, tutor mode, SGF
+  import/export. Everything the desktop version offers, surfaced
+  progressively.
+\end{itemize}
+
+No gnubg functionality is removed or stubbed at the UI level. The
+distinction is presentation only.
+
+\subsubsection{10.6 Immediate Next Steps}\label{immediate-next-steps-v09}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Create the bare Gradle project structure (\texttt{gnubg-app/}) from
+  the terminal --- \texttt{settings.gradle.kts},
+  \texttt{build.gradle.kts}, \texttt{gradle/libs.versions.toml},
+  \texttt{AndroidManifest.xml}, \texttt{MainActivity.kt},
+  \texttt{ui/theme/Theme.kt}.
+\item
+  Verify \texttt{gradle assembleDebug} produces a clean APK with an
+  empty Compose screen.
+\item
+  Implement \texttt{Board.kt} --- the static board \texttt{Canvas}
+  composable from boarddim.h geometry.
+\item
+  Implement \texttt{BoardState.kt} and \texttt{EngineViewModel.kt} ---
+  the bridge between the JNI engine and Compose state.
+\item
+  Wire checkers, dice, cube as the dynamic piece layer.
+\item
+  Add the analysis panel as the Expert mode overlay.
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{11. Version v0.9.1 --- Basic UI
+Complete}\label{version-v091-basic-ui-complete}
+
+\subsubsection{11.1 Milestone}\label{milestone-v091}
+
+Version v0.9.1 marks the completion of the basic Android UI layer. The
+app is fully functional as a visual shell: the board renders correctly
+on any screen size and aspect ratio, all 24 points are geometrically
+accurate, checkers are placed in the starting position, dice and cube
+are rendered, and the settings system is fully wired to a
+\texttt{GameViewModel}. The next phase is engine integration --- wiring
+the JNI bridge to live gameplay.
+
+\subsubsection{11.2 UI Components
+Delivered}\label{ui-components-delivered}
+
+\paragraph{Board (\texttt{Board.kt})}\label{boardkt}
+
+\begin{itemize}
+\tightlist
+\item
+  Geometry derived directly from \texttt{boarddim.h} --- 24 points,
+  asymmetric layout with single right-side bearoff tray, narrower
+  centre bar
+\item
+  Ocean blue fixed palette (foundation for Material You theme system)
+\item
+  Point numbers in frame border (toggleable)
+\item
+  Checkers in starting position --- size governed by triangle height,
+  5 checkers = triangle height
+\item
+  Side-on rectangle representation for bearoff tray checkers (15 per
+  tray)
+\item
+  Placeholder dice (3--1) with pip faces, correct player placement
+\item
+  Doubling cube (64) centred in bar
+\item
+  Pip counts in bar, equidistant from frame edges (toggleable)
+\item
+  Two distinct bearoff trays (top/bottom) with white inner outline and
+  dark outer border
+\end{itemize}
+
+\paragraph{Layout (\texttt{GameLayout.kt})}\label{gamelayoutkt}
+
+\begin{itemize}
+\tightlist
+\item
+  Landscape-only, fully immersive (status bar and nav buttons hidden)
+\item
+  Screen keep-on during gameplay
+\item
+  25\% player panel placeholder / 75\% board split
+\item
+  Settings gear icon (Material Icons) top-left, safe from screen
+  rounded corners
+\item
+  Full-screen settings overlay on tap
+\end{itemize}
+
+\paragraph{Settings System}\label{settings-system}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{GameViewModel} (\texttt{engine/GameViewModel.kt}) ---
+  single source of truth for all settings and future game state,
+  using \texttt{StateFlow}
+\item
+  \texttt{GameSettings} data class with 16 typed fields covering all
+  four settings categories
+\item
+  \texttt{SettingsScreen.kt} --- full-screen BMPCC-inspired settings
+  UI: horizontal tab bar (GAME / BOARD / ENGINE / ANALYSIS),
+  scrollable sections, live-wired toggles and controls
+\item
+  All switches toggle immediately and propagate to the board
+\item
+  Match length and automatic doubles use +/-2/+/-1 steppers
+\item
+  Difficulty selector (Beginner/Intermediate/Advanced/Expert) maps to
+  gnubg ply depth
+\item
+  Error classification thresholds displayed (editable in next phase)
+\end{itemize}
+
+\paragraph{Theme Infrastructure}\label{theme-infrastructure}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{BoardTheme} enum: OCEAN / CLASSIC / FOREST
+\item
+  \texttt{Difficulty} enum with ply mapping
+\item
+  Settings UI radio buttons wired to \texttt{GameViewModel} ---
+  colour theme switching renders in next phase
+\end{itemize}
+
+\paragraph{Build Environment}\label{build-environment-v091}
+
+\begin{itemize}
+\tightlist
+\item
+  SDKMAN manages Java 21.0.7-tem and Gradle 8.14 via
+  \texttt{.sdkmanrc}
+\item
+  \texttt{local.properties} points to
+  \texttt{/home/erweitert/gnubg-android/android-sdk}
+\item
+  \texttt{gradle.properties}: \texttt{android.useAndroidX=true},
+  \texttt{android.suppressUnsupportedCompileSdk=35}
+\item
+  KDE Connect established as the screenshot-to-desktop workflow
+\item
+  16KB ELF alignment warning noted --- to be resolved in engine
+  rebuild phase with \texttt{-Wl,-z,max-page-size=16384}
+\end{itemize}
+
+\subsubsection{11.3 Immediate Next Steps
+(v0.9.2)}\label{immediate-next-steps-v092}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Implement colour theme switching --- OCEAN/CLASSIC/FOREST palettes
+  derived from Material You or fixed grayscale
+\item
+  Wire engine initialisation --- call \texttt{Engine.initialise()}
+  with weights path on app start
+\item
+  Implement \texttt{BoardState.kt} --- live board encoding from
+  engine \texttt{matchstate}
+\item
+  Wire \texttt{Engine.findBestMove()} and \texttt{Engine.rollout()}
+  to the game loop via \texttt{GameViewModel}
+\item
+  Implement touch input for checker moves --- tap point to select,
+  tap destination to move
+\item
+  Wire \texttt{Engine.cubeDecision()} to the doubling cube UI
+\item
+  Rebuild engine \texttt{.so} files with 16KB page alignment
+\item
+  Populate player panel (left 25\%) with score, match state, timer
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{12. Version v0.9.2 --- Settings System \& Theme
+Persistence}\label{version-v092-settings-theme}
+
+\subsubsection{12.1 Milestone}\label{milestone-v092}
+
+Version v0.9.2 completes the settings infrastructure. All settings are
+live-wired to a \texttt{GameViewModel}, the board colour theme persists
+across app restarts via \texttt{DataStore}, and a fourth theme option
+(System) exposes Android Material You dynamic colour derived from the
+device wallpaper. The app is now a complete visual shell with persistent
+user preferences, ready for engine integration in v0.9.3.
+
+\subsubsection{12.2 Delivered}\label{delivered-v092}
+
+\paragraph{Colour Themes}\label{colour-themes-v092}
+
+Four board themes are available and selectable in Settings → Board:
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Theme & Seed & Character \
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Ocean & Fixed \texttt{\#1565C0} & Deep blue --- default \
+Classic & Fixed grayscale & Black, white, and grays \
+Forest & Fixed \texttt{\#2E7D32} & Deep green \
+System & Device wallpaper & Material You dynamic colour \
+\end{longtable}
+
+All colour roles (board field, triangles, bar, bearoff trays, checkers,
+dice, cube, pip text, frame) are encapsulated in a \texttt{BoardPalette}
+data class. The \texttt{BoardPalettes} object provides static instances
+for Ocean, Classic, and Forest; the System theme is resolved at
+composition time from \texttt{MaterialTheme.colorScheme}.
+
+The Classic theme uses the light-gray triangle colour (\texttt{\#444444})
+as the checker rim and dice colour for both players, giving a coherent
+monochromatic grayscale aesthetic without excessive contrast.
+
+Bearoff tray checkers use increased inner padding (\texttt{slotPad = ol
+* 3f}) to prevent visual attachment to the tray outline.
+
+\paragraph{Theme Persistence
+(\texttt{PreferencesManager.kt})}\label{theme-persistence}
+
+Board theme selection persists across app restarts using
+\texttt{androidx.datastore:datastore-preferences:1.1.1}. The
+\texttt{PreferencesManager} object exposes:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{boardThemeFlow(context)} --- \texttt{Flow<BoardTheme>} read
+  on \texttt{GameViewModel} init
+\item
+  \texttt{saveBoardTheme(context, theme)} --- called on every theme
+  change via \texttt{coroutineScope.launch}
+\end{itemize}
+
+The \texttt{GameViewModel} was promoted from \texttt{ViewModel} to
+\texttt{AndroidViewModel} to access the \texttt{Application} context
+required by \texttt{DataStore}.
+
+\paragraph{Orientation}\label{orientation-v092}
+
+\texttt{SCREEN\_ORIENTATION\_SENSOR\_LANDSCAPE} replaces the previous
+\texttt{SCREEN\_ORIENTATION\_LANDSCAPE}, honouring 180° rotation when
+the device is physically flipped. Portrait is never permitted.
+
+\paragraph{Gear Icon Positioning}\label{gear-icon-v092}
+
+The settings gear icon (Material Icons \texttt{Settings}) is positioned
+at \texttt{padding(start = 16.dp, top = 12.dp)} --- clear of the Pixel
+8 Pro rounded screen corners and visible in both landscape orientations.
+
+\subsubsection{12.3 Architecture
+Summary}\label{architecture-summary-v092}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+File & Role \
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{engine/GameViewModel.kt} & Single source of truth for all settings; \texttt{AndroidViewModel} with \texttt{StateFlow} \
+\texttt{engine/GameSettings.kt} & 16-field data class for all user preferences \
+\texttt{engine/PreferencesManager.kt} & DataStore read/write for persistent theme \
+\texttt{ui/BoardPalette.kt} & \texttt{BoardPalette} data class + \texttt{BoardPalettes} static instances \
+\texttt{ui/Board.kt} & Consumes \texttt{GameSettings}; resolves System theme from \texttt{MaterialTheme} \
+\texttt{ui/GameLayout.kt} & Passes \texttt{GameSettings} to board and settings screen \
+\texttt{ui/SettingsScreen.kt} & Four-tab settings UI wired to \texttt{GameViewModel} \
+\end{longtable}
+
+\subsubsection{12.4 Immediate Next Steps
+(v0.9.3)}\label{immediate-next-steps-v093}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Wire \texttt{Engine.initialise()} on app start --- extract neural net
+  weights from assets to device storage
+\item
+  Implement \texttt{BoardState.kt} --- live board encoding bridging
+  engine \texttt{matchstate} to Compose state
+\item
+  Implement touch input --- tap point to select checker, tap
+  destination to move
+\item
+  Wire \texttt{Engine.findBestMove()} to the game loop
+\item
+  Wire dice rolling --- \texttt{Engine} random roll → animate dice →
+  enable legal moves
+\item
+  Wire \texttt{Engine.cubeDecision()} to doubling cube UI
+\item
+  Rebuild \texttt{.so} files with \texttt{-Wl,-z,max-page-size=16384}
+  for Android 16 16KB page alignment
+\item
+  Populate player panel with score, match state, player name, timer
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{13. Version v0.9.3 --- Engine Integration \& Dice
+Rolling}\label{version-v093-engine-integration}
+
+\subsubsection{13.1 Milestone}\label{milestone-v093}
+
+Version v0.9.3 achieves the first live engine integration milestone: the
+gnubg neural net evaluation engine initialises successfully on app
+start, dice roll correctly on each tap of the Roll button, and the
+board checker positions are correctly mapped from the engine board
+encoding to the UI coordinate system. The app runs stably without
+crashes across multiple Roll taps.
+
+\subsubsection{13.2 Delivered}\label{delivered-v093}
+
+\paragraph{Engine Initialisation}\label{engine-init-v093}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{AssetExtractor.kt} extracts \texttt{gnubg.weights} from the
+  APK assets to \texttt{context.filesDir} on first run
+\item
+  \texttt{Engine.initialise(weightsPath)} called on a dedicated
+  \texttt{gnubg-engine-thread} via \texttt{Executors.newSingleThreadExecutor}
+\item
+  \texttt{\_engineReady} \texttt{StateFlow<Boolean>} gates the Roll
+  button --- it only appears after the engine has fully initialised
+\item
+  Engine initialisation confirmed via \texttt{gnubg-jni: Engine
+  initialised} logcat entry
+\end{itemize}
+
+\paragraph{New JNI Entry Points}\label{new-jni-v093}
+
+Four new functions added to \texttt{native-lib.c} and declared in
+\texttt{Engine.kt}:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Function & Purpose \
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{Engine.rollDice()} & Returns \texttt{IntArray[2]} with random dice values (1--6) via \texttt{rand()} \
+\texttt{Engine.getLegalMoves(board, d0, d1)} & Returns best move as \texttt{IntArray[8]} via \texttt{FindBestMoveNoLocking} \
+\texttt{Engine.isGameOver(board)} & Returns 0/1/2 for in-progress/player-1-wins/player-0-wins \
+\texttt{Engine.newGame()} & Returns standard starting position as \texttt{IntArray[50]} via \texttt{InitBoard} \
+\end{longtable}
+
+\paragraph{Game State Architecture}\label{game-state-v093}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{BoardState.kt} --- immutable data class holding board
+  encoding, turn, dice, legal moves, selected point, cube state, pip
+  counts, game phase, and winner
+\item
+  \texttt{GamePhase} enum: \texttt{WAITING\_FOR\_ROLL},
+  \texttt{HUMAN\_MOVING}, \texttt{ENGINE\_THINKING},
+  \texttt{GAME\_OVER}
+\item
+  \texttt{GameViewModel} extended with \texttt{\_gameState:
+  MutableStateFlow<BoardState>} and game loop functions:
+  \texttt{rollDice()}, \texttt{selectPoint()}, \texttt{moveTo()},
+  \texttt{engineMove()}
+\item
+  Pip count calculation via \texttt{calcPips(board, player)}
+\end{itemize}
+
+\paragraph{Board Rendering from Live
+State}\label{board-rendering-v093}
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{BackgammonBoard} now accepts \texttt{BoardState} and renders
+  checkers from live engine board encoding
+\item
+  Dice rendered from \texttt{gameState.dice} --- human dice (light) in
+  right half, engine dice (dark) in left half
+\item
+  Pip counts rendered from \texttt{gameState.pipCountHuman} and
+  \texttt{gameState.pipCountEngine}
+\item
+  Selected point highlighted with semi-transparent white overlay
+\end{itemize}
+
+\paragraph{Player Panel}\label{player-panel-v093}
+
+Left 25\% panel now shows:
+\begin{itemize}
+\tightlist
+\item
+  Roll button (only when engine ready, human turn, waiting for roll)
+\item
+  Thinking\ldots{}'' indicator during engine turn
+\item
+  Game over message (You win!'' / Engine wins!'')
+\item
+  Turn indicator
+\end{itemize}
+
+\subsubsection{13.3 Challenges and Solutions}\label{challenges-v093}
+
+This version required resolving a deep thread-safety issue in the gnubg
+engine's thread-local storage (TLS) system. The problem, investigation,
+and fix are documented here in full as they represent a significant
+engineering finding.
+
+\paragraph{The Problem}\label{tls-problem}
+
+On every tap of Roll, the app crashed with \texttt{SIGSEGV} at
+\texttt{FindnSaveBestMovesNoLocking+152}, fault address
+\texttt{0x0000000000000008} (a null pointer dereference at offset 8).
+
+\paragraph{Root Cause Investigation}\label{tls-investigation}
+
+The crash traced through the call stack:
+\texttt{getLegalMoves} → \texttt{FindBestMoveNoLocking} →
+\texttt{FindnSaveBestMovesNoLocking} → \texttt{GenerateMoves} →
+\texttt{MT\_Get\_aMoves()} → \texttt{td.tld->aMoves}.
+
+The macro \texttt{MT\_Get\_aMoves()} is defined in
+\texttt{multithread.h} (non-multithread path, line 194) as:
+
+\begin{verbatim}
+#define MT_Get_aMoves() td.tld->aMoves
+\end{verbatim}
+
+\texttt{td} is a global \texttt{ThreadData} struct. \texttt{td.tld} is
+a single global pointer to a \texttt{ThreadLocalData} struct containing
+pre-allocated move buffers (\texttt{aMoves}) and neural net state
+(\texttt{pnnState}).
+
+The engine's \texttt{TLSGet()} function (in \texttt{stubs.c}) uses
+\texttt{GPrivate} (GLib's thread-local storage) to lazily allocate a
+\texttt{ThreadLocalData} per thread. However, it only set
+\texttt{td.tld} once during initialisation --- on the initialisation
+thread. When coroutine engine calls ran on a different thread (the
+\texttt{gnubg-engine-thread} executor), \texttt{td.tld} still pointed
+to the initialisation thread's TLD, or was never updated for the new
+thread, causing the null dereference.
+
+Several approaches were attempted:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Adding \texttt{td.tld = tld} in \texttt{TLSGet()}} ---
+  insufficient because \texttt{td.tld} is a single global overwritten
+  by any thread
+\item
+  \textbf{\texttt{\_\_thread} shadow variable} --- correct concept but
+  the macro expansion in \texttt{eval.c} still bypassed it
+\item
+  \textbf{Macro override in \texttt{native-lib.c}} --- too late; macros
+  are expanded in \texttt{eval.c} at compile time
+\item
+  \textbf{Dedicated \texttt{HandlerThread}} --- correct thread
+  management but \texttt{Handler.asCoroutineDispatcher()} doesn't exist
+\item
+  \textbf{\texttt{Executors.newSingleThreadExecutor} with named thread}}
+  --- correct, but macros still unresolved
+\end{enumerate}
+
+\paragraph{The Fix}\label{tls-fix}
+
+The correct fix required two changes:
+
+\textbf{1. Patch \texttt{multithread.h}} to redefine
+\texttt{MT\_Get\_aMoves()} and \texttt{MT\_Get\_nnState()} to call
+\texttt{TLSGet()} instead of accessing \texttt{td.tld} directly:
+
+\begin{verbatim}
+extern void *TLSGet(void *item);
+#define MT_Get_nnState() ((ThreadLocalData *)TLSGet(NULL))->pnnState
+#define MT_Get_aMoves()  ((ThreadLocalData *)TLSGet(NULL))->aMoves
+#define MT_GetTLD()      ((ThreadLocalData *)TLSGet(NULL))
+\end{verbatim}
+
+This ensures that every call to \texttt{MT\_Get\_aMoves()} in
+\texttt{eval.c} goes through \texttt{TLSGet()}, which lazily allocates
+a \texttt{ThreadLocalData} for the current thread using \texttt{GPrivate}.
+
+\textbf{2. \texttt{TLSGet()} already uses \texttt{GPrivate}} for
+per-thread lazy allocation of \texttt{aMoves} and \texttt{pnnState}
+buffers (including \texttt{nnContact.cHidden}/\texttt{cInput} sized
+neural net state arrays). With the macro fix, this lazy allocation now
+runs correctly on any thread that calls an engine function.
+
+\textbf{3. Dedicated engine thread} in \texttt{GameViewModel}:
+
+\begin{verbatim}
+private val engineThread = Executors.newSingleThreadExecutor { r ->
+    Thread(r, gnubg-engine-thread)
+}.asCoroutineDispatcher()
+\end{verbatim}
+
+All engine calls (\texttt{initialise}, \texttt{newGame},
+\texttt{rollDice}, \texttt{getLegalMoves}, \texttt{findBestMove},
+\texttt{applyMove}, \texttt{isGameOver}) are dispatched exclusively on
+this thread via \texttt{viewModelScope.launch(engineThread)}.
+
+\paragraph{Board Encoding Correction}\label{board-encoding-v093}
+
+The gnubg board encoding uses a mirrored perspective:
+\texttt{anBoard[0][i]} = opponent's checkers at their point \texttt{i+1},
+\texttt{anBoard[1][i]} = current player's checkers at their point
+\texttt{i+1}. The UI mapping was initially incorrect. The correct
+mapping for our layout (human = light, engine = dark):
+
+\begin{verbatim}
+// Human (light) checkers at UI point n:
+humanCount = board[n - 1]           // anBoard[0][n-1]
+
+// Engine (dark) checkers at UI point n:
+engineCount = board[25 + (24 - n)]  // anBoard[1][24-n]
+\end{verbatim}
+
+\subsubsection{13.4 Immediate Next Steps
+(v0.9.4)}\label{immediate-next-steps-v094}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Implement touch input for checker moves --- tap point to select, tap
+  destination to move; wire to \texttt{GameViewModel.selectPoint()} and
+  \texttt{moveTo()}
+\item
+  Fix \texttt{getLegalMoves} to return all legal moves (not just best
+  move) --- requires proper match state setup for
+  \texttt{GenerateMoves}
+\item
+  Implement engine auto-roll and move after human completes turn
+\item
+  Wire \texttt{Engine.cubeDecision()} to doubling cube UI
+\item
+  Add New Game'' button
+\item
+  Rebuild \texttt{.so} files with \texttt{-Wl,-z,max-page-size=16384}
+  for Android 16 16KB page alignment
+\item
+  Populate player panel with score, match length display, player names
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{14. Version v0.9.4 --- Functional One-Point
+Game}\label{version-v094-functional-one-point-game}
+
+\subsubsection{14.1 Milestone}\label{milestone-v094}
+
+Version v0.9.4 delivers the first fully playable one-point game. Both
+players move correctly, the gnubg engine plays its turn automatically,
+all move validation is performed exclusively by the engine, touch input
+is complete, and the board renders all game states including bar
+checkers and bearing off.
+
+\subsubsection{14.2 Delivered}\label{delivered-v094}
+
+\paragraph{Touch Input}\label{touch-input-v094}
+
+A \texttt{Box} with \texttt{pointerInput(detectTapGestures)} wraps the
+board \texttt{Canvas}. On each tap, the board coordinate is converted
+from screen pixels to the gnubg coordinate system and matched against
+the legal moves list returned by \texttt{GenerateMoves}. No move
+computation is done in Kotlin — the engine exclusively determines what
+is legal.
+
+Tap behaviour:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Tap a point} — the first legal sub-move originating from that
+  point is applied using the first remaining die. gnubg's
+  \texttt{GenerateMoves} encodes each complete turn as up to four
+  sub-moves in a flat \texttt{anMove[8]} array; the UI iterates
+  sub-move pairs to find a match.
+\item
+  \textbf{Tap the dice area} — swaps die order (first die ↔ second
+  die), changing which die is consumed first.
+\item
+  \textbf{Bar re-entry} — when human checkers are on the bar
+  (\texttt{anBoard[1][24] > 0}), taps are automatically directed to bar
+  re-entry regardless of the tapped point.
+\item
+  \textbf{Bearing off} — gnubg encodes the bearoff destination as index
+  24; this is detected automatically from the legal moves list.
+\end{itemize}
+
+\paragraph{Commit and Cancel
+Buttons}\label{commit-cancel-v094}
+
+Two buttons appear in the player panel during \texttt{HUMAN\_MOVING}
+phase:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Commit} (green ✓) — active only when \texttt{remainingDice}
+  is empty or all remaining dice are blocked. Switches turn to engine
+  and triggers engine auto-roll after a 500ms delay.
+\item
+  \textbf{Cancel} (red ✕) — active when \texttt{moveHistory} is
+  non-empty. Restores the previous board state and dice list from the
+  history stack, then refreshes legal moves from \texttt{getLegalMoves}.
+\end{itemize}
+
+Move history is maintained as two parallel stacks in
+\texttt{BoardState}: \texttt{moveHistory: List<IntArray>} (board
+snapshots) and \texttt{diceHistory: List<List<Int>>} (remaining dice
+snapshots). Each tap pushes to both stacks; Cancel pops from both.
+
+\paragraph{Engine Turn}\label{engine-turn-v094}
+
+After the human commits:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \texttt{rollDice()} is called automatically on \texttt{engineThread}
+\item
+  \texttt{Engine.swapBoard(board)} is called to flip \texttt{anBoard[0]}
+  and \texttt{anBoard[1]}, placing engine checkers in \texttt{anBoard[1]}
+  (gnubg always operates from the moving player's perspective)
+\item
+  \texttt{Engine.findBestMove(swapped, d0, d1)} finds the best move
+  using \texttt{FindBestMoveNoLocking} with \texttt{defaultFilters}
+\item
+  \texttt{Engine.applyMove(swapped, move)} applies the move
+\item
+  \texttt{Engine.swapBoard(result)} restores the board to our encoding
+\end{enumerate}
+
+\paragraph{New JNI Entry Points}\label{new-jni-v094}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Function & Purpose \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{Engine.swapBoard(board)} & Calls \texttt{SwapSides()} — flips \texttt{anBoard[0]} ↔ \texttt{anBoard[1]} \\
+\texttt{Engine.pipCount(board)} & Calls \texttt{PipCount()} — returns \texttt{IntArray[2]} pip counts \\
+\texttt{Engine.newGame()} & Calls \texttt{InitBoard()} — returns starting position \\
+\end{longtable}
+
+\paragraph{Pip Count}\label{pip-count-v094}
+
+Pip counts are computed by gnubg's \texttt{PipCount()} function via the
+\texttt{Engine.pipCount(board)} JNI call. Returns
+\texttt{IntArray[2]}: index 0 = \texttt{anBoard[0]} pip count, index 1
+= \texttt{anBoard[1]} pip count. In our encoding: index 1 = human
+(light), index 0 = engine (dark).
+
+\paragraph{Bar Checker Display}\label{bar-checker-v094}
+
+Bar checkers are read from \texttt{anBoard[0][24]} (engine, shown in
+top half of bar) and \texttt{anBoard[1][24]} (human, shown in bottom
+half of bar) and rendered as standard checkers centred on the bar.
+
+\paragraph{Dice Display}\label{dice-display-v094}
+
+\begin{itemize}
+\tightlist
+\item
+  Human dice (light) positioned in the right half near the bearoff
+  tray
+\item
+  Engine dice (dark) positioned in the left half near the bar
+\item
+  Used dice rendered at 35\% opacity; remaining dice at full opacity
+\item
+  Doubles shown as four dice; normal rolls as two
+\end{itemize}
+
+\paragraph{New Game}\label{new-game-v094}
+
+A New Game button appears on game over. \texttt{GameViewModel.newGame()}
+calls \texttt{Engine.newGame()} which calls \texttt{InitBoard()} and
+resets \texttt{BoardState} to the starting position.
+
+\subsubsection{14.3 Board Encoding
+Reference}\label{board-encoding-v094}
+
+gnubg's \texttt{TanBoard anBoard[2][25]} encoding as used in this port:
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Array & Player & UI point mapping \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{anBoard[0][i]} & Engine/dark & UI point \texttt{i+1} \\
+\texttt{anBoard[1][i]} & Human/light & UI point \texttt{24-i} \\
+\texttt{anBoard[0][24]} & Engine checkers on bar & Bar (top half) \\
+\texttt{anBoard[1][24]} & Human checkers on bar & Bar (bottom half) \\
+\end{longtable}
+
+Human moves from point 24 (top right) counterclockwise to point 1
+(bottom right). Engine moves from point 1 (bottom left) counterclockwise
+to point 24 (top left).
+
+\subsubsection{14.4 gnubg Perspective
+Rule}\label{gnubg-perspective-v094}
+
+All gnubg engine functions (\texttt{GenerateMoves},
+\texttt{FindBestMoveNoLocking}, \texttt{ApplyMove}) operate from the
+perspective of the player whose checkers are in \texttt{anBoard[1]}.
+In our encoding, human checkers are always in \texttt{anBoard[1]}.
+Therefore:
+
+\begin{itemize}
+\tightlist
+\item
+  Human turn: pass board directly — \texttt{anBoard[1]} already contains
+  human checkers
+\item
+  Engine turn: call \texttt{Engine.swapBoard()} before and after each
+  engine function call
+\end{itemize}
+
+\subsubsection{14.5 Immediate Next Steps
+(v0.9.5)}\label{immediate-next-steps-v095}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Player panel content — score, match length, player names, timer
+\item
+  Doubling cube interaction — offer, accept, pass
+\item
+  Game over screen with gammon/backgammon detection
+\item
+  Rebuild \texttt{.so} files with \texttt{-Wl,-z,max-page-size=16384}
+  for Android 16 16KB page alignment
+\item
+  SGF save/load for game history
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\emph{GNU Backgammon Android Port --- MASTER v0.9.4 --- clavierhaus.at
+--- June 2026}
+
+\end{document}
