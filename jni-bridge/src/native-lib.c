@@ -469,30 +469,29 @@ Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
         return (*env)->NewIntArray(env, 0);
     }
 
-    ensure_tld();
-
     TanBoard anBoard;
     unpack_board(env, jboard, anBoard);
 
-    /* Use FindBestMove to get the best move — it handles all internal state.
-     * We return just this one move as the single legal move for now.
-     * Full legal move generation requires match state setup. */
-    int anMove[8];
-    memset(anMove, -1, sizeof(anMove));
+    movelist ml;
+    memset(&ml, 0, sizeof(ml));
+    GenerateMoves(&ml, (ConstTanBoard)anBoard, (int)die0, (int)die1, FALSE);
 
-    int rc = FindBestMove(anMove, (int)die0, (int)die1,
-                          anBoard, &ci_default, &ec_default,
-                          aamfEval);
+    int nMoves = ml.cMoves;
+    LOGI("getLegalMoves: die0=%d die1=%d cMoves=%d", (int)die0, (int)die1, nMoves);
 
-    pthread_mutex_unlock(&gnubg_lock);
-
-    if (rc != 0) {
-        return (*env)->NewIntArray(env, 0);
+    jintArray result = (*env)->NewIntArray(env, nMoves * 8);
+    if (nMoves > 0) {
+        jint *buf = (jint *)malloc(nMoves * 8 * sizeof(jint));
+        for (int i = 0; i < nMoves; i++) {
+            for (int j = 0; j < 8; j++) {
+                buf[i * 8 + j] = ml.amMoves[i].anMove[j];
+            }
+        }
+        (*env)->SetIntArrayRegion(env, result, 0, nMoves * 8, buf);
+        free(buf);
     }
 
-    /* Return the single best move as an 8-element array */
-    jintArray result = (*env)->NewIntArray(env, 8);
-    (*env)->SetIntArrayRegion(env, result, 0, 8, (jint *)anMove);
+    pthread_mutex_unlock(&gnubg_lock);
     return result;
 }
 
@@ -537,4 +536,20 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz) {
     TanBoard anBoard;
     InitBoard(anBoard, VARIATION_STANDARD);
     return pack_board(env, anBoard);
+}
+
+/* Test function to verify GenerateMoves works */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_testGenerateMoves(JNIEnv *env, jobject thiz,
+                                                      jintArray jboard,
+                                                      jint die0, jint die1) {
+    pthread_mutex_lock(&gnubg_lock);
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+    movelist ml;
+    memset(&ml, 0, sizeof(ml));
+    GenerateMoves(&ml, (ConstTanBoard)anBoard, (int)die0, (int)die1, FALSE);
+    LOGI("testGenerateMoves: die0=%d die1=%d cMoves=%d", (int)die0, (int)die1, ml.cMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return (jint)ml.cMoves;
 }

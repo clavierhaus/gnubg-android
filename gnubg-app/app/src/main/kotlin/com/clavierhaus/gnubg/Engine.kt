@@ -92,40 +92,5 @@ object Engine {
      */
     external fun saveSGF(path: String): Boolean
 
+    external fun testGenerateMoves(board: IntArray, die0: Int, die1: Int): Int
 }
-
-    /**
-     * Run a cubeful rollout on a position.
-     *
-     * @param board  50-element board encoding
-     * @param trials Number of rollout trials (default 144; use 1296 for
-     *               publication-quality results — takes several minutes on device)
-     *
-     * @return FloatArray[14]:
-     *   [0..6]  equity outputs (same order as evaluatePosition)
-     *   [7..13] standard deviations for each output
-     *   Returns null on error.
-     */
-    external fun rollout(board: IntArray, trials: Int = 144): FloatArray?
-
-    /**
-     * Load a match from an SGF file into the engine match state.
-     * After loading, [getBoard] reflects the current position.
-     *
-     * @param path Absolute path to the .sgf file on device storage
-     * @return true on success, false if file not found or parse error
-     */
-    external fun rollDice(): IntArray
-    external fun getLegalMoves(board: IntArray, die0: Int, die1: Int): IntArray
-    external fun isGameOver(board: IntArray): Int
-    external fun newGame(): IntArray
-
-    external fun loadSGF(path: String): Boolean
-
-    /**
-     * Save the current match to an SGF file.
-     *
-     * @param path Absolute path for the output .sgf file
-     * @return true on success, false if no game in progress or write error
-     */
-    external fun saveSGF(path: String): Boolean

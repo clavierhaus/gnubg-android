@@ -97,7 +97,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.turn == 0) {
                 val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
                 val legal = Engine.getLegalMoves(state.board, d0, d1)
-                android.util.Log.d("gnubg-ui", "rolled d0=$d0 d1=$d1 legal.size=${legal.size}")
+                val testCount = Engine.testGenerateMoves(state.board, d0, d1)
+                android.util.Log.d("gnubg-ui", "rolled d0=$d0 d1=$d1 legal.size=${legal.size} testCount=$testCount")
+                android.util.Log.d("gnubg-ui", "board[0..24]=${state.board.slice(0..24)}")
+                android.util.Log.d("gnubg-ui", "board[25..49]=${state.board.slice(25..49)}")
                 _gameState.value = state.copy(
                     dice = Pair(d0, d1),
                     remainingDice = remaining,
@@ -132,6 +135,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val gnubgSrc = point - 1
             val gnubgDest = gnubgSrc - die
             if (gnubgDest < 0) return@launch
+
+            // Validate against legal moves — check any sub-move pair
+            val nLegal = state.legalMoves.size / 8
+            android.util.Log.d("gnubg-move", "checking $gnubgSrc->$gnubgDest against $nLegal moves")
+            var found = false
+            for (i in 0 until nLegal) {
+                val m = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
+                // Each move has up to 4 sub-moves: [src0,dst0, src1,dst1, src2,dst2, src3,dst3]
+                for (j in 0..3) {
+                    if (m[j*2] == gnubgSrc && m[j*2+1] == gnubgDest) {
+                        found = true; break
+                    }
+                }
+                if (found) break
+            }
+            if (!found) {
+                android.util.Log.d("gnubg-move", "REJECTED $gnubgSrc->$gnubgDest")
+                return@launch
+            }
 
             val move = intArrayOf(gnubgSrc, gnubgDest, -1, -1, -1, -1, -1, -1)
             val newBoard = Engine.applyMove(state.board, move)
@@ -170,9 +192,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     winner = if (winner == 1) 0 else 1)
                 return@launch
             }
+            // Refresh legal moves for remaining dice
+            val newLegal = when {
+                newRemaining.size >= 2 -> Engine.getLegalMoves(newBoard, newRemaining[0], newRemaining[1])
+                newRemaining.size == 1 -> Engine.getLegalMoves(newBoard, newRemaining[0], newRemaining[0])
+                else -> IntArray(0)
+            }
+            android.util.Log.d("gnubg-move", "after move: remaining=$newRemaining newLegal.size=${newLegal.size}")
             _gameState.value = state.copy(
                 board = newBoard,
                 remainingDice = newRemaining,
+                legalMoves = newLegal,
                 moveHistory = state.moveHistory + listOf(state.board),
                 diceHistory = state.diceHistory + listOf(state.remainingDice),
                 pipCountHuman = calcPips(newBoard, 0),
@@ -197,14 +227,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.canCancel) return
         val prevBoard = state.moveHistory.last()
         val prevDice = state.diceHistory.last()
-        _gameState.value = state.copy(
-            board = prevBoard,
-            remainingDice = prevDice,
-            moveHistory = state.moveHistory.dropLast(1),
-            diceHistory = state.diceHistory.dropLast(1),
-            pipCountHuman = calcPips(prevBoard, 0),
-            pipCountEngine = calcPips(prevBoard, 1)
-        )
+        viewModelScope.launch(engineThread) {
+            val legal = if (prevDice.size >= 2)
+                Engine.getLegalMoves(prevBoard, prevDice[0], prevDice[1])
+            else if (prevDice.size == 1)
+                Engine.getLegalMoves(prevBoard, prevDice[0], prevDice[0])
+            else IntArray(0)
+            _gameState.value = state.copy(
+                board = prevBoard,
+                remainingDice = prevDice,
+                legalMoves = legal,
+                moveHistory = state.moveHistory.dropLast(1),
+                diceHistory = state.diceHistory.dropLast(1),
+                pipCountHuman = calcPips(prevBoard, 0),
+                pipCountEngine = calcPips(prevBoard, 1)
+            )
+        }
     }
 
     fun commitMove() {
@@ -254,6 +292,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         for (i in 0 until 24) { pips += board[offset + i] * (i + 1) }
         pips += board[offset + 24] * 25
         return pips
+    }
+
+    fun newGame() {
+        viewModelScope.launch(engineThread) {
+            val startBoard = Engine.newGame()
+            _gameState.value = BoardState(
+                board = startBoard,
+                turn = 0,
+                phase = GamePhase.WAITING_FOR_ROLL,
+                pipCountHuman = calcPips(startBoard, 0),
+                pipCountEngine = calcPips(startBoard, 1)
+            )
+        }
     }
 
     // ── Settings ──────────────────────────────────────────────────────────────

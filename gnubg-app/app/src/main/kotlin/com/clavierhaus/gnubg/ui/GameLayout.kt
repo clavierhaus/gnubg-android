@@ -51,10 +51,12 @@ fun GameLayout(viewModel: GameViewModel) {
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
                                 Text(
-                                    if (gameState.winner == 0) "You win!" else "Engine wins!",
+                                    if (gameState.winner == 0) "You win" else "Engine wins",
                                     color = Color.White, fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                GameButton("New Game", Color(0xFF1565C0)) { viewModel.newGame() }
                             }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
                                 Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
