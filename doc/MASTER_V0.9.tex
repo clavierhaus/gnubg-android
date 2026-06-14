@@ -77,14 +77,14 @@
   colorlinks=true,
   linkcolor=ruleblue,
   urlcolor=ruleblue,
-  pdftitle={GNU Backgammon Android Port -- MASTER v0.9},
+  pdftitle={GNU Backgammon Android Port -- MASTER V6},
   pdfauthor={clavierhaus.at},
 }
 
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\color{gray}GNU Backgammon Android Port --- MASTER v0.9}
+\fancyhead[L]{\small\color{gray}GNU Backgammon Android Port --- MASTER V6}
 \fancyhead[R]{\small\color{gray}clavierhaus.at}
 \fancyfoot[C]{\small\color{gray}\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
@@ -99,7 +99,8 @@
 
 \tableofcontents\newpage
 
-\section{GNU Backgammon Android Port --- MASTER v0.9}\label{gnu-backgammon-android-port-master-v09}
+\section{GNU Backgammon Android Port --- MASTER
+V8}\label{gnu-backgammon-android-port-master-v8}
 
 \textbf{GNU Backgammon by clavierhaus.at}\\
 clavierhaus.at · Vienna · Austria\\
@@ -168,7 +169,7 @@ Property & Value \\
 \endlastfoot
 App name & GNU Backgammon by clavierhaus.at \\
 Android package & \texttt{com.clavierhaus.gnubg} \\
-Minimum Android API & 31 (Android 12.0, Snow Cone) \\
+Minimum Android API & 28 (Android 9.0, Pie) \\
 Target ABI & \texttt{arm64-v8a} \\
 Engine source & GNU Backgammon upstream (gnubg.org) \\
 Repository & https://github.com/clavierhaus/gnubg-android \\
@@ -1560,270 +1561,7 @@ full documentation of this change.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
-\subsection{10. Android UI --- IDE Decision, Design Philosophy \& Way
-Forward}\label{android-ui-ide-decision-design-philosophy}
-
-\subsubsection{10.1 Milestone: Engine
-Complete}\label{milestone-engine-complete}
-
-As of Phase 9, \texttt{libgnubg-engine.so} is feature-complete. All 9
-JNI entry points are implemented and verified on a Pixel 8 Pro (aarch64,
-Android 16). The engine milestone closes the native layer of the project.
-Version v0.9 marks the transition from engine development to Android UI
-development, targeting a 1.0 release.
-
-\subsubsection{10.2 IDE Decision: No IDE --- Pure Terminal
-Workflow}\label{ide-decision-no-ide}
-
-After evaluating all options, the decision is to use a \textbf{pure
-terminal workflow} with no Android Studio or other IDE involved at any
-stage. The rationale:
-
-\begin{itemize}
-\tightlist
-\item
-  Android Studio requires a GUI session, significant RAM overhead, and
-  account/sign-in infrastructure that adds friction without benefit for
-  this project.
-\item
-  The entire build is driven by \texttt{gradle assembleDebug} from the
-  terminal --- the same Gradle invocation Android Studio uses internally.
-\item
-  All source files are plain Kotlin and are edited in any text editor.
-  The project has no XML layouts (see §10.3).
-\item
-  The keyboard-operator workflow (human pastes commands, observes
-  output) is better served by explicit, auditable shell commands than by
-  IDE wizards.
-\end{itemize}
-
-The project structure is a bare Gradle project (\texttt{gnubg-app/})
-created entirely from the terminal. No \texttt{.idea/} directory, no
-Gradle wrapper magic, no IDE-generated boilerplate beyond what is
-explicitly documented here.
-
-\subsubsection{10.3 UI Toolkit: Jetpack
-Compose}\label{ui-toolkit-jetpack-compose}
-
-The Android UI is built exclusively with \textbf{Jetpack Compose} ---
-Android's modern declarative UI toolkit. XML layouts are explicitly
-excluded. Rationale:
-
-\begin{itemize}
-\tightlist
-\item
-  Compose maps directly to the terminal/text-editor workflow: every UI
-  element is a Kotlin \texttt{@Composable} function. There are no
-  parallel XML resource files to maintain.
-\item
-  Material You dynamic colour (\texttt{dynamicColorScheme()}) is
-  first-class in Compose. All colour tokens defined in §10.5 are
-  available as \texttt{MaterialTheme.colorScheme.*} with no additional
-  plumbing.
-\item
-  The board is drawn via Compose's \texttt{Canvas} composable --- the
-  same drawing model as Cairo/SVG, accepting the boarddim.h geometry
-  directly.
-\item
-  Animation (checker movement, dice roll) is \texttt{ObjectAnimator}
-  over Compose state --- no separate animation framework needed.
-\end{itemize}
-
-\subsubsection{10.4 Build Configuration}\label{build-configuration}
-
-\begin{longtable}[]{@{}ll@{}}
-\toprule\noalign{}
-Parameter & Value \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-\texttt{minSdk} & 31 (Android 12 --- dynamic colour guaranteed on all supported devices) \\
-\texttt{targetSdk} & 35 (Android 15 --- current Play Store requirement) \\
-\texttt{compileSdk} & 35 \\
-Kotlin & 2.0.21 \\
-Compose BOM & 2024.09.03 (ships Compose 1.7) \\
-AGP & 8.5.2 \\
-Gradle wrapper & 8.7 \\
-\end{longtable}
-
-\texttt{minSdk = 31} means \texttt{dynamicColorScheme()} is available on
-every supported device with no API version guards. Play Store reach at
-Android 12+ is approximately 75\% of active devices --- acceptable for a
-serious backgammon application not targeting the mass casual market.
-
-\subsubsection{10.5 Design Philosophy}\label{design-philosophy}
-
-\paragraph{Orientation}\label{orientation}
-
-Landscape only. No portrait mode is available or planned.
-\texttt{android:screenOrientation="landscape"} is set in
-\texttt{AndroidManifest.xml}. This fixes the aspect ratio and eliminates
-all layout reflow complexity.
-
-\paragraph{Board Geometry}\label{board-geometry}
-
-The board geometry is derived directly from \texttt{boarddim.h} in the
-gnubg source. The canonical coordinate system is a 108×82 unit grid
-(aspect ratio 1.317:1). All element positions --- point triangles, bar,
-bearoff trays, checker stacks, cube, hinges --- are computed from the
-\texttt{POINT\_X()}, \texttt{TOP\_POINT\_Y}, \texttt{BOT\_POINT\_Y},
-\texttt{CHEQUER\_HEIGHT}, and \texttt{CHEQUER\_WIDTH} macros already
-present in the source. This is a one-time translation; the geometry is
-gnubg's own, faithfully reproduced.
-
-\paragraph{Material You Colour
-System}\label{material-you-colour-system}
-
-The board colour system is built entirely on Android's Material You
-dynamic colour API (\texttt{DynamicColors}, \texttt{dynamicColorScheme}).
-The device wallpaper seed generates the full tonal palette
-automatically. Three user-selectable seed overrides are offered:
-
-\begin{longtable}[]{@{}lll@{}}
-\toprule\noalign{}
-Name & Seed & Character \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Dynamic & Device wallpaper & Default --- fully personalised \\
-Classic & \texttt{\#5D4037} & Warm brown → amber/ochre tones \\
-Ocean & \texttt{\#1565C0} & Deep blue (BG Galaxy territory) \\
-\end{longtable}
-
-Colour role assignments for board elements:
-
-\begin{longtable}[]{@{}ll@{}}
-\toprule\noalign{}
-Element & Material You Role \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Board field & \texttt{tertiaryContainer} \\
-Triangle A (dominant) & \texttt{tertiary} \\
-Triangle B (recessive) & \texttt{tertiaryContainer} at 60\% \\
-Bar & \texttt{surface} darkened \\
-Border/frame & \texttt{secondaryContainer} \\
-Point numbers & \texttt{onSecondaryContainer} \\
-Dark checker fill & \texttt{primary} at P-20 \\
-Light checker fill & \texttt{primary} at P-90 \\
-Checker highlight & white at 25--30\% opacity, offset top-left \\
-Cube fill & \texttt{secondaryContainer} \\
-Cube number & \texttt{onSecondaryContainer} \\
-Die fill & \texttt{secondary} \\
-Die pips & \texttt{onSecondary} \\
-\end{longtable}
-
-\textbf{Rationale for tertiary board / primary checkers:} Using
-\texttt{tertiary} for the board field and \texttt{primary} for the
-checkers guarantees perceptual distinctness across all wallpaper seeds,
-because Material You's algorithm explicitly assigns Primary and Tertiary
-to different hue regions. Both checker colours (P-20 and P-90) are
-within the same Primary hue family, giving a coherent monochromatic
-checker aesthetic while remaining legible against the Tertiary board.
-
-\paragraph{Depth Treatment}\label{depth-treatment}
-
-Checkers, cube, and dice share a consistent, minimal depth language:
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  \textbf{Base shape} --- circle (checkers) or rounded-rect (cube/dice),
-  solid fill.
-\item
-  \textbf{Rim} --- 1.5px stroke, one tonal step darker than fill.
-\item
-  \textbf{Highlight ellipse} --- white at 25--30\% opacity, positioned
-  at \texttt{(cx\ -\ 0.28r,\ cy\ -\ 0.28r)}, sized at
-  \texttt{0.76r\ ×\ 0.38r}. Simulates a diffuse overhead-left light
-  source.
-\end{enumerate}
-
-No drop shadows, no gradients, no bevels. The result reads as material
-without crossing into skeuomorphic excess.
-
-\paragraph{Point Numbers}\label{point-numbers}
-
-Point numbers are placed \textbf{outside} the board border, in the
-frame area above and below the playing surface. They do not appear on
-the playing surface. This costs less than 5\% of screen width and
-eliminates distraction during play. Players who do not use point numbers
-are unaffected.
-
-\paragraph{UI Layer Architecture}\label{ui-layer-architecture}
-
-The Compose UI separates into two layers:
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{Static board layer} --- a single \texttt{Canvas} composable
-  drawing the board field, triangles, bar, bearoff trays, border, and
-  point numbers. Drawn once; does not change during a game.
-\item
-  \textbf{Dynamic piece layer} --- checkers, dice, cube, legal-move
-  highlights, and last-move trail. Positioned programmatically from
-  \texttt{ChequerPosition()} and \texttt{CubePosition()} in
-  \texttt{boardpos.c} via JNI. Checker movement is an
-  \texttt{ObjectAnimator} over Compose state.
-\end{itemize}
-
-This separation means animations touch only the dynamic layer; the board
-surface is never redrawn during play.
-
-\paragraph{Functionality Philosophy}\label{functionality-philosophy}
-
-The UI presents a clean, modern surface while exposing 100\% of gnubg's
-analytical depth. Two access modes:
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{Standard mode} --- board, dice, cube controls, score display.
-  Clean and uncluttered.
-\item
-  \textbf{Expert/Advanced mode} --- analysis panel showing equity, error
-  classification, rollout button, hint mode, tutor mode, SGF
-  import/export. Everything the desktop version offers, surfaced
-  progressively.
-\end{itemize}
-
-No gnubg functionality is removed or stubbed at the UI level. The
-distinction is presentation only.
-
-\subsubsection{10.6 Immediate Next Steps}\label{immediate-next-steps-v09}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  Create the bare Gradle project structure (\texttt{gnubg-app/}) from
-  the terminal --- \texttt{settings.gradle.kts},
-  \texttt{build.gradle.kts}, \texttt{gradle/libs.versions.toml},
-  \texttt{AndroidManifest.xml}, \texttt{MainActivity.kt},
-  \texttt{ui/theme/Theme.kt}.
-\item
-  Verify \texttt{gradle assembleDebug} produces a clean APK with an
-  empty Compose screen.
-\item
-  Implement \texttt{Board.kt} --- the static board \texttt{Canvas}
-  composable from boarddim.h geometry.
-\item
-  Implement \texttt{BoardState.kt} and \texttt{EngineViewModel.kt} ---
-  the bridge between the JNI engine and Compose state.
-\item
-  Wire checkers, dice, cube as the dynamic piece layer.
-\item
-  Add the analysis panel as the Expert mode overlay.
-\end{enumerate}
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\emph{GNU Backgammon Android Port --- MASTER v0.9 --- clavierhaus.at ---
+\emph{GNU Backgammon Android Port --- MASTER V8 --- clavierhaus.at ---
 June 2026}
 
 \end{document}

@@ -5,21 +5,36 @@ object Engine {
         System.loadLibrary("gnubg-engine")
     }
 
+    // Initialisation
     external fun initialise(weightsPath: String): Boolean
-    external fun evaluatePosition(board: IntArray): FloatArray?
-    external fun findBestMove(board: IntArray, die0: Int, die1: Int): IntArray?
-    external fun swapBoard(board: IntArray): IntArray
-    external fun classifyPosition(board: IntArray): Int
-    external fun applyMove(board: IntArray, move: IntArray): IntArray
-    external fun getLegalMoves(board: IntArray, die0: Int, die1: Int): IntArray
-    external fun isGameOver(board: IntArray): Int
-    external fun pipCount(board: IntArray): IntArray
-    external fun rollDice(): IntArray
+
+    // Match state management
     external fun newGame(): IntArray
+    external fun rollDice(): IntArray
+    external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
+    external fun applyMoveString(moveStr: String): IntArray
+    external fun formatMove(board: IntArray, move: IntArray): String
+
+    // Match state queries
+    external fun getMatchBoard(): IntArray
+    external fun getMatchDice(): IntArray
+    external fun getMatchTurn(): Int
+    external fun getMatchStatus(): Int
+
+    // Board utilities
+    external fun swapBoard(board: IntArray): IntArray
+    external fun pipCount(board: IntArray): IntArray
+    external fun isGameOver(board: IntArray): Int
+
+    // Analysis
+    external fun evaluatePosition(board: IntArray): FloatArray?
+    external fun classifyPosition(board: IntArray): Int
     external fun cubeDecision(board: IntArray, cubeValue: Int, cubeOwner: Int,
                                matchTo: Int, score0: Int, score1: Int,
                                crawford: Int): IntArray?
     external fun rollout(board: IntArray, trials: Int): FloatArray?
+
+    // SGF
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
 }

@@ -115,9 +115,12 @@ fun BackgammonBoard(
             // 3. Triangles
             for (n in 1..24) {
                 val x = pointX(n)
-                val color = if (n % 2 == 0) p.triangleA else p.triangleB
-                drawTriangle(color, ux(x), uy(BRD_H), ux(PT_W), uy(PT_H), true)
-                drawTriangle(color, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
+                // Bottom triangles: points 1-12, alternate starting with A at point 1
+                // Top triangles: points 13-24, must alternate opposite to bottom
+                val bottomColor = if (n % 2 == 1) p.triangleA else p.triangleB
+                val topColor    = if (n % 2 == 1) p.triangleB else p.triangleA
+                drawTriangle(topColor,    ux(x), uy(BRD_H),         ux(PT_W), uy(PT_H), true)
+                drawTriangle(bottomColor, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
             }
 
             // 4. Bearoff trays
@@ -153,14 +156,25 @@ fun BackgammonBoard(
             val humanOnBar  = gameState.board[49]
             val barR = r * 0.9f
 
+            // Engine bar checkers: below top pip count
+            val engineBarStartY = uy(BRD_H + 9f)
             for (i in 0 until engineOnBar) {
-                val cy = uy(BRD_H) + barR + i * barR * 2.1f
+                val cy = engineBarStartY + barR + i * barR * 2.1f
                 drawChecker(barCentreX, cy, barR, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
             }
+            // Human bar checkers: above bottom pip count
+            val humanBarStartY = uy(TOT_H - BRD_H - 9f)
             for (i in 0 until humanOnBar) {
-                val cy = uy(TOT_H - BRD_H) - barR - i * barR * 2.1f
+                val cy = humanBarStartY - barR - i * barR * 2.1f
                 drawChecker(barCentreX, cy, barR, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
             }
+
+            // Cube drawn after bar checkers
+            val cubeBarCX = ux(MID_X)
+            val cubeBarCY = uy(TOT_H / 2f)
+            val cubeSz = ux(BAR_W * 0.75f)
+            drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, 64,
+                p.cubeFace, p.cubeDot, p.cubeText)
 
             // 6. Checkers from live board state
             for (n in 1..24) {
@@ -228,13 +242,9 @@ fun BackgammonBoard(
                 }
             }
 
-            // 8. Cube + pip counts
+            // 8. Cube + pip counts (drawn before bar checkers so checkers appear on top)
             val barCX    = ux(MID_X)
             val barCY    = uy(TOT_H / 2f)
-            val cubeSize = ux(BAR_W * 0.75f)
-            drawCube(barCX - cubeSize / 2f, barCY - cubeSize / 2f, cubeSize, 64,
-                p.cubeFace, p.cubeDot, p.cubeText)
-
             val pipTextSize = ux(BAR_W * 0.35f)
             val topPipY     = uy(BRD_H + 5f)
             val botPipY     = uy(TOT_H - BRD_H - 3.5f)

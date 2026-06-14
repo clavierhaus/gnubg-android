@@ -48,7 +48,7 @@ ThreadData td;
 
 /* ── msBoard — returns current board position ────────────────────────────── */
 ConstTanBoard msBoard(void) {
-    return NULL;
+    return (ConstTanBoard)ms.anBoard;
 }
 
 /* ── save_autosave ───────────────────────────────────────────────────────── */
