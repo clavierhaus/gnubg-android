@@ -149,7 +149,7 @@ Java_com_clavierhaus_gnubg_Engine_findBestMove(JNIEnv *env, jobject thiz,
 
     pthread_mutex_unlock(&gnubg_lock);
 
-    if (rc != 0) {
+    if (rc < 0) {
         LOGE("FindBestMove failed: %d", rc);
         return NULL;
     }

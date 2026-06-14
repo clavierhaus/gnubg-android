@@ -138,20 +138,7 @@ fun BackgammonBoard(
                 drawLine(p.trayOutline, Offset(tx + ol, ty + trayH - ol), Offset(tx + tw, ty + trayH - ol), ol)
             }
 
-            // Bearoff checkers
-            val slotPad = ol * 3f
-            val slotH   = trayH / 18f
-            val slotG   = trayH / 90f
-            val slotW   = tw - slotPad * 2f
-            val slotX   = tx + slotPad
-            for (i in 0 until 3) {
-                drawTrayChecker(slotX, topTrayY + slotPad + i * (slotH + slotG),
-                    slotW, slotH, p.checkerLight, p.checkerLightRim)
-            }
-            for (i in 0 until 4) {
-                drawTrayChecker(slotX, botTrayY + trayH - slotPad - (i + 1) * slotH - i * slotG,
-                    slotW, slotH, p.checkerDark, p.checkerDarkRim)
-            }
+            // Bearoff tray — checkers rendered from game state when bearing off is implemented
 
             // 5. Bar
             drawRect(p.bar,

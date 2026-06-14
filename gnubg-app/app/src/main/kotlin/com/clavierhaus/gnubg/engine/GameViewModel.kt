@@ -134,14 +134,28 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val nLegal = state.legalMoves.size / 8
             android.util.Log.d("gnubg-move", "tap point=$point gnubgSrc=$gnubgSrc nLegal=$nLegal")
 
-            // Find first legal sub-move from gnubgSrc
+            // Find legal sub-move from gnubgSrc using the first remaining die
+            val die = state.remainingDice.first()
             var matchedMove: IntArray? = null
             outer@ for (i in 0 until nLegal) {
                 val m = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
                 for (j in 0..3) {
-                    if (m[j*2] == gnubgSrc && m[j*2+1] >= 0) {
-                        matchedMove = intArrayOf(m[j*2], m[j*2+1], -1, -1, -1, -1, -1, -1)
+                    val src = m[j*2]; val dst = m[j*2+1]
+                    if (src == gnubgSrc && dst >= 0 && src - dst == die) {
+                        matchedMove = intArrayOf(src, dst, -1, -1, -1, -1, -1, -1)
                         break@outer
+                    }
+                }
+            }
+            // Fallback: match by source only if die-exact match not found
+            if (matchedMove == null) {
+                outer@ for (i in 0 until nLegal) {
+                    val m = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
+                    for (j in 0..3) {
+                        if (m[j*2] == gnubgSrc && m[j*2+1] >= 0) {
+                            matchedMove = intArrayOf(m[j*2], m[j*2+1], -1, -1, -1, -1, -1, -1)
+                            break@outer
+                        }
                     }
                 }
             }
@@ -186,10 +200,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.phase != GamePhase.HUMAN_MOVING) return
         val dice = state.dice ?: return
         if (dice.first == dice.second) return
-        _gameState.value = state.copy(
-            dice = Pair(dice.second, dice.first),
-            remainingDice = state.remainingDice.reversed()
-        )
+        val newRemaining = state.remainingDice.reversed()
+        viewModelScope.launch(engineThread) {
+            val newLegal = if (newRemaining.size >= 2)
+                Engine.getLegalMoves(state.board, newRemaining[0], newRemaining[1])
+            else if (newRemaining.size == 1)
+                Engine.getLegalMoves(state.board, newRemaining[0], newRemaining[0])
+            else IntArray(0)
+            _gameState.value = state.copy(
+                dice = Pair(dice.second, dice.first),
+                remainingDice = newRemaining,
+                legalMoves = newLegal
+            )
+        }
     }
 
     fun cancelMove() {
@@ -236,8 +259,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun engineMove(d0: Int, d1: Int) {
         val state = _gameState.value
-        // Swap board so engine checkers are in anBoard[1] (moving player perspective)
+        android.util.Log.d("gnubg-engine", "engineMove d0=$d0 d1=$d1")
+        android.util.Log.d("gnubg-engine", "board[0..24]=${state.board.slice(0..24)}")
+        android.util.Log.d("gnubg-engine", "board[25..49]=${state.board.slice(25..49)}")
         val swapped = Engine.swapBoard(state.board)
+        android.util.Log.d("gnubg-engine", "swapped[0..24]=${swapped.slice(0..24)}")
+        android.util.Log.d("gnubg-engine", "swapped[25..49]=${swapped.slice(25..49)}")
+        val swappedLegal = Engine.getLegalMoves(swapped, d0, d1)
+        android.util.Log.d("gnubg-engine", "swapped legal moves: ${swappedLegal.size / 8}")
         val move = Engine.findBestMove(swapped, d0, d1) ?: return
         // Apply move to swapped board, then swap back
         val newBoardSwapped = Engine.applyMove(swapped, move)
