@@ -47,4 +47,5 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }

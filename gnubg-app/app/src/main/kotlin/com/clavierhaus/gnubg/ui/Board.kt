@@ -13,22 +13,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-
-private val ColorBoardField       = Color(0xFF1565C0)
-private val ColorTriangleA        = Color(0xFF1976D2)
-private val ColorTriangleB        = Color(0xFF0D47A1)
-private val ColorBar              = Color(0xFF0A3880)
-private val ColorBearoff          = Color(0xFF0F3F8C)
-private val ColorFrame            = Color(0xFF082D6B)
-private val ColorNumbers          = Color(0xFFB3C9F0)
-private val ColorCheckerDark      = Color(0xFF0D1B4B)
-private val ColorCheckerDarkRim   = Color(0xFF060D26)
-private val ColorCheckerLight     = Color(0xFFE8F0FF)
-private val ColorCheckerLightRim  = Color(0xFFB3C9F0)
-private val ColorCheckerHighlight = Color(0x47FFFFFF)
-private val ColorDiceDark         = Color(0xFF0D47A1)  // dark triangle colour
-private val ColorDiceLight        = Color(0xFF1976D2)  // light triangle colour
-private val ColorDicePip          = Color(0xFFFFFFFF)
+import androidx.compose.material3.MaterialTheme
+import com.clavierhaus.gnubg.engine.BoardTheme
+import com.clavierhaus.gnubg.engine.GameSettings
 
 private const val TOT_W  = 102f
 private const val TOT_H  = 82f
@@ -42,23 +29,15 @@ private const val RIGHT_X = TOT_W - BRD_W - BRF_W
 private const val MID_X   = (LEFT_X + RIGHT_X) / 2f
 private const val HALF_W  = (RIGHT_X - LEFT_X - BAR_W) / 2f
 private const val PT_W    = HALF_W / 6f
-
-// Dice size
 private const val DIE_W   = PT_W * 0.8f
 
 private val STARTING_POSITION = mapOf(
-    24 to Pair(0, 2),
-    13 to Pair(0, 5),
-    8  to Pair(0, 3),
-    6  to Pair(0, 5),
-    1  to Pair(1, 2),
-    12 to Pair(1, 5),
-    17 to Pair(1, 3),
-    19 to Pair(1, 5)
+    24 to Pair(0, 2), 13 to Pair(0, 5),
+    8  to Pair(0, 3), 6  to Pair(0, 5),
+    1  to Pair(1, 2), 12 to Pair(1, 5),
+    17 to Pair(1, 3), 19 to Pair(1, 5)
 )
 
-// Pip positions for faces 1-6 as fractions of die size
-// Each entry is list of (fx, fy) where 0.0=top-left, 1.0=bottom-right
 private val PIP_POSITIONS = mapOf(
     1 to listOf(Pair(0.5f, 0.5f)),
     2 to listOf(Pair(0.25f, 0.25f), Pair(0.75f, 0.75f)),
@@ -78,11 +57,39 @@ private fun pointX(n: Int): Float = when {
 private fun pointCentreX(n: Int): Float = pointX(n) + PT_W / 2f
 
 @Composable
-fun BackgammonBoard() {
+fun BackgammonBoard(settings: GameSettings = GameSettings()) {
+    val cs = MaterialTheme.colorScheme
+    val p = if (settings.boardTheme == BoardTheme.SYSTEM) {
+        BoardPalette(
+            frame            = cs.surface,
+            boardField       = cs.tertiaryContainer,
+            triangleA        = cs.tertiary,
+            triangleB        = cs.tertiaryContainer.copy(alpha = 0.6f),
+            bar              = cs.surfaceVariant,
+            bearoff          = cs.secondaryContainer,
+            numbers          = cs.onSecondaryContainer,
+            checkerDark      = cs.primary,
+            checkerDarkRim   = cs.onPrimary.copy(alpha = 0.5f),
+            checkerLight     = cs.primaryContainer,
+            checkerLightRim  = cs.primary.copy(alpha = 0.5f),
+            checkerHighlight = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.28f),
+            diceDark         = cs.secondary,
+            diceLight        = cs.secondaryContainer,
+            dicePip          = cs.onSecondary,
+            cubeFace         = cs.tertiary,
+            cubeDot          = cs.onTertiary,
+            cubeText         = cs.onTertiary,
+            pipText          = cs.onSurfaceVariant,
+            trayOutline      = cs.onSurface.copy(alpha = 0.3f),
+            trayDarkBorder   = cs.surface,
+        )
+    } else {
+        BoardPalettes.from(settings.boardTheme)
+    }
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val sx = size.width  / TOT_W
         val sy = size.height / TOT_H
-
         fun ux(u: Float) = u * sx
         fun uy(u: Float) = u * sy
 
@@ -90,143 +97,214 @@ fun BackgammonBoard() {
         val step = uy(PT_H) / 5f
 
         // 1. Frame
-        drawRect(ColorFrame, size = size)
+        drawRect(p.frame, size = size)
 
         // 2. Board field
-        drawRect(
-            color = ColorBoardField,
+        drawRect(p.boardField,
             topLeft = Offset(ux(BRD_W), uy(BRD_H)),
-            size = Size(ux(TOT_W - 2 * BRD_W), uy(TOT_H - 2 * BRD_H))
-        )
+            size = Size(ux(TOT_W - 2 * BRD_W), uy(TOT_H - 2 * BRD_H)))
 
         // 3. Triangles
         for (n in 1..24) {
             val x = pointX(n)
-            val color = if (n % 2 == 0) ColorTriangleA else ColorTriangleB
+            val color = if (n % 2 == 0) p.triangleA else p.triangleB
             drawTriangle(color, ux(x), uy(BRD_H), ux(PT_W), uy(PT_H), true)
             drawTriangle(color, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
         }
 
-        // 4. Bearoff tray
-        drawRect(
-            color = ColorBearoff,
-            topLeft = Offset(ux(RIGHT_X), uy(BRD_H)),
-            size = Size(ux(BRF_W), uy(TOT_H - 2 * BRD_H))
-        )
+        // 4. Bearoff trays
+        val tx      = ux(RIGHT_X)
+        val tw      = ux(BRF_W)
+        val trayGap = uy(6f)
+        val trayH   = (uy(TOT_H - 2 * BRD_H) - trayGap) / 2f
+        val topTrayY = uy(BRD_H)
+        val botTrayY = uy(BRD_H) + trayH + trayGap
+        val ol = 1.5f
+
+        listOf(topTrayY, botTrayY).forEach { ty ->
+            drawRect(p.bearoff, topLeft = Offset(tx, ty), size = Size(tw, trayH))
+            drawRect(p.trayDarkBorder, topLeft = Offset(tx, ty), size = Size(tw, trayH),
+                style = Stroke(width = 1f))
+            drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + ol, ty + trayH - ol), ol)
+            drawLine(p.trayOutline, Offset(tx + ol, ty + ol), Offset(tx + tw, ty + ol), ol)
+            drawLine(p.trayOutline, Offset(tx + ol, ty + trayH - ol), Offset(tx + tw, ty + trayH - ol), ol)
+        }
+
+        // Bearoff checkers — example
+        val trayR    = tw * 0.42f
+        val trayStep = trayR * 2.1f
+        val trayCX   = tx + tw / 2f
+        val slotPad = ol * 3f
+        val slotH  = trayH / 18f
+        val slotG  = trayH / 90f
+        val slotW  = tw - slotPad * 2f
+        val slotX  = tx + slotPad
+        for (i in 0 until 3) {
+            val slotY = topTrayY + slotPad + i * (slotH + slotG)
+            drawTrayChecker(slotX, slotY, slotW, slotH, p.checkerLight, p.checkerLightRim)
+        }
+        for (i in 0 until 4) {
+            val slotY = botTrayY + trayH - slotPad - (i + 1) * slotH - i * slotG
+            drawTrayChecker(slotX, slotY, slotW, slotH, p.checkerDark, p.checkerDarkRim)
+        }
 
         // 5. Bar
-        drawRect(
-            color = ColorBar,
+        drawRect(p.bar,
             topLeft = Offset(ux(MID_X - BAR_W / 2f), uy(BRD_H)),
-            size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H))
-        )
+            size = Size(ux(BAR_W), uy(TOT_H - 2 * BRD_H)))
 
         // 6. Checkers
         for ((point, playerCount) in STARTING_POSITION) {
             val (player, count) = playerCount
-            val cx = ux(pointCentreX(point))
+            val cx    = ux(pointCentreX(point))
             val isTop = point in 13..24
-            val fill = if (player == 0) ColorCheckerDark else ColorCheckerLight
-            val rim  = if (player == 0) ColorCheckerDarkRim else ColorCheckerLightRim
-
+            val fill  = if (player == 0) p.checkerDark  else p.checkerLight
+            val rim   = if (player == 0) p.checkerDarkRim else p.checkerLightRim
             for (i in 0 until count) {
-                val cy = if (isTop) {
-                    uy(BRD_H) + r + i * step
-                } else {
-                    uy(TOT_H - BRD_H) - r - i * step
-                }
-                drawChecker(cx, cy, r, fill, rim, player == 1)
+                val cy = if (isTop) uy(BRD_H) + r + i * step
+                         else       uy(TOT_H - BRD_H) - r - i * step
+                drawChecker(cx, cy, r, fill, rim, player == 1, p.checkerHighlight)
             }
         }
 
-        // 7. Dice — placeholder roll 3-1
-        // Dark player (0): centre of right half
-        // Light player (1): centre of left half
-        val dw = ux(DIE_W)
-        val dh = ux(DIE_W)  // square die
+        // 7. Dice — placeholder 3-1
+        val dw  = ux(DIE_W); val dh = ux(DIE_W)
         val gap = ux(PT_W * 0.15f)
         val boardCentreY = uy(TOT_H / 2f)
+        val rightHalfCX  = ux((MID_X + BAR_W / 2f + RIGHT_X) / 2f)
+        val leftHalfCX   = ux((LEFT_X + MID_X - BAR_W / 2f) / 2f)
+        drawDie(rightHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, p.diceDark,  p.dicePip, p.frame)
+        drawDie(rightHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, p.diceDark,  p.dicePip, p.frame)
+        drawDie(leftHalfCX  - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, p.diceLight, p.dicePip, p.frame)
+        drawDie(leftHalfCX  + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, p.diceLight, p.dicePip, p.frame)
 
-        // Dark player dice in right half centre
-        val rightHalfCentreX = ux((MID_X + BAR_W / 2f + RIGHT_X) / 2f)
-        drawDie(rightHalfCentreX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, ColorDiceDark)
-        drawDie(rightHalfCentreX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, ColorDiceDark)
+        // 8. Cube + pip counts
+        val barCX    = ux(MID_X)
+        val barCY    = uy(TOT_H / 2f)
+        val cubeSize = ux(BAR_W * 0.75f)
+        drawCube(barCX - cubeSize / 2f, barCY - cubeSize / 2f, cubeSize, 64, p.cubeFace, p.cubeDot, p.cubeText)
 
-        // Light player dice in left half centre
-        val leftHalfCentreX = ux((LEFT_X + MID_X - BAR_W / 2f) / 2f)
-        drawDie(leftHalfCentreX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, 3, ColorDiceLight)
-        drawDie(leftHalfCentreX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, 1, ColorDiceLight)
+        val pipTextSize = ux(BAR_W * 0.35f)
+        val topPipY     = uy(BRD_H + 5f)
+        val botPipY     = uy(TOT_H - BRD_H - 3.5f)
 
-        // 8. Point numbers in frame
-        val textSize = uy(BRD_H) * 0.75f
         drawIntoCanvas { canvas ->
-            val paint = android.graphics.Paint().apply {
-                color = ColorNumbers.toArgb()
-                this.textSize = textSize
+            val pipPaint = android.graphics.Paint().apply {
+                color = p.pipText.toArgb()
+                textSize = pipTextSize
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true; isFakeBoldText = true
+            }
+            if (settings.showPipCount) {
+                canvas.nativeCanvas.drawText("167", barCX, topPipY, pipPaint)
+                canvas.nativeCanvas.drawText("167", barCX, botPipY, pipPaint)
+            }
+            val numPaint = android.graphics.Paint().apply {
+                color = p.numbers.toArgb()
+                textSize = uy(BRD_H) * 0.75f
                 textAlign = android.graphics.Paint.Align.CENTER
                 isAntiAlias = true
             }
-            for (n in 13..24) {
-                canvas.nativeCanvas.drawText(
-                    n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, paint
-                )
-            }
-            for (n in 12 downTo 1) {
-                canvas.nativeCanvas.drawText(
-                    n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, paint
-                )
+            if (settings.showPointNumbers) {
+                for (n in 13..24) canvas.nativeCanvas.drawText(
+                    n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, numPaint)
+                for (n in 12 downTo 1) canvas.nativeCanvas.drawText(
+                    n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, numPaint)
             }
         }
+    }
+}
+
+private fun DrawScope.drawCube(
+    left: Float, top: Float, size: Float, value: Int,
+    face: Color, dot: Color, text: Color
+) {
+    val corner = size * 0.15f
+    val path = Path().apply {
+        moveTo(left + corner, top)
+        lineTo(left + size - corner, top)
+        quadraticTo(left + size, top, left + size, top + corner)
+        lineTo(left + size, top + size - corner)
+        quadraticTo(left + size, top + size, left + size - corner, top + size)
+        lineTo(left + corner, top + size)
+        quadraticTo(left, top + size, left, top + size - corner)
+        lineTo(left, top + corner)
+        quadraticTo(left, top, left + corner, top)
+        close()
+    }
+    drawPath(path, face)
+    drawPath(path, dot, style = Stroke(width = size * 0.05f))
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            color = text.toArgb()
+            textSize = size * 0.5f
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true; isFakeBoldText = true
+        }
+        canvas.nativeCanvas.drawText(
+            value.toString(), left + size / 2f,
+            top + size / 2f - (paint.descent() + paint.ascent()) / 2f, paint)
     }
 }
 
 private fun DrawScope.drawDie(
     left: Float, top: Float, w: Float, h: Float,
-    face: Int, dieColor: Color
+    face: Int, dieColor: Color, pipColor: Color, borderColor: Color
 ) {
     val corner = w * 0.15f
     val path = Path().apply {
         moveTo(left + corner, top)
         lineTo(left + w - corner, top)
-        quadraticBezierTo(left + w, top, left + w, top + corner)
+        quadraticTo(left + w, top, left + w, top + corner)
         lineTo(left + w, top + h - corner)
-        quadraticBezierTo(left + w, top + h, left + w - corner, top + h)
+        quadraticTo(left + w, top + h, left + w - corner, top + h)
         lineTo(left + corner, top + h)
-        quadraticBezierTo(left, top + h, left, top + h - corner)
+        quadraticTo(left, top + h, left, top + h - corner)
         lineTo(left, top + corner)
-        quadraticBezierTo(left, top, left + corner, top)
+        quadraticTo(left, top, left + corner, top)
         close()
     }
     drawPath(path, dieColor)
-    drawPath(path, ColorFrame, style = Stroke(width = w * 0.04f))
-
-    // Pips
+    drawPath(path, borderColor, style = Stroke(width = w * 0.04f))
     val pipR = w * 0.08f
     PIP_POSITIONS[face]?.forEach { (fx, fy) ->
-        drawCircle(
-            color = ColorDicePip,
-            radius = pipR,
-            center = Offset(left + fx * w, top + fy * h)
-        )
+        drawCircle(pipColor, pipR, Offset(left + fx * w, top + fy * h))
     }
 }
 
 private fun DrawScope.drawChecker(
     cx: Float, cy: Float, r: Float,
-    fill: Color, rim: Color, highlight: Boolean
+    fill: Color, rim: Color, highlight: Boolean,
+    highlightColor: Color
 ) {
     drawCircle(fill, r, Offset(cx, cy))
-    drawCircle(
-        color = rim, radius = r, center = Offset(cx, cy),
-        style = Stroke(width = r * 0.08f)
-    )
+    drawCircle(rim, r, Offset(cx, cy), style = Stroke(width = r * 0.08f))
     if (highlight) {
-        drawOval(
-            color = ColorCheckerHighlight,
+        drawOval(highlightColor,
             topLeft = Offset(cx - r * 0.66f, cy - r * 0.47f),
-            size = Size(r * 0.76f, r * 0.38f)
-        )
+            size = Size(r * 0.76f, r * 0.38f))
     }
+}
+
+private fun DrawScope.drawTrayChecker(
+    left: Float, top: Float, w: Float, h: Float,
+    fill: Color, rim: Color
+) {
+    val corner = h * 0.3f
+    val path = Path().apply {
+        moveTo(left + corner, top)
+        lineTo(left + w - corner, top)
+        quadraticTo(left + w, top, left + w, top + corner)
+        lineTo(left + w, top + h - corner)
+        quadraticTo(left + w, top + h, left + w - corner, top + h)
+        lineTo(left + corner, top + h)
+        quadraticTo(left, top + h, left, top + h - corner)
+        lineTo(left, top + corner)
+        quadraticTo(left, top, left + corner, top)
+        close()
+    }
+    drawPath(path, fill)
+    drawPath(path, rim, style = Stroke(width = h * 0.12f))
 }
 
 private fun DrawScope.drawTriangle(
@@ -235,13 +313,9 @@ private fun DrawScope.drawTriangle(
 ) {
     val path = Path().apply {
         if (pointingDown) {
-            moveTo(x, y)
-            lineTo(x + width, y)
-            lineTo(x + width / 2f, y + height)
+            moveTo(x, y); lineTo(x + width, y); lineTo(x + width / 2f, y + height)
         } else {
-            moveTo(x, y)
-            lineTo(x + width, y)
-            lineTo(x + width / 2f, y - height)
+            moveTo(x, y); lineTo(x + width, y); lineTo(x + width / 2f, y - height)
         }
         close()
     }

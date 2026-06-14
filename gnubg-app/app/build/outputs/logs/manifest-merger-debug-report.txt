@@ -41,6 +41,9 @@ MERGED from [androidx.graphics:graphics-path:1.0.1] /home/peter/.gradle/caches/8
 MERGED from [androidx.core:core:1.13.1] /home/peter/.gradle/caches/8.14/transforms/ca003e9e60148385819336593705f2d7/transformed/core-1.13.1/AndroidManifest.xml:17:1-30:12
 MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /home/peter/.gradle/caches/8.14/transforms/a220f406bcf14a7240498f814dc481eb/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:17:1-23:12
 MERGED from [androidx.core:core-ktx:1.13.1] /home/peter/.gradle/caches/8.14/transforms/5e618e30b4188bdbd35ac007885dee39/transformed/core-ktx-1.13.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/ffc87c4ef1cc529529feca252cfd9bb8/transformed/datastore-core-release/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.datastore:datastore-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/f69caa423aacaa3a6e50e569c2b3a25d/transformed/datastore-release/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/6270cd5ee7c2c50a5b31d8e89a15cff3/transformed/datastore-preferences-release/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.compose.runtime:runtime-android:1.7.3] /home/peter/.gradle/caches/8.14/transforms/ac42cb15a451381bd609661479aded97/transformed/runtime-release/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.3] /home/peter/.gradle/caches/8.14/transforms/e55ed8b5d6f96a92bdfa2d22da3240b4/transformed/runtime-saveable-release/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/peter/.gradle/caches/8.14/transforms/7c74608e02c6317c0419637d43d37f3e/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
@@ -86,7 +89,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/peter/.gradle/caches/
 activity#com.clavierhaus.gnubg.MainActivity
 ADDED from /home/erweitert/gnubg-android/gnubg-app/app/src/main/AndroidManifest.xml:8:9-18:20
 	android:screenOrientation
-		ADDED from /home/erweitert/gnubg-android/gnubg-app/app/src/main/AndroidManifest.xml:11:13-50
+		ADDED from /home/erweitert/gnubg-android/gnubg-app/app/src/main/AndroidManifest.xml:11:13-56
 	android:windowSoftInputMode
 		ADDED from /home/erweitert/gnubg-android/gnubg-app/app/src/main/AndroidManifest.xml:12:13-54
 	android:exported
@@ -183,6 +186,12 @@ MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /home/peter/
 MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] /home/peter/.gradle/caches/8.14/transforms/a220f406bcf14a7240498f814dc481eb/transformed/customview-poolingcontainer-1.0.0/AndroidManifest.xml:20:5-21:38
 MERGED from [androidx.core:core-ktx:1.13.1] /home/peter/.gradle/caches/8.14/transforms/5e618e30b4188bdbd35ac007885dee39/transformed/core-ktx-1.13.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-ktx:1.13.1] /home/peter/.gradle/caches/8.14/transforms/5e618e30b4188bdbd35ac007885dee39/transformed/core-ktx-1.13.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/ffc87c4ef1cc529529feca252cfd9bb8/transformed/datastore-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/ffc87c4ef1cc529529feca252cfd9bb8/transformed/datastore-core-release/AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/f69caa423aacaa3a6e50e569c2b3a25d/transformed/datastore-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/f69caa423aacaa3a6e50e569c2b3a25d/transformed/datastore-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/6270cd5ee7c2c50a5b31d8e89a15cff3/transformed/datastore-preferences-release/AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] /home/peter/.gradle/caches/8.14/transforms/6270cd5ee7c2c50a5b31d8e89a15cff3/transformed/datastore-preferences-release/AndroidManifest.xml:20:5-44
 MERGED from [androidx.compose.runtime:runtime-android:1.7.3] /home/peter/.gradle/caches/8.14/transforms/ac42cb15a451381bd609661479aded97/transformed/runtime-release/AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.runtime:runtime-android:1.7.3] /home/peter/.gradle/caches/8.14/transforms/ac42cb15a451381bd609661479aded97/transformed/runtime-release/AndroidManifest.xml:5:5-44
 MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.3] /home/peter/.gradle/caches/8.14/transforms/e55ed8b5d6f96a92bdfa2d22da3240b4/transformed/runtime-saveable-release/AndroidManifest.xml:5:5-44

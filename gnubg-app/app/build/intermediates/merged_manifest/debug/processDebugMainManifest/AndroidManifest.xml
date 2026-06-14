@@ -24,7 +24,7 @@
             android:name="com.clavierhaus.gnubg.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="stateHidden" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
