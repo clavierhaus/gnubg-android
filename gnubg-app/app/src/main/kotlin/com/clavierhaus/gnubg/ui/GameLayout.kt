@@ -46,46 +46,51 @@ fun GameLayout(viewModel: GameViewModel) {
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Roll button
-                        if (engineReady &&
+                        when {
+                            gameState.phase == GamePhase.GAME_OVER -> {
+                                Text(
+                                    if (gameState.winner == 0) "You win!" else "Engine wins!",
+                                    color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            gameState.phase == GamePhase.ENGINE_THINKING -> {
+                                Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
+                            }
+                            engineReady &&
                             gameState.phase == GamePhase.WAITING_FOR_ROLL &&
-                            gameState.turn == 0) {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        Color(0xFF1976D2),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .clickable { viewModel.rollDice() }
-                                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Roll", color = Color.White,
-                                    fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            gameState.turn == 0 -> {
+                                GameButton("Roll", Color(0xFF1976D2)) { viewModel.rollDice() }
+                            }
+                            gameState.phase == GamePhase.HUMAN_MOVING -> {
+                                // Commit button
+                                GameButton(
+                                    label = "Commit",
+                                    color = if (gameState.canCommit) Color(0xFF2E7D32)
+                                            else Color(0xFF444444),
+                                    enabled = gameState.canCommit
+                                ) { viewModel.commitMove() }
+
+                                // Cancel button
+                                GameButton(
+                                    label = "Cancel",
+                                    color = if (gameState.canCancel) Color(0xFF8B1A1A)
+                                            else Color(0xFF444444),
+                                    enabled = gameState.canCancel
+                                ) { viewModel.cancelMove() }
                             }
                         }
 
-                        if (gameState.phase == GamePhase.ENGINE_THINKING) {
-                            Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        if (gameState.phase == GamePhase.GAME_OVER) {
-                            Text(
-                                if (gameState.winner == 0) "You win!" else "Engine wins!",
-                                color = Color.White, fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Turn indicator
                         Text(
-                            text = when (gameState.turn) {
-                                0 -> "Your turn"
-                                else -> "Engine"
+                            text = when {
+                                gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> "Your turn"
+                                gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 1 -> "Engine's turn"
+                                gameState.phase == GamePhase.HUMAN_MOVING -> "Moving"
+                                else -> ""
                             },
                             color = Color(0xFFB3C9F0),
                             fontSize = 11.sp
@@ -114,5 +119,28 @@ fun GameLayout(viewModel: GameViewModel) {
                     .clickable { showSettings = true }
             )
         }
+    }
+}
+
+@Composable
+private fun GameButton(
+    label: String,
+    color: Color,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .background(color, RoundedCornerShape(8.dp))
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            color = if (enabled) Color.White else Color(0xFF888888),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

@@ -86,128 +86,183 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun rollDice() {
         val state = _gameState.value
         if (state.phase != GamePhase.WAITING_FOR_ROLL) return
+        if (_engineReady.value.not()) return
 
         viewModelScope.launch(engineThread) {
             val dice = Engine.rollDice()
             val d0 = dice[0]; val d1 = dice[1]
-            val legal = Engine.getLegalMoves(state.board, d0, d1)
 
             if (state.turn == 0) {
-                // Human turn
+                val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
+                val legal = Engine.getLegalMoves(state.board, d0, d1)
                 _gameState.value = state.copy(
                     dice = Pair(d0, d1),
+                    remainingDice = remaining,
+                    blockedDice = emptyList(),
                     legalMoves = legal,
-                    phase = if (legal.isEmpty()) GamePhase.WAITING_FOR_ROLL else GamePhase.HUMAN_MOVING
+                    moveHistory = emptyList(),
+                    diceHistory = emptyList(),
+                    phase = if (legal.isEmpty()) GamePhase.WAITING_FOR_ROLL
+                            else GamePhase.HUMAN_MOVING
                 )
             } else {
-                // Engine turn
                 _gameState.value = state.copy(
                     dice = Pair(d0, d1),
                     phase = GamePhase.ENGINE_THINKING
                 )
-                delay(500) // brief pause so player can see the roll
+                delay(500)
                 engineMove(d0, d1)
             }
         }
     }
 
-    fun selectPoint(point: Int) {
+    fun tapSource(point: Int) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
-        _gameState.value = state.copy(selectedPoint = point)
-    }
+        if (state.remainingDice.isEmpty()) return
 
-    fun moveTo(destPoint: Int) {
-        val state = _gameState.value
-        if (state.phase != GamePhase.HUMAN_MOVING) return
-        val from = state.selectedPoint
-        if (from < 0) return
+        viewModelScope.launch(engineThread) {
+            val die = state.remainingDice.first()
+            val isDoubles = state.dice?.let { it.first == it.second } ?: false
+            // point is 1-indexed UI point; gnubg uses 0-indexed
+            val src = point - 1
+            val dest = src - die
+            if (dest < 0) return@launch
 
-        val (d0, d1) = state.dice ?: return
+            val move = intArrayOf(src, dest, -1, -1, -1, -1, -1, -1)
+            val newBoard = Engine.applyMove(state.board, move)
 
-        // Find the matching legal move
-        val nMoves = state.legalMoves.size / 8
-        for (i in 0 until nMoves) {
-            val move = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
-            // Check if first sub-move matches from→dest
-            if (move[0] == from && move[1] == destPoint) {
-                viewModelScope.launch(engineThread) {
-                    val newBoard = Engine.applyMove(state.board, move)
-                    val winner = Engine.isGameOver(newBoard)
+            if (isDoubles && state.remainingDice.size >= 2) {
+                // Doubles: move TWO checkers (two dice consumed)
+                val dest2 = dest - die
+                if (dest2 >= 0) {
+                    val move2 = intArrayOf(src, dest2, -1, -1, -1, -1, -1, -1)
+                    val newBoard2 = Engine.applyMove(newBoard, move2)
+                    val newRemaining = state.remainingDice.drop(2)
+                    val winner = Engine.isGameOver(newBoard2)
                     if (winner != 0) {
-                        _gameState.value = state.copy(
-                            board = newBoard,
+                        _gameState.value = state.copy(board = newBoard2,
                             phase = GamePhase.GAME_OVER,
-                            winner = if (winner == 1) 0 else 1,
-                            selectedPoint = -1
-                        )
+                            winner = if (winner == 1) 0 else 1)
                         return@launch
                     }
-                    // Switch to engine turn
                     _gameState.value = state.copy(
-                        board = newBoard,
-                        turn = 1,
-                        dice = null,
-                        selectedPoint = -1,
-                        phase = GamePhase.WAITING_FOR_ROLL,
-                        pipCountHuman = calcPips(newBoard, 0),
-                        pipCountEngine = calcPips(newBoard, 1)
+                        board = newBoard2,
+                        remainingDice = newRemaining,
+                        moveHistory = state.moveHistory + listOf(state.board),
+                        diceHistory = state.diceHistory + listOf(state.remainingDice),
+                        pipCountHuman = calcPips(newBoard2, 0),
+                        pipCountEngine = calcPips(newBoard2, 1)
                     )
+                    return@launch
                 }
-                return
             }
+
+            // Single die move
+            val newRemaining = state.remainingDice.drop(1)
+            val winner = Engine.isGameOver(newBoard)
+            if (winner != 0) {
+                _gameState.value = state.copy(board = newBoard,
+                    phase = GamePhase.GAME_OVER,
+                    winner = if (winner == 1) 0 else 1)
+                return@launch
+            }
+            _gameState.value = state.copy(
+                board = newBoard,
+                remainingDice = newRemaining,
+                moveHistory = state.moveHistory + listOf(state.board),
+                diceHistory = state.diceHistory + listOf(state.remainingDice),
+                pipCountHuman = calcPips(newBoard, 0),
+                pipCountEngine = calcPips(newBoard, 1)
+            )
         }
-        // No matching move — deselect
-        _gameState.value = state.copy(selectedPoint = -1)
+    }
+
+    fun swapDice() {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        val dice = state.dice ?: return
+        if (dice.first == dice.second) return
+        _gameState.value = state.copy(
+            dice = Pair(dice.second, dice.first),
+            remainingDice = state.remainingDice.reversed()
+        )
+    }
+
+    fun cancelMove() {
+        val state = _gameState.value
+        if (!state.canCancel) return
+        val prevBoard = state.moveHistory.last()
+        val prevDice = state.diceHistory.last()
+        _gameState.value = state.copy(
+            board = prevBoard,
+            remainingDice = prevDice,
+            moveHistory = state.moveHistory.dropLast(1),
+            diceHistory = state.diceHistory.dropLast(1),
+            pipCountHuman = calcPips(prevBoard, 0),
+            pipCountEngine = calcPips(prevBoard, 1)
+        )
+    }
+
+    fun commitMove() {
+        val state = _gameState.value
+        if (!state.canCommit) return
+        viewModelScope.launch(engineThread) {
+            _gameState.value = state.copy(
+                turn = 1,
+                dice = null,
+                remainingDice = emptyList(),
+                moveHistory = emptyList(),
+                diceHistory = emptyList(),
+                phase = GamePhase.WAITING_FOR_ROLL,
+                pipCountHuman = calcPips(state.board, 0),
+                pipCountEngine = calcPips(state.board, 1)
+            )
+            delay(500)
+            rollDice()
+        }
     }
 
     private suspend fun engineMove(d0: Int, d1: Int) {
         val state = _gameState.value
-        val move = withContext(engineThread) {
-            Engine.findBestMove(state.board, d0, d1)
-        } ?: return
-
-        val newBoard = withContext(engineThread) {
-            Engine.applyMove(state.board, move)
-        }
-
+        val move = Engine.findBestMove(state.board, d0, d1) ?: return
+        val newBoard = Engine.applyMove(state.board, move)
         val winner = Engine.isGameOver(newBoard)
         if (winner != 0) {
-            _gameState.value = state.copy(
-                board = newBoard,
+            _gameState.value = state.copy(board = newBoard,
                 phase = GamePhase.GAME_OVER,
-                winner = if (winner == 1) 0 else 1
-            )
+                winner = if (winner == 1) 0 else 1)
             return
         }
-
         _gameState.value = state.copy(
             board = newBoard,
             turn = 0,
             dice = null,
+            remainingDice = emptyList(),
             phase = GamePhase.WAITING_FOR_ROLL,
             pipCountHuman = calcPips(newBoard, 0),
             pipCountEngine = calcPips(newBoard, 1)
         )
     }
 
-    // Pip count: sum of (point_index + 1) * checker_count for each point
     private fun calcPips(board: IntArray, player: Int): Int {
         var pips = 0
         val offset = player * 25
-        for (i in 0 until 24) {
-            pips += board[offset + i] * (i + 1)
-        }
-        // Bar checkers count as 25
+        for (i in 0 until 24) { pips += board[offset + i] * (i + 1) }
         pips += board[offset + 24] * 25
         return pips
     }
 
+    // ── Settings ──────────────────────────────────────────────────────────────
     fun setMatchLength(n: Int)           { _settings.value = _settings.value.copy(matchLength = n) }
     fun setCrawford(on: Boolean)         { _settings.value = _settings.value.copy(crawford = on) }
     fun setJacoby(on: Boolean)           { _settings.value = _settings.value.copy(jacoby = on) }
     fun setAutomaticDoubles(n: Int)      { _settings.value = _settings.value.copy(automaticDoubles = n) }
     fun setBeavers(on: Boolean)          { _settings.value = _settings.value.copy(beavers = on) }
+    fun setBoardTheme(t: BoardTheme)     {
+        _settings.value = _settings.value.copy(boardTheme = t)
+        viewModelScope.launch { PreferencesManager.saveBoardTheme(getApplication(), t) }
+    }
     fun setShowPointNumbers(on: Boolean) { _settings.value = _settings.value.copy(showPointNumbers = on) }
     fun setShowPipCount(on: Boolean)     { _settings.value = _settings.value.copy(showPipCount = on) }
     fun setDifficulty(d: Difficulty)     { _settings.value = _settings.value.copy(difficulty = d) }
@@ -218,11 +273,4 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun setThresholdDoubtful(v: Float)   { _settings.value = _settings.value.copy(thresholdDoubtful = v) }
     fun setThresholdBad(v: Float)        { _settings.value = _settings.value.copy(thresholdBad = v) }
     fun setThresholdVeryBad(v: Float)    { _settings.value = _settings.value.copy(thresholdVeryBad = v) }
-
-    fun setBoardTheme(t: BoardTheme) {
-        _settings.value = _settings.value.copy(boardTheme = t)
-        viewModelScope.launch {
-            PreferencesManager.saveBoardTheme(getApplication(), t)
-        }
-    }
 }

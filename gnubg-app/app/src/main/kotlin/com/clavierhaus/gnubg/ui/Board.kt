@@ -194,7 +194,7 @@ fun BackgammonBoard(
             }
 
             // Highlight selected point
-            if (n == gameState.selectedPoint) {
+            if (false) {
                 drawRect(
                     color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.25f),
                     topLeft = Offset(ux(pointX(n)), uy(BRD_H)),
@@ -211,14 +211,30 @@ fun BackgammonBoard(
         val leftHalfCX   = ux((LEFT_X + MID_X - BAR_W / 2f) / 2f)
 
         gameState.dice?.let { (d0, d1) ->
+            val isDoubles = d0 == d1
+            val diceToShow = if (isDoubles) listOf(d0, d0, d0, d0) else listOf(d0, d1)
+            val usedCount = diceToShow.size - gameState.remainingDice.size
+
             if (gameState.turn == 0) {
-                // Human dice — light, shown in right half
-                drawDie(rightHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, d0, p.diceLight, p.dicePip, p.frame)
-                drawDie(rightHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, d1, p.diceLight, p.dicePip, p.frame)
+                // Human dice — right half, just right of bar
+                val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
+                val startX = ux(RIGHT_X) - totalW - gap * 2
+                diceToShow.forEachIndexed { i, face ->
+                    val isUsed = i < usedCount
+                    val dieColor = if (isUsed) p.diceLight.copy(alpha = 0.35f) else p.diceLight
+                    drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
+                        dw, dh, face, dieColor, p.dicePip, p.frame)
+                }
             } else {
-                // Engine dice — dark, shown in left half
-                drawDie(leftHalfCX - dw - gap / 2f, boardCentreY - dh / 2f, dw, dh, d0, p.diceDark, p.dicePip, p.frame)
-                drawDie(leftHalfCX + gap / 2f,       boardCentreY - dh / 2f, dw, dh, d1, p.diceDark, p.dicePip, p.frame)
+                // Engine dice — left half, just left of bar
+                val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
+                val startX = ux(MID_X - BAR_W / 2f) - gap - totalW
+                diceToShow.forEachIndexed { i, face ->
+                    val isUsed = i < usedCount
+                    val dieColor = if (isUsed) p.diceDark.copy(alpha = 0.35f) else p.diceDark
+                    drawDie(startX + i * (dw + gap), boardCentreY - dh / 2f,
+                        dw, dh, face, dieColor, p.dicePip, p.frame)
+                }
             }
         }
 
