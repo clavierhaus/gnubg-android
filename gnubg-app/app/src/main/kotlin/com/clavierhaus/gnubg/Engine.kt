@@ -23,6 +23,8 @@ object Engine {
 
     // Board utilities
     external fun swapBoard(board: IntArray): IntArray
+    external fun applySubMove(board: IntArray, iSrc: Int, nRoll: Int): IntArray
+    external fun findMove(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): String
     external fun pipCount(board: IntArray): IntArray
     external fun isGameOver(board: IntArray): Int
 

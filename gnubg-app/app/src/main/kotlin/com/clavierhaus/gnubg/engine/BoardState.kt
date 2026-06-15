@@ -1,36 +1,35 @@
 package com.clavierhaus.gnubg.engine
 
 data class BoardState(
-    // 50-element board encoding
+    // Display board — ms.anBoard, swapped when fTurn==1 for human-bottom perspective
     val board: IntArray = IntArray(50),
 
-    // Whose turn: 0 = human (light), 1 = engine (dark)
+    // Board at start of human turn — needed by findMove() to locate the move
+    val oldBoard: IntArray = IntArray(50),
+
+    // ms.fTurn: 0 = human, 1 = engine
     val turn: Int = 0,
 
-    // Original dice roll — null means not yet rolled
+    // Dice for display — from ms.anDice at roll time, consumed by ApplySubMove taps
     val dice: Pair<Int, Int>? = null,
 
-    // Remaining dice to be played this turn (e.g. [5,3] or [4,4,4,4])
-    // A die is grayed out if it has no legal moves from any point
+    // Original dice at start of turn — for findMove() at confirm time
+    val originalDice: Pair<Int, Int>? = null,
+
+    // Remaining dice to play this turn
     val remainingDice: List<Int> = emptyList(),
 
-    // Dice that are unavailable (no legal moves) — shown grayed
-    val blockedDice: List<Int> = emptyList(),
+    // Board snapshots before each sub-move tap — for undo
+    val boardHistory: List<IntArray> = emptyList(),
 
-    // Stack of board states before each move — for Cancel reversal
-    // Each entry is the board state before that move was applied
-    val moveHistory: List<IntArray> = emptyList(),
-
-    // Stack of remaining dice before each move — for Cancel reversal
+    // Dice list before each sub-move tap — for undo
     val diceHistory: List<List<Int>> = emptyList(),
 
-    // All legal moves for current remaining dice as flat array (nMoves * 8)
+    // Legal moves for current remaining dice — flat array (nMoves * 8)
     val legalMoves: IntArray = IntArray(0),
 
-    // Cube value
+    // Cube — from ms
     val cubeValue: Int = 1,
-
-    // Cube owner: -1 = centred, 0 = human, 1 = engine
     val cubeOwner: Int = -1,
 
     // Pip counts
@@ -43,15 +42,6 @@ data class BoardState(
     // Winner: -1 = none, 0 = human, 1 = engine
     val winner: Int = -1
 ) {
-    // Commit is active when all available dice are used
-    val canCommit: Boolean get() =
-        phase == GamePhase.HUMAN_MOVING &&
-        (remainingDice.isEmpty() || remainingDice.all { it in blockedDice })
-
-    // Cancel is active when there are moves to undo
-    val canCancel: Boolean get() =
-        phase == GamePhase.HUMAN_MOVING && moveHistory.isNotEmpty()
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is BoardState) return false
@@ -59,7 +49,6 @@ data class BoardState(
                turn == other.turn &&
                dice == other.dice &&
                remainingDice == other.remainingDice &&
-               blockedDice == other.blockedDice &&
                legalMoves.contentEquals(other.legalMoves) &&
                cubeValue == other.cubeValue &&
                cubeOwner == other.cubeOwner &&
@@ -74,7 +63,6 @@ data class BoardState(
         result = 31 * result + turn
         result = 31 * result + (dice?.hashCode() ?: 0)
         result = 31 * result + remainingDice.hashCode()
-        result = 31 * result + blockedDice.hashCode()
         result = 31 * result + legalMoves.contentHashCode()
         result = 31 * result + cubeValue
         result = 31 * result + cubeOwner

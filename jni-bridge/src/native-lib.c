@@ -18,6 +18,7 @@ extern void CommandNewGame(char *);
 extern void CommandRoll(char *);
 extern void CommandMove(char *);
 extern void ClearMatch(void);
+extern int NextTurn(int fPlayNext);
 extern int ListCreate(listOLD *pl);
 extern listOLD lMatch;
 extern rng rngCurrent;
@@ -206,11 +207,13 @@ JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_applyMoveString(JNIEnv *env, jobject thiz,
                                                     jstring jmoveStr) {
     const char *moveStr = (*env)->GetStringUTFChars(env, jmoveStr, NULL);
-    LOGI("applyMoveString: [%s] fTurn=%d dice=%d,%d", moveStr, ms.fTurn, ms.anDice[0], ms.anDice[1]);
     pthread_mutex_lock(&gnubg_lock);
     char *szCopy = strdup(moveStr);
     CommandMove(szCopy);
     free(szCopy);
+    /* CommandMove calls TurnDone() which sets fNextTurn=TRUE.
+     * NextTurn() advances ms.fTurn and triggers ComputerTurn if needed. */
+    NextTurn(TRUE);
     jintArray result = pack_board(env, ms.anBoard);
     pthread_mutex_unlock(&gnubg_lock);
     (*env)->ReleaseStringUTFChars(env, jmoveStr, moveStr);
@@ -268,7 +271,6 @@ Java_com_clavierhaus_gnubg_Engine_getMatchDice(JNIEnv *env, jobject thiz) {
  */
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchTurn(JNIEnv *env, jobject thiz) {
-    LOGI("getMatchTurn: fTurn=%d gs=%d", ms.fTurn, ms.gs);
     return (jint)ms.fTurn;
 }
 
@@ -429,6 +431,56 @@ Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
     for (int i = 0; i < 7; i++) { buf[i] = arOutput[i]; buf[7+i] = arStdDev[i]; }
     (*env)->SetFloatArrayRegion(env, result, 0, 14, buf);
     return result;
+}
+
+/*
+ * Engine.applySubMove(board, iSrc, nRoll): IntArray
+ * Wraps gnubg eval.c: ApplySubMove(TanBoard, int iSrc, int nRoll, int fCheckLegal)
+ * Returns updated board, or empty array if move is illegal.
+ */
+extern int ApplySubMove(TanBoard anBoard, int iSrc, int nRoll, int fCheckLegal);
+
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_applySubMove(JNIEnv *env, jobject thiz,
+                                                jintArray jboard,
+                                                jint iSrc, jint nRoll) {
+    TanBoard anBoard;
+    unpack_board(env, jboard, anBoard);
+    if (ApplySubMove(anBoard, (int)iSrc, (int)nRoll, TRUE) != 0)
+        return (*env)->NewIntArray(env, 0);
+    return pack_board(env, anBoard);
+}
+
+/*
+ * Engine.findMove(oldBoard, curBoard, die0, die1): String
+ * Mirrors update_move() in gtkboard.c: finds the complete move that transforms
+ * oldBoard into curBoard by comparing position keys against the movelist.
+ * Returns gnubg point notation for CommandMove, or empty string if no match.
+ */
+JNIEXPORT jstring JNICALL
+Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
+                                            jintArray joldBoard,
+                                            jintArray jcurBoard,
+                                            jint die0, jint die1) {
+    TanBoard oldBoard, curBoard;
+    unpack_board(env, joldBoard, oldBoard);
+    unpack_board(env, jcurBoard, curBoard);
+
+    movelist ml;
+    memset(&ml, 0, sizeof(ml));
+    GenerateMoves(&ml, (ConstTanBoard)oldBoard, (int)die0, (int)die1, FALSE);
+
+    positionkey curKey;
+    PositionKey((ConstTanBoard)curBoard, &curKey);
+
+    char sz[64] = {0};
+    for (unsigned int i = 0; i < ml.cMoves; i++) {
+        if (EqualKeys(ml.amMoves[i].key, curKey)) {
+            FormatMove(sz, (ConstTanBoard)oldBoard, ml.amMoves[i].anMove);
+            break;
+        }
+    }
+    return (*env)->NewStringUTF(env, sz);
 }
 
 /* ── SGF ─────────────────────────────────────────────────────────────────── */

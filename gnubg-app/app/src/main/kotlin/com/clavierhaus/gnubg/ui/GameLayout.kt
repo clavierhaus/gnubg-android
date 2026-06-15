@@ -67,23 +67,7 @@ fun GameLayout(viewModel: GameViewModel) {
                                 GameButton("Roll", Color(0xFF1976D2)) { viewModel.rollDice() }
                             }
                             gameState.phase == GamePhase.HUMAN_MOVING -> {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    GameButton(
-                                        label = "✓",
-                                        color = if (gameState.canCommit) Color(0xFF2E7D32)
-                                                else Color(0xFF444444),
-                                        enabled = gameState.canCommit
-                                    ) { viewModel.commitMove() }
-                                    GameButton(
-                                        label = "✕",
-                                        color = if (gameState.canCancel) Color(0xFF8B1A1A)
-                                                else Color(0xFF444444),
-                                        enabled = gameState.canCancel
-                                    ) { viewModel.cancelMove() }
-                                }
+                                Text("Moving", color = Color(0xFFB3C9F0), fontSize = 12.sp)
                             }
                         }
 

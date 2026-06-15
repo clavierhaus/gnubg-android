@@ -23,7 +23,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
-    // Single persistent thread for all engine calls — gnubg is not thread-safe
     private val engineThread = Executors.newSingleThreadExecutor { r ->
         Thread(r, "gnubg-engine-thread")
     }.asCoroutineDispatcher()
@@ -42,37 +41,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // ── Read ms state into BoardState ─────────────────────────────────────────
-    // Single source of truth: ms owns board, dice, turn, game status.
-    // This function snapshots ms into the UI state after every engine call.
+    // Snapshot ms into BoardState.
+    // Board swapped when fTurn==1 so human is always at bottom.
+    // Dice from remainingDice — ms.anDice is 0 after TurnDone().
     private fun readMatchState(
         phase: GamePhase,
         remainingDice: List<Int> = emptyList(),
         legalMoves: IntArray = IntArray(0),
-        moveHistory: List<IntArray> = emptyList(),
-        diceHistory: List<List<Int>> = emptyList(),
+        oldBoard: IntArray = IntArray(50),
+        originalDice: Pair<Int, Int>? = null,
         winner: Int = -1
     ) {
-        val turn  = Engine.getMatchTurn()
-        val dice  = Engine.getMatchDice()
-        val d0 = dice[0]; val d1 = dice[1]
-
-        // gnubg always puts the moving player's checkers in anBoard[1].
-        // For display we always show human (player 0) from the bottom.
-        // When it is the engine's turn (fTurn=1), anBoard[1]=engine, anBoard[0]=human —
-        // swap to restore the fixed human-bottom perspective.
+        val turn     = Engine.getMatchTurn()
         val rawBoard = Engine.getMatchBoard()
-        val board = if (turn == 1) Engine.swapBoard(rawBoard) else rawBoard
-
-        val pips = Engine.pipCount(board)
+        val board    = if (turn == 1) Engine.swapBoard(rawBoard) else rawBoard
+        val pips     = Engine.pipCount(board)
+        val dicePair: Pair<Int, Int>? = when {
+            remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])
+            remainingDice.size == 1 -> Pair(remainingDice[0], -1)
+            else -> null
+        }
         _gameState.value = BoardState(
             board          = board,
+            oldBoard       = oldBoard,
             turn           = turn,
-            dice           = if (d0 > 0) Pair(d0, d1) else null,
+            dice           = dicePair,
+            originalDice   = originalDice ?: dicePair,
             remainingDice  = remainingDice,
             legalMoves     = legalMoves,
-            moveHistory    = moveHistory,
-            diceHistory    = diceHistory,
             pipCountHuman  = pips[0],
             pipCountEngine = pips[1],
             phase          = phase,
@@ -80,164 +76,153 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    // ── New game ──────────────────────────────────────────────────────────────
-    // CommandNewGame does the opening roll and sets ms.fTurn to the winner.
-    // fTurn==1 → human (anBoard[1]). fTurn==0 → engine; CommandRoll auto-plays it.
     private fun startNewGame() {
         Engine.newGame()
         val turn = Engine.getMatchTurn()
         val dice = Engine.getMatchDice()
         val d0 = dice[0]; val d1 = dice[1]
-        if (turn == 0) {
-            // Human won opening roll — use those dice immediately
+        if (turn == 0 && d0 > 0) {
             val board = Engine.getMatchBoard()
-            val legal = Engine.getLegalMoves(board, d0, d1)
-            val remaining = listOf(d0, d1)
-            readMatchState(phase = GamePhase.HUMAN_MOVING, remainingDice = remaining, legalMoves = legal)
+            readMatchState(
+                phase         = GamePhase.HUMAN_MOVING,
+                remainingDice = listOf(d0, d1),
+                legalMoves    = Engine.getLegalMoves(board, d0, d1),
+                oldBoard      = board,
+                originalDice  = Pair(d0, d1)
+            )
         } else {
-            // Engine won opening roll and already moved — human rolls next
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
         }
     }
 
     fun newGame() {
-        viewModelScope.launch(engineThread) {
-            startNewGame()
-        }
+        viewModelScope.launch(engineThread) { startNewGame() }
     }
 
-    // ── Roll dice ─────────────────────────────────────────────────────────────
-    // CommandRoll rolls dice and — if ap[ms.fTurn].pt == PLAYER_GNU —
-    // automatically calls ComputerTurn which finds and applies the best move.
-    // We just read ms state afterwards.
     fun rollDice() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
         if (!_engineReady.value) return
-
         viewModelScope.launch(engineThread) {
             Engine.rollDice()
             val turn = Engine.getMatchTurn()
             val dice = Engine.getMatchDice()
             val d0 = dice[0]; val d1 = dice[1]
-
-            if (turn == 0) {
-                // Human turn (fTurn==0 = ap[0] = PLAYER_HUMAN)
+            if (turn == 0 && d0 > 0) {
                 val board = Engine.getMatchBoard()
-                val legal = Engine.getLegalMoves(board, d0, d1)
                 val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
-                readMatchState(phase = GamePhase.HUMAN_MOVING, remainingDice = remaining, legalMoves = legal)
+                readMatchState(
+                    phase         = GamePhase.HUMAN_MOVING,
+                    remainingDice = remaining,
+                    legalMoves    = Engine.getLegalMoves(board, d0, d1),
+                    oldBoard      = board,
+                    originalDice  = Pair(d0, d1)
+                )
             } else {
-                // Engine already moved via ComputerTurn inside CommandRoll
-                if (Engine.getMatchStatus() >= 2) {
+                if (Engine.getMatchStatus() >= 2)
                     readMatchState(phase = GamePhase.GAME_OVER, winner = 1)
-                } else {
+                else
                     readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-                }
             }
         }
     }
 
-    // ── Human move: tap a source point ───────────────────────────────────────
-    // Finds the first complete legal move from the tapped point in gnubg's
-    // move list, formats it via FormatMove, and applies the full turn via
-    // CommandMove. CommandMove calls TurnDone() internally — ms owns all state.
+    // Single tap on source: try first die, then second via ApplySubMove.
+    // Mirrors button_release_event single-click in gtkboard.c.
+    // Updates display board only — no match record, no TurnDone.
     fun tapSource(point: Int) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
-
+        if (state.remainingDice.isEmpty()) return
         viewModelScope.launch(engineThread) {
-            val humanOnBar = state.board[49]  // anBoard[1][24]
-            val gnubgSrc = if (humanOnBar > 0) 24 else point - 1
+            val humanOnBar = state.board[49]
+            val src  = if (humanOnBar > 0) 24 else point - 1
+            val die0 = state.remainingDice[0]
+            val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
 
-            // Find the first complete legal move containing a sub-move from gnubgSrc.
-            // gnubg encodes each move as up to 4 sub-move pairs: [src0,dst0,src1,dst1,...,-1,-1]
-            // We match any sub-move slot, not just the first.
-            val nMoves = state.legalMoves.size / 8
-            var matchedMove: IntArray? = null
-            outer@ for (i in 0 until nMoves) {
-                val m = state.legalMoves.sliceArray(i * 8 until (i + 1) * 8)
-                for (j in 0..3) {
-                    if (m[j * 2] == gnubgSrc && m[j * 2 + 1] >= 0) {
-                        matchedMove = m
-                        break@outer
-                    }
-                }
+            var newBoard = Engine.applySubMove(state.board, src, die0)
+            var usedDie  = die0
+            if (newBoard.isEmpty() && die1 > 0) {
+                newBoard = Engine.applySubMove(state.board, src, die1)
+                usedDie  = die1
             }
-            if (matchedMove == null) return@launch
+            if (newBoard.isEmpty()) return@launch
 
-            // Format the complete move and apply via CommandMove
-            // CommandMove applies all sub-moves, records MOVE_NORMAL, calls TurnDone()
-            val moveStr = Engine.formatMove(state.board, matchedMove)
-            Engine.applyMoveString(moveStr)
-
-            if (Engine.getMatchStatus() >= 2) {
-                readMatchState(phase = GamePhase.GAME_OVER, winner = 0)
-                return@launch
+            val newRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
+            val pips = Engine.pipCount(newBoard)
+            val dicePair = when {
+                newRemaining.size >= 2 -> Pair(newRemaining[0], newRemaining[1])
+                newRemaining.size == 1 -> Pair(newRemaining[0], -1)
+                else -> null
             }
+            val nextMoves = if (newRemaining.isNotEmpty()) {
+                val d0 = newRemaining[0]
+                val d1 = if (newRemaining.size > 1) newRemaining[1] else d0
+                Engine.getLegalMoves(newBoard, d0, d1)
+            } else IntArray(0)
 
-            // Turn is done — hand off to engine via rollDice()
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-            delay(500)
-            rollDice()
-        }
-    }
-
-    // ── Swap dice order ───────────────────────────────────────────────────────
-    // GenerateMoves is order-independent; we just swap the display order
-    // and re-fetch legal moves for the new leading die.
-    fun swapDice() {
-        val state = _gameState.value
-        if (state.phase != GamePhase.HUMAN_MOVING) return
-        val dice = state.dice ?: return
-        if (dice.first == dice.second) return
-        // GenerateMoves is order-independent — legalMoves covers all dice combinations
-        _gameState.value = state.copy(
-            dice          = Pair(dice.second, dice.first),
-            remainingDice = state.remainingDice.reversed()
-        )
-    }
-
-    // ── Cancel last sub-move ──────────────────────────────────────────────────
-    fun cancelMove() {
-        val state = _gameState.value
-        if (!state.canCancel) return
-        val prevBoard = state.moveHistory.last()
-        val prevDice  = state.diceHistory.last()
-
-        viewModelScope.launch(engineThread) {
-            val legal = when {
-                prevDice.size >= 2 -> Engine.getLegalMoves(prevBoard, prevDice[0], prevDice[1])
-                prevDice.size == 1 -> Engine.getLegalMoves(prevBoard, prevDice[0], prevDice[0])
-                else -> IntArray(0)
-            }
-            val pips = Engine.pipCount(prevBoard)
             _gameState.value = state.copy(
-                board          = prevBoard,
-                remainingDice  = prevDice,
-                legalMoves     = legal,
-                moveHistory    = state.moveHistory.dropLast(1),
-                diceHistory    = state.diceHistory.dropLast(1),
-                pipCountHuman  = pips[1],
-                pipCountEngine = pips[0]
+                board          = newBoard,
+                remainingDice  = newRemaining,
+                legalMoves     = nextMoves,
+                pipCountHuman  = pips[0],
+                pipCountEngine = pips[1],
+                dice           = dicePair
             )
         }
     }
 
-    // ── Commit human move — hand off to engine ────────────────────────────────
-    fun commitMove() {
+    // Undo: restore board to start of turn (oldBoard) and reset remaining dice
+    fun undo() {
         val state = _gameState.value
-        if (!state.canCommit) return
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        val origDice = state.originalDice ?: return
+        val d0 = origDice.first; val d1 = origDice.second
+        val pips = Engine.pipCount(state.oldBoard)
+        val remaining = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
+        _gameState.value = state.copy(
+            board          = state.oldBoard,
+            remainingDice  = remaining,
+            legalMoves     = Engine.getLegalMoves(state.oldBoard, d0, d1),
+            pipCountHuman  = pips[0],
+            pipCountEngine = pips[1],
+            dice           = origDice
+        )
+    }
 
+    // Swap dice order — mirrors clicking dice in gtkboard.c (swaps diceRoll[0] and diceRoll[1])
+    fun swapDice() {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        if (state.remainingDice.size < 2) return
+        if (state.remainingDice[0] == state.remainingDice[1]) return
+        _gameState.value = state.copy(
+            remainingDice = state.remainingDice.reversed(),
+            dice = state.dice?.let { Pair(it.second, it.first) }
+        )
+    }
+
+    // Commit: mirrors Confirm(bd)/update_move() in gtkboard.c.
+    // findMove locates the complete move by position key comparison,
+    // then CommandMove records it and calls TurnDone().
+    fun confirm() {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
         viewModelScope.launch(engineThread) {
+            val origDice = state.originalDice ?: return@launch
+            val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
+            if (moveStr.isEmpty()) return@launch
+            Engine.applyMoveString(moveStr)
+            if (Engine.getMatchStatus() >= 2) {
+                readMatchState(phase = GamePhase.GAME_OVER, winner = 0)
+                return@launch
+            }
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
             delay(500)
             rollDice()
         }
     }
 
-
-
-    // ── Settings ──────────────────────────────────────────────────────────────
+    // Settings
     fun setMatchLength(n: Int)           { _settings.value = _settings.value.copy(matchLength = n) }
     fun setCrawford(on: Boolean)         { _settings.value = _settings.value.copy(crawford = on) }
     fun setJacoby(on: Boolean)           { _settings.value = _settings.value.copy(jacoby = on) }
