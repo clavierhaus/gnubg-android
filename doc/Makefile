@@ -1,10 +1,10 @@
 # doc/Makefile
 #
 # Usage:
-#   make          — build current version PDF (default)
-#   make all      — build all versions
+#   make          — build current version PDF
+#   make all      — build current version PDF
 #   make clean    — remove build artefacts
-#   make view     — build current PDF and open it
+#   make view     — build and open current PDF
 #
 # Requirements (Fedora 44):
 #   sudo dnf install texlive-xetex texlive-tex-gyre \
@@ -20,31 +20,17 @@
 PDF_ENGINE := xelatex
 CURRENT    := MASTER_V0.8.5
 
-VERSIONS := \
-	MASTER_V0.8.1 \
-	MASTER_V0.8.2 \
-	MASTER_V0.8.3 \
-	MASTER_V0.8.4 \
-	MASTER_V0.8.5
-
-PDFS := $(addsuffix .pdf, $(VERSIONS))
-
 .PHONY: all clean view
 
-all: $(PDFS)
+all: $(CURRENT).pdf
 
 $(CURRENT).pdf: $(CURRENT).tex
-	$(PDF_ENGINE) -interaction=nonstopmode $
-	$(PDF_ENGINE) -interaction=nonstopmode $
-	@echo "Built: $@"
-
-%.pdf: %.tex
-	$(PDF_ENGINE) -interaction=nonstopmode $
-	$(PDF_ENGINE) -interaction=nonstopmode $
-	@echo "Built: $@"
+	$(PDF_ENGINE) -interaction=nonstopmode $(CURRENT).tex
+	$(PDF_ENGINE) -interaction=nonstopmode $(CURRENT).tex
+	@echo "Built: $(CURRENT).pdf"
 
 clean:
-	rm -f *.aux *.log *.out *.toc *.pdf
+	rm -f *.aux *.log *.out *.toc
 
 view: $(CURRENT).pdf
 	xdg-open $(CURRENT).pdf &

@@ -115,6 +115,14 @@ fun BackgammonBoard(
                     return@detectTapGestures
                 }
 
+                // Tap on human bar checker (bottom half of bar) — triggers re-entry
+                val barLeft  = MID_X - BAR_W / 2f
+                val barRight = MID_X + BAR_W / 2f
+                if (x >= barLeft && x <= barRight && y >= TOT_H / 2f && y <= TOT_H - BRD_H) {
+                    viewModel.tapSource(0)  // point 0 = bar signal; tapSource checks humanOnBar
+                    return@detectTapGestures
+                }
+
                 // Find tapped point
                 var tapped = -1
                 for (n in 1..24) {

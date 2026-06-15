@@ -135,7 +135,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.remainingDice.isEmpty()) return
         viewModelScope.launch(engineThread) {
             val humanOnBar = state.board[49]
-            val src  = if (humanOnBar > 0) 24 else point - 1
+            val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
             val die0 = state.remainingDice[0]
             val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
 
@@ -209,6 +209,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.phase != GamePhase.HUMAN_MOVING) return
         viewModelScope.launch(engineThread) {
             val origDice = state.originalDice ?: return@launch
+            // findMove only works when all dice have been used (board differs from oldBoard).
+            // If remainingDice is non-empty, the human has not finished — ignore.
+            if (state.remainingDice.isNotEmpty() && state.board.contentEquals(state.oldBoard)) return@launch
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             if (moveStr.isEmpty()) return@launch
             Engine.applyMoveString(moveStr)

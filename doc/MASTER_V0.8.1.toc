@@ -1,0 +1,91 @@
+\contentsline {section}{\numberline {1}GNU Backgammon Android Port --- MASTER v0.9.1}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}1. Introduction \& Project Objective}{2}{subsection.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.1}1.1 Scope}{2}{subsubsection.1.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.2}1.2 App Identity}{2}{subsubsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.2}2. Narrative of Progress}{3}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Phase 1: Monolithic Analysis \& Prototype}{3}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}Phase 2: Redesign --- Deterministic Engineering}{3}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {1.2.3}Phase 3: The Pristine Headless Build (Completed)}{3}{subsubsection.1.2.3}%
+\contentsline {subsubsection}{\numberline {1.2.4}Phase 4: GLib Cross-Compilation for Android (Completed)}{3}{subsubsection.1.2.4}%
+\contentsline {subsubsection}{\numberline {1.2.5}Phase 5: JNI Bridge \& libgnubg-engine.so (Completed)}{3}{subsubsection.1.2.5}%
+\contentsline {subsubsection}{\numberline {1.2.6}Phase 6: NEON Acceleration \& Device Verification (Completed)}{3}{subsubsection.1.2.6}%
+\contentsline {subsubsection}{\numberline {1.2.7}Phase 7: Cube Decisions \& Rollout (Completed)}{4}{subsubsection.1.2.7}%
+\contentsline {subsubsection}{\numberline {1.2.8}Phase 8: Full Game Logic Layer (Completed)}{4}{subsubsection.1.2.8}%
+\contentsline {subsubsection}{\numberline {1.2.9}Phase 9: Multi-threaded Rollout \& SGF JNI API (Completed)}{5}{subsubsection.1.2.9}%
+\contentsline {subsection}{\numberline {1.3}3. Architecture}{5}{subsection.1.3}%
+\contentsline {subsubsection}{\numberline {1.3.1}3.1 Directory Structure}{5}{subsubsection.1.3.1}%
+\contentsline {subsubsection}{\numberline {1.3.2}3.2 Build Toolchain}{6}{subsubsection.1.3.2}%
+\contentsline {subsection}{\numberline {1.4}4. GLib Cross-Compilation for Android}{6}{subsection.1.4}%
+\contentsline {subsubsection}{\numberline {1.4.1}4.1 Rationale}{6}{subsubsection.1.4.1}%
+\contentsline {subsubsection}{\numberline {1.4.2}4.2 Meson Cross-File (android-arm64.cross)}{6}{subsubsection.1.4.2}%
+\contentsline {subsubsection}{\numberline {1.4.3}4.3 Key Build Obstacles \& Resolutions}{6}{subsubsection.1.4.3}%
+\contentsline {subsubsection}{\numberline {1.4.4}4.4 Installed Artefacts}{7}{subsubsection.1.4.4}%
+\contentsline {subsection}{\numberline {1.5}5. JNI Bridge Construction}{7}{subsection.1.5}%
+\contentsline {subsubsection}{\numberline {1.5.1}5.1 Source File Inventory}{7}{subsubsection.1.5.1}%
+\contentsline {subsubsection}{\numberline {1.5.2}5.2 Engine Source Files in Build}{8}{subsubsection.1.5.2}%
+\contentsline {subsubsection}{\numberline {1.5.3}5.3 The config.h Shadow Mechanism}{9}{subsubsection.1.5.3}%
+\contentsline {subsubsection}{\numberline {1.5.4}5.4 stubs.c Design}{10}{subsubsection.1.5.4}%
+\contentsline {paragraph}{5.4.1 Global Variable Storage}{10}{paragraph*.1}%
+\contentsline {paragraph}{5.4.2 Function Stubs}{10}{paragraph*.2}%
+\contentsline {paragraph}{5.4.3 Disabled Features}{10}{paragraph*.3}%
+\contentsline {subsubsection}{\numberline {1.5.5}5.5 Thread-Local Data Initialisation (Critical)}{11}{subsubsection.1.5.5}%
+\contentsline {subsubsection}{\numberline {1.5.6}5.6 NeuralNetEvaluateSSE VLA Alignment Patch}{12}{subsubsection.1.5.6}%
+\contentsline {subsubsection}{\numberline {1.5.7}5.7 Rollout Infrastructure in stubs.c}{12}{subsubsection.1.5.7}%
+\contentsline {paragraph}{5.7.1 Evolution}{12}{paragraph*.4}%
+\contentsline {paragraph}{5.7.2 Multi-threaded Architecture (Phase 9)}{12}{paragraph*.5}%
+\contentsline {paragraph}{5.7.3 Rollout globals}{13}{paragraph*.6}%
+\contentsline {paragraph}{5.7.2 gnubg\_init\_rollout()}{13}{paragraph*.7}%
+\contentsline {paragraph}{5.7.3 gnubg\_rollout()}{13}{paragraph*.8}%
+\contentsline {paragraph}{5.7.4 QuasiRandomSeed}{13}{paragraph*.9}%
+\contentsline {paragraph}{5.7.5 Rollout accuracy}{13}{paragraph*.10}%
+\contentsline {subsubsection}{\numberline {1.5.8}5.8 android-app.c --- The Android Application Shell}{13}{subsubsection.1.5.8}%
+\contentsline {paragraph}{5.8.1 Design Principle}{13}{paragraph*.11}%
+\contentsline {paragraph}{5.8.2 Android Callback Architecture}{14}{paragraph*.12}%
+\contentsline {paragraph}{5.8.3 Stub Policy}{14}{paragraph*.13}%
+\contentsline {subsection}{\numberline {1.6}6. JNI API Reference}{15}{subsection.1.6}%
+\contentsline {subsubsection}{\numberline {1.6.1}6.1 Board Encoding}{15}{subsubsection.1.6.1}%
+\contentsline {subsubsection}{\numberline {1.6.2}6.2 Kotlin API (Engine object)}{15}{subsubsection.1.6.2}%
+\contentsline {subsubsection}{\numberline {1.6.3}6.3 Thread Safety}{16}{subsubsection.1.6.3}%
+\contentsline {subsubsection}{\numberline {1.6.4}6.4 Initialisation \& Data Files}{16}{subsubsection.1.6.4}%
+\contentsline {subsection}{\numberline {1.7}7. Build Instructions}{16}{subsection.1.7}%
+\contentsline {subsubsection}{\numberline {1.7.1}7.1 Prerequisites (Fedora 44)}{16}{subsubsection.1.7.1}%
+\contentsline {subsubsection}{\numberline {1.7.2}7.2 Build GLib for Android (one-time, \textasciitilde 3--5 minutes)}{16}{subsubsection.1.7.2}%
+\contentsline {subsubsection}{\numberline {1.7.3}7.3 Build libgnubg-engine.so}{16}{subsubsection.1.7.3}%
+\contentsline {subsubsection}{\numberline {1.7.4}7.4 Verification}{17}{subsubsection.1.7.4}%
+\contentsline {subsubsection}{\numberline {1.7.5}7.5 Android adb Test Harness}{17}{subsubsection.1.7.5}%
+\contentsline {subsection}{\numberline {1.8}8. Open Items \& Roadmap}{18}{subsection.1.8}%
+\contentsline {subsubsection}{\numberline {1.8.1}8.1 Features}{18}{subsubsection.1.8.1}%
+\contentsline {subsubsection}{\numberline {1.8.2}8.2 Immediate Next Steps}{18}{subsubsection.1.8.2}%
+\contentsline {subsubsection}{\numberline {1.8.3}8.3 Performance}{18}{subsubsection.1.8.3}%
+\contentsline {subsubsection}{\numberline {1.8.4}8.4 Known Warnings}{18}{subsubsection.1.8.4}%
+\contentsline {subsection}{\numberline {1.9}9. Key File Reference}{19}{subsection.1.9}%
+\contentsline {subsubsection}{\numberline {1.9.1}build\_glib\_android.sh}{19}{subsubsection.1.9.1}%
+\contentsline {subsubsection}{\numberline {1.9.2}android-arm64.cross}{19}{subsubsection.1.9.2}%
+\contentsline {subsubsection}{\numberline {1.9.3}jni-bridge/CMakeLists.txt}{19}{subsubsection.1.9.3}%
+\contentsline {subsubsection}{\numberline {1.9.4}jni-bridge/src/stubs.c}{19}{subsubsection.1.9.4}%
+\contentsline {subsubsection}{\numberline {1.9.5}jni-bridge/src/android-app.c}{19}{subsubsection.1.9.5}%
+\contentsline {subsubsection}{\numberline {1.9.6}engine-core/config.h}{19}{subsubsection.1.9.6}%
+\contentsline {subsubsection}{\numberline {1.9.7}engine-core/lib/neuralnetsse.c}{19}{subsubsection.1.9.7}%
+\contentsline {subsection}{\numberline {1.10}10. Android UI --- IDE Decision, Design Philosophy \& Way Forward}{20}{subsection.1.10}%
+\contentsline {subsubsection}{\numberline {1.10.1}10.1 Milestone: Engine Complete}{20}{subsubsection.1.10.1}%
+\contentsline {subsubsection}{\numberline {1.10.2}10.2 IDE Decision: No IDE --- Pure Terminal Workflow}{20}{subsubsection.1.10.2}%
+\contentsline {subsubsection}{\numberline {1.10.3}10.3 UI Toolkit: Jetpack Compose}{20}{subsubsection.1.10.3}%
+\contentsline {subsubsection}{\numberline {1.10.4}10.4 Build Configuration}{20}{subsubsection.1.10.4}%
+\contentsline {subsubsection}{\numberline {1.10.5}10.5 Design Philosophy}{21}{subsubsection.1.10.5}%
+\contentsline {paragraph}{Orientation}{21}{paragraph*.14}%
+\contentsline {paragraph}{Board Geometry}{21}{paragraph*.15}%
+\contentsline {paragraph}{Material You Colour System}{21}{paragraph*.16}%
+\contentsline {paragraph}{Depth Treatment}{22}{paragraph*.17}%
+\contentsline {paragraph}{Point Numbers}{22}{paragraph*.18}%
+\contentsline {paragraph}{UI Layer Architecture}{22}{paragraph*.19}%
+\contentsline {paragraph}{Functionality Philosophy}{22}{paragraph*.20}%
+\contentsline {subsubsection}{\numberline {1.10.6}10.6 Immediate Next Steps}{22}{subsubsection.1.10.6}%
+\contentsline {subsection}{\numberline {1.11}11. Version v0.9.1 --- Basic UI Complete}{23}{subsection.1.11}%
+\contentsline {subsubsection}{\numberline {1.11.1}11.1 Milestone}{23}{subsubsection.1.11.1}%
+\contentsline {subsubsection}{\numberline {1.11.2}11.2 UI Components Delivered}{23}{subsubsection.1.11.2}%
+\contentsline {paragraph}{Board (\texttt {Board.kt})}{23}{paragraph*.21}%
+\contentsline {paragraph}{Layout (\texttt {GameLayout.kt})}{23}{paragraph*.22}%
+\contentsline {paragraph}{Settings System}{23}{paragraph*.23}%
+\contentsline {paragraph}{Theme Infrastructure}{23}{paragraph*.24}%
+\contentsline {paragraph}{Build Environment}{24}{paragraph*.25}%
+\contentsline {subsubsection}{\numberline {1.11.3}11.3 Immediate Next Steps (v0.9.2)}{24}{subsubsection.1.11.3}%
