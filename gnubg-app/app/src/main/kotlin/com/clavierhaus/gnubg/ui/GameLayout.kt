@@ -61,10 +61,8 @@ fun GameLayout(viewModel: GameViewModel) {
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
                                 Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
                             }
-                            engineReady &&
-                            gameState.phase == GamePhase.WAITING_FOR_ROLL &&
-                            gameState.turn == 0 -> {
-                                GameButton("Roll", Color(0xFF1976D2)) { viewModel.rollDice() }
+                            gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
+                                Text("Tap dice to roll", color = Color(0xFFB3C9F0), fontSize = 11.sp)
                             }
                             gameState.phase == GamePhase.HUMAN_MOVING -> {
                                 Text("Moving", color = Color(0xFFB3C9F0), fontSize = 12.sp)

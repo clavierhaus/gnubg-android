@@ -1,4 +1,4 @@
-#Mon Jun 15 14:14:38 CEST 2026
+#Mon Jun 15 18:10:00 CEST 2026
 base.0=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes.dex
 base.1=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
 base.2=/home/erweitert/gnubg-android/gnubg-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/10/classes.dex

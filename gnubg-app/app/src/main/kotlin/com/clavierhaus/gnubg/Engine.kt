@@ -20,13 +20,14 @@ object Engine {
     external fun getMatchDice(): IntArray
     external fun getMatchTurn(): Int
     external fun getMatchStatus(): Int
+    external fun getMatchWinner(): Int
+    external fun getLastEngineDice(): IntArray
 
     // Board utilities
     external fun swapBoard(board: IntArray): IntArray
     external fun applySubMove(board: IntArray, iSrc: Int, nRoll: Int): IntArray
     external fun findMove(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): String
     external fun pipCount(board: IntArray): IntArray
-    external fun isGameOver(board: IntArray): Int
 
     // Analysis
     external fun evaluatePosition(board: IntArray): FloatArray?

@@ -94,6 +94,15 @@ fun BackgammonBoard(
                 val totalDW = DIE_W * 2f + diceGap
                 val undoLeft = MID_X + BAR_W / 2f + HALF_W / 2f - DIE_W - diceGap / 2f
 
+                // Tap Roll button (right half, lower tray gap) during WAITING_FOR_ROLL
+                val rightHalfCX = MID_X + BAR_W / 2f + HALF_W / 2f
+                val rollBtnW    = DIE_W * 2f + diceGap
+                if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
+                    y >= boardCY && y <= boardCY + DIE_W * 1.5f &&
+                    x >= rightHalfCX - rollBtnW / 2f && x <= rightHalfCX + rollBtnW / 2f) {
+                    viewModel.rollDice()
+                    return@detectTapGestures
+                }
                 // Tap dice area: swap dice (board units)
                 if (y >= boardCY - DIE_W * 2 && y <= boardCY &&
                     x >= undoLeft && x <= RIGHT_X) {
@@ -185,7 +194,27 @@ fun BackgammonBoard(
                 drawLine(p.trayOutline, Offset(tx + ol, ty + trayH - ol), Offset(tx + tw, ty + trayH - ol), ol)
             }
 
-            // Bearoff tray — checkers rendered from game state when bearing off is implemented
+            // Bearoff tray checkers
+            // Count borne-off: 15 minus all checkers still on board (points + bar)
+            val humanOnBoard  = (25..49).sumOf { gameState.board[it] }
+            val engineOnBoard = (0..24).sumOf { gameState.board[it] }
+            val humanBorneOff  = 15 - humanOnBoard
+            val engineBorneOff = 15 - engineOnBoard
+
+            val tcH = trayH / 15f           // height per tray checker slot
+            val tcW = tw * 0.85f            // checker width in tray
+            val tcX = tx + (tw - tcW) / 2f  // centred in tray
+
+            // Engine borne off — top tray, stacked from top
+            for (i in 0 until engineBorneOff) {
+                val cy = topTrayY + i * tcH
+                drawTrayChecker(tcX, cy, tcW, tcH * 0.92f, p.checkerDark, p.checkerDarkRim)
+            }
+            // Human borne off — bottom tray, stacked from top
+            for (i in 0 until humanBorneOff) {
+                val cy = botTrayY + i * tcH
+                drawTrayChecker(tcX, cy, tcW, tcH * 0.92f, p.checkerLight, p.checkerLightRim)
+            }
 
             // 5. Bar
             drawRect(p.bar,
@@ -273,13 +302,64 @@ fun BackgammonBoard(
                     }
                 } else {
                     val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
-                    val startX = ux(MID_X - BAR_W / 2f) - gap - totalW
+                    val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
                         val isUsed = i < usedCount
                         val dieColor = if (isUsed) p.diceDark.copy(alpha = 0.35f) else p.diceDark
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, p.dicePip, p.frame)
                     }
+                }
+            }
+
+            // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
+            android.util.Log.d("gnubg-ui", "phase=${gameState.phase} turn=${gameState.turn} engineDice=${gameState.engineDice}")
+            if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
+                val dw   = ux(DIE_W)
+                val gap  = ux(PT_W * 0.15f)
+                val cy   = uy(TOT_H / 2f)
+
+                // Engine dice — left half, grayed
+                gameState.engineDice?.let { (e0, e1) ->
+                    val totalW = dw * 2f + gap
+                    val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
+                    listOf(e0, e1).forEachIndexed { i, face ->
+                        drawDie(startX + i * (dw + gap), cy - dw / 2f,
+                            dw, dw, face, p.diceDark.copy(alpha = 0.5f), p.dicePip, p.frame)
+                    }
+                }
+
+                // Roll button — right half, where player dice will appear
+                val gapCX   = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
+                val btnW    = dw * 2f + gap
+                val btnH    = dw * 1.2f
+                val btnX    = gapCX - btnW / 2f
+                val btnY    = cy - dw / 2f
+                val corner  = btnW * 0.08f
+                val rollPath = Path().apply {
+                    moveTo(btnX + corner, btnY)
+                    lineTo(btnX + btnW - corner, btnY)
+                    quadraticTo(btnX + btnW, btnY, btnX + btnW, btnY + corner)
+                    lineTo(btnX + btnW, btnY + btnH - corner)
+                    quadraticTo(btnX + btnW, btnY + btnH, btnX + btnW - corner, btnY + btnH)
+                    lineTo(btnX + corner, btnY + btnH)
+                    quadraticTo(btnX, btnY + btnH, btnX, btnY + btnH - corner)
+                    lineTo(btnX, btnY + corner)
+                    quadraticTo(btnX, btnY, btnX + corner, btnY)
+                    close()
+                }
+                drawPath(rollPath, Color(0xFF1976D2))
+                drawIntoCanvas { canvas ->
+                    val paint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = btnH * 0.55f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isAntiAlias = true; isFakeBoldText = true
+                    }
+                    canvas.nativeCanvas.drawText("Roll",
+                        btnX + btnW / 2f,
+                        btnY + btnH / 2f - (paint.descent() + paint.ascent()) / 2f,
+                        paint)
                 }
             }
 

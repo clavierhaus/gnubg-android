@@ -16,6 +16,9 @@ data class BoardState(
     // Original dice at start of turn — for findMove() at confirm time
     val originalDice: Pair<Int, Int>? = null,
 
+    // Engine dice from last engine roll — for display during WAITING_FOR_ROLL
+    val engineDice: Pair<Int, Int>? = null,
+
     // Remaining dice to play this turn
     val remainingDice: List<Int> = emptyList(),
 
