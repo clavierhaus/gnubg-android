@@ -1,66 +1,50 @@
 # doc/Makefile
 #
 # Usage:
-#   make          — build PDF (default)
-#   make pdf      — build PDF
-#   make tex      — build .tex intermediate only
-#   make all      — build both
+#   make          — build current version PDF (default)
+#   make all      — build all versions
 #   make clean    — remove build artefacts
-#   make view     — build PDF and open it
+#   make view     — build current PDF and open it
 #
 # Requirements (Fedora 44):
-#   sudo dnf install pandoc texlive-xetex texlive-tex-gyre \
+#   sudo dnf install texlive-xetex texlive-tex-gyre \
 #                    texlive-collection-fontsrecommended \
 #                    texlive-titlesec texlive-fvextra texlive-framed \
 #                    texlive-booktabs texlive-microtype texlive-multirow \
-#                    texlive-fancyhdr texlive-parskip
+#                    texlive-fancyhdr texlive-parskip texlive-hyperref
 #
 # Fonts used:
 #   TeX Gyre Pagella  — body text (Palatino-style serif)
 #   DejaVu Sans Mono  — code blocks
 
-PANDOC     := pandoc
 PDF_ENGINE := xelatex
+CURRENT    := MASTER_V0.8.5
 
-SRC        := ../MASTER_V0.9.md
-TEMPLATE   := gnubg.tex
-OUT_TEX    := MASTER_V0.9.tex
-OUT_PDF    := MASTER_V0.9.pdf
+VERSIONS := \
+	MASTER_V0.8.1 \
+	MASTER_V0.8.2 \
+	MASTER_V0.8.3 \
+	MASTER_V0.8.4 \
+	MASTER_V0.8.5
 
-PANDOC_FLAGS := \
-	--from markdown \
-	--template $(TEMPLATE) \
-	--highlight-style tango \
-	--table-of-contents \
-	--toc-depth=3 \
-	--number-sections \
-	--metadata title="GNU Backgammon Android Port" \
-	--metadata author="clavierhaus.at" \
-	--metadata date="$(shell date +'%B %Y')"
+PDFS := $(addsuffix .pdf, $(VERSIONS))
 
-.PHONY: all pdf tex clean view
+.PHONY: all clean view
 
-all: pdf tex
+all: $(PDFS)
 
-pdf: $(OUT_PDF)
-
-tex: $(OUT_TEX)
-
-$(OUT_PDF): $(SRC) $(TEMPLATE)
-	$(PANDOC) $(PANDOC_FLAGS) \
-		--to pdf \
-		--pdf-engine $(PDF_ENGINE) \
-		$< -o $@
+$(CURRENT).pdf: $(CURRENT).tex
+	$(PDF_ENGINE) -interaction=nonstopmode $
+	$(PDF_ENGINE) -interaction=nonstopmode $
 	@echo "Built: $@"
 
-$(OUT_TEX): $(SRC) $(TEMPLATE)
-	$(PANDOC) $(PANDOC_FLAGS) \
-		--to latex \
-		$< -o $@
+%.pdf: %.tex
+	$(PDF_ENGINE) -interaction=nonstopmode $
+	$(PDF_ENGINE) -interaction=nonstopmode $
 	@echo "Built: $@"
 
 clean:
-	rm -f $(OUT_PDF) $(OUT_TEX)
+	rm -f *.aux *.log *.out *.toc *.pdf
 
-view: $(OUT_PDF)
-	xdg-open $(OUT_PDF) &
+view: $(CURRENT).pdf
+	xdg-open $(CURRENT).pdf &
