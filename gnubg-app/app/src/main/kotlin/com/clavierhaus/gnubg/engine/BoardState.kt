@@ -20,6 +20,8 @@ data class BoardState(
     val winner: Int = -1,
     val nPoints: Int = 1,
     val blockedDice: Set<Int> = emptySet(),
+    val humanScore: Int = 0,
+    val engineScore: Int = 0,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

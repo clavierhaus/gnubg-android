@@ -36,41 +36,72 @@ fun GameLayout(viewModel: GameViewModel) {
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
-                // Player panel — left 25%
+                // Left panel — fixed proportion of screen
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth(0.25f)
+                        .weight(0.18f)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(8.dp)
                     ) {
+                        // Engine avatar + score
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF1565C0), RoundedCornerShape(24.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text("GNU", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                        Text("${gameState.engineScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text("vs", color = Color(0xFFB3C9F0), fontSize = 12.sp)
+                        Text("${gameState.humanScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        // Human avatar
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF2E7D32), RoundedCornerShape(24.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text("You", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
                                 val resultText = when {
-                                    gameState.winner == 0 && gameState.nPoints >= 3 -> "You win — Backgammon!"
-                                    gameState.winner == 0 && gameState.nPoints >= 2 -> "You win — Gammon!"
+                                    gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
+                                    gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
                                     gameState.winner == 0 -> "You win"
-                                    gameState.nPoints >= 3 -> "Engine wins — Backgammon"
-                                    gameState.nPoints >= 2 -> "Engine wins — Gammon"
+                                    gameState.nPoints >= 3 -> "Engine wins\nBackgammon"
+                                    gameState.nPoints >= 2 -> "Engine wins\nGammon"
                                     else -> "Engine wins"
                                 }
-                                Text(resultText, color = Color.White, fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(resultText, color = Color.White, fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                Spacer(modifier = Modifier.height(12.dp))
                                 GameButton("New Game", Color(0xFF1565C0)) { viewModel.newGame() }
                             }
+                            gameState.phase == GamePhase.CUBE_OFFERED -> {
+                                Text("Cube offered!", color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                GameButton("Accept", Color(0xFF2E7D32)) { viewModel.acceptDouble() }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                GameButton("Drop", Color(0xFF8B1A1A)) { viewModel.dropDouble() }
+                            }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
-                                Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 12.sp)
+                                Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
-                                Text("Tap dice to roll", color = Color(0xFFB3C9F0), fontSize = 11.sp)
+                                Text("Tap dice\nto roll", color = Color(0xFFB3C9F0), fontSize = 18.sp,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             }
                             gameState.phase == GamePhase.HUMAN_MOVING -> {
-                                Text("Moving", color = Color(0xFFB3C9F0), fontSize = 12.sp)
+                                Text("Moving", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                         }
 
@@ -83,16 +114,16 @@ fun GameLayout(viewModel: GameViewModel) {
                                 else -> ""
                             },
                             color = Color(0xFFB3C9F0),
-                            fontSize = 11.sp
+                            fontSize = 16.sp
                         )
                     }
                 }
 
-                // Board — right 75%
+                // Board — remaining space
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .fillMaxWidth()
+                        .weight(0.82f)
                 ) {
                     BackgammonBoard(settings, gameState, viewModel)
                 }
@@ -113,7 +144,7 @@ fun GameLayout(viewModel: GameViewModel) {
 }
 
 @Composable
-private fun GameButton(
+fun GameButton(
     label: String,
     color: Color,
     enabled: Boolean = true,
@@ -129,7 +160,7 @@ private fun GameButton(
         Text(
             label,
             color = if (enabled) Color.White else Color(0xFF888888),
-            fontSize = 14.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
     }

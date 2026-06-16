@@ -214,11 +214,13 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
 }
 
 JNIEXPORT jintArray JNICALL
-Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz) {
+Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchLength) {
     pthread_mutex_lock(&gnubg_lock);
     ListCreate(&lMatch);
     ClearMatch();
-    CommandNewMatch("1");
+    char szMatch[8];
+    snprintf(szMatch, sizeof(szMatch), "%d", (int)matchLength);
+    CommandNewMatch(szMatch);
     CommandNewGame(NULL);
     jintArray result = pack_board(env, ms.anBoard);
     pthread_mutex_unlock(&gnubg_lock);
@@ -352,6 +354,17 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.
  * Reads ms.anScore — updated by ApplyGameOver in play.c.
  */
+/*
+ * Engine.getMatchScore(): IntArray[3] — [humanScore, engineScore, matchLength]
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMatchScore(JNIEnv *env, jobject thiz) {
+    jintArray result = (*env)->NewIntArray(env, 3);
+    jint buf[3] = { (jint)ms.anScore[0], (jint)ms.anScore[1], (jint)ms.nMatchTo };
+    (*env)->SetIntArrayRegion(env, result, 0, 3, buf);
+    return result;
+}
+
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchWinner(JNIEnv *env, jobject thiz) {
     if (ms.gs < GAME_OVER) return -1;

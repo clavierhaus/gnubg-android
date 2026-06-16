@@ -9,7 +9,7 @@ object Engine {
     external fun initialise(weightsPath: String): Boolean
 
     // Match state management
-    external fun newGame(): IntArray
+    external fun newGame(matchLength: Int): IntArray
     external fun rollDice(): IntArray
     external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
     external fun applyMoveString(moveStr: String): IntArray
@@ -21,6 +21,7 @@ object Engine {
     external fun getMatchTurn(): Int
     external fun getMatchStatus(): Int
     external fun getMatchWinner(): Int
+    external fun getMatchScore(): IntArray  // [humanScore, engineScore, matchLength]
     external fun getGameResult(): IntArray  // [fWinner, nPoints]
     external fun getMatchCubeInfo(): IntArray  // [fDoubled, fCubeOwner, nCube]
     external fun commandDouble()

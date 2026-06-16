@@ -25,6 +25,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val engineThread = Executors.newSingleThreadExecutor { r ->
         Thread(r, "gnubg-engine-thread")
     }.asCoroutineDispatcher()
+    private val actionInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
 
     init {
         viewModelScope.launch {
@@ -51,6 +52,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         nPoints: Int = 1,
         blockedDice: Set<Int> = emptySet()
     ) {
+        val score     = Engine.getMatchScore()
         val cubeInfo  = Engine.getMatchCubeInfo()
         val fDoubled  = cubeInfo[0] == 1
         val cubeOwner = cubeInfo[1]
@@ -79,6 +81,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             winner         = winner,
             nPoints        = nPoints,
             blockedDice    = blockedDice,
+            humanScore     = score[0],
+            engineScore    = score[1],
             cubeValue      = cubeValue,
             cubeOwner      = cubeOwner,
             fDoubled       = fDoubled
@@ -98,7 +102,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startNewGame() {
-        Engine.newGame()
+        Engine.newGame(_settings.value.matchLength)
         val turn = Engine.getMatchTurn()
         val dice = Engine.getMatchDice()
         val d0 = dice[0]; val d1 = dice[1]
@@ -258,16 +262,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun offerDouble() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
+        if (!actionInProgress.compareAndSet(false, true)) return
+        _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
         viewModelScope.launch(engineThread) {
             Engine.commandDouble()
             val cubeInfo = Engine.getMatchCubeInfo()
             if (Engine.getMatchStatus() >= 2)
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
-            else if (cubeInfo[0] == 0) {
-                // Engine took — now it's engine's turn to roll
+            else if (cubeInfo[0] == 0)
                 rollDice()
-            }
-            // If cubeInfo[0]==1 engine doubled back (beaver) — handle later
+            actionInProgress.set(false)
         }
     }
 

@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
+import androidx.compose.ui.layout.onSizeChanged
 
 private const val TOT_W  = 102f
 private const val TOT_H  = 82f
@@ -80,9 +81,8 @@ fun BackgammonBoard(
 
     Box(modifier = Modifier
         .fillMaxSize()
-        .pointerInput(gameState.phase, gameState.remainingDice) {
+        .pointerInput(Unit) {
             detectTapGestures { offset ->
-                android.util.Log.d("gnubg-ui", "tap at ${offset.x},${offset.y}")
                 if (viewModel == null) return@detectTapGestures
                 val sx = size.width.toFloat() / TOT_W
                 val sy = size.height.toFloat() / TOT_H
@@ -96,12 +96,10 @@ fun BackgammonBoard(
 
                 // Tap cube to double — must be FIRST to avoid Roll/bar interception
                 val cubeSzU = BAR_W * 0.75f
-                android.util.Log.d("gnubg-tap", "pre-cube x=$x y=$y MID=$MID_X TOT_H2=${TOT_H/2f} sz=$cubeSzU phase=${gameState.phase} owner=${gameState.cubeOwner} doubled=${gameState.fDoubled}")
                 if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
                     !gameState.fDoubled && gameState.cubeOwner != 1 &&
                     x >= MID_X - cubeSzU / 2f && x <= MID_X + cubeSzU / 2f &&
                     y >= TOT_H / 2f - cubeSzU / 2f && y <= TOT_H / 2f + cubeSzU / 2f) {
-                    android.util.Log.d("gnubg-tap", "CUBE TAPPED")
                     viewModel.offerDouble()
                     return@detectTapGestures
                 }
@@ -110,7 +108,7 @@ fun BackgammonBoard(
                 val rightHalfCX = MID_X + BAR_W / 2f + HALF_W / 2f
                 val rollBtnW    = DIE_W * 2f + diceGap
                 if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
-                    y >= boardCY && y <= boardCY + DIE_W * 1.5f &&
+                    y >= boardCY - DIE_W && y <= boardCY + DIE_W * 2.5f &&
                     x >= rightHalfCX - rollBtnW / 2f && x <= rightHalfCX + rollBtnW / 2f) {
                     viewModel.rollDice()
                     return@detectTapGestures
@@ -123,14 +121,14 @@ fun BackgammonBoard(
                 }
                 // Tap Undo button (board units) — lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
-                    y >= boardCY && y <= boardCY + DIE_W * 1.5f &&
+                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft && x <= undoLeft + DIE_W) {
                     viewModel.undo()
                     return@detectTapGestures
                 }
                 // Tap Commit button (board units) — lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
-                    y >= boardCY && y <= boardCY + DIE_W * 1.5f &&
+                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft + DIE_W + diceGap && x <= RIGHT_X) {
                     viewModel.confirm()
                     return@detectTapGestures
@@ -155,7 +153,6 @@ fun BackgammonBoard(
                         break
                     }
                 }
-                android.util.Log.d("gnubg-ui", "tapped=$tapped x=$x y=$y")
                 if (tapped >= 0) viewModel.tapSource(tapped)
             }
         }
@@ -167,7 +164,6 @@ fun BackgammonBoard(
             fun uy(u: Float) = u * sy
 
             // Checker radius: fits within point width with gap to border and between checkers
-            val r    = ux(PT_W) * 0.40f
             val r    = ux(PT_W) * 0.40f
             val boardBottom = size.height - uy(BRD_H)
             val boardTop    = size.height - boardBottom  // mirrors boardBottom exactly
@@ -263,13 +259,6 @@ fun BackgammonBoard(
             val cubeBarCX = ux(MID_X)
             val cubeBarCY = uy(TOT_H / 2f)
             val cubeSz = ux(BAR_W * 0.75f)
-            // Highlight cube when player can double
-            val canDouble = gameState.phase == GamePhase.WAITING_FOR_ROLL &&
-                gameState.turn == 0 && !gameState.fDoubled && gameState.cubeOwner != 1
-            if (canDouble) {
-                drawCircle(Color.White.copy(alpha = 0.25f), cubeSz * 0.7f,
-                    center = androidx.compose.ui.geometry.Offset(cubeBarCX, cubeBarCY))
-            }
             drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, 64,
                 p.cubeFace, p.cubeDot, p.cubeText)
 
@@ -360,7 +349,6 @@ fun BackgammonBoard(
             }
 
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
-            android.util.Log.d("gnubg-ui", "phase=${gameState.phase} turn=${gameState.turn} engineDice=${gameState.engineDice}")
             if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
                 val dw   = ux(DIE_W)
                 val gap  = ux(PT_W * 0.15f)
