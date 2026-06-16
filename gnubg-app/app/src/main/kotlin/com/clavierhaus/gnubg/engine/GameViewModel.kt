@@ -57,9 +57,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val rawBoard = Engine.getMatchBoard()
         val board    = if (turn == 1) Engine.swapBoard(rawBoard) else rawBoard
         val pips     = Engine.pipCount(board)
-        val dicePair: Pair<Int, Int>? = when {
+        // Always show both dice from originalDice for display; usedCount handles graying
+        val dicePair: Pair<Int, Int>? = originalDice ?: when {
             remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])
-            remainingDice.size == 1 -> Pair(remainingDice[0], -1)
+            remainingDice.size == 1 -> Pair(remainingDice[0], remainingDice[0])
             else -> null
         }
         _gameState.value = BoardState(
@@ -93,7 +94,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 originalDice  = Pair(d0, d1)
             )
         } else {
-            val ed = Engine.getLastEngineDice()
+            val ed = Engine.getMoveRecordDice()
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
                 engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
         }
@@ -126,7 +127,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (Engine.getMatchStatus() >= 2)
                     readMatchState(phase = GamePhase.GAME_OVER, winner = Engine.getMatchWinner())
                 else {
-                    val ed = Engine.getLastEngineDice()
+                    val ed = Engine.getMoveRecordDice()
                     readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
                         engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
                 }
@@ -157,11 +158,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             val newRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
             val pips = Engine.pipCount(newBoard)
-            val dicePair = when {
-                newRemaining.size >= 2 -> Pair(newRemaining[0], newRemaining[1])
-                newRemaining.size == 1 -> Pair(newRemaining[0], -1)
-                else -> null
-            }
+            // Keep original dice pair for display — graying handled by usedCount
+            val dicePair = state.originalDice
             val nextMoves = if (newRemaining.isNotEmpty()) {
                 val d0 = newRemaining[0]
                 val d1 = if (newRemaining.size > 1) newRemaining[1] else d0
@@ -215,6 +213,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun confirm() {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
+        if (state.remainingDice.isNotEmpty()) return  // not all dice played yet
         viewModelScope.launch(engineThread) {
             val origDice = state.originalDice ?: return@launch
             // findMove only works when all dice have been used (board differs from oldBoard).
@@ -223,14 +222,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
+            // Guard against duplicate commits — re-check phase under engine lock
+            if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
             if (Engine.getMatchStatus() >= 2) {
                 readMatchState(phase = GamePhase.GAME_OVER, winner = Engine.getMatchWinner())
                 return@launch
             }
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-            delay(500)
-            rollDice()
+            // Engine already moved inside NextTurn(TRUE) in applyMoveString.
+            // ms.fTurn=0 now. Just read engine dice from move record and show WAITING_FOR_ROLL.
+            val mrd = Engine.getMoveRecordDice()
+            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
+            if (Engine.getMatchStatus() >= 2)
+                readMatchState(phase=GamePhase.GAME_OVER, winner=Engine.getMatchWinner())
+            else
+                readMatchState(phase=GamePhase.WAITING_FOR_ROLL, engineDice=engDice)
         }
     }
 

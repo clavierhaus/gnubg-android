@@ -1,0 +1,46 @@
+\contentsline {section}{\numberline {1}GNU Backgammon Android Port --- MASTER v0.8.6}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}1. Introduction \& Project Objective}{2}{subsection.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.1}1.1 Scope}{2}{subsubsection.1.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.2}1.2 App Identity}{2}{subsubsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.2}2. Narrative of Progress}{3}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Phase 1: Monolithic Analysis \& Prototype}{3}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}Phase 2: Redesign --- Deterministic Engineering}{3}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {1.2.3}Phase 3: The Pristine Headless Build (Completed)}{3}{subsubsection.1.2.3}%
+\contentsline {subsubsection}{\numberline {1.2.4}Phase 4: GLib Cross-Compilation for Android (Completed)}{3}{subsubsection.1.2.4}%
+\contentsline {subsubsection}{\numberline {1.2.5}Phase 5: JNI Bridge \& libgnubg-engine.so (Completed)}{3}{subsubsection.1.2.5}%
+\contentsline {subsubsection}{\numberline {1.2.6}Phase 6: NEON Acceleration \& Device Verification (Completed)}{3}{subsubsection.1.2.6}%
+\contentsline {subsubsection}{\numberline {1.2.7}Phase 7: Cube Decisions \& Rollout (Completed)}{3}{subsubsection.1.2.7}%
+\contentsline {subsubsection}{\numberline {1.2.8}Phase 8: Full Game Logic Layer (Completed)}{3}{subsubsection.1.2.8}%
+\contentsline {subsubsection}{\numberline {1.2.9}Phase 9: Multi-threaded Rollout \& SGF JNI API (Completed)}{3}{subsubsection.1.2.9}%
+\contentsline {subsection}{\numberline {1.3}3. Architecture}{4}{subsection.1.3}%
+\contentsline {subsubsection}{\numberline {1.3.1}3.1 Core Principle}{4}{subsubsection.1.3.1}%
+\contentsline {subsubsection}{\numberline {1.3.2}3.2 Key gnubg Functions Used}{4}{subsubsection.1.3.2}%
+\contentsline {subsubsection}{\numberline {1.3.3}3.3 JNI Bridge}{4}{subsubsection.1.3.3}%
+\contentsline {subsubsection}{\numberline {1.3.4}3.4 \texttt {NextTurn()} and \texttt {TurnDone()}}{4}{subsubsection.1.3.4}%
+\contentsline {subsubsection}{\numberline {1.3.5}3.5 Board Encoding Reference}{4}{subsubsection.1.3.5}%
+\contentsline {subsection}{\numberline {1.4}4. Current JNI API}{5}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}5. Version v0.8.6 --- Milestone}{5}{subsection.1.5}%
+\contentsline {subsubsection}{\numberline {1.5.1}5.1 Assessment}{5}{subsubsection.1.5.1}%
+\contentsline {subsubsection}{\numberline {1.5.2}5.2 What Works}{6}{subsubsection.1.5.2}%
+\contentsline {subsubsection}{\numberline {1.5.3}5.3 What Does Not Yet Work}{6}{subsubsection.1.5.3}%
+\contentsline {subsubsection}{\numberline {1.5.4}5.4 Key Lessons Learned}{6}{subsubsection.1.5.4}%
+\contentsline {paragraph}{gnubg source is the only authority.}{6}{paragraph*.1}%
+\contentsline {paragraph}{The TurnDone/NextTurn split.}{7}{paragraph*.2}%
+\contentsline {paragraph}{ms.anDice is cleared by TurnDone().}{7}{paragraph*.3}%
+\contentsline {paragraph}{ApplySubMove does not touch ms.}{7}{paragraph*.4}%
+\contentsline {paragraph}{findMove via position key.}{7}{paragraph*.5}%
+\contentsline {subsubsection}{\numberline {1.5.5}5.5 Immediate Next Steps (v0.8.6)}{7}{subsubsection.1.5.5}%
+\contentsline {subsection}{\numberline {1.6}6. Version v0.8.6 --- Engine Dice, Roll Button, Gameplay Stability}{7}{subsection.1.6}%
+\contentsline {subsubsection}{\numberline {1.6.1}6.1 Milestone}{7}{subsubsection.1.6.1}%
+\contentsline {subsubsection}{\numberline {1.6.2}6.2 Delivered}{7}{subsubsection.1.6.2}%
+\contentsline {paragraph}{Engine Dice Display}{7}{paragraph*.6}%
+\contentsline {paragraph}{Roll Button on Canvas}{7}{paragraph*.7}%
+\contentsline {paragraph}{fAutoRoll = FALSE}{8}{paragraph*.8}%
+\contentsline {paragraph}{Commit Re-entry Guard}{8}{paragraph*.9}%
+\contentsline {paragraph}{Used Dice Graying}{8}{paragraph*.10}%
+\contentsline {paragraph}{Bearoff Tray Checkers}{8}{paragraph*.11}%
+\contentsline {paragraph}{Winner Detection}{8}{paragraph*.12}%
+\contentsline {paragraph}{Bar Re-entry}{8}{paragraph*.13}%
+\contentsline {paragraph}{No Legal Moves}{8}{paragraph*.14}%
+\contentsline {subsubsection}{\numberline {1.6.3}6.3 Architecture Notes}{8}{subsubsection.1.6.3}%
+\contentsline {subsubsection}{\numberline {1.6.4}6.4 Immediate Next Steps (v0.8.7)}{8}{subsubsection.1.6.4}%

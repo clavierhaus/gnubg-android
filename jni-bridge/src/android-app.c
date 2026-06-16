@@ -491,7 +491,7 @@ matchinfo mi;
 float rRatingOffset    = 2050.0f;
 int   fAnalyseCube     = TRUE;
 int   fAutoGame        = TRUE;
-int   fAutoRoll        = TRUE;
+int   fAutoRoll        = FALSE;
 int   fConfirmSave     = TRUE;
 int   fDisplay         = TRUE;
 /* fOutputDigits: provided by format.c */

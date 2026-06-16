@@ -22,6 +22,7 @@ object Engine {
     external fun getMatchStatus(): Int
     external fun getMatchWinner(): Int
     external fun getLastEngineDice(): IntArray
+    external fun getMoveRecordDice(): IntArray
 
     // Board utilities
     external fun swapBoard(board: IntArray): IntArray

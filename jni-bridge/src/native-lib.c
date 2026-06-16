@@ -45,6 +45,27 @@ static cubeinfo ci_default;
 
 static int last_engine_dice[2] = {0, 0};
 
+/*
+ * Engine.getMoveRecordDice(): IntArray[2]
+ * Returns dice from plLastMove record — persists after TurnDone clears ms.anDice.
+ * Mirrors what gnubg GTK reads for board display.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMoveRecordDice(JNIEnv *env, jobject thiz) {
+    jintArray result = (*env)->NewIntArray(env, 2);
+    jint buf[2] = {0, 0};
+    if (plLastMove && plLastMove->p) {
+        moverecord *pmr = (moverecord *)plLastMove->p;
+        if (pmr->mt == MOVE_SETDICE || pmr->mt == MOVE_NORMAL) {
+            buf[0] = (jint)pmr->anDice[0];
+            buf[1] = (jint)pmr->anDice[1];
+        }
+    }
+    LOGI("getMoveRecordDice: mt=%d dice=%d,%d", plLastMove && plLastMove->p ? ((moverecord*)plLastMove->p)->mt : -1, buf[0], buf[1]);
+    (*env)->SetIntArrayRegion(env, result, 0, 2, buf);
+    return result;
+}
+
 void gnubg_on_board_changed(void) {
     /* Cache engine dice when engine rolls — ms.anDice cleared by TurnDone after move */
     if (ms.fTurn == 1 && ms.anDice[0] > 0) {
@@ -111,6 +132,7 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
     strcpy(ap[1].szName, "GNU");
     ms.nMatchTo = 1;
     ms.fJacoby  = FALSE;
+    fAutoRoll   = FALSE;  /* human rolls manually via UI */
     gnubg_initialised = 1;
     pthread_mutex_unlock(&gnubg_lock);
     LOGI("Engine initialised");
@@ -132,12 +154,9 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz) {
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_rollDice(JNIEnv *env, jobject thiz) {
     pthread_mutex_lock(&gnubg_lock);
-    /* Reset fNextTurn before CommandRoll so we can detect if CommandRoll itself
-     * set it (no-legal-moves case calls TurnDone internally). */
-    fNextTurn = FALSE;
     CommandRoll(NULL);
-    /* If CommandRoll set fNextTurn (no legal moves), advance the turn.
-     * This mirrors the non-GTK loop: while (fNextTurn) NextTurn(TRUE) */
+    /* If CommandRoll set fNextTurn (no legal moves or engine moved),
+     * advance turn. Mirrors non-GTK: while (fNextTurn) NextTurn(TRUE) */
     while (fNextTurn)
         NextTurn(TRUE);
     jint dice[2] = { (jint)ms.anDice[0], (jint)ms.anDice[1] };

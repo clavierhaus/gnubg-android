@@ -296,7 +296,7 @@ fun BackgammonBoard(
                     val startX = ux(MID_X + BAR_W / 2f + HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
                         val isUsed = i < usedCount
-                        val dieColor = if (isUsed) p.diceLight.copy(alpha = 0.35f) else p.diceLight
+                        val dieColor = if (isUsed) Color.White.copy(alpha = 0.3f) else p.triangleB
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, p.dicePip, p.frame)
                     }
