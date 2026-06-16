@@ -255,22 +255,45 @@ fun BackgammonBoard(
                 val isTop = n in 13..24
 
                 // anBoard[0] = engine/dark: index (n-1) → UI point n
+                // anBoard[0] = engine/dark
                 val engineCount = gameState.board[24 - n]
                 if (engineCount > 0) {
-                    for (i in 0 until engineCount) {
+                    val show = minOf(engineCount, 5)
+                    for (i in 0 until show) {
                         val cy = if (isTop) uy(BRD_H) + r + i * step
                                  else       uy(TOT_H - BRD_H) - r - i * step
                         drawChecker(cx, cy, r, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
                     }
+                    if (engineCount > 5) {
+                        val topCy = if (isTop) uy(BRD_H) + r + 4 * step else uy(TOT_H - BRD_H) - r - 4 * step
+                        drawIntoCanvas { canvas ->
+                            val paint = android.graphics.Paint().apply {
+                                color = android.graphics.Color.WHITE; textSize = r * 1.1f
+                                textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true; isFakeBoldText = true
+                            }
+                            canvas.nativeCanvas.drawText("$engineCount", cx, topCy - (paint.descent() + paint.ascent()) / 2f, paint)
+                        }
+                    }
                 }
 
-                // anBoard[1] = human/light: index (24-n) → UI point n (mirrored)
+                // anBoard[1] = human/light
                 val humanCount = gameState.board[24 + n]
                 if (humanCount > 0) {
-                    for (i in 0 until humanCount) {
+                    val show = minOf(humanCount, 5)
+                    for (i in 0 until show) {
                         val cy = if (isTop) uy(BRD_H) + r + i * step
                                  else       uy(TOT_H - BRD_H) - r - i * step
                         drawChecker(cx, cy, r, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+                    }
+                    if (humanCount > 5) {
+                        val topCy = if (isTop) uy(BRD_H) + r + 4 * step else uy(TOT_H - BRD_H) - r - 4 * step
+                        drawIntoCanvas { canvas ->
+                            val paint = android.graphics.Paint().apply {
+                                color = android.graphics.Color.BLACK; textSize = r * 1.1f
+                                textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true; isFakeBoldText = true
+                            }
+                            canvas.nativeCanvas.drawText("$humanCount", cx, topCy - (paint.descent() + paint.ascent()) / 2f, paint)
+                        }
                     }
                 }
 
