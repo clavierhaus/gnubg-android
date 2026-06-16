@@ -94,6 +94,18 @@ fun BackgammonBoard(
                 val totalDW = DIE_W * 2f + diceGap
                 val undoLeft = MID_X + BAR_W / 2f + HALF_W / 2f - DIE_W - diceGap / 2f
 
+                // Tap cube to double — must be FIRST to avoid Roll/bar interception
+                val cubeSzU = BAR_W * 0.75f
+                android.util.Log.d("gnubg-tap", "pre-cube x=$x y=$y MID=$MID_X TOT_H2=${TOT_H/2f} sz=$cubeSzU phase=${gameState.phase} owner=${gameState.cubeOwner} doubled=${gameState.fDoubled}")
+                if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
+                    !gameState.fDoubled && gameState.cubeOwner != 1 &&
+                    x >= MID_X - cubeSzU / 2f && x <= MID_X + cubeSzU / 2f &&
+                    y >= TOT_H / 2f - cubeSzU / 2f && y <= TOT_H / 2f + cubeSzU / 2f) {
+                    android.util.Log.d("gnubg-tap", "CUBE TAPPED")
+                    viewModel.offerDouble()
+                    return@detectTapGestures
+                }
+
                 // Tap Roll button (right half, lower tray gap) during WAITING_FOR_ROLL
                 val rightHalfCX = MID_X + BAR_W / 2f + HALF_W / 2f
                 val rollBtnW    = DIE_W * 2f + diceGap
@@ -154,8 +166,13 @@ fun BackgammonBoard(
             fun ux(u: Float) = u * sx
             fun uy(u: Float) = u * sy
 
-            val r    = uy(PT_H) / 10f
-            val step = uy(PT_H) / 5f
+            // Checker radius: fits within point width with gap to border and between checkers
+            val r    = ux(PT_W) * 0.40f
+            val r    = ux(PT_W) * 0.40f
+            val boardBottom = size.height - uy(BRD_H)
+            val boardTop    = size.height - boardBottom  // mirrors boardBottom exactly
+            val inset = r * 0.1f
+            val step = r * 2.1f
 
             // 1. Frame
             drawRect(p.frame, size = size)
@@ -246,6 +263,13 @@ fun BackgammonBoard(
             val cubeBarCX = ux(MID_X)
             val cubeBarCY = uy(TOT_H / 2f)
             val cubeSz = ux(BAR_W * 0.75f)
+            // Highlight cube when player can double
+            val canDouble = gameState.phase == GamePhase.WAITING_FOR_ROLL &&
+                gameState.turn == 0 && !gameState.fDoubled && gameState.cubeOwner != 1
+            if (canDouble) {
+                drawCircle(Color.White.copy(alpha = 0.25f), cubeSz * 0.7f,
+                    center = androidx.compose.ui.geometry.Offset(cubeBarCX, cubeBarCY))
+            }
             drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, 64,
                 p.cubeFace, p.cubeDot, p.cubeText)
 
@@ -260,12 +284,12 @@ fun BackgammonBoard(
                 if (engineCount > 0) {
                     val show = minOf(engineCount, 5)
                     for (i in 0 until show) {
-                        val cy = if (isTop) uy(BRD_H) + r + i * step
-                                 else       uy(TOT_H - BRD_H) - r - i * step
+                        val cy = if (isTop) boardTop + inset + r + i * step
+                                 else       boardBottom - inset - r - i * step
                         drawChecker(cx, cy, r, p.checkerDark, p.checkerDarkRim, false, p.checkerHighlight)
                     }
                     if (engineCount > 5) {
-                        val topCy = if (isTop) uy(BRD_H) + r + 4 * step else uy(TOT_H - BRD_H) - r - 4 * step
+                        val topCy = if (isTop) boardTop + inset + r + 4 * step else boardBottom - inset - r - 4 * step
                         drawIntoCanvas { canvas ->
                             val paint = android.graphics.Paint().apply {
                                 color = android.graphics.Color.WHITE; textSize = r * 1.1f
@@ -281,12 +305,12 @@ fun BackgammonBoard(
                 if (humanCount > 0) {
                     val show = minOf(humanCount, 5)
                     for (i in 0 until show) {
-                        val cy = if (isTop) uy(BRD_H) + r + i * step
-                                 else       uy(TOT_H - BRD_H) - r - i * step
+                        val cy = if (isTop) boardTop + inset + r + i * step
+                                 else       boardBottom - inset - r - i * step
                         drawChecker(cx, cy, r, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
                     }
                     if (humanCount > 5) {
-                        val topCy = if (isTop) uy(BRD_H) + r + 4 * step else uy(TOT_H - BRD_H) - r - 4 * step
+                        val topCy = if (isTop) boardTop + inset + r + 4 * step else boardBottom - inset - r - 4 * step
                         drawIntoCanvas { canvas ->
                             val paint = android.graphics.Paint().apply {
                                 color = android.graphics.Color.BLACK; textSize = r * 1.1f

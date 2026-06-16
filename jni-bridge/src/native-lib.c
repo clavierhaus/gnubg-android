@@ -46,6 +46,80 @@ static cubeinfo ci_default;
 static int last_engine_dice[2] = {0, 0};
 
 /*
+ * Engine.getMatchCubeInfo(): IntArray[3]
+ * Returns [fDoubled, fCubeOwner, nCube]
+ * fDoubled: 1=cube offered, 0=not
+ * fCubeOwner: -1=centred, 0=human, 1=engine
+ * nCube: current cube value (1,2,4,8...)
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMatchCubeInfo(JNIEnv *env, jobject thiz) {
+    jintArray result = (*env)->NewIntArray(env, 3);
+    jint buf[3] = { (jint)ms.fDoubled, (jint)ms.fCubeOwner, (jint)ms.nCube };
+    (*env)->SetIntArrayRegion(env, result, 0, 3, buf);
+    return result;
+}
+
+extern void CommandDouble(char *);
+extern void CommandTake(char *);
+extern void CommandDrop(char *);
+
+/*
+ * Engine.commandDouble(): void — human offers cube
+ */
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandDouble(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandDouble(NULL);
+    while (fNextTurn) NextTurn(TRUE);
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+/*
+ * Engine.commandTake(): void — human accepts engine's double
+ */
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandTake(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandTake(NULL);
+    while (fNextTurn) NextTurn(TRUE);
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+/*
+ * Engine.commandDrop(): void — human drops engine's double
+ */
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandDrop(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandDrop(NULL);
+    while (fNextTurn) NextTurn(TRUE);
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+/*
+ * Engine.getGameResult(): IntArray[2]
+ * Returns [fWinner, nPoints] from the game record (plGame->plNext->p).
+ * nPoints = nCube * GameStatus: 1=win, 2=gammon, 3=backgammon.
+ * fWinner: 0=human, 1=engine. Returns [-1,0] if no result yet.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getGameResult(JNIEnv *env, jobject thiz) {
+    jintArray result = (*env)->NewIntArray(env, 2);
+    jint buf[2] = {-1, 0};
+    if (plGame && plGame->plNext && plGame->plNext->p) {
+        moverecord *pmr = (moverecord *)plGame->plNext->p;
+        xmovegameinfo *pmgi = &pmr->g;
+        if (pmgi->fWinner >= 0) {
+            buf[0] = (jint)pmgi->fWinner;
+            buf[1] = (jint)pmgi->nPoints;
+        }
+    }
+    (*env)->SetIntArrayRegion(env, result, 0, 2, buf);
+    return result;
+}
+
+/*
  * Engine.getMoveRecordDice(): IntArray[2]
  * Returns dice from plLastMove record — persists after TurnDone clears ms.anDice.
  * Mirrors what gnubg GTK reads for board display.

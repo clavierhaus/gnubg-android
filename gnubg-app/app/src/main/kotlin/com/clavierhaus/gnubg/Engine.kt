@@ -21,6 +21,11 @@ object Engine {
     external fun getMatchTurn(): Int
     external fun getMatchStatus(): Int
     external fun getMatchWinner(): Int
+    external fun getGameResult(): IntArray  // [fWinner, nPoints]
+    external fun getMatchCubeInfo(): IntArray  // [fDoubled, fCubeOwner, nCube]
+    external fun commandDouble()
+    external fun commandTake()
+    external fun commandDrop()
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
 

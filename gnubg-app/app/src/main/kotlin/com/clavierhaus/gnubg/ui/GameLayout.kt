@@ -50,11 +50,16 @@ fun GameLayout(viewModel: GameViewModel) {
                     ) {
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
-                                Text(
-                                    if (gameState.winner == 0) "You win" else "Engine wins",
-                                    color = Color.White, fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                val resultText = when {
+                                    gameState.winner == 0 && gameState.nPoints >= 3 -> "You win — Backgammon!"
+                                    gameState.winner == 0 && gameState.nPoints >= 2 -> "You win — Gammon!"
+                                    gameState.winner == 0 -> "You win"
+                                    gameState.nPoints >= 3 -> "Engine wins — Backgammon"
+                                    gameState.nPoints >= 2 -> "Engine wins — Gammon"
+                                    else -> "Engine wins"
+                                }
+                                Text(resultText, color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 GameButton("New Game", Color(0xFF1565C0)) { viewModel.newGame() }
                             }
@@ -75,7 +80,6 @@ fun GameLayout(viewModel: GameViewModel) {
                             text = when {
                                 gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> "Your turn"
                                 gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 1 -> "Engine's turn"
-                                gameState.phase == GamePhase.HUMAN_MOVING -> "Moving"
                                 else -> ""
                             },
                             color = Color(0xFFB3C9F0),
