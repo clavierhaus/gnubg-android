@@ -732,24 +732,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _settings.value = _settings.value.copy(matchLength = n)
     }
     fun setCrawford(on: Boolean) {
+        // Local-only until GNUbg Crawford/default-match timing is verified.
+        // Smoke-test showed that command-backed Crawford can crash from Settings.
         _settings.value = _settings.value.copy(crawford = on)
-        // Android Settings controls the normal/default Crawford rule behaviour.
-        // GNUbg's plain "set crawford" applies only to the current match game state
-        // and may reject outside the correct 1-away match context.
-        runSettingsCommand("set automatic crawford ${onOff(on)}")
     }
     fun setJacoby(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(jacoby = on)
-        runSettingsCommand("set jacoby ${onOff(on)}")
     }
     fun setAutomaticDoubles(n: Int) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(automaticDoubles = n)
-        runSettingsCommand("set automatic doubles $n")
     }
     fun setBeavers(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(beavers = on)
-        // GNUbg's beavers setting is numeric: 0 disables, 1 allows one beaver.
-        runSettingsCommand("set beavers ${if (on) 1 else 0}")
     }
     fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)
@@ -763,31 +760,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _settings.value = _settings.value.copy(difficulty = d)
     }
     fun setTutorMode(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(tutorMode = on)
-        runSettingsCommand("set tutor mode ${onOff(on)}")
     }
     fun setHint(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(hint = on)
-        runSettingsCommand("set tutor mode ${onOff(on)}")
     }
     fun setShowEquity(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(showEquity = on)
-        runSettingsCommand("set output mwc ${if (on) "off" else "on"}")
     }
     fun setShowMWC(on: Boolean) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(showMWC = on)
-        runSettingsCommand("set output mwc ${onOff(on)}")
     }
     fun setThresholdDoubtful(v: Float) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(thresholdDoubtful = v)
-        runSettingsCommand("set analysis threshold doubtful $v")
     }
     fun setThresholdBad(v: Float) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(thresholdBad = v)
-        runSettingsCommand("set analysis threshold bad $v")
     }
     fun setThresholdVeryBad(v: Float) {
+        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(thresholdVeryBad = v)
-        runSettingsCommand("set analysis threshold verybad $v")
     }
 }
