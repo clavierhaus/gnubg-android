@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\title{GNU Backgammon by clavierhaus.at\\V0.8.11 Architecture Note}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Milestone}
+
+V0.8.11 is a structural milestone.  The Android front-end now exposes a broader GNU Backgammon lifecycle and command surface through JNI, Kotlin \texttt{Engine.kt}, and \texttt{GameViewModel} wrappers.
+
+No visible UI controls were added.  The purpose of this version is groundwork: future Android controls can now be connected to GNUbg-native commands instead of recreating game semantics in Kotlin.
+
+\section*{Architectural Rule}
+
+GNUbg remains authoritative for game, match, cube, session, file, and lifecycle state.  Android remains responsible for presentation, navigation, interaction, and configuration.
+
+\section*{Exposed Command Groundwork}
+
+The bridge groundwork covers commands such as:
+
+\begin{itemize}[noitemsep]
+  \item new game
+  \item new match
+  \item new session
+  \item end game
+  \item resign
+  \item next
+  \item accept, reject, decline, agree
+  \item redouble
+  \item load/save game
+  \item load/save match
+  \item load/save position
+\end{itemize}
+
+The existing SGF load/save functions remain available.  The GNUbg \texttt{quit} command is intentionally not bound at this stage because it is not part of the current Android native link and has unclear Android shell semantics.
+
+\section*{UI Consequence}
+
+Settings screens remain configuration-only.
+
+Live board interactions such as roll, double, move, undo, confirm, dice handling, and destination-stack moves stay on the board surface.
+
+The reserved lower-left area of the Play screen is now identified as a future location for true GNUbg-backed lifecycle controls, not duplicated board actions.
+
+\section*{Status}
+
+Android debug build and native bridge build both succeed at this milestone.
+
+\end{document}
