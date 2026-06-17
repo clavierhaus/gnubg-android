@@ -1,0 +1,33 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\title{GNU Backgammon for Android\\Internal Master Document V0.8.10}
+\author{clavierhaus.at}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Status}
+
+This document records the internal status of GNU Backgammon for Android at V0.8.10.
+
+
+
+\section*{Status V0.8.10 --- Home Hub restructuring baseline}
+
+Version 0.8.10 marks the first internal documentation checkpoint after the 0.8.9 private consolidation, the generated-cache cleanup, and the mode-based Home Hub scaffold.
+
+The application now starts from a sparse Home Hub rather than directly entering Play. The current top-level areas are Play, Learn, Analyse, Options, and Profile. Play remains the existing live game implementation and was moved into its own package area rather than redesigned. Learn, Analyse, and Profile are placeholders at this checkpoint. Options wraps the existing settings surface.
+
+The Home Hub is intentionally sparse at this stage. It is not a finished visual design and should not be read as a final interface specification. Its immediate purpose is architectural: to prove that the application can start from a mode-based shell while preserving the existing Play implementation unchanged.
+
+Generated Android and Gradle build output has been removed from Git tracking. Future development diffs should therefore primarily show source and documentation changes rather than cache artefacts.
+
+The main architectural constraint remains unchanged: GNU Backgammon is authoritative for game logic. Kotlin and Android code provide application structure, presentation, touch interaction, rendering, and convenience behaviours, but must not become an independent backgammon rules engine.
+
+\end{document}
