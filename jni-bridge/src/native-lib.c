@@ -814,3 +814,92 @@ Java_com_clavierhaus_gnubg_Engine_saveSGF(JNIEnv *env, jobject thiz, jstring pat
     (*env)->ReleaseStringUTFChars(env, path, szPath);
     return JNI_TRUE;
 }
+
+static int android_gnubg_command_allowed(const char *cmd) {
+    if (!cmd || !*cmd) return 0;
+
+    /*
+     * Android Settings bridge, deliberately conservative.
+     *
+     * This is not a public command shell. It only permits GNUbg configuration
+     * commands we intentionally translate from Kotlin settings controls.
+     * Game/session actions stay on dedicated JNI wrappers.
+     */
+    static const char *prefixes[] = {
+        "set analysis ",
+        "set automatic ",
+        "set beavers ",
+        "set crawford ",
+        "set cube use ",
+        "set evaluation ",
+        "set gui ",
+        "set invert met ",
+        "set jacoby ",
+        "set match length ",
+        "set output ",
+        "set player ",
+        "set rollout ",
+        "set seed ",
+        "set tutor ",
+        "set warning ",
+        "show analysis",
+        "show automatic",
+        "show crawford",
+        "show cube",
+        "show evaluation",
+        "show gui",
+        "show jacoby",
+        "show output",
+        "show player",
+        "show rollout",
+        "show seed",
+        "show tutor",
+        "show warning"
+    };
+
+    for (unsigned i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
+        const char *prefix = prefixes[i];
+        size_t n = strlen(prefix);
+        if (strncmp(cmd, prefix, n) == 0) return 1;
+    }
+
+    return 0;
+}
+
+extern void HandleCommand(char *sz, command *ac);
+extern command acTop[];
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_runCommand(JNIEnv *env, jobject thiz, jstring command) {
+    (void) thiz;
+
+    if (!command) return JNI_FALSE;
+
+    const char *utf = (*env)->GetStringUTFChars(env, command, NULL);
+    if (!utf) return JNI_FALSE;
+
+    if (!android_gnubg_command_allowed(utf)) {
+        __android_log_print(ANDROID_LOG_WARN, "gnubg-engine",
+                            "runCommand rejected: %s", utf);
+        (*env)->ReleaseStringUTFChars(env, command, utf);
+        return JNI_FALSE;
+    }
+
+    size_t len = strlen(utf);
+    char *copy = (char *) malloc(len + 1);
+    if (!copy) {
+        (*env)->ReleaseStringUTFChars(env, command, utf);
+        return JNI_FALSE;
+    }
+
+    memcpy(copy, utf, len + 1);
+
+    __android_log_print(ANDROID_LOG_INFO, "gnubg-engine",
+                        "runCommand: %s", copy);
+
+    HandleCommand(copy, acTop);
+
+    free(copy);
+    (*env)->ReleaseStringUTFChars(env, command, utf);
+    return JNI_TRUE;
+}

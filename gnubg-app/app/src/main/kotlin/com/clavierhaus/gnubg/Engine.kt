@@ -71,4 +71,7 @@ object Engine {
 
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
+
+    // Restricted GNUbg command bridge for translated Android settings.
+    external fun runCommand(command: String): Boolean
 }

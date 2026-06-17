@@ -716,23 +716,74 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setMatchLength(n: Int)          { _settings.value = _settings.value.copy(matchLength = n) }
-    fun setCrawford(on: Boolean)        { _settings.value = _settings.value.copy(crawford = on) }
-    fun setJacoby(on: Boolean)          { _settings.value = _settings.value.copy(jacoby = on) }
-    fun setAutomaticDoubles(n: Int)     { _settings.value = _settings.value.copy(automaticDoubles = n) }
-    fun setBeavers(on: Boolean)         { _settings.value = _settings.value.copy(beavers = on) }
+
+    private fun runSettingsCommand(command: String) {
+        viewModelScope.launch(engineThread) {
+            val ok = Engine.runCommand(command)
+            android.util.Log.i("gnubg-vm", "settings command '$command' ok=$ok")
+        }
+    }
+
+    private fun onOff(on: Boolean): String = if (on) "on" else "off"
+
+    fun setMatchLength(n: Int) {
+        // Local Android match setup value.
+        // Applied by startMatch()/Engine.newGame(), not through the generic GNUbg command bridge.
+        _settings.value = _settings.value.copy(matchLength = n)
+    }
+    fun setCrawford(on: Boolean) {
+        _settings.value = _settings.value.copy(crawford = on)
+        runSettingsCommand("set crawford ${onOff(on)}")
+    }
+    fun setJacoby(on: Boolean) {
+        _settings.value = _settings.value.copy(jacoby = on)
+        runSettingsCommand("set jacoby ${onOff(on)}")
+    }
+    fun setAutomaticDoubles(n: Int) {
+        _settings.value = _settings.value.copy(automaticDoubles = n)
+        runSettingsCommand("set automatic doubles $n")
+    }
+    fun setBeavers(on: Boolean) {
+        _settings.value = _settings.value.copy(beavers = on)
+        runSettingsCommand("set beavers ${onOff(on)}")
+    }
     fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)
         viewModelScope.launch { PreferencesManager.saveBoardTheme(getApplication(), t) }
     }
     fun setShowPointNumbers(on: Boolean) { _settings.value = _settings.value.copy(showPointNumbers = on) }
     fun setShowPipCount(on: Boolean)     { _settings.value = _settings.value.copy(showPipCount = on) }
-    fun setDifficulty(d: Difficulty)    { _settings.value = _settings.value.copy(difficulty = d) }
-    fun setTutorMode(on: Boolean)       { _settings.value = _settings.value.copy(tutorMode = on) }
-    fun setHint(on: Boolean)            { _settings.value = _settings.value.copy(hint = on) }
-    fun setShowEquity(on: Boolean)       { _settings.value = _settings.value.copy(showEquity = on) }
-    fun setShowMWC(on: Boolean)         { _settings.value = _settings.value.copy(showMWC = on) }
-    fun setThresholdDoubtful(v: Float)  { _settings.value = _settings.value.copy(thresholdDoubtful = v) }
-    fun setThresholdBad(v: Float)       { _settings.value = _settings.value.copy(thresholdBad = v) }
-    fun setThresholdVeryBad(v: Float)   { _settings.value = _settings.value.copy(thresholdVeryBad = v) }
+    fun setDifficulty(d: Difficulty) {
+        // Keep local until GNUbg player/evaluation command timing is verified.
+        // Wrongly-timed player/evaluation commands can disturb match start.
+        _settings.value = _settings.value.copy(difficulty = d)
+    }
+    fun setTutorMode(on: Boolean) {
+        _settings.value = _settings.value.copy(tutorMode = on)
+        runSettingsCommand("set tutor mode ${onOff(on)}")
+    }
+    fun setHint(on: Boolean) {
+        _settings.value = _settings.value.copy(hint = on)
+        runSettingsCommand("set tutor mode ${onOff(on)}")
+    }
+    fun setShowEquity(on: Boolean) {
+        _settings.value = _settings.value.copy(showEquity = on)
+        runSettingsCommand("set output mwc ${if (on) "off" else "on"}")
+    }
+    fun setShowMWC(on: Boolean) {
+        _settings.value = _settings.value.copy(showMWC = on)
+        runSettingsCommand("set output mwc ${onOff(on)}")
+    }
+    fun setThresholdDoubtful(v: Float) {
+        _settings.value = _settings.value.copy(thresholdDoubtful = v)
+        runSettingsCommand("set analysis threshold doubtful $v")
+    }
+    fun setThresholdBad(v: Float) {
+        _settings.value = _settings.value.copy(thresholdBad = v)
+        runSettingsCommand("set analysis threshold bad $v")
+    }
+    fun setThresholdVeryBad(v: Float) {
+        _settings.value = _settings.value.copy(thresholdVeryBad = v)
+        runSettingsCommand("set analysis threshold verybad $v")
+    }
 }
