@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clavierhaus.gnubg.analyse.AnalyseScreen
 import com.clavierhaus.gnubg.engine.GameViewModel
 import com.clavierhaus.gnubg.hub.HomeHubScreen
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             GnubgTheme {
                 var mode by remember { mutableStateOf(AppMode.HUB) }
+                val settings by viewModel.settings.collectAsStateWithLifecycle()
 
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
@@ -61,6 +63,8 @@ class MainActivity : ComponentActivity() {
                     )
 
                     AppMode.OPTIONS -> OptionsModeScreen(
+                        settings = settings,
+                        viewModel = viewModel,
                         onBackToHub = { mode = AppMode.HUB }
                     )
 
