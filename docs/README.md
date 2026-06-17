@@ -4,6 +4,7 @@ This directory contains the canonical project documentation for the GNU Backgamm
 
 ## Current documents
 
+- `ROADMAP.md` — milestone history and next candidate work
 - `ARCHITECTURE.md` — architecture, ownership boundaries, and command-bridge policy
 - `BUILD.md` — build notes
 - `KNOWN-LIMITATIONS.md` — known limitations
