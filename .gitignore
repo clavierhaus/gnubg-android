@@ -148,3 +148,8 @@ test-harness/build/
 
 # Private APK evaluation builds
 private-eval/
+# Android / Gradle generated files
+gnubg-app/.gradle/
+gnubg-app/app/build/
+gnubg-app/tmp/
+gnubg-app/local.properties
