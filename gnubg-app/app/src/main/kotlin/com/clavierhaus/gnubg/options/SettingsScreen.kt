@@ -1,4 +1,4 @@
-package com.clavierhaus.gnubg.ui
+package com.clavierhaus.gnubg.options
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

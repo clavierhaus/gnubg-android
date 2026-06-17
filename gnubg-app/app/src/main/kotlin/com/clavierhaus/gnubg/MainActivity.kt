@@ -6,11 +6,21 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.clavierhaus.gnubg.analyse.AnalyseScreen
 import com.clavierhaus.gnubg.engine.GameViewModel
-import com.clavierhaus.gnubg.ui.GameLayout
+import com.clavierhaus.gnubg.hub.HomeHubScreen
+import com.clavierhaus.gnubg.learn.LearnScreen
+import com.clavierhaus.gnubg.options.OptionsModeScreen
+import com.clavierhaus.gnubg.play.GameLayout
+import com.clavierhaus.gnubg.profile.ProfileScreen
+import com.clavierhaus.gnubg.shared.AppMode
 import com.clavierhaus.gnubg.ui.theme.GnubgTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,7 +39,35 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GnubgTheme {
-                GameLayout(viewModel)
+                var mode by remember { mutableStateOf(AppMode.HUB) }
+
+                when (mode) {
+                    AppMode.HUB -> HomeHubScreen(
+                        onPlay = { mode = AppMode.PLAY },
+                        onLearn = { mode = AppMode.LEARN },
+                        onAnalyse = { mode = AppMode.ANALYSE },
+                        onOptions = { mode = AppMode.OPTIONS },
+                        onProfile = { mode = AppMode.PROFILE }
+                    )
+
+                    AppMode.PLAY -> GameLayout(viewModel)
+
+                    AppMode.LEARN -> LearnScreen(
+                        onBackToHub = { mode = AppMode.HUB }
+                    )
+
+                    AppMode.ANALYSE -> AnalyseScreen(
+                        onBackToHub = { mode = AppMode.HUB }
+                    )
+
+                    AppMode.OPTIONS -> OptionsModeScreen(
+                        onBackToHub = { mode = AppMode.HUB }
+                    )
+
+                    AppMode.PROFILE -> ProfileScreen(
+                        onBackToHub = { mode = AppMode.HUB }
+                    )
+                }
             }
         }
     }

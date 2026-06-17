@@ -1,4 +1,4 @@
-package com.clavierhaus.gnubg.ui
+package com.clavierhaus.gnubg.play
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints

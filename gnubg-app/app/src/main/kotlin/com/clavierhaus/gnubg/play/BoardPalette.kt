@@ -1,4 +1,4 @@
-package com.clavierhaus.gnubg.ui
+package com.clavierhaus.gnubg.play
 
 import androidx.compose.ui.graphics.Color
 import com.clavierhaus.gnubg.engine.BoardTheme
