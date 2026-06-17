@@ -21,10 +21,16 @@ import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
 import com.clavierhaus.gnubg.options.SettingsScreen
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
-fun GameLayout(viewModel: GameViewModel) {
+fun GameLayout(
+    viewModel: GameViewModel,
+    onReturnToHub: (() -> Unit)? = null
+) {
     var showSettings by remember { mutableStateOf(false) }
+    var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
@@ -110,15 +116,14 @@ fun GameLayout(viewModel: GameViewModel) {
                                 Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
-                                Text("Tap dice\nto roll", color = Color(0xFFB3C9F0), fontSize = 18.sp,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                // The roll action is shown directly on the board surface.
                             }
                             gameState.phase == GamePhase.HUMAN_MOVING -> {
-                                Text("Moving", color = Color(0xFFB3C9F0), fontSize = 18.sp)
+                                Text("Your move", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
                             text = when {
@@ -128,6 +133,17 @@ fun GameLayout(viewModel: GameViewModel) {
                             },
                             color = Color(0xFFB3C9F0),
                             fontSize = 16.sp
+                        )
+
+                        androidx.compose.foundation.layout.Spacer(
+                            modifier = Modifier.height(4.dp)
+                        )
+
+                        PlayLifecyclePanel(
+                            onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
+                            onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
+                            onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
+                            onReturnHome = onReturnToHub
                         )
                     }
                 }
@@ -152,9 +168,181 @@ fun GameLayout(viewModel: GameViewModel) {
                     .size(24.dp)
                     .clickable { showSettings = true }
             )
+
+            PlayLifecycleConfirmationDialog(
+                action = pendingLifecycleAction,
+                onDismiss = { pendingLifecycleAction = null },
+                onConfirmResignNormal = {
+                    pendingLifecycleAction = null
+                    viewModel.commandResign("n")
+                },
+                onConfirmResignGammon = {
+                    pendingLifecycleAction = null
+                    viewModel.commandResign("g")
+                },
+                onConfirmResignBackgammon = {
+                    pendingLifecycleAction = null
+                    viewModel.commandResign("b")
+                },
+                onConfirmNewGame = {
+                    pendingLifecycleAction = null
+                    viewModel.commandNewGame()
+                },
+                onConfirmNewMatch = {
+                    pendingLifecycleAction = null
+                    viewModel.commandNewMatch(settings.matchLength)
+                }
+            )
         }
     }
 }
+
+
+private enum class PlayLifecycleAction {
+    RESIGN,
+    NEW_GAME,
+    NEW_MATCH
+}
+
+@Composable
+private fun PlayLifecyclePanel(
+    onResign: () -> Unit,
+    onNewGame: () -> Unit,
+    onNewMatch: () -> Unit,
+    onReturnHome: (() -> Unit)?
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(144.dp)
+                .height(1.dp)
+                .background(Color(0xFF315A9A))
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            LifecycleButton("Resign", Color(0xFF8B1A1A), onResign)
+            LifecycleButton("New game", Color(0xFF1565C0), onNewGame)
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            LifecycleButton("New match", Color(0xFF0D47A1), onNewMatch)
+            LifecycleButton(
+                label = "Home",
+                color = Color(0xFF243B68),
+                onClick = { onReturnHome?.invoke() },
+                enabled = onReturnHome != null
+            )
+        }
+    }
+}
+
+@Composable
+private fun LifecycleButton(
+    label: String,
+    color: Color,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    Box(
+        modifier = Modifier
+            .width(68.dp)
+            .background(
+                if (enabled) color else Color(0xFF243B68),
+                RoundedCornerShape(7.dp)
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (enabled) Color.White else Color(0xFF8FA8D0),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun PlayLifecycleConfirmationDialog(
+    action: PlayLifecycleAction?,
+    onDismiss: () -> Unit,
+    onConfirmResignNormal: () -> Unit,
+    onConfirmResignGammon: () -> Unit,
+    onConfirmResignBackgammon: () -> Unit,
+    onConfirmNewGame: () -> Unit,
+    onConfirmNewMatch: () -> Unit
+) {
+    when (action) {
+        PlayLifecycleAction.RESIGN -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Resign game?") },
+                text = { Text("Choose the resignation value to offer to GNU Backgammon.") },
+                confirmButton = {
+                    TextButton(onClick = onConfirmResignNormal) {
+                        Text("Normal")
+                    }
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(onClick = onConfirmResignGammon) {
+                            Text("Gammon")
+                        }
+                        TextButton(onClick = onConfirmResignBackgammon) {
+                            Text("Backgammon")
+                        }
+                        TextButton(onClick = onDismiss) {
+                            Text("Cancel")
+                        }
+                    }
+                }
+            )
+        }
+
+        PlayLifecycleAction.NEW_GAME -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Start new game?") },
+                text = { Text("This calls GNU Backgammon's new-game command for the current match/session.") },
+                confirmButton = {
+                    TextButton(onClick = onConfirmNewGame) {
+                        Text("New game")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        PlayLifecycleAction.NEW_MATCH -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Start new match?") },
+                text = { Text("This calls GNU Backgammon's new-match command using the configured match length.") },
+                confirmButton = {
+                    TextButton(onClick = onConfirmNewMatch) {
+                        Text("New match")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        null -> Unit
+    }
+}
+
 
 @Composable
 fun GameButton(

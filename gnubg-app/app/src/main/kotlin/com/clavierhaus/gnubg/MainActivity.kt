@@ -52,7 +52,10 @@ class MainActivity : ComponentActivity() {
                         onProfile = { mode = AppMode.PROFILE }
                     )
 
-                    AppMode.PLAY -> GameLayout(viewModel)
+                    AppMode.PLAY -> GameLayout(
+                        viewModel = viewModel,
+                        onReturnToHub = { mode = AppMode.HUB }
+                    )
 
                     AppMode.LEARN -> LearnScreen(
                         onBackToHub = { mode = AppMode.HUB }

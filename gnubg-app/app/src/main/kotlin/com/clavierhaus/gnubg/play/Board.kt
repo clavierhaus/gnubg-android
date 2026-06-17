@@ -72,6 +72,41 @@ private fun pointX(n: Int): Float = when {
 
 private fun pointCentreX(n: Int): Float = pointX(n) + PT_W / 2f
 
+
+private fun boardPointAt(x: Float, y: Float): Int {
+    for (n in 1..24) {
+        val px = pointX(n)
+        val isTop = n in 13..24
+        val py = if (isTop) BRD_H else TOT_H - BRD_H - PT_H
+        if (x >= px && x <= px + PT_W && y >= py && y <= py + PT_H) {
+            return n
+        }
+    }
+    return -1
+}
+
+private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set<Int> {
+    if (gameState.phase != GamePhase.HUMAN_MOVING) return emptySet()
+    if (sourcePoint !in 1..24) return emptySet()
+    if (gameState.board[24 + sourcePoint] <= 0) return emptySet()
+
+    val source = sourcePoint - 1
+    val result = linkedSetOf<Int>()
+
+    for (m in gameState.legalMoves.indices step 8) {
+        for (j in 0 until 8 step 2) {
+            val src = gameState.legalMoves.getOrNull(m + j) ?: -1
+            val dst = gameState.legalMoves.getOrNull(m + j + 1) ?: -1
+
+            if (src == source && dst in 0..23) {
+                result.add(dst + 1)
+            }
+        }
+    }
+
+    return result
+}
+
 @Composable
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
@@ -79,6 +114,7 @@ fun BackgammonBoard(
     viewModel: GameViewModel? = null
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
+    var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -88,9 +124,30 @@ fun BackgammonBoard(
             gameState.turn,
             gameState.fDoubled,
             gameState.cubeOwner,
-            gameState.cubeValue
+            gameState.cubeValue,
+            gameState.legalMoves,
+            gameState.remainingDice
         ) {
-            detectTapGestures { offset ->
+            highlightedLandingPoints = emptySet()
+
+            detectTapGestures(
+                onPress = {
+                    try {
+                        awaitRelease()
+                    } finally {
+                        highlightedLandingPoints = emptySet()
+                    }
+                },
+                onLongPress = { offset ->
+                    val sx = size.width.toFloat() / TOT_W
+                    val sy = size.height.toFloat() / TOT_H
+                    val x = offset.x / sx
+                    val y = offset.y / sy
+                    val point = boardPointAt(x, y)
+                    highlightedLandingPoints = landingPointsForSource(gameState, point)
+                },
+                onTap = { offset ->
+                    highlightedLandingPoints = emptySet()
                 if (viewModel == null) return@detectTapGestures
                 val sx = size.width.toFloat() / TOT_W
                 val sy = size.height.toFloat() / TOT_H
@@ -189,7 +246,8 @@ fun BackgammonBoard(
                     }
                 }
                 if (tapped >= 0) viewModel.tapSource(tapped)
-            }
+                }
+            )
         }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -544,11 +602,25 @@ fun BackgammonBoard(
                     textAlign = android.graphics.Paint.Align.CENTER
                     isAntiAlias = true
                 }
-                if (settings.showPointNumbers) {
-                    for (n in 13..24) canvas.nativeCanvas.drawText(
-                        n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, numPaint)
-                    for (n in 12 downTo 1) canvas.nativeCanvas.drawText(
-                        n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, numPaint)
+                val hintNumPaint = android.graphics.Paint(numPaint).apply {
+                    color = Color(0xFF3EE26B).toArgb()
+                    isFakeBoldText = true
+                }
+                if (settings.showPointNumbers || highlightedLandingPoints.isNotEmpty()) {
+                    for (n in 13..24) {
+                        val paint = if (n in highlightedLandingPoints) hintNumPaint else numPaint
+                        if (settings.showPointNumbers || n in highlightedLandingPoints) {
+                            canvas.nativeCanvas.drawText(
+                                n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, paint)
+                        }
+                    }
+                    for (n in 12 downTo 1) {
+                        val paint = if (n in highlightedLandingPoints) hintNumPaint else numPaint
+                        if (settings.showPointNumbers || n in highlightedLandingPoints) {
+                            canvas.nativeCanvas.drawText(
+                                n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, paint)
+                        }
+                    }
                 }
             }
         } // end Canvas
