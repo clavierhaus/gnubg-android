@@ -25,6 +25,20 @@ extern rng rngCurrent;
 extern rngcontext *rngctxCurrent;
 extern void CommandLoadMatch(char *sz);
 extern void CommandSaveMatch(char *sz);
+extern void CommandLoadGame(char *sz);
+extern void CommandSaveGame(char *sz);
+extern void CommandLoadPosition(char *sz);
+extern void CommandSavePosition(char *sz);
+extern void CommandNewMatch(char *);
+extern void CommandNewSession(char *);
+extern void CommandEndGame(char *);
+extern void CommandResign(char *);
+extern void CommandNext(char *);
+extern void CommandAccept(char *);
+extern void CommandReject(char *);
+extern void CommandDecline(char *);
+extern void CommandAgree(char *);
+extern void CommandRedouble(char *);
 
 #define LOG_TAG "gnubg-jni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
@@ -297,6 +311,136 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchL
     pthread_mutex_unlock(&gnubg_lock);
     return result;
 }
+
+
+static char *copy_jstring_or_empty(JNIEnv *env, jstring js) {
+    if (!js) return strdup("");
+    const char *raw = (*env)->GetStringUTFChars(env, js, 0);
+    if (!raw) return strdup("");
+    char *copy = strdup(raw);
+    (*env)->ReleaseStringUTFChars(env, js, raw);
+    return copy ? copy : strdup("");
+}
+
+static void drain_next_turns(void) {
+    while (fNextTurn)
+        NextTurn(TRUE);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandNewGame(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandNewGame(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandNewMatch(JNIEnv *env, jobject thiz, jint matchLength) {
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    char szMatch[16];
+    snprintf(szMatch, sizeof(szMatch), "%d", (int)matchLength);
+    CommandNewMatch(szMatch);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandNewSession(JNIEnv *env, jobject thiz, jint games) {
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    char szGames[16];
+    snprintf(szGames, sizeof(szGames), "%d", (int)games);
+    CommandNewSession(szGames);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandEndGame(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandEndGame(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandResign(JNIEnv *env, jobject thiz, jstring value) {
+    (void)thiz;
+    char *sz = copy_jstring_or_empty(env, value);
+    pthread_mutex_lock(&gnubg_lock);
+    CommandResign(sz);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+    free(sz);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandNext(JNIEnv *env, jobject thiz, jstring argument) {
+    (void)thiz;
+    char *sz = copy_jstring_or_empty(env, argument);
+    pthread_mutex_lock(&gnubg_lock);
+    CommandNext(sz);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+    free(sz);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandAccept(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandAccept(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandReject(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandReject(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandDecline(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandDecline(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandAgree(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandAgree(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandRedouble(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    pthread_mutex_lock(&gnubg_lock);
+    CommandRedouble(NULL);
+    drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+}
+
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_rollDice(JNIEnv *env, jobject thiz) {
@@ -590,6 +734,60 @@ Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
     (*env)->SetFloatArrayRegion(env, result, 0, 14, buf);
     return result;
 }
+
+
+static jboolean run_file_command(JNIEnv *env, jstring path, void (*command_fn)(char *)) {
+    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
+    if (!szPath) return JNI_FALSE;
+
+    pthread_mutex_lock(&gnubg_lock);
+    char *szCopy = strdup(szPath);
+    if (szCopy) {
+        command_fn(szCopy);
+        free(szCopy);
+    }
+    pthread_mutex_unlock(&gnubg_lock);
+
+    (*env)->ReleaseStringUTFChars(env, path, szPath);
+    return JNI_TRUE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_loadGame(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandLoadGame);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_saveGame(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandSaveGame);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_loadMatch(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandLoadMatch);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_saveMatch(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandSaveMatch);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_loadPosition(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandLoadPosition);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_savePosition(JNIEnv *env, jobject thiz, jstring path) {
+    (void)thiz;
+    return run_file_command(env, path, CommandSavePosition);
+}
+
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadSGF(JNIEnv *env, jobject thiz, jstring path) {

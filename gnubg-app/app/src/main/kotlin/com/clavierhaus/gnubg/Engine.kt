@@ -12,6 +12,19 @@ object Engine {
     external fun newGame(matchLength: Int): IntArray
     external fun nextGame(): IntArray
     external fun rollDice(): IntArray
+
+    // GNUbg command-surface groundwork
+    external fun commandNewGame()
+    external fun commandNewMatch(matchLength: Int)
+    external fun commandNewSession(games: Int)
+    external fun commandEndGame()
+    external fun commandResign(value: String)
+    external fun commandNext(argument: String = "")
+    external fun commandAccept()
+    external fun commandReject()
+    external fun commandDecline()
+    external fun commandAgree()
+    external fun commandRedouble()
     external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
     external fun applyMoveString(moveStr: String): IntArray
     external fun formatMove(board: IntArray, move: IntArray): String
@@ -48,7 +61,14 @@ object Engine {
                                crawford: Int): IntArray?
     external fun rollout(board: IntArray, trials: Int): FloatArray?
 
-    // SGF
+    // Files / SGF
+    external fun loadGame(path: String): Boolean
+    external fun saveGame(path: String): Boolean
+    external fun loadMatch(path: String): Boolean
+    external fun saveMatch(path: String): Boolean
+    external fun loadPosition(path: String): Boolean
+    external fun savePosition(path: String): Boolean
+
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
 }

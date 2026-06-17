@@ -570,6 +570,152 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    private fun refreshFromEngineAfterControl() {
+        val status = Engine.getMatchStatus()
+        if (status >= 2) {
+            Engine.getGameResult().let { gr ->
+                readMatchState(
+                    phase = GamePhase.GAME_OVER,
+                    winner = gr[0],
+                    nPoints = gr[1]
+                )
+            }
+            return
+        }
+
+        val cubeInfo = Engine.getMatchCubeInfo()
+        val dice = Engine.getMatchDice()
+        val turn = Engine.getMatchTurn()
+
+        val phase = when {
+            cubeInfo[0] == 1 && turn == 0 -> GamePhase.CUBE_OFFERED
+            dice[0] > 0 && turn == 0 -> GamePhase.HUMAN_MOVING
+            else -> GamePhase.WAITING_FOR_ROLL
+        }
+
+        readMatchState(phase = phase)
+    }
+
+    fun commandNewGame() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandNewGame()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandNewMatch(length: Int = _settings.value.matchLength) {
+        _settings.value = _settings.value.copy(matchLength = length)
+        _showMatchSetup.value = false
+        viewModelScope.launch(engineThread) {
+            Engine.commandNewMatch(length)
+            Engine.commandNewGame()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandNewSession(games: Int = 0) {
+        viewModelScope.launch(engineThread) {
+            Engine.commandNewSession(games)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandEndGame() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandEndGame()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandResign(value: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.commandResign(value)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandNext(argument: String = "") {
+        viewModelScope.launch(engineThread) {
+            Engine.commandNext(argument)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandAccept() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandAccept()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandReject() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandReject()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandDecline() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandDecline()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandAgree() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandAgree()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun commandRedouble() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandRedouble()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun loadGame(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.loadGame(path)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun saveGame(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.saveGame(path)
+        }
+    }
+
+    fun loadMatch(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.loadMatch(path)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun saveMatch(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.saveMatch(path)
+        }
+    }
+
+    fun loadPosition(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.loadPosition(path)
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    fun savePosition(path: String) {
+        viewModelScope.launch(engineThread) {
+            Engine.savePosition(path)
+        }
+    }
+
     fun setMatchLength(n: Int)          { _settings.value = _settings.value.copy(matchLength = n) }
     fun setCrawford(on: Boolean)        { _settings.value = _settings.value.copy(crawford = on) }
     fun setJacoby(on: Boolean)          { _settings.value = _settings.value.copy(jacoby = on) }
