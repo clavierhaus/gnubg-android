@@ -22,6 +22,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
+    private val _showMatchSetup = MutableStateFlow(true)
+    val showMatchSetup: StateFlow<Boolean> = _showMatchSetup.asStateFlow()
+
     private val engineThread = Executors.newSingleThreadExecutor { r ->
         Thread(r, "gnubg-engine-thread")
     }.asCoroutineDispatcher()
@@ -37,7 +40,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val weightsPath = AssetExtractor.extractWeights(application)
             Engine.initialise(weightsPath)
             _engineReady.value = true
-            startNewGame()
+        }
+    }
+
+    fun startMatch(length: Int) {
+        _settings.value = _settings.value.copy(matchLength = length)
+        _showMatchSetup.value = false
+        viewModelScope.launch(engineThread) {
+            startNewGame(isNewMatch = true)
         }
     }
 
@@ -50,9 +60,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         engineDice: Pair<Int, Int>? = null,
         winner: Int = -1,
         nPoints: Int = 1,
-        blockedDice: Set<Int> = emptySet()
+        blockedDice: Set<Int> = emptySet(),
+        moveHistory: List<MoveSnapshot> = emptyList()
     ) {
-        val score     = Engine.getMatchScore()
+        val score       = Engine.getMatchScore()
+        val matchLength = Engine.getMatchLength()
         val cubeInfo  = Engine.getMatchCubeInfo()
         val fDoubled  = cubeInfo[0] == 1
         val cubeOwner = cubeInfo[1]
@@ -67,6 +79,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> null
         }
         _gameState.value = BoardState(
+            matchScore     = score,
+            matchLength    = matchLength,
             board          = board,
             oldBoard       = oldBoard,
             turn           = turn,
@@ -96,13 +110,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d0 } }
         val s1 = (0 until moves.size step 8).any { m ->
             (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d1 } }
-        if (!s0) blocked.add(0)
-        if (!s1) blocked.add(1)
         return blocked
     }
 
-    private fun startNewGame() {
-        Engine.newGame(_settings.value.matchLength)
+    private fun startNewGame(isNewMatch: Boolean = true) {
+        if (isNewMatch) Engine.newGame(_settings.value.matchLength) else Engine.nextGame()
         val turn = Engine.getMatchTurn()
         val dice = Engine.getMatchDice()
         val d0 = dice[0]; val d1 = dice[1]
@@ -125,15 +137,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun newGame() {
-        viewModelScope.launch(engineThread) { startNewGame() }
+        viewModelScope.launch(engineThread) {
+            val score = Engine.getMatchScore()
+            val matchLength = Engine.getMatchLength()
+            if (score[0] >= matchLength || score[1] >= matchLength || matchLength <= 1) {
+                _showMatchSetup.value = true
+            } else {
+                startNewGame(isNewMatch = false)
+            }
+        }
     }
 
     fun rollDice() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
-        if (!_engineReady.value) return
         viewModelScope.launch(engineThread) {
             Engine.rollDice()
-            // Check if engine doubled before rolling
             val cubeAfter = Engine.getMatchCubeInfo()
             if (cubeAfter[0] == 1 && Engine.getMatchTurn() == 0) {
                 readMatchState(phase = GamePhase.CUBE_OFFERED)
@@ -169,12 +187,117 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    private fun tryDestinationStackMove(state: BoardState, point: Int): BoardState? {
+        if (point !in 1..24) return null
+        if (state.remainingDice.size < 2) return null
+
+        // If a checker is on the bar, the normal bar-entry rules must stay explicit.
+        if (state.board[49] > 0) return null
+
+        // Destination shortcut is only for empty points or opponent blots/points.
+        // If this point contains our checker, a tap is a normal source tap.
+        if (state.board[24 + point] > 0) return null
+
+        val dest = point - 1
+        val results = mutableListOf<Pair<IntArray, List<Int>>>()
+
+        state.remainingDice.forEachIndexed { i, dieA ->
+            val srcA = dest + dieA
+            if (srcA in 0..23) {
+                val b1 = Engine.applySubMove(state.board, srcA, dieA)
+                if (b1.isNotEmpty()) {
+                    val rem1 = state.remainingDice.toMutableList().also { it.removeAt(i) }
+
+                    rem1.forEachIndexed { j, dieB ->
+                        val srcB = dest + dieB
+                        if (srcB in 0..23) {
+                            val b2 = Engine.applySubMove(b1, srcB, dieB)
+                            if (b2.isNotEmpty()) {
+                                val rem2 = rem1.toMutableList().also { it.removeAt(j) }
+                                results.add(Pair(b2, rem2))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (results.isEmpty()) return null
+
+        val unique = results.distinctBy { (board, remaining) ->
+            board.joinToString(",") + "|" + remaining.joinToString(",")
+        }
+
+        if (unique.size != 1) {
+            android.util.Log.i(
+                "gnubg-vm",
+                "destinationStack: ambiguous point=$point candidates=${unique.size}"
+            )
+            return null
+        }
+
+        val newBoard = unique[0].first
+        val rawRemaining = unique[0].second
+
+        val rawNextMoves = if (rawRemaining.isNotEmpty()) {
+            val r0 = rawRemaining[0]
+            val r1 = if (rawRemaining.size > 1) rawRemaining[1] else r0
+            Engine.getLegalMoves(newBoard, r0, r1)
+        } else IntArray(0)
+
+        val newRemaining =
+            if (rawRemaining.isNotEmpty() && rawNextMoves.isEmpty()) emptyList()
+            else rawRemaining
+
+        val nextMoves = if (newRemaining.isNotEmpty()) rawNextMoves else IntArray(0)
+        val pips = Engine.pipCount(newBoard)
+
+        val newBlocked = if (newRemaining.size >= 2)
+            blockedDiceFor(nextMoves, newRemaining[0], newRemaining[1])
+        else emptySet()
+
+        val snapshot = MoveSnapshot(
+            board = state.board.copyOf(),
+            remainingDice = state.remainingDice,
+            legalMoves = state.legalMoves.copyOf(),
+            blockedDice = state.blockedDice,
+            pipCountHuman = state.pipCountHuman,
+            pipCountEngine = state.pipCountEngine
+        )
+
+        android.util.Log.i(
+            "gnubg-vm",
+            "destinationStack: point=$point oldRemaining=${state.remainingDice} newRemaining=$newRemaining"
+        )
+
+        return state.copy(
+            board          = newBoard,
+            remainingDice  = newRemaining,
+            legalMoves     = nextMoves,
+            blockedDice    = newBlocked,
+            pipCountHuman  = pips[0],
+            pipCountEngine = pips[1],
+            dice           = state.dice,
+            moveHistory    = state.moveHistory + snapshot
+        )
+    }
+
     fun tapSource(point: Int) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.remainingDice.isEmpty()) return
         viewModelScope.launch(engineThread) {
             val humanOnBar = state.board[49]
+
+            if (humanOnBar == 0 && point in 1..24 && state.board[24 + point] == 0) {
+                val stacked = tryDestinationStackMove(state, point)
+                if (stacked != null) {
+                    _gameState.value = stacked
+                    return@launch
+                }
+            }
+
             val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
             val die0 = state.remainingDice[0]
             val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
@@ -187,16 +310,41 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (newBoard.isEmpty()) return@launch
 
-            val newRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
+            val rawRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
             val pips = Engine.pipCount(newBoard)
-            val nextMoves = if (newRemaining.isNotEmpty()) {
-                val r0 = newRemaining[0]
-                val r1 = if (newRemaining.size > 1) newRemaining[1] else r0
+
+            val rawNextMoves = if (rawRemaining.isNotEmpty()) {
+                val r0 = rawRemaining[0]
+                val r1 = if (rawRemaining.size > 1) rawRemaining[1] else r0
                 Engine.getLegalMoves(newBoard, r0, r1)
             } else IntArray(0)
+
+            // If GNUbg says no legal continuation exists with the remaining dice,
+            // consume/grey the impossible dice. This handles doubles where only
+            // 1, 2, or 3 of the 4 dice can legally be played.
+            val newRemaining =
+                if (rawRemaining.isNotEmpty() && rawNextMoves.isEmpty()) emptyList()
+                else rawRemaining
+
+            val nextMoves = if (newRemaining.isNotEmpty()) rawNextMoves else IntArray(0)
+
+            android.util.Log.i(
+                "gnubg-vm",
+                "tapSource: usedDie=$usedDie rawRemaining=$rawRemaining rawNextMoves=${rawNextMoves.size / 8} newRemaining=$newRemaining"
+            )
+
             val newBlocked = if (newRemaining.size >= 2)
                 blockedDiceFor(nextMoves, newRemaining[0], newRemaining[1])
             else emptySet()
+
+            val snapshot = MoveSnapshot(
+                board = state.board.copyOf(),
+                remainingDice = state.remainingDice,
+                legalMoves = state.legalMoves.copyOf(),
+                blockedDice = state.blockedDice,
+                pipCountHuman = state.pipCountHuman,
+                pipCountEngine = state.pipCountEngine
+            )
 
             _gameState.value = state.copy(
                 board          = newBoard,
@@ -205,7 +353,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 blockedDice    = newBlocked,
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
-                dice           = state.originalDice
+                dice           = state.dice,
+                moveHistory    = state.moveHistory + snapshot
             )
         }
     }
@@ -213,17 +362,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun undo() {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
-        val origDice = state.originalDice ?: return
-        val d0 = origDice.first; val d1 = origDice.second
-        val pips = Engine.pipCount(state.oldBoard)
-        val remaining = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1)
+
+        val snapshot = state.moveHistory.lastOrNull() ?: return
         _gameState.value = state.copy(
-            board          = state.oldBoard,
-            remainingDice  = remaining,
-            legalMoves     = Engine.getLegalMoves(state.oldBoard, d0, d1),
-            pipCountHuman  = pips[0],
-            pipCountEngine = pips[1],
-            dice           = origDice
+            board          = snapshot.board.copyOf(),
+            remainingDice  = snapshot.remainingDice,
+            legalMoves     = snapshot.legalMoves.copyOf(),
+            blockedDice    = snapshot.blockedDice,
+            pipCountHuman  = snapshot.pipCountHuman,
+            pipCountEngine = snapshot.pipCountEngine,
+            dice           = state.dice,
+            moveHistory    = state.moveHistory.dropLast(1)
+        )
+
+        android.util.Log.i(
+            "gnubg-vm",
+            "undo: restored one submove remainingDice=${snapshot.remainingDice} historyLeft=${state.moveHistory.size - 1}"
         )
     }
 
@@ -254,6 +408,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
                 return@launch
             }
+            val cubeInfo = Engine.getMatchCubeInfo()
+            if (cubeInfo[0] == 1 && Engine.getMatchTurn() == 0) {
+                readMatchState(phase = GamePhase.CUBE_OFFERED)
+                return@launch
+            }
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
@@ -261,17 +420,135 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun offerDouble() {
-        if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
-        if (!actionInProgress.compareAndSet(false, true)) return
-        _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
+        val state = _gameState.value
+        if (state.phase != GamePhase.WAITING_FOR_ROLL) {
+            android.util.Log.i("gnubg-vm", "offerDouble: ignored phase=${state.phase}")
+            return
+        }
+
+        _gameState.value = state.copy(phase = GamePhase.ENGINE_THINKING)
+
         viewModelScope.launch(engineThread) {
-            Engine.commandDouble()
-            val cubeInfo = Engine.getMatchCubeInfo()
-            if (Engine.getMatchStatus() >= 2)
-                Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
-            else if (cubeInfo[0] == 0)
-                rollDice()
-            actionInProgress.set(false)
+            try {
+                val dbg = Engine.getCubeDebugState()
+                android.util.Log.i(
+                    "gnubg-vm",
+                    "offerDouble: dbg gs=${dbg[0]} turn=${dbg[1]} move=${dbg[2]} " +
+                        "dice=${dbg[3]},${dbg[4]} doubled=${dbg[5]} owner=${dbg[6]} cube=${dbg[7]} " +
+                        "crawford=${dbg[8]} cubeUse=${dbg[9]} score=${dbg[10]}-${dbg[11]} match=${dbg[12]}"
+                )
+
+                val legalCubeWindow =
+                    dbg[0] == 1 &&          // GAME_PLAYING
+                    dbg[1] == 0 &&          // human turn
+                    dbg[2] == 0 &&          // before roll
+                    dbg[3] == 0 && dbg[4] == 0 &&
+                    dbg[5] == 0 &&          // no pending double
+                    dbg[8] == 0 &&          // not Crawford
+                    dbg[9] != 0 &&          // cube enabled
+                    (dbg[6] == -1 || dbg[6] == 0) // centred or human-owned
+
+                if (!legalCubeWindow) {
+                    android.util.Log.i("gnubg-vm", "offerDouble: rejected by legal cube window")
+                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    return@launch
+                }
+
+                val matchBoard = Engine.getMatchBoard()
+                val cd = Engine.cubeDecision(
+                    matchBoard,
+                    dbg[7],   // cube value
+                    dbg[6],   // cube owner
+                    dbg[2],   // fMove
+                    dbg[12],  // match length
+                    dbg[10],  // score0
+                    dbg[11],  // score1
+                    dbg[8]    // crawford
+                )
+
+                if (cd == null || cd.isEmpty()) {
+                    android.util.Log.e("gnubg-vm", "offerDouble: cubeDecision returned null/empty")
+                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    return@launch
+                }
+
+                val decision = if (cd.size >= 15) cd[14] else cd[0]
+                android.util.Log.i(
+                    "gnubg-vm",
+                    "offerDouble: cubeDecision enum=$decision rawSize=${cd.size} raw0=${cd[0]}"
+                )
+
+                when (decision) {
+                    // Engine accepts/takes the human double.
+                    //
+                    // 0  DOUBLE_TAKE
+                    // 2  NODOUBLE_TAKE
+                    // 4  DOUBLE_BEAVER       -> no beaver UI/path yet; collapse to TAKE
+                    // 5  NODOUBLE_BEAVER     -> no beaver UI/path yet; collapse to TAKE
+                    // 14 OPTIONAL_DOUBLE_TAKE
+                    // 16 OPTIONAL_DOUBLE_BEAVER -> no beaver UI/path yet; collapse to TAKE
+                    //
+                    // Do not call CommandDouble().
+                    0, 2, 4, 5, 14, 16 -> {
+                        if (decision == 4 || decision == 5 || decision == 16) {
+                            android.util.Log.i(
+                                "gnubg-vm",
+                                "offerDouble: beaver decision cd=$decision collapsed to take; beaver UI/path not implemented"
+                            )
+                        }
+
+                        val applied = Engine.applyHumanDoubleTake()
+                        android.util.Log.i(
+                            "gnubg-vm",
+                            "offerDouble: applyHumanDoubleTake result=${applied.joinToString(",")}"
+                        )
+
+                        if (applied.size >= 8 && applied[0] == 1) {
+                            val after = _gameState.value.copy(
+                                phase = GamePhase.WAITING_FOR_ROLL,
+                                turn = applied[1],
+                                fDoubled = applied[5] != 0,
+                                cubeOwner = applied[6],
+                                cubeValue = applied[7],
+                                engineScore = if (applied.size >= 10) applied[8] else _gameState.value.engineScore,
+                                humanScore = if (applied.size >= 10) applied[9] else _gameState.value.humanScore
+                            )
+                            _gameState.value = after
+                            android.util.Log.i(
+                                "gnubg-vm",
+                                "offerDouble: UI cube state updated from apply result " +
+                                    "turn=${after.turn} fDoubled=${after.fDoubled} " +
+                                    "cubeOwner=${after.cubeOwner} cubeValue=${after.cubeValue} " +
+                                    "score=${after.engineScore}-${after.humanScore}"
+                            )
+                        } else {
+                            android.util.Log.e("gnubg-vm", "offerDouble: applyHumanDoubleTake failed/short result")
+                            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                        }
+                    }
+
+                    // Engine passes/drops.
+                    //
+                    // 1  DOUBLE_PASS
+                    // 17 OPTIONAL_DOUBLE_PASS
+                    //
+                    // Pass/drop path is not implemented yet, so do not leave UI stuck thinking.
+                    1, 17 -> {
+                        android.util.Log.i("gnubg-vm", "offerDouble: engine pass/drop path not implemented yet for cd=$decision")
+                        readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    }
+
+                    else -> {
+                        android.util.Log.i("gnubg-vm", "offerDouble: no double/take action for cd=$decision")
+                        readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    }
+                }
+            } catch (t: Throwable) {
+                android.util.Log.e("gnubg-vm", "offerDouble: failed", t)
+                readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+            } finally {
+                actionInProgress.set(false)
+            }
         }
     }
 
@@ -293,24 +570,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Settings
-    fun setMatchLength(n: Int)           { _settings.value = _settings.value.copy(matchLength = n) }
-    fun setCrawford(on: Boolean)         { _settings.value = _settings.value.copy(crawford = on) }
-    fun setJacoby(on: Boolean)           { _settings.value = _settings.value.copy(jacoby = on) }
-    fun setAutomaticDoubles(n: Int)      { _settings.value = _settings.value.copy(automaticDoubles = n) }
-    fun setBeavers(on: Boolean)          { _settings.value = _settings.value.copy(beavers = on) }
-    fun setBoardTheme(t: BoardTheme)     {
+    fun setMatchLength(n: Int)          { _settings.value = _settings.value.copy(matchLength = n) }
+    fun setCrawford(on: Boolean)        { _settings.value = _settings.value.copy(crawford = on) }
+    fun setJacoby(on: Boolean)          { _settings.value = _settings.value.copy(jacoby = on) }
+    fun setAutomaticDoubles(n: Int)     { _settings.value = _settings.value.copy(automaticDoubles = n) }
+    fun setBeavers(on: Boolean)         { _settings.value = _settings.value.copy(beavers = on) }
+    fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)
         viewModelScope.launch { PreferencesManager.saveBoardTheme(getApplication(), t) }
     }
     fun setShowPointNumbers(on: Boolean) { _settings.value = _settings.value.copy(showPointNumbers = on) }
     fun setShowPipCount(on: Boolean)     { _settings.value = _settings.value.copy(showPipCount = on) }
-    fun setDifficulty(d: Difficulty)     { _settings.value = _settings.value.copy(difficulty = d) }
-    fun setTutorMode(on: Boolean)        { _settings.value = _settings.value.copy(tutorMode = on) }
-    fun setHint(on: Boolean)             { _settings.value = _settings.value.copy(hint = on) }
+    fun setDifficulty(d: Difficulty)    { _settings.value = _settings.value.copy(difficulty = d) }
+    fun setTutorMode(on: Boolean)       { _settings.value = _settings.value.copy(tutorMode = on) }
+    fun setHint(on: Boolean)            { _settings.value = _settings.value.copy(hint = on) }
     fun setShowEquity(on: Boolean)       { _settings.value = _settings.value.copy(showEquity = on) }
-    fun setShowMWC(on: Boolean)          { _settings.value = _settings.value.copy(showMWC = on) }
-    fun setThresholdDoubtful(v: Float)   { _settings.value = _settings.value.copy(thresholdDoubtful = v) }
-    fun setThresholdBad(v: Float)        { _settings.value = _settings.value.copy(thresholdBad = v) }
-    fun setThresholdVeryBad(v: Float)    { _settings.value = _settings.value.copy(thresholdVeryBad = v) }
+    fun setShowMWC(on: Boolean)         { _settings.value = _settings.value.copy(showMWC = on) }
+    fun setThresholdDoubtful(v: Float)  { _settings.value = _settings.value.copy(thresholdDoubtful = v) }
+    fun setThresholdBad(v: Float)       { _settings.value = _settings.value.copy(thresholdBad = v) }
+    fun setThresholdVeryBad(v: Float)   { _settings.value = _settings.value.copy(thresholdVeryBad = v) }
 }

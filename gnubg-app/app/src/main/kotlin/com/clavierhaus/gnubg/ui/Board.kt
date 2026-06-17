@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import android.util.Log
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,7 +82,14 @@ fun BackgammonBoard(
 
     Box(modifier = Modifier
         .fillMaxSize()
-        .pointerInput(Unit) {
+        .pointerInput(
+            viewModel,
+            gameState.phase,
+            gameState.turn,
+            gameState.fDoubled,
+            gameState.cubeOwner,
+            gameState.cubeValue
+        ) {
             detectTapGestures { offset ->
                 if (viewModel == null) return@detectTapGestures
                 val sx = size.width.toFloat() / TOT_W
@@ -94,13 +102,40 @@ fun BackgammonBoard(
                 val totalDW = DIE_W * 2f + diceGap
                 val undoLeft = MID_X + BAR_W / 2f + HALF_W / 2f - DIE_W - diceGap / 2f
 
-                // Tap cube to double — must be FIRST to avoid Roll/bar interception
+                // Tap cube to double — must be FIRST to avoid Roll/bar interception.
+                // This uses the same board-relative centre/size as the drawn cube.
+                // Detailed cube legality remains in GameViewModel/GNUbg.
                 val cubeSzU = BAR_W * 0.75f
-                if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
-                    !gameState.fDoubled && gameState.cubeOwner != 1 &&
+                val cubeGapU = cubeSzU * 0.18f
+                val upperPipCounterY = BRD_H + 9f
+                val lowerPipCounterY = TOT_H - BRD_H - 9f
+                val cubeCYU = when (gameState.cubeOwner) {
+                    1 -> upperPipCounterY + cubeSzU + cubeGapU
+                    0 -> lowerPipCounterY - cubeSzU - cubeGapU
+                    else -> TOT_H / 2f
+                }
+                val cubeHit =
                     x >= MID_X - cubeSzU / 2f && x <= MID_X + cubeSzU / 2f &&
-                    y >= TOT_H / 2f - cubeSzU / 2f && y <= TOT_H / 2f + cubeSzU / 2f) {
-                    viewModel.offerDouble()
+                    y >= cubeCYU - cubeSzU / 2f && y <= cubeCYU + cubeSzU / 2f
+
+                if (cubeHit) {
+                    val uiAllowsDouble =
+                        gameState.phase == GamePhase.WAITING_FOR_ROLL &&
+                        gameState.turn == 0 &&
+                        !gameState.fDoubled
+
+                    Log.i(
+                        "gnubg-vm",
+                        "Board cube tap: x=$x y=$y phase=${gameState.phase} turn=${gameState.turn} " +
+                            "fDoubled=${gameState.fDoubled} cubeOwner=${gameState.cubeOwner} " +
+                            "cubeValue=${gameState.cubeValue} uiAllowsDouble=$uiAllowsDouble"
+                    )
+
+                    if (uiAllowsDouble) {
+                        viewModel.offerDouble()
+                    } else {
+                        Log.i("gnubg-vm", "Board cube tap ignored by UI gate")
+                    }
                     return@detectTapGestures
                 }
 
@@ -164,11 +199,21 @@ fun BackgammonBoard(
             fun uy(u: Float) = u * sy
 
             // Checker radius: fits within point width with gap to border and between checkers
-            val r    = ux(PT_W) * 0.40f
             val boardBottom = size.height - uy(BRD_H)
             val boardTop    = size.height - boardBottom  // mirrors boardBottom exactly
-            val inset = r * 0.1f
-            val step = r * 2.1f
+
+            // Checker metrics are constrained by both point width and available half-board height.
+            // This keeps two opposing visible stacks of five from colliding on short/wide screens.
+            val maxVisibleCheckers = 5f
+            val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
+            val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
+            val stepFactor = 2.05f
+            val insetFactor = 0.12f
+            val maxRByWidth = ux(PT_W) * 0.40f
+            val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
+            val r = minOf(maxRByWidth, maxRByHeight)
+            val inset = r * insetFactor
+            val step = r * stepFactor
 
             // 1. Frame
             drawRect(p.frame, size = size)
@@ -255,11 +300,26 @@ fun BackgammonBoard(
                 drawChecker(barCentreX, cy, barR, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
             }
 
-            // Cube drawn after bar checkers
-            val cubeBarCX = ux(MID_X)
-            val cubeBarCY = uy(TOT_H / 2f)
-            val cubeSz = ux(BAR_W * 0.75f)
-            drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, 64,
+            // Cube drawn after bar checkers.
+            // Position is bar-relative:
+            // - centred cube: middle of the bar, display 64
+            // - human-owned cube: below the upper pip counter
+            // - engine-owned cube: above the lower pip counter
+            val cubeSzU = BAR_W * 0.75f
+            val cubeGapU = cubeSzU * 0.18f
+            val cubeCXU = MID_X
+            val upperPipCounterY = BRD_H + 9f
+            val lowerPipCounterY = TOT_H - BRD_H - 9f
+            val cubeCYU = when (gameState.cubeOwner) {
+                1 -> upperPipCounterY + cubeSzU + cubeGapU
+                0 -> lowerPipCounterY - cubeSzU - cubeGapU
+                else -> TOT_H / 2f
+            }
+            val cubeBarCX = ux(cubeCXU)
+            val cubeBarCY = uy(cubeCYU)
+            val cubeSz = ux(cubeSzU)
+            val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
+            drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, cubeDisplayValue,
                 p.cubeFace, p.cubeDot, p.cubeText)
 
             // 6. Checkers from live board state
@@ -315,13 +375,22 @@ fun BackgammonBoard(
 
             // 7. Dice
             gameState.dice?.let { (d0, d1) ->
-                val isDoubles = d0 == d1 && d1 > 0
                 val diceToShow = when {
-                    isDoubles -> listOf(d0, d0, d0, d0)
-                    d1 < 0   -> listOf(d0)  // single remaining die
-                    else     -> listOf(d0, d1)
+                    d0 == d1 && d1 > 0 -> listOf(d0, d0, d0, d0)
+                    d1 < 0             -> listOf(d0)
+                    else               -> listOf(d0, d1)
                 }
-                val usedCount = diceToShow.size - gameState.remainingDice.size
+
+                val remainingCounts = gameState.remainingDice.groupingBy { it }.eachCount().toMutableMap()
+                val usedMask = diceToShow.map { face ->
+                    val count = remainingCounts[face] ?: 0
+                    if (count > 0) {
+                        remainingCounts[face] = count - 1
+                        false
+                    } else {
+                        true
+                    }
+                }
                 val dw  = ux(DIE_W)
                 val dh  = ux(DIE_W)
                 val gap = ux(PT_W * 0.15f)
@@ -331,8 +400,8 @@ fun BackgammonBoard(
                     val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
                     val startX = ux(MID_X + BAR_W / 2f + HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
-                        val isUsed = i < usedCount
-                        val dieColor = if (isUsed) Color.White.copy(alpha = 0.3f) else p.triangleB
+                        val isUsed = usedMask.getOrElse(i) { false }
+                        val dieColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, p.dicePip, p.frame)
                     }
@@ -340,8 +409,8 @@ fun BackgammonBoard(
                     val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
                     val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
-                        val isUsed = i < usedCount
-                        val dieColor = if (isUsed) p.diceDark.copy(alpha = 0.35f) else p.diceDark
+                        val isUsed = usedMask.getOrElse(i) { false }
+                        val dieColor = if (isUsed) Color(0xFF1F3F6E) else p.diceDark
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, p.dicePip, p.frame)
                     }
@@ -360,7 +429,7 @@ fun BackgammonBoard(
                     val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
                     listOf(e0, e1).forEachIndexed { i, face ->
                         drawDie(startX + i * (dw + gap), cy - dw / 2f,
-                            dw, dw, face, p.diceDark.copy(alpha = 0.5f), p.dicePip, p.frame)
+                            dw, dw, face, p.diceDark, p.dicePip, p.frame)
                     }
                 }
 

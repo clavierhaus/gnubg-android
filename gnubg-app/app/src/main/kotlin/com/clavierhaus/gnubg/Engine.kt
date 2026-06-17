@@ -10,6 +10,7 @@ object Engine {
 
     // Match state management
     external fun newGame(matchLength: Int): IntArray
+    external fun nextGame(): IntArray
     external fun rollDice(): IntArray
     external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
     external fun applyMoveString(moveStr: String): IntArray
@@ -21,10 +22,13 @@ object Engine {
     external fun getMatchTurn(): Int
     external fun getMatchStatus(): Int
     external fun getMatchWinner(): Int
-    external fun getMatchScore(): IntArray  // [humanScore, engineScore, matchLength]
+    external fun getMatchScore(): IntArray
+    external fun getMatchLength(): Int  // [humanScore, engineScore, matchLength]
     external fun getGameResult(): IntArray  // [fWinner, nPoints]
     external fun getMatchCubeInfo(): IntArray  // [fDoubled, fCubeOwner, nCube]
+    external fun getCubeDebugState(): IntArray  // [gs, fTurn, fMove, dice0, dice1, fDoubled, fCubeOwner, nCube, fCrawford, fCubeUse, score0, score1, matchTo]
     external fun commandDouble()
+    external fun applyHumanDoubleTake(): IntArray
     external fun commandTake()
     external fun commandDrop()
     external fun getLastEngineDice(): IntArray
@@ -39,7 +43,7 @@ object Engine {
     // Analysis
     external fun evaluatePosition(board: IntArray): FloatArray?
     external fun classifyPosition(board: IntArray): Int
-    external fun cubeDecision(board: IntArray, cubeValue: Int, cubeOwner: Int,
+    external fun cubeDecision(board: IntArray, cubeValue: Int, cubeOwner: Int, fMove: Int,
                                matchTo: Int, score0: Int, score1: Int,
                                crawford: Int): IntArray?
     external fun rollout(board: IntArray, trials: Int): FloatArray?

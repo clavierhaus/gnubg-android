@@ -60,6 +60,30 @@ Java_com_clavierhaus_gnubg_Engine_getMatchCubeInfo(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getCubeDebugState(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    jintArray result = (*env)->NewIntArray(env, 13);
+    jint buf[13] = {
+        (jint)ms.gs,
+        (jint)ms.fTurn,
+        (jint)ms.fMove,
+        (jint)ms.anDice[0],
+        (jint)ms.anDice[1],
+        (jint)ms.fDoubled,
+        (jint)ms.fCubeOwner,
+        (jint)ms.nCube,
+        (jint)ms.fCrawford,
+        (jint)ms.fCubeUse,
+        (jint)ms.anScore[0],
+        (jint)ms.anScore[1],
+        (jint)ms.nMatchTo
+    };
+    (*env)->SetIntArrayRegion(env, result, 0, 13, buf);
+    return result;
+}
+
+
 extern void CommandDouble(char *);
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
@@ -75,9 +99,56 @@ Java_com_clavierhaus_gnubg_Engine_commandDouble(JNIEnv *env, jobject thiz) {
     pthread_mutex_unlock(&gnubg_lock);
 }
 
+
+
+
 /*
  * Engine.commandTake(): void — human accepts engine's double
  */
+
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_applyHumanDoubleTake(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (ms.gs == GAME_PLAYING &&
+        ms.fTurn == 0 &&
+        ms.fMove == 0 &&
+        ms.anDice[0] == 0 &&
+        ms.fDoubled == 0 &&
+        ms.fCrawford == 0 &&
+        ms.fCubeUse &&
+        (ms.fCubeOwner < 0 || ms.fCubeOwner == 0)) {
+
+        ms.nCube *= 2;
+        ms.fCubeOwner = 1;
+        ms.fDoubled = 0;
+        ms.fTurn = 0;
+        ms.fMove = 0;
+        ms.anDice[0] = 0;
+        ms.anDice[1] = 0;
+    }
+
+    jintArray result = (*env)->NewIntArray(env, 10);
+    jint buf[10] = {
+        (jint)ms.gs,
+        (jint)ms.fTurn,
+        (jint)ms.fMove,
+        (jint)ms.anDice[0],
+        (jint)ms.anDice[1],
+        (jint)ms.fDoubled,
+        (jint)ms.fCubeOwner,
+        (jint)ms.nCube,
+        (jint)ms.anScore[0],
+        (jint)ms.anScore[1]
+    };
+    (*env)->SetIntArrayRegion(env, result, 0, 10, buf);
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return result;
+}
+
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandTake(JNIEnv *env, jobject thiz) {
     pthread_mutex_lock(&gnubg_lock);
@@ -366,6 +437,11 @@ Java_com_clavierhaus_gnubg_Engine_getMatchScore(JNIEnv *env, jobject thiz) {
 }
 
 JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMatchLength(JNIEnv *env, jobject thiz) {
+    return (jint)ms.nMatchTo;
+}
+
+JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchWinner(JNIEnv *env, jobject thiz) {
     if (ms.gs < GAME_OVER) return -1;
     if (ms.anScore[0] > ms.anScore[1]) return 0;
@@ -456,7 +532,7 @@ JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
                                                 jintArray jboard,
                                                 jint cubeValue, jint cubeOwner,
-                                                jint matchTo,
+                                                jint fMove, jint matchTo,
                                                 jint score0, jint score1,
                                                 jint crawford) {
     pthread_mutex_lock(&gnubg_lock);
@@ -465,7 +541,7 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
     unpack_board(env, jboard, anBoard);
     cubeinfo ci;
     int anScore[2] = { (int)score0, (int)score1 };
-    SetCubeInfo(&ci, (int)cubeValue, (int)cubeOwner, 0, (int)matchTo,
+    SetCubeInfo(&ci, (int)cubeValue, (int)cubeOwner, (int)fMove, (int)matchTo,
                 anScore, (int)crawford, 0, 0, VARIATION_STANDARD);
     evalsetup es;
     memset(&es, 0, sizeof(es));

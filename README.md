@@ -1,172 +1,113 @@
 # GNU Backgammon for Android
 
-**GNU Backgammon by clavierhaus.at**
+A work-in-progress Android port of **GNU Backgammon**, built around one strict rule:
 
-A port of the [GNU Backgammon](https://www.gnu.org/software/gnubg/) evaluation
-engine to Android as a native shared library (`libgnubg-engine.so`), exposing
-the full playing strength of gnubg to Kotlin/Java via JNI.
+> **GNUbg is the authority.**  
+> The Android layer may draw the board, route taps, and present convenience interactions, but game legality, move generation, cube decisions, pip counts, and match state must come from the GNU Backgammon engine.
 
-> **Status:** Engine builds and runs on Android API 28+ (arm64-v8a).
-> Android Studio project integration in progress.
+This repository is interesting if you care about bringing mature desktop C software to Android without replacing the real engine with a simplified rewrite.
 
----
+## Current milestone: 0.8.9
 
-## What this is
+Version 0.8.9 is a playable development milestone. It combines the earlier JNI/engine work with a much more usable Android board:
 
-GNU Backgammon (gnubg) is one of the world's strongest backgammon programs,
-built around a neural-network evaluation engine trained to superhuman strength.
-This project isolates that engine from gnubg's GTK/GNOME desktop infrastructure
-and makes it available as a self-contained Android native library.
+- full match flow through the embedded GNUbg engine;
+- human roll, move, commit, undo, and engine reply loop;
+- source-point tapping for single submoves;
+- destination-point convenience tapping for the common “move two checkers here” case;
+- per-die undo instead of whole-turn undo;
+- dice greying that reflects the actual remaining dice;
+- explicit dice swap by tapping the dice area;
+- doubling cube tap path wired through GNUbg cube evaluation and native match-state mutation;
+- start screen with match length and provisional opponent-strength selector;
+- board-relative layout work for phones and tablets with different aspect ratios.
 
-The result is `libgnubg-engine.so` — a verified ELF 64-bit ARM aarch64 shared
-object for Android 28 — exposing five JNI entry points:
+This is not yet a polished Play Store application. It is a serious playable prototype and an engineering record of how the genuine GNUbg engine is being made usable on Android.
 
-| Method | Description |
-|---|---|
-| `initialise(weightsPath)` | Load neural network weights and bearoff databases |
-| `evaluatePosition(board)` | 5-output equity evaluation (1-ply cubeless) |
-| `findBestMove(board, die0, die1)` | Best move for a given dice roll |
-| `classifyPosition(board)` | Position class (race, contact, bearoff…) |
-| `applyMove(board, move)` | Apply a move and return the resulting position |
+## Why this is not “just another backgammon app”
 
----
+Many mobile backgammon projects reimplement the rules and use an engine only for hints or evaluations. This project intentionally avoids that route. The long-term goal is a real Android GNU Backgammon port, not a look-alike UI over partial game logic.
 
-## Repository structure
+That design has practical consequences:
+
+- **Move legality** comes from GNUbg move generation / submove application.
+- **Cube decisions** come from GNUbg cube evaluation.
+- **Pip counts** are computed by GNUbg.
+- **Match state** is read from the native engine state.
+- Kotlin-side code must remain UI and interaction glue, not a parallel backgammon rules engine.
+
+## Gameplay status
+
+The Android UI currently supports normal play against the GNUbg engine. Recent convenience features focus on making touch play less clumsy without inventing rules:
+
+- tap a checker/source point to apply one legal die move;
+- tap the dice area to swap die order deliberately;
+- tap Undo to undo only the last die move;
+- tap a destination point when two legal checkers can land there unambiguously;
+- tap Commit to submit the complete move to GNUbg.
+
+The board shows scores, dice, used dice, the doubling cube, pip counts, checkers on points and bar, and action buttons.
+
+## Architecture overview
 
 ```
-gnubg-android/
-  engine-core/               # gnubg source, Android-patched (see PROVENANCE.md)
-    lib/                     # gnubg math library (neuralnet, SFMT, cache…)
-    config.h                 # Patched autotools config (Android-incompatible flags removed)
-    lib/config.h             # Shadow wrapper: #include "../config.h"
-  upstream-source/gnubg/     # Unmodified upstream reference snapshot
-  jni-bridge/                # JNI bridge layer
-    CMakeLists.txt           # NDK CMake build
-    config.h                 # Shadow config.h for engine-core/*.c
-    src/native-lib.c         # JNI entry points
-    src/stubs.c              # UI/threading layer stubs
-    src/com/clavierhaus/gnubg/Engine.kt
-  android-arm64.cross        # Meson cross-file for GLib cross-compilation
-  build_glib_android.sh      # GLib cross-build script (one-time)
-  PROVENANCE.md              # Upstream source documentation and licence compliance
-  MASTER_V6.md               # Full technical reference document
+Android UI (Kotlin / Jetpack Compose)
+        |
+        | JNI calls
+        v
+JNI bridge (C)
+        |
+        | controlled access to match state and engine functions
+        v
+GNU Backgammon engine core
 ```
 
----
+Important rule: the bridge exists to expose GNUbg behaviour to Android, not to replace it.
 
-## Prerequisites
+## Repository layout
 
-| Tool | Version | Install |
-|---|---|---|
-| Fedora | 44 | — |
-| Meson | 1.11.1 | `sudo dnf install meson` |
-| Ninja | 1.13.2 | `sudo dnf install ninja-build` |
-| CMake | 4.3.0 | `sudo dnf install cmake` |
-| Android NDK | 27.0.11718014 | Android Studio SDK Manager |
+The exact tree is still evolving, but the important areas are:
 
-NDK must be placed at (or symlinked from):
-```
-gnubg-android/android-sdk/ndk/27.0.11718014/
-```
+- `gnubg-app/` — Android application.
+- `jni-bridge/` — native bridge and Android-facing C entry points.
+- `engine-core/` or upstream/imported GNUbg sources — portable GNUbg engine code used by the bridge.
+- `doc/` / `docs/` — milestone documentation and technical notes.
 
-GLib source is **not** tracked in this repository. It is downloaded and built
-by `build_glib_android.sh` (see below).
+## Build notes
 
----
+The current development build is an Android debug build targeting `arm64-v8a`. Native rebuilds are only needed when bridge or engine code changes; most UI work rebuilds only the app.
 
-## Build
+See [`docs/BUILD.md`](docs/BUILD.md) for the local development commands used during this milestone.
 
-### Step 1 — Cross-compile GLib for Android (one-time, ~5 minutes)
+## Current limitations
 
-```bash
-cd gnubg-android
-sudo dnf install meson ninja-build cmake glib2-devel
-./build_glib_android.sh 2>&1 | tee glib-build.log
-```
+The project is intentionally honest about unfinished areas:
 
-On success: `jni-bridge/external/glib/lib/libglib-2.0.so`
-(ELF 64-bit ARM aarch64, Android 28)
+- real difficulty/strength selection still needs to be wired into GNUbg evaluation settings;
+- cube pass/drop and beaver UI paths are not complete;
+- SGF import/export UI is not yet built;
+- analysis and tutor surfaces are not yet built;
+- visual polish and accessibility still need a dedicated pass;
+- broader device testing is still required.
 
-### Step 2 — Build libgnubg-engine.so
+See [`docs/KNOWN-LIMITATIONS.md`](docs/KNOWN-LIMITATIONS.md).
 
-```bash
-cd jni-bridge
-rm -rf build && mkdir build && cd build
-cmake .. \
-  -DCMAKE_TOOLCHAIN_FILE=../android-sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake \
-  -DANDROID_ABI=arm64-v8a \
-  -DANDROID_PLATFORM=android-28 \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build . 2>&1 | tee ../../jni-build.log
-```
+## For developers
 
-On success: `jni-bridge/build/libgnubg-engine.so`
+The most useful code to inspect first is the boundary between UI intent and engine authority:
 
-### Verification
+- the Kotlin `GameViewModel` interaction paths;
+- the JNI declarations in `Engine.kt`;
+- the C bridge functions that read and mutate GNUbg match state;
+- the board drawing and hit detection in `Board.kt`.
 
-```bash
-file jni-bridge/build/libgnubg-engine.so
-# ELF 64-bit LSB shared object, ARM aarch64, for Android 28
+The interesting part is not that an Android board can be drawn. The interesting part is keeping touch convenience features while refusing to create a second, divergent backgammon engine in Kotlin.
 
-nm jni-bridge/build/libgnubg-engine.so | grep "T Java_"
-# T Java_com_clavierhaus_gnubg_Engine_applyMove
-# T Java_com_clavierhaus_gnubg_Engine_classifyPosition
-# T Java_com_clavierhaus_gnubg_Engine_evaluatePosition
-# T Java_com_clavierhaus_gnubg_Engine_findBestMove
-# T Java_com_clavierhaus_gnubg_Engine_initialise
-```
+## Documentation
 
----
+- [`docs/CHANGELOG-0.8.9.md`](docs/CHANGELOG-0.8.9.md)
+- [`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md)
+- [`docs/KNOWN-LIMITATIONS.md`](docs/KNOWN-LIMITATIONS.md)
+- [`docs/BUILD.md`](docs/BUILD.md)
 
-## Runtime data files
-
-The engine requires these files extracted to internal storage before calling
-`Engine.initialise()`:
-
-| File | Size | Purpose |
-|---|---|---|
-| `gnubg.weights` | ~6 MB | Trained neural network weights |
-| `gnubg_os0.bd` | ~4 MB | One-sided bearoff database |
-| `gnubg_ts0.bd` | ~7 MB | Two-sided bearoff database |
-
-These files are part of the standard gnubg distribution and are **not**
-included in this repository. Obtain them from
-https://www.gnu.org/software/gnubg/
-
-The compiled-in data path is `/data/data/com.clavierhaus.gnubg/files`.
-Extract assets there on first launch.
-
----
-
-## Roadmap
-
-### Features (highest impact)
-- [ ] **Rollout** — synchronous single-threaded `Engine.runRollout(board, iterations)`
-- [ ] **Cube decisions** — Kotlin API wrapping `GeneralCubeDecisionE` (already exported)
-- [ ] **SGF import/export** — add `sgf.c`/`sgf.h` to build
-- [ ] **SQLite** — link against Android's bundled `libsqlite3`
-
-### Performance
-- [ ] **ARM NEON SIMD** — add `-DHAVE_NEON` to `CMakeLists.txt`; `lib/neuralnet.c` path exists
-- [ ] **Multi-threaded rollout** — re-enable `USE_MULTITHREAD` after synchronous rollout verified
-
-### Integration
-- [ ] Android Studio project skeleton
-- [ ] Asset extraction on first launch
-- [ ] Integration test against known gnubg reference outputs
-- [ ] Strip debug info from release build
-
----
-
-## Licence
-
-GNU Backgammon is licensed under the
-[GNU General Public License v3.0 or later](https://www.gnu.org/licenses/gpl-3.0.html).
-This port is likewise GPL-3.0-or-later.
-
-See `PROVENANCE.md` for full documentation of which upstream files are included,
-what modifications were made, and licence compliance requirements.
-
----
-
-*Clavierhaus Vienna GmbH · clavierhaus.at · June 2026*
+The longer LaTeX master document remains the detailed engineering record.

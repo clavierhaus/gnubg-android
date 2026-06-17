@@ -182,15 +182,17 @@ private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
     SettingsSection("Match") {
         SettingsRow("Match Length", "Points to win") {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("−", color = ColorTabTextActive, fontSize = 18.sp,
-                    modifier = Modifier.clickable {
-                        if (settings.matchLength > 1) vm.setMatchLength(settings.matchLength - 2)
-                    }.padding(horizontal = 8.dp))
-                Text("${settings.matchLength}", color = ColorTabTextActive, fontSize = 14.sp)
-                Text("+", color = ColorTabTextActive, fontSize = 18.sp,
-                    modifier = Modifier.clickable {
-                        vm.setMatchLength(settings.matchLength + 2)
-                    }.padding(horizontal = 8.dp))
+                listOf(1, 3, 5, 7).forEach { n ->
+                    Text(
+                        "$n",
+                        color = if (settings.matchLength == n) ColorTabTextActive else ColorSettingSubtext,
+                        fontSize = 14.sp,
+                        fontWeight = if (settings.matchLength == n) FontWeight.Bold else FontWeight.Normal,
+                        modifier = Modifier
+                            .clickable { vm.setMatchLength(n) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
         SettingsDivider()

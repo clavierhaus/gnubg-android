@@ -1,5 +1,14 @@
 package com.clavierhaus.gnubg.engine
 
+data class MoveSnapshot(
+    val board: IntArray,
+    val remainingDice: List<Int>,
+    val legalMoves: IntArray,
+    val blockedDice: Set<Int>,
+    val pipCountHuman: Int,
+    val pipCountEngine: Int
+)
+
 data class BoardState(
     val board: IntArray = IntArray(50),
     val oldBoard: IntArray = IntArray(50),
@@ -8,7 +17,9 @@ data class BoardState(
     val originalDice: Pair<Int, Int>? = null,
     val engineDice: Pair<Int, Int>? = null,
     val remainingDice: List<Int> = emptyList(),
-    val boardHistory: List<IntArray> = emptyList(),
+    val moveHistory: List<MoveSnapshot> = emptyList(),
+    val matchScore: IntArray = IntArray(2),
+    val matchLength: Int = 1,
     val diceHistory: List<List<Int>> = emptyList(),
     val legalMoves: IntArray = IntArray(0),
     val cubeValue: Int = 1,
@@ -30,6 +41,7 @@ data class BoardState(
                turn == other.turn &&
                dice == other.dice &&
                remainingDice == other.remainingDice &&
+               moveHistory == other.moveHistory &&
                legalMoves.contentEquals(other.legalMoves) &&
                cubeValue == other.cubeValue &&
                cubeOwner == other.cubeOwner &&
@@ -45,6 +57,7 @@ data class BoardState(
         result = 31 * result + turn
         result = 31 * result + (dice?.hashCode() ?: 0)
         result = 31 * result + remainingDice.hashCode()
+        result = 31 * result + moveHistory.hashCode()
         result = 31 * result + legalMoves.contentHashCode()
         result = 31 * result + cubeValue
         result = 31 * result + cubeOwner

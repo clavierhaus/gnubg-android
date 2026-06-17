@@ -1,0 +1,818 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifXeTeX
+  \usepackage{fontspec}
+  \setmainfont{TeX Gyre Pagella}
+  \setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\fi
+
+\usepackage[a4paper, top=25mm, bottom=25mm, left=28mm, right=28mm]{geometry}
+\usepackage{xcolor}
+\definecolor{headingblue}{RGB}{31,56,100}
+\definecolor{ruleblue}{RGB}{46,90,156}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\usepackage{longtable,booktabs,array,calc,multirow}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{5pt}
+
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\usepackage{framed}
+\newenvironment{Shaded}{%
+  \setlength{\FrameSep}{4pt}%
+  \definecolor{shadecolor}{RGB}{245,245,245}%
+  \begin{snugshade}\footnotesize
+}{\end{snugshade}}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{%
+  breaklines,breakanywhere,commandchars=\\\{\}}
+
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{headingblue}}{\thesection.}{0.6em}{}[\vspace{-4pt}\color{ruleblue}\rule{\linewidth}{0.6pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{headingblue}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titlespacing{\section}{0pt}{18pt}{6pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+\titlespacing{\subsubsection}{0pt}{10pt}{3pt}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.25}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=ruleblue,
+  urlcolor=ruleblue,
+  pdftitle={GNU Backgammon Android Port -- MASTER v0.8.9},
+  pdfauthor={clavierhaus.at},
+}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray}GNU Backgammon Android Port --- MASTER v0.8.9}
+\fancyhead[R]{\small\color{gray}clavierhaus.at}
+\fancyfoot[C]{\small\color{gray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\title{\textbf{GNU Backgammon Android Port}}
+\author{clavierhaus.at}
+\date{June 2026}
+
+\begin{document}
+
+\maketitle\thispagestyle{fancy}
+
+\tableofcontents\newpage
+
+\section{GNU Backgammon Android Port --- MASTER v0.8.9}\label{gnu-backgammon-android-port-master-v085}
+
+\textbf{GNU Backgammon by clavierhaus.at}\\
+clavierhaus.at · Vienna · Austria\\
+June 2026
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{1. Introduction \& Project Objective}\label{introduction-project-objective}
+
+The objective of this project is to produce a \textbf{true port} of GNU
+Backgammon to the Android platform --- not a stripped-down evaluator,
+but a complete port that mirrors 100\% of the functionality of the PC
+version. This includes full game management, SGF import/export,
+analysis, rollout, cube decisions, tutor mode, and the complete match
+state machine.
+
+The primary constraint is the monolithic nature of the original gnubg
+desktop codebase, which is tightly coupled with GTK/GNOME UI components,
+file I/O, global configuration state, and platform-specific threading
+primitives. The approach is to compile the genuine gnubg engine source
+--- every file that is portable --- and replace only what is inherently
+GTK-specific with Android equivalents via a clean architectural
+boundary: \texttt{android-app.c}.
+
+\textbf{The key architectural insight:} gnubg's codebase separates
+cleanly into three layers:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Mathematical engine} (\texttt{eval.c}, \texttt{rollout.c},
+  \texttt{dice.c}, \texttt{bearoff.c} etc.) --- pure computation, zero
+  UI dependencies, 100\% portable
+\item
+  \textbf{Game logic layer} (\texttt{play.c}, \texttt{analysis.c},
+  \texttt{sgf.c}, \texttt{set.c}, \texttt{format.c} etc.) --- all GTK
+  references are behind \texttt{\#if\ defined(USE\_GTK)} guards,
+  portable when compiled without \texttt{USE\_GTK}
+\item
+  \textbf{GTK application shell} (\texttt{gnubg.c}, \texttt{progress.c},
+  \texttt{gtk/*.c}) --- not portable, replaced by \texttt{android-app.c}
+\end{enumerate}
+
+Every stub that silently drops functionality is a hole in the port. The
+goal is to minimise stubs to only what is genuinely GTK-specific
+rendering code.
+
+\textbf{Architecture principle:} gnubg is the authority. No game logic
+is reimplemented in Kotlin or the JNI bridge. The Android layer calls
+gnubg's own functions and reads \texttt{ms} (the global \texttt{matchstate})
+directly. The UI reflects what the engine owns.
+
+\subsubsection{1.1 Scope}\label{scope}
+
+This document covers the complete build history, all architectural
+decisions, every obstacle encountered and its resolution, and the exact
+current state of the project as of v0.8.7. It is intended as a working
+reference for any software engineer picking up or contributing to this
+project.
+
+\subsubsection{1.2 App Identity}\label{app-identity}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Property & Value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+App name & GNU Backgammon by clavierhaus.at \\
+Android package & \texttt{com.clavierhaus.gnubg} \\
+Minimum Android API & 31 (Android 12.0, Snow Cone) \\
+Target ABI & \texttt{arm64-v8a} \\
+Engine source & GNU Backgammon upstream (gnubg.org) \\
+Repository & https://github.com/clavierhaus/gnubg-android \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{2. Narrative of Progress}\label{narrative-of-progress}
+
+\subsubsection{Phase 1: Monolithic Analysis \& Prototype}\label{phase-1}
+
+Initial efforts focused on analysing the upstream GNU Backgammon source.
+Attempts to build the full desktop environment proved unsustainable due
+to deep dependencies on GTK, GLib, and global UI state variables
+(\texttt{ms}, \texttt{ap}, \texttt{positions}). A ``Frankenstein'' build
+approach established that the mathematical evaluation logic was sound in
+isolation, but produced a fragile, non-portable build environment.
+
+\subsubsection{Phase 2: Redesign --- Deterministic Engineering}\label{phase-2}
+
+Phase 2 pivoted to a ``Clean-Room'' architecture. The upstream source
+acts as a read-only reference. The \texttt{engine-core/} directory
+contains only the verified, essential components. Orchestration scripts
+(\texttt{pull\_dependencies.sh}, \texttt{patch\_engine.sh},
+\texttt{build\_all.sh}) and the Patch Registry were established.
+
+\subsubsection{Phase 3: The Pristine Headless Build (Completed)}\label{phase-3}
+
+Phase 3 achieved a fully hermetic host build of the mathematical core,
+confirming that the engine compiles and links cleanly on Linux when
+detached from the GTK/GNOME infrastructure.
+
+\subsubsection{Phase 4: GLib Cross-Compilation for Android (Completed)}\label{phase-4}
+
+GLib 2.88.1 was cross-compiled for \texttt{arm64-v8a} Android API 28
+from the Fedora 44 SRPM, providing the full GLib API that gnubg requires
+with no behavioural deviations from upstream.
+
+\subsubsection{Phase 5: JNI Bridge \& libgnubg-engine.so (Completed)}\label{phase-5}
+
+The JNI bridge layer (\texttt{native-lib.c}, \texttt{stubs.c},
+\texttt{Engine.kt}) and CMake build pipeline were constructed, producing
+\texttt{libgnubg-engine.so} verified as ELF 64-bit ARM aarch64.
+
+\subsubsection{Phase 6: NEON Acceleration \& Device Verification (Completed)}\label{phase-6}
+
+ARM NEON SIMD acceleration was enabled and the engine verified on a
+Pixel 8 Pro (aarch64, Android 16). Opening position evaluation and
+\texttt{FindBestMove} 3-1 returning 8/5 6/5 confirmed correct.
+
+\subsubsection{Phase 7: Cube Decisions \& Rollout (Completed)}\label{phase-7}
+
+\texttt{Engine.cubeDecision()} and \texttt{Engine.rollout()} JNI entry
+points added and verified. Multi-threaded rollout via \texttt{GThreadPool}
+added in Phase 9.
+
+\subsubsection{Phase 8: Full Game Logic Layer (Completed)}\label{phase-8}
+
+\texttt{play.c}, \texttt{analysis.c}, \texttt{sgf.c} and all
+dependencies compiled into \texttt{libgnubg-engine.so}. The
+\texttt{android-app.c} architecture provides all GTK replacements.
+
+\subsubsection{Phase 9: Multi-threaded Rollout \& SGF JNI API (Completed)}\label{phase-9}
+
+Production-quality parallel rollout and SGF load/save JNI entry points
+complete the engine feature set.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{3. Architecture}\label{architecture}
+
+\subsubsection{3.1 Core Principle}\label{core-principle}
+
+gnubg's \texttt{ms} (global \texttt{matchstate}) is the single source
+of truth. All game state --- board, dice, turn, game status --- is owned
+by gnubg. The Android layer does three things only:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Call gnubg functions (\texttt{CommandRoll}, \texttt{CommandMove},
+  \texttt{ApplySubMove}, etc.)
+\item
+  Read \texttt{ms} fields (\texttt{ms.anBoard}, \texttt{ms.anDice},
+  \texttt{ms.fTurn}, \texttt{ms.gs}) after each call
+\item
+  Render what the engine reports
+\end{enumerate}
+
+No move computation, no dice tracking, no legal move determination is
+performed in Kotlin. The engine exclusively determines what is legal.
+
+\subsubsection{3.2 Key gnubg Functions Used}\label{key-gnubg-functions}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+gnubg Function & Purpose \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{CommandNewMatch("1")} & Start a new 1-point match \\
+\texttt{CommandNewGame(NULL)} & Opening roll, sets \texttt{ms.fTurn} to winner \\
+\texttt{CommandRoll(NULL)} & Roll dice; for \texttt{PLAYER\_GNU} also runs \texttt{ComputerTurn} \\
+\texttt{CommandMove(str)} & Apply move string, record \texttt{MOVE\_NORMAL}, call \texttt{TurnDone()} \\
+\texttt{NextTurn(TRUE)} & Advance \texttt{ms.fTurn}; called inside \texttt{applyMoveString} \\
+\texttt{ApplySubMove(board,iSrc,nRoll,TRUE)} & Apply one sub-move for display; no match record \\
+\texttt{GenerateMoves(\&ml,board,d0,d1,fPartial)} & Generate all legal moves \\
+\texttt{FormatMove(sz,board,anMove)} & Format move as gnubg point notation \\
+\texttt{PipCount(board,anPip)} & Compute pip counts \\
+\texttt{SwapSides(board)} & Flip \texttt{anBoard[0]} $\leftrightarrow$ \texttt{anBoard[1]} \\
+\end{longtable}
+
+\subsubsection{3.3 JNI Bridge}\label{jni-bridge}
+
+The JNI bridge (\texttt{native-lib.c}) is a thin wrapper layer. Each
+JNI function calls one or more gnubg functions and reads \texttt{ms}
+directly. No logic originates in the bridge. The bridge also implements
+\texttt{gnubg\_on\_board\_changed()} (called by gnubg on every board
+update) with a simple LOGI call for diagnostics.
+
+\subsubsection{3.4 \texttt{NextTurn()} and \texttt{TurnDone()}}\label{nextturn}
+
+This is the most significant architectural subtlety. In the GTK version,
+\texttt{TurnDone()} sets \texttt{fNextTurn = TRUE} and the GTK idle loop
+calls \texttt{NextTurnNotify()} → \texttt{NextTurn()} to advance
+\texttt{ms.fTurn}. On Android there is no GTK idle loop.
+
+\textbf{Solution:} \texttt{applyMoveString} calls \texttt{NextTurn(TRUE)}
+explicitly after \texttt{CommandMove}. \texttt{NextTurn} advances
+\texttt{ms.fTurn} and triggers \texttt{ComputerTurn} if the next player
+is \texttt{PLAYER\_GNU}.
+
+\subsubsection{3.5 Board Encoding Reference}\label{board-encoding}
+
+gnubg's \texttt{TanBoard anBoard[2][25]} as used in this port:
+
+\begin{longtable}[]{@{}lll@{}}
+\toprule\noalign{}
+Array & Player & UI point mapping \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{anBoard[0][i]} & Engine/dark & UI point \texttt{i+1} (top, moves right to left) \\
+\texttt{anBoard[1][i]} & Human/light & UI point \texttt{24-i} (bottom, moves left to right) \\
+\texttt{anBoard[0][24]} & Engine checkers on bar & Bar (top half) \\
+\texttt{anBoard[1][24]} & Human checkers on bar & Bar (bottom half) \\
+\end{longtable}
+
+gnubg always places the moving player's checkers in \texttt{anBoard[1]}.
+When \texttt{ms.fTurn == 1} (engine moving), the board is swapped for
+display via \texttt{SwapSides} to maintain the fixed human-bottom
+perspective.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{4. Current JNI API}\label{jni-api}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+\texttt{Engine.*} Kotlin call & JNI → gnubg mapping \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{initialise(weightsPath)} & \texttt{EvalInitialise}, \texttt{gnubg\_init\_tld/rollout}, \texttt{ClearMatch} \\
+\texttt{newGame()} & \texttt{CommandNewMatch("1")} + \texttt{CommandNewGame(NULL)} \\
+\texttt{rollDice()} & \texttt{CommandRoll(NULL)}, returns \texttt{ms.anDice} \\
+\texttt{getLegalMoves(board,d0,d1,fPartial)} & \texttt{GenerateMoves} \\
+\texttt{applyMoveString(str)} & \texttt{CommandMove(str)} + \texttt{NextTurn(TRUE)} \\
+\texttt{applySubMove(board,iSrc,nRoll)} & \texttt{ApplySubMove(...,TRUE)} \\
+\texttt{findMove(oldBoard,curBoard,d0,d1)} & \texttt{GenerateMoves} + \texttt{PositionKey} comparison + \texttt{FormatMove} \\
+\texttt{formatMove(board,anMove)} & \texttt{FormatMove} \\
+\texttt{getMatchBoard()} & \texttt{ms.anBoard} \\
+\texttt{getMatchDice()} & \texttt{ms.anDice} \\
+\texttt{getMatchTurn()} & \texttt{ms.fTurn} \\
+\texttt{getMatchStatus()} & \texttt{ms.gs} \\
+\texttt{pipCount(board)} & \texttt{PipCount} \\
+\texttt{swapBoard(board)} & \texttt{SwapSides} \\
+\texttt{evaluatePosition(board)} & \texttt{EvaluatePosition} \\
+\texttt{classifyPosition(board)} & \texttt{ClassifyPosition} \\
+\texttt{cubeDecision(...)} & \texttt{GeneralCubeDecisionENoLocking} + \texttt{FindCubeDecision} \\
+\texttt{rollout(board,trials)} & \texttt{gnubg\_rollout} (multi-threaded) \\
+\texttt{loadSGF(path)} & \texttt{CommandLoadMatch} \\
+\texttt{saveSGF(path)} & \texttt{CommandSaveMatch} \\
+\end{longtable}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{5. Version v0.8.7 --- Milestone}\label{version-v085}
+
+\subsubsection{5.1 Assessment}\label{assessment-v085}
+
+Version v0.8.7 delivers a playable one-point game with correct gnubg
+move handling, sub-move interaction, and board rendering. The milestone
+is less advanced than originally projected (formerly labelled v0.9.5)
+due to a significant remediation effort required to remove non-gnubg game
+logic that had been introduced during earlier development. The remediation
+was necessary and correct: the resulting codebase is architecturally
+sound.
+
+\subsubsection{5.2 What Works}\label{what-works-v085}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Full game loop:} Opening roll → human moves → commit → engine
+  rolls and moves automatically → human rolls → repeat. Both players
+  complete turns correctly across multiple games.
+\item
+  \textbf{Opening roll:} \texttt{CommandNewGame} rolls one die per player,
+  determines winner, sets \texttt{ms.fTurn} and \texttt{ms.anDice}.
+  Human-wins branch enters \texttt{HUMAN\_MOVING} immediately; engine-wins
+  branch enters \texttt{WAITING\_FOR\_ROLL} after engine auto-plays.
+\item
+  \textbf{Sub-move interaction:} Single tap on a source point applies one
+  sub-move via gnubg's \texttt{ApplySubMove(board, iSrc, nRoll, TRUE)},
+  mirroring the single-click behaviour of \texttt{board\_button\_release}
+  in \texttt{gtkboard.c}. First die tried, then second.
+\item
+  \textbf{Commit:} Tap Commit button → \texttt{findMove(oldBoard,
+  currentBoard, d0, d1)} locates the complete move by position key
+  comparison (mirroring \texttt{update\_move()} in \texttt{gtkboard.c})
+  → \texttt{CommandMove(str)} records and finalises the turn →
+  \texttt{NextTurn(TRUE)} advances \texttt{ms.fTurn}.
+\item
+  \textbf{Undo:} Tap Undo button → display board restored to
+  \texttt{oldBoard} (board at start of human turn); \texttt{remainingDice}
+  reset to original roll. Pure UI state; no engine call required since
+  \texttt{ApplySubMove} never modifies \texttt{ms}.
+\item
+  \textbf{Dice swap:} Tap dice area → swap die order in
+  \texttt{remainingDice}. Mirrors clicking the dice in \texttt{gtkboard.c}.
+\item
+  \textbf{Board rendering:} All 24 points, bar (human and engine),
+  bearoff trays, pip counts, doubling cube, dice with used-die greying.
+  Human checkers always at bottom regardless of whose turn it is.
+\item
+  \textbf{Hit checker:} Checker hit onto bar displayed correctly in
+  the bar area.
+\item
+  \textbf{Doubles:} Four dice displayed; all four sub-moves playable.
+\item
+  \textbf{Game over:} \texttt{ms.gs >= 2} detected; New Game button
+  appears.
+\item
+  \textbf{Commit/Undo button layout:} Drawn directly on the Canvas in
+  gnubg board coordinate units, positioned below the dice in the tray
+  gap of the right (human) half. Gap between Commit and Undo aligns
+  vertically with the gap between the two dice. The entire ensemble
+  (dice top row, buttons bottom row) is centred on the mid-point of
+  the right half of the board.
+\end{itemize}
+
+\subsubsection{5.3 What Does Not Yet Work}\label{what-does-not-work-v085}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Doubling cube interaction} --- cube offer, accept, pass not yet
+  wired to UI
+\item
+  \textbf{Bearoff checker display in tray} --- checkers borne off are
+  not yet rendered in the bearoff tray
+\item
+  \textbf{Game over screen} --- gammon/backgammon detection not yet
+  surfaced in UI
+\item
+  \textbf{SGF save/load UI} --- JNI entry points exist but no UI
+\item
+  \textbf{Player panel} --- score, match length, player names not yet
+  displayed
+\item
+  \textbf{Analysis and tutor mode} --- engine capability exists; UI
+  not yet built
+\item
+  \textbf{16KB page alignment} --- \texttt{.so} not yet built with
+  \texttt{-Wl,-z,max-page-size=16384} for Android 16 compatibility
+\end{itemize}
+
+\subsubsection{5.4 Key Lessons Learned}\label{lessons-v085}
+
+\paragraph{gnubg source is the only authority.}
+
+Any game logic not traceable to a specific gnubg source function is a
+liability. During this development cycle, several pieces of invented
+logic were introduced (cached dice, accumulated move strings, move
+history stacks, manual pip-count index swaps) that each caused subtle
+bugs. Every one was eventually traced to a divergence from gnubg's own
+logic. The remediation rule: before writing any code, read the
+corresponding gnubg source function and translate it directly.
+
+\paragraph{The TurnDone/NextTurn split.}
+
+\texttt{TurnDone()} does not advance \texttt{ms.fTurn}; it only sets
+\texttt{fNextTurn = TRUE}. \texttt{NextTurn()} does the advancement.
+In the GTK version this happens via the GLib idle loop. On Android,
+\texttt{NextTurn(TRUE)} must be called explicitly after
+\texttt{CommandMove}. Failure to do this leaves \texttt{ms.fTurn}
+pointing at the player who just moved.
+
+\paragraph{ms.anDice is cleared by TurnDone().}
+
+\texttt{ms.anDice} is set by \texttt{CommandRoll} for \texttt{PLAYER\_HUMAN}
+and remains valid until \texttt{TurnDone()} clears it. For
+\texttt{PLAYER\_GNU}, \texttt{ComputerTurn} runs and \texttt{TurnDone()}
+fires before \texttt{CommandRoll} returns. Therefore \texttt{ms.anDice}
+is always 0 after an engine turn. Display dice must be tracked in
+\texttt{remainingDice} (Kotlin state), not read from \texttt{ms.anDice}
+after the fact.
+
+\paragraph{ApplySubMove does not touch ms.}
+
+\texttt{ApplySubMove(TanBoard, iSrc, nRoll, fCheckLegal)} operates
+purely on the board array passed to it. It never modifies \texttt{ms}.
+This makes it correct and safe for incremental display updates during
+human move selection. The final \texttt{CommandMove} then commits
+everything to \texttt{ms} atomically.
+
+\paragraph{findMove via position key.}
+
+After the human has applied sub-moves to the display board, the
+complete move must be identified for \texttt{CommandMove}. The correct
+method (taken directly from \texttt{update\_move()} in
+\texttt{gtkboard.c}) is: \texttt{GenerateMoves} on the original board,
+then compare \texttt{PositionKey(currentBoard)} against
+\texttt{ml.amMoves[i].key} for each candidate. This avoids any manual
+move-string construction.
+
+\subsubsection{5.5 Immediate Next Steps (v0.8.7)}\label{next-steps-v085}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Bearoff checker display in right tray
+\item
+  Gammon/backgammon detection on game over (\texttt{ms.gs} values)
+\item
+  Player panel: score, match length, player names
+\item
+  Doubling cube UI: offer, accept, pass (wired to \texttt{CommandDouble},
+  \texttt{CommandTake}, \texttt{CommandDrop})
+\item
+  Rebuild \texttt{.so} with \texttt{-Wl,-z,max-page-size=16384} for
+  Android 16 16KB page alignment
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+
+\subsection{6. Version v0.8.7 --- Engine Dice, Roll Button, Gameplay Stability}\label{version-v086}
+
+\subsubsection{6.1 Milestone}\label{milestone-v086}
+
+Version v0.8.7 completes the core visual game loop. Engine dice are now
+persistently displayed after each engine move. The Roll button appears on
+the board canvas in the right half, aligned with where the player's dice
+will appear. All dice and buttons are drawn in a single coordinate system
+(board units) with tap detection in the same system, guaranteeing
+pixel-perfect alignment on any device.
+
+\subsubsection{6.2 Delivered}\label{delivered-v086}
+
+\paragraph{Engine Dice Display}
+
+Engine dice were previously invisible after each move because
+\texttt{ms.anDice} is cleared by \texttt{TurnDone()} immediately after
+the engine plays. The correct source is the move record:
+\texttt{getMoveRecordDice()} reads \texttt{plLastMove->p->anDice[0/1]},
+which persists until the next move record is written. This mirrors
+exactly what gnubg's GTK board does for display.
+
+Engine dice are rendered in the left half of the board, centred on the
+same horizontal line as the cube and the player's Roll button. Color:
+\texttt{Color.White.copy(alpha = 0.3f)} — same as spent player dice.
+
+\paragraph{Roll Button on Canvas}
+
+The Roll button is drawn directly on the Canvas in board-unit coordinates,
+centred in the right half of the board. Tap detection uses the same
+board-unit coordinate system as all other board elements. This replaces
+the left-panel Roll button and makes the interaction spatially natural.
+
+\paragraph{fAutoRoll = FALSE}
+
+\texttt{fAutoRoll} was defined as \texttt{TRUE} in \texttt{android-app.c}
+line 494. With \texttt{fAutoRoll = TRUE}, \texttt{NextTurn()} automatically
+calls \texttt{CommandRoll(NULL)} for the human player immediately after the
+engine moves, bypassing the Roll button entirely. Setting
+\texttt{fAutoRoll = FALSE} restores correct behaviour.
+
+\paragraph{Commit Re-entry Guard}
+
+Multiple rapid taps on the Commit button queued multiple coroutines, each
+calling \texttt{applyMoveString} on the same stale state. Fixed by
+setting \texttt{phase = ENGINE\_THINKING} immediately after
+\texttt{applyMoveString} succeeds, blocking any subsequent \texttt{confirm()}
+or Roll tap until the engine completes its turn and \texttt{readMatchState}
+transitions to \texttt{HUMAN\_MOVING} or \texttt{WAITING\_FOR\_ROLL}.
+
+\paragraph{Used Dice Graying}
+
+Player dice that have been consumed by a sub-move are rendered at
+\texttt{Color.White.copy(alpha = 0.3f)}. Both dice are always shown
+(using \texttt{originalDice} for display); \texttt{usedCount =
+diceToShow.size - remainingDice.size} drives the graying index.
+
+\paragraph{Bearoff Tray Checkers}
+
+Borne-off checkers are computed as \texttt{15 - sum(board[25..49])}
+(human) and \texttt{15 - sum(board[0..24])} (engine), then rendered
+as stacked checker slots in the respective tray areas.
+
+\paragraph{Winner Detection}
+
+Previously inverted. \texttt{getMatchWinner()} reads
+\texttt{ms.anScore[0]} vs \texttt{ms.anScore[1]}, updated by
+\texttt{ApplyGameOver()} in \texttt{play.c}. Returns 0 for human win,
+1 for engine win.
+
+\paragraph{Bar Re-entry}
+
+Tap on the bar area (bottom half of the centre bar) sets \texttt{src=24}
+for \texttt{ApplySubMove}. Previously the bar had no tap handler and
+checkers on the bar could not be re-entered.
+
+\paragraph{No Legal Moves}
+
+When \texttt{CommandRoll} finds no legal moves, it calls
+\texttt{TurnDone()} internally. \texttt{PlayMove} with an empty move
+sets \texttt{ms.fTurn = !fPlayer}. The fix: \texttt{while(fNextTurn)
+NextTurn(TRUE)} in the \texttt{rollDice} JNI function, mirroring the
+non-GTK loop in \texttt{play.c} line 3596.
+
+\subsubsection{6.3 Architecture Notes}\label{arch-v086}
+
+The single most important lesson from this phase: \textbf{every piece of
+display state must be read from gnubg's own data structures, not
+reconstructed in Kotlin}. The engine dice problem was a direct consequence
+of reading \texttt{ms.anDice} (transient) instead of the move record
+(persistent). The move record is the authoritative source for everything
+that has happened in the game.
+
+\subsubsection{6.4 Immediate Next Steps (v0.8.7)}\label{next-steps-v086}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Max 5 checkers visual — stack overflow display with count in top checker
+\item
+  Doubling cube UI — offer, accept, pass (\texttt{CommandDouble},
+  \texttt{CommandTake}, \texttt{CommandDrop})
+\item
+  Player panel — score, match length, player names
+\item
+  Gammon/backgammon detection on game over
+\item
+  Rebuild \texttt{.so} with \texttt{-Wl,-z,max-page-size=16384} for
+  Android 16 16KB page alignment
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{7. Version v0.8.7 --- Cube, Score, Proportions, Coordinate Fix}\label{version-v087}
+
+\subsubsection{7.1 Milestone}\label{milestone-v087}
+
+Version v0.8.7 completes the visual game loop for single-point play and
+lays the groundwork for multi-point matches. The doubling cube is now
+interactive, score is tracked and displayed, and the coordinate system
+is fixed for correct tap detection across different screen sizes.
+
+\subsubsection{7.2 Delivered}\label{delivered-v087}
+
+\paragraph{Doubling Cube Interaction}
+
+Tapping the cube in the bar area calls \texttt{CommandDouble(NULL)}.
+gnubg evaluates the position and either takes or drops. In a 1-point
+match the cube is correctly suppressed by gnubg (backgammon rules: no
+doubling in a 1-point match). In multi-point matches the cube will work
+correctly. The cube tap is detected before the bar checker re-entry
+check to avoid interception. A phase guard (\texttt{ENGINE\_THINKING})
+and \texttt{AtomicBoolean} prevent duplicate calls from the Xiaomi
+hardware delivering multiple simultaneous touch events.
+
+\paragraph{Score Tracking}
+
+\texttt{getMatchScore()} JNI reads \texttt{ms.anScore[0/1]} and
+\texttt{ms.nMatchTo} directly. Score is read in every
+\texttt{readMatchState} call and stored in \texttt{BoardState}. The
+left panel displays engine score, a ``vs'' separator, and human score.
+Avatar placeholders (``GNU'' / ``You'' coloured circles) frame the
+scores.
+
+\paragraph{Match Length}
+
+\texttt{Engine.newGame(matchLength: Int)} passes the match length to
+\texttt{CommandNewMatch(szMatch)}. \texttt{GameSettings.matchLength}
+is wired through. UI selector (1, 3, 5, 7 point) is pending.
+
+\paragraph{Gammon/Backgammon Detection}
+
+\texttt{getGameResult()} reads \texttt{plGame->plNext->p->g.fWinner}
+and \texttt{nPoints} from the game record. \texttt{nPoints = nCube * n}
+where \texttt{n = GameStatus()} returns 1/2/3. The result text
+(``You win'', ``You win --- Gammon!'', ``You win --- Backgammon!'')
+is derived from \texttt{nPoints} in \texttt{GameLayout}.
+
+\paragraph{Blocked Die Graying}
+
+After rolling, each die is checked against the legal move list: if no
+move in \texttt{GenerateMoves} uses that die value as a sub-move step,
+the die is added to \texttt{blockedDice} and rendered grayed.
+\texttt{blockedDice} is recomputed after each sub-move tap.
+
+\paragraph{Checker Proportions}
+
+Checker radius changed from \texttt{uy(PT\_H)/10f} (hardcoded to
+triangle height) to \texttt{ux(PT\_W) * 0.40f} (relative to point
+width). Step spacing \texttt{r * 2.1f}. Board top/bottom edges
+computed symmetrically: \texttt{boardBottom = size.height - uy(BRD\_H)},
+\texttt{boardTop = size.height - boardBottom}. Small inset
+\texttt{r * 0.1f} from border.
+
+\paragraph{Coordinate System Fix}
+
+\texttt{onSizeChanged} on the Canvas captures the actual rendered canvas
+pixel dimensions into \texttt{canvasW}/\texttt{canvasH}. The
+\texttt{pointerInput} tap handler uses these instead of
+\texttt{size.width/height} (which reflects the Box size and differs
+from Canvas size on tablets with non-square layouts). This fixes Undo,
+Commit, Roll, and point tap detection on the Xiaomi Pad 6.
+
+Button tap y-range enlarged from \texttt{boardCY + DIE\_W * 1.5f} to
+\texttt{boardCY + DIE\_W * 2.5f} to accommodate the tablet's larger
+physical touch area.
+
+\paragraph{Left Panel}
+
+Fixed proportion \texttt{weight(0.18f)} replacing
+\texttt{fillMaxWidth(0.25f)}. Font sizes increased to 18sp/16sp.
+Status text uses \texttt{weight} layout so board fills remaining space.
+
+\subsubsection{7.3 Architecture Notes}\label{arch-v087}
+
+The coordinate mismatch between \texttt{pointerInput} and
+\texttt{Canvas} is a Compose subtlety: both composables report a
+\texttt{size} property, but they are measured independently. When a
+\texttt{Box} wraps a \texttt{Canvas} with \texttt{fillMaxSize()}, the
+Box size includes any padding or weight allocation, while the Canvas
+size is the actual drawing area. On devices where the left panel takes
+a different proportion of screen width, these differ. The correct
+solution is to capture the Canvas size via \texttt{onSizeChanged} and
+share it with the gesture handler.
+
+The Xiaomi Pad 6 delivers 3--4 simultaneous touch events per tap from
+a single finger contact. This is hardware behaviour. Guards at the
+ViewModel level (\texttt{ENGINE\_THINKING} phase, \texttt{AtomicBoolean})
+prevent duplicate engine calls. The touch multiplicity is not a bug in
+the application.
+
+\subsubsection{7.4 Remaining for v0.8.8}\label{next-v087}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Match length selector UI (1, 3, 5, 7 point) in left panel or settings
+\item
+  Engine doubles player --- \texttt{CUBE\_OFFERED} phase with Accept/Drop
+  buttons (code exists, untested in multi-point match)
+\item
+  New game within match --- preserve \texttt{ms.anScore}, reset board only
+\item
+  Cube visual --- show \texttt{cubeValue} on face, move position on
+  ownership change (top = engine, bottom = human, centre = available)
+\item
+  Resign --- \texttt{CommandResign(NULL)} for game or match, with
+  confirmation dialog
+\item
+  16KB page alignment --- rebuild \texttt{.so} with
+  \texttt{-Wl,-z,max-page-size=16384} for Android 16
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+\emph{GNU Backgammon Android Port --- MASTER v0.8.9 --- clavierhaus.at
+--- June 2026}
+
+\subsection{8. Version v0.8.9 --- Playability, Dice Semantics, Cube Path, and Touch Convenience}\label{version-v089}
+
+\subsubsection{8.1 Milestone}
+
+Version v0.8.9 consolidates the playable Android prototype after v0.8.7. The focus is not a broad feature expansion, but a correction and usability milestone: dice state, per-die undo, cube handling, and touch shortcuts are made consistent with the architectural rule that GNU Backgammon remains the sole authority for legal play.
+
+\subsubsection{8.2 Delivered}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Start screen:} provisional match setup screen with match length and opponent-strength choices.
+\item
+  \textbf{Dice display:} used dice are solid muted colours rather than transparent overlays; dice remain in the displayed order unless explicitly swapped by the player.
+\item
+  \textbf{Per-die undo:} Undo restores the previous submove snapshot rather than resetting the entire human turn.
+\item
+  \textbf{Unplayable remaining dice:} if GNUbg reports no legal continuation after a submove, impossible remaining dice are consumed visually.
+\item
+  \textbf{Destination-stack tap:} tapping an empty or opponent destination point can move two legal checkers there at once when the action is unambiguous.
+\item
+  \textbf{Cube path:} human cube tap is routed through GNUbg cube decision logic and native match-state mutation; \texttt{CommandDouble()} is deliberately avoided in this path.
+\item
+  \textbf{Board-relative layout discipline:} visual and hitbox changes continue to avoid absolute screen-position constants.
+\end{itemize}
+
+\subsubsection{8.3 Architecture Notes}
+
+The most important distinction in v0.8.9 is between \emph{convenience interaction} and \emph{game authority}. Destination-stack tapping, per-die undo, dice greying, and dice swapping are UI conveniences. They are acceptable only because every resulting board state is produced by GNUbg submove calls or restored from an uncommitted UI snapshot.
+
+The cube implementation follows the same rule. The Android app reads the native cube state, asks GNUbg for the cube decision using the real match board, and then applies the accepted/taken double through a native function that mutates GNUbg match state under the existing legal cube window.
+
+\subsubsection{8.4 Remaining for v0.9}
+
+\begin{itemize}
+\tightlist
+\item
+  Proper cube pass/drop handling.
+\item
+  Beaver UI and native path.
+\item
+  Real difficulty/strength wiring into GNUbg evaluation settings.
+\item
+  SGF save/load UI.
+\item
+  Tutor, analysis, hint, equity, and MWC surfaces.
+\item
+  Final visual design and broader device QA.
+\end{itemize}
+
+\end{document}

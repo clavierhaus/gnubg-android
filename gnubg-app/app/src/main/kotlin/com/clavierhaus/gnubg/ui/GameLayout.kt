@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
 
@@ -26,12 +27,23 @@ fun GameLayout(viewModel: GameViewModel) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
+    val showMatchSetup by viewModel.showMatchSetup.collectAsStateWithLifecycle()
 
     if (showSettings) {
         SettingsScreen(
             settings = settings,
             viewModel = viewModel,
             onDismiss = { showSettings = false }
+        )
+    } else if (showMatchSetup) {
+        MatchSetupScreen(
+            selectedLength = settings.matchLength,
+            selectedDifficulty = settings.difficulty,
+            engineReady = engineReady,
+            onSelectLength = { viewModel.setMatchLength(it) },
+            onSelectDifficulty = { viewModel.setDifficulty(it) },
+            onStart = { viewModel.startMatch(settings.matchLength) },
+            onSettings = { showSettings = true }
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -163,5 +175,99 @@ fun GameButton(
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+
+@Composable
+private fun MatchSetupScreen(
+    selectedLength: Int,
+    selectedDifficulty: Difficulty,
+    engineReady: Boolean,
+    onSelectLength: (Int) -> Unit,
+    onSelectDifficulty: (Difficulty) -> Unit,
+    onStart: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF082D6B)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Text(
+                "GNU Backgammon",
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                "Opponent strength",
+                color = Color(0xFFB3C9F0),
+                fontSize = 18.sp
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(
+                    Difficulty.BEGINNER to "Beginner",
+                    Difficulty.ADVANCED to "Advanced",
+                    Difficulty.EXPERT to "Master"
+                ).forEach { (difficulty, label) ->
+                    val selected = selectedDifficulty == difficulty
+                    GameButton(
+                        label = label,
+                        color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
+                        enabled = engineReady
+                    ) {
+                        onSelectDifficulty(difficulty)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                "Match length",
+                color = Color(0xFFB3C9F0),
+                fontSize = 18.sp
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(1, 3, 5, 7).forEach { n ->
+                    val selected = selectedLength == n
+                    GameButton(
+                        label = "$n",
+                        color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
+                        enabled = engineReady
+                    ) {
+                        onSelectLength(n)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            GameButton(
+                label = if (engineReady) "Start Match" else "Loading engine…",
+                color = Color(0xFF2E7D32),
+                enabled = engineReady
+            ) {
+                onStart()
+            }
+
+            GameButton(
+                label = "Settings",
+                color = Color(0xFF1565C0),
+                enabled = true
+            ) {
+                onSettings()
+            }
+        }
     }
 }
