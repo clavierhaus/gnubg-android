@@ -733,7 +733,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun setCrawford(on: Boolean) {
         _settings.value = _settings.value.copy(crawford = on)
-        runSettingsCommand("set crawford ${onOff(on)}")
+        // Android Settings controls the normal/default Crawford rule behaviour.
+        // GNUbg's plain "set crawford" applies only to the current match game state
+        // and may reject outside the correct 1-away match context.
+        runSettingsCommand("set automatic crawford ${onOff(on)}")
     }
     fun setJacoby(on: Boolean) {
         _settings.value = _settings.value.copy(jacoby = on)
@@ -745,7 +748,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun setBeavers(on: Boolean) {
         _settings.value = _settings.value.copy(beavers = on)
-        runSettingsCommand("set beavers ${onOff(on)}")
+        // GNUbg's beavers setting is numeric: 0 disables, 1 allows one beaver.
+        runSettingsCommand("set beavers ${if (on) 1 else 0}")
     }
     fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)
