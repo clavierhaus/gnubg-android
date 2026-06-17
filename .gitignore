@@ -145,3 +145,6 @@ test-harness/test_runner
 engine-core/*.bd
 engine-core/*.weights
 test-harness/build/
+
+# Private APK evaluation builds
+private-eval/
