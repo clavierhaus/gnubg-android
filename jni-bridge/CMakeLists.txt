@@ -47,6 +47,7 @@ add_library(gnubg-engine SHARED
 
 target_include_directories(gnubg-engine PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${ENGINE}
     ${ENGINE}/lib
     ${GLIB_DIR}/include

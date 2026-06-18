@@ -45,7 +45,7 @@ extern void CommandRedouble(char *);
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-static pthread_mutex_t gnubg_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gnubg_lock = PTHREAD_MUTEX_INITIALIZER;
 static int             gnubg_initialised = 0;
 
 static evalcontext ec_default = {
@@ -313,6 +313,8 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchL
     return result;
 }
 
+
+static void drain_next_turns(void);
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_nextGame(JNIEnv *env, jobject thiz) {
