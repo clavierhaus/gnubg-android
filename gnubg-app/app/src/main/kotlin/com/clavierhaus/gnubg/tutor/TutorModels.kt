@@ -96,3 +96,29 @@ data class BoardTutorAnnotations(
     val highlightedPoints: List<Int> = emptyList(),
     val shotBadges: List<ShotBadge> = emptyList()
 )
+
+
+data class TutorPreMoveSnapshot(
+    val board: IntArray,
+    val oldBoard: IntArray,
+    val originalDice: Pair<Int, Int>,
+    val remainingDice: List<Int>,
+    val legalMoves: IntArray,
+    val blockedDice: Set<Int>,
+    val pipCountHuman: Int,
+    val pipCountEngine: Int,
+    val cubeValue: Int,
+    val cubeOwner: Int,
+    val matchLength: Int,
+    val humanScore: Int,
+    val engineScore: Int
+) {
+    fun copyBoard(): IntArray = board.copyOf()
+    fun copyOldBoard(): IntArray = oldBoard.copyOf()
+    fun copyLegalMoves(): IntArray = legalMoves.copyOf()
+}
+
+data class TutorMoveContext(
+    val preMove: TutorPreMoveSnapshot,
+    val userMove: String
+)

@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.tutor.BoardTutorAnnotations
+import com.clavierhaus.gnubg.tutor.TutorMoveContext
+import com.clavierhaus.gnubg.tutor.TutorPreMoveSnapshot
 import com.clavierhaus.gnubg.tutor.TutorUiState
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         MutableStateFlow(BoardTutorAnnotations())
     val boardTutorAnnotations: StateFlow<BoardTutorAnnotations> =
         _boardTutorAnnotations.asStateFlow()
+
+    private val _lastTutorMoveContext =
+        MutableStateFlow<TutorMoveContext?>(null)
+    val lastTutorMoveContext: StateFlow<TutorMoveContext?> =
+        _lastTutorMoveContext.asStateFlow()
 
     private val engineThread = Executors.newSingleThreadExecutor { r ->
         Thread(r, "gnubg-engine-thread")
@@ -426,7 +433,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
+            val tutorMoveContext = TutorMoveContext(
+                preMove = TutorPreMoveSnapshot(
+                    board = state.board.copyOf(),
+                    oldBoard = state.oldBoard.copyOf(),
+                    originalDice = origDice,
+                    remainingDice = state.remainingDice.toList(),
+                    legalMoves = state.legalMoves.copyOf(),
+                    blockedDice = state.blockedDice.toSet(),
+                    pipCountHuman = state.pipCountHuman,
+                    pipCountEngine = state.pipCountEngine,
+                    cubeValue = state.cubeValue,
+                    cubeOwner = state.cubeOwner,
+                    matchLength = state.matchLength,
+                    humanScore = state.humanScore,
+                    engineScore = state.engineScore
+                ),
+                userMove = moveStr
+            )
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+            _lastTutorMoveContext.value = tutorMoveContext
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
             if (Engine.getMatchStatus() >= 2) {
@@ -763,6 +789,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun clearTutorState() {
         _tutorUiState.value = TutorUiState.Hidden
         _boardTutorAnnotations.value = BoardTutorAnnotations()
+        _lastTutorMoveContext.value = null
     }
 
     private fun runSettingsCommand(command: String) {
