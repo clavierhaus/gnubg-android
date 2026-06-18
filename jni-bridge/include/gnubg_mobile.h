@@ -18,6 +18,8 @@ extern "C" {
 
 const char *gnubg_mobile_facade_version(void);
 
+int gnubg_mobile_command_new_game(void);
+
 #ifdef __cplusplus
 }
 #endif
