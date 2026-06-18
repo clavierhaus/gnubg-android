@@ -33,3 +33,7 @@ The restricted GNUbg command bridge exists, but live Settings command dispatch i
 Project-wide documentation belongs here at repository root under `docs/`.
 
 The Android module may keep a tiny pointer README, but it should not have its own project-level `docs/` directory.
+
+## Product and design
+
+- [GNU Backgammon Mobile Tutor: Mission Statement and Product Philosophy](gnubg_mobile_tutor_mission_statement.tex)

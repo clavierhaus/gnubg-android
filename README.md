@@ -55,3 +55,8 @@ Typical install/restart sequence:
     adb shell am start -n com.clavierhaus.gnubg/.MainActivity
 
 Do not use `adb uninstall` unless explicitly necessary.
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [GNU Backgammon Mobile Tutor: Mission Statement and Product Philosophy](docs/gnubg_mobile_tutor_mission_statement.tex)
