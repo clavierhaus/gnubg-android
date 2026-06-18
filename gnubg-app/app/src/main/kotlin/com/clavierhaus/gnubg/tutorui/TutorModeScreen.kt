@@ -24,15 +24,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.play.TutorCoachCard
-import com.clavierhaus.gnubg.tutor.TutorStaticPrototype
+import com.clavierhaus.gnubg.tutor.TutorSessionController
+import com.clavierhaus.gnubg.tutor.TutorSessionState
 import com.clavierhaus.gnubg.tutor.TutorUiState
 
 @Composable
 fun TutorModeScreen(
     onBackToHub: () -> Unit
 ) {
-    var tutorUiState by remember {
-        mutableStateOf<TutorUiState>(TutorUiState.Hidden)
+    val controller = remember { TutorSessionController() }
+    var sessionState by remember {
+        mutableStateOf(TutorSessionState())
     }
 
     Box(
@@ -57,31 +59,53 @@ fun TutorModeScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "Tutor Mode",
+                text = sessionState.title,
                 color = Color.White,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Separate learning flow. Shared infrastructure, " +
-                    "different mode semantics.",
+                text = sessionState.subtitle,
                 color = Color(0xFFB3C9F0),
                 fontSize = 15.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Text(
+                text = sessionState.lessonTitle,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = sessionState.lessonDescription,
+                color = Color(0xFFB3C9F0),
+                fontSize = 13.sp
+            )
+
             Box(
                 modifier = Modifier
                     .background(Color(0xFF6A4C93), RoundedCornerShape(9.dp))
                     .clickable {
-                        tutorUiState = TutorStaticPrototype.demoCoachCard()
+                        sessionState =
+                            if (sessionState.phase.name == "INTRO") {
+                                controller.startPrototypeLesson(sessionState)
+                            } else {
+                                controller.showPrototypeCoachCard(sessionState)
+                            }
                     }
                     .padding(horizontal = 18.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = "Show Coach Card prototype",
+                    text =
+                        if (sessionState.phase.name == "INTRO") {
+                            "Start Tutor prototype"
+                        } else {
+                            "Show Coach Card prototype"
+                        },
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -89,10 +113,12 @@ fun TutorModeScreen(
             }
         }
 
-        when (val tutor = tutorUiState) {
+        when (val tutor = sessionState.tutorUiState) {
             is TutorUiState.CoachCard -> TutorCoachCard(
                 hint = tutor.hint,
-                onDismiss = { tutorUiState = TutorUiState.Hidden },
+                onDismiss = {
+                    sessionState = controller.dismissCoachCard(sessionState)
+                },
                 onShowBestMove = {},
                 onTryAgain = {},
                 onMoreDetail = {},
