@@ -420,13 +420,8 @@ JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandRedouble(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
-    pthread_mutex_lock(&gnubg_lock);
-    CommandRedouble(NULL);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_redouble();
 }
-
-
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_rollDice(JNIEnv *env, jobject thiz) {
     pthread_mutex_lock(&gnubg_lock);

@@ -28,6 +28,7 @@ int gnubg_mobile_command_accept(void);
 int gnubg_mobile_command_reject(void);
 int gnubg_mobile_command_decline(void);
 int gnubg_mobile_command_agree(void);
+int gnubg_mobile_command_redouble(void);
 
 #ifdef __cplusplus
 }
