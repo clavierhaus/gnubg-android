@@ -7,6 +7,7 @@ import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.tutor.BoardTutorAnnotations
 import com.clavierhaus.gnubg.tutor.TutorMoveContext
 import com.clavierhaus.gnubg.tutor.TutorPreMoveSnapshot
+import com.clavierhaus.gnubg.tutor.TutorStaticPrototype
 import com.clavierhaus.gnubg.tutor.TutorUiState
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -791,6 +792,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _boardTutorAnnotations.value = BoardTutorAnnotations()
         _lastTutorMoveContext.value = null
     }
+
+    fun showStaticTutorPrototype() {
+        _tutorUiState.value =
+            TutorStaticPrototype.coachCardForCommittedMove(
+                _lastTutorMoveContext.value
+            )
+    }
+
 
     private fun runSettingsCommand(command: String) {
         viewModelScope.launch(engineThread) {
