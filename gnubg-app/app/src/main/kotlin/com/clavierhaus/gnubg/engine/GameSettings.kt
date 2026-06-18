@@ -9,6 +9,61 @@ enum class Difficulty(val label: String, val subtitle: String) {
     EXPERT("Expert", "World-class play")
 }
 
+enum class TutorModePreset {
+    OFF,
+    GENTLE,
+    SERIOUS,
+    CLASSIC
+}
+
+enum class TutorFeedbackThreshold {
+    EVERY_DECISION,
+    INACCURACIES,
+    MISTAKES,
+    BLUNDERS,
+    END_OF_GAME
+}
+
+enum class TutorAnnotationMode {
+    OFF,
+    BEST_MOVE_ONLY,
+    USER_VS_BEST,
+    FULL
+}
+
+enum class TutorEquityDetail {
+    HIDDEN,
+    LOSS_ONLY,
+    MOVE_EQUITIES,
+    CLASSIC
+}
+
+enum class CubeTutorMode {
+    OFF,
+    MAJOR_ERRORS,
+    ALL_DECISIONS
+}
+
+enum class TutorRolloutAccess {
+    DISABLED,
+    ADVANCED_ONLY,
+    CLASSIC_MODE
+}
+
+data class TutorPreferences(
+    val tutorModePreset: TutorModePreset = TutorModePreset.OFF,
+    val tutorFeedbackThreshold: TutorFeedbackThreshold =
+        TutorFeedbackThreshold.MISTAKES,
+    val tutorAnnotationMode: TutorAnnotationMode =
+        TutorAnnotationMode.USER_VS_BEST,
+    val tutorEquityDetail: TutorEquityDetail =
+        TutorEquityDetail.LOSS_ONLY,
+    val cubeTutorMode: CubeTutorMode = CubeTutorMode.MAJOR_ERRORS,
+    val tutorRolloutAccess: TutorRolloutAccess =
+        TutorRolloutAccess.ADVANCED_ONLY,
+    val offerTutorTryAgain: Boolean = true
+)
+
 data class GameSettings(
     val matchLength: Int = 1,
     val crawford: Boolean = true,
@@ -19,11 +74,16 @@ data class GameSettings(
     val showPointNumbers: Boolean = true,
     val showPipCount: Boolean = true,
     val difficulty: Difficulty = Difficulty.INTERMEDIATE,
-    val tutorMode: Boolean = false,
-    val hint: Boolean = false,
-    val showEquity: Boolean = false,
-    val showMWC: Boolean = false,
-    val thresholdDoubtful: Float = 0.04f,
-    val thresholdBad: Float = 0.08f,
-    val thresholdVeryBad: Float = 0.16f
+
+    val tutorModePreset: TutorModePreset = TutorModePreset.OFF,
+    val tutorFeedbackThreshold: TutorFeedbackThreshold =
+        TutorFeedbackThreshold.MISTAKES,
+    val tutorAnnotationMode: TutorAnnotationMode =
+        TutorAnnotationMode.USER_VS_BEST,
+    val tutorEquityDetail: TutorEquityDetail =
+        TutorEquityDetail.LOSS_ONLY,
+    val cubeTutorMode: CubeTutorMode = CubeTutorMode.MAJOR_ERRORS,
+    val tutorRolloutAccess: TutorRolloutAccess =
+        TutorRolloutAccess.ADVANCED_ONLY,
+    val offerTutorTryAgain: Boolean = true
 )

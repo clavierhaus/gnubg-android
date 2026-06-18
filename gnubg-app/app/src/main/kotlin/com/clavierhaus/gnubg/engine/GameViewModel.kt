@@ -36,6 +36,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 _settings.value = _settings.value.copy(boardTheme = theme)
             }
         }
+        viewModelScope.launch {
+            PreferencesManager.tutorPreferencesFlow(application).collect { prefs ->
+                _settings.value = _settings.value.copy(
+                    tutorModePreset = prefs.tutorModePreset,
+                    tutorFeedbackThreshold = prefs.tutorFeedbackThreshold,
+                    tutorAnnotationMode = prefs.tutorAnnotationMode,
+                    tutorEquityDetail = prefs.tutorEquityDetail,
+                    cubeTutorMode = prefs.cubeTutorMode,
+                    tutorRolloutAccess = prefs.tutorRolloutAccess,
+                    offerTutorTryAgain = prefs.offerTutorTryAgain
+                )
+            }
+        }
         viewModelScope.launch(engineThread) {
             val weightsPath = AssetExtractor.extractWeights(application)
             Engine.initialise(weightsPath)
@@ -777,32 +790,55 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Wrongly-timed player/evaluation commands can disturb match start.
         _settings.value = _settings.value.copy(difficulty = d)
     }
-    fun setTutorMode(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(tutorMode = on)
+    fun setTutorModePreset(value: TutorModePreset) {
+        _settings.value = _settings.value.copy(tutorModePreset = value)
+        viewModelScope.launch {
+            PreferencesManager.saveTutorModePreset(getApplication(), value)
+        }
     }
-    fun setHint(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(hint = on)
+
+    fun setTutorFeedbackThreshold(value: TutorFeedbackThreshold) {
+        _settings.value = _settings.value.copy(tutorFeedbackThreshold = value)
+        viewModelScope.launch {
+            PreferencesManager.saveTutorFeedbackThreshold(
+                getApplication(),
+                value
+            )
+        }
     }
-    fun setShowEquity(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(showEquity = on)
+
+    fun setTutorAnnotationMode(value: TutorAnnotationMode) {
+        _settings.value = _settings.value.copy(tutorAnnotationMode = value)
+        viewModelScope.launch {
+            PreferencesManager.saveTutorAnnotationMode(getApplication(), value)
+        }
     }
-    fun setShowMWC(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(showMWC = on)
+
+    fun setTutorEquityDetail(value: TutorEquityDetail) {
+        _settings.value = _settings.value.copy(tutorEquityDetail = value)
+        viewModelScope.launch {
+            PreferencesManager.saveTutorEquityDetail(getApplication(), value)
+        }
     }
-    fun setThresholdDoubtful(v: Float) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(thresholdDoubtful = v)
+
+    fun setCubeTutorMode(value: CubeTutorMode) {
+        _settings.value = _settings.value.copy(cubeTutorMode = value)
+        viewModelScope.launch {
+            PreferencesManager.saveCubeTutorMode(getApplication(), value)
+        }
     }
-    fun setThresholdBad(v: Float) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(thresholdBad = v)
+
+    fun setTutorRolloutAccess(value: TutorRolloutAccess) {
+        _settings.value = _settings.value.copy(tutorRolloutAccess = value)
+        viewModelScope.launch {
+            PreferencesManager.saveTutorRolloutAccess(getApplication(), value)
+        }
     }
-    fun setThresholdVeryBad(v: Float) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(thresholdVeryBad = v)
+
+    fun setOfferTutorTryAgain(value: Boolean) {
+        _settings.value = _settings.value.copy(offerTutorTryAgain = value)
+        viewModelScope.launch {
+            PreferencesManager.saveOfferTutorTryAgain(getApplication(), value)
+        }
     }
 }

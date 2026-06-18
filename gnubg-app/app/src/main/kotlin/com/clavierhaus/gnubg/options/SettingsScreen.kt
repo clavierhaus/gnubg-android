@@ -24,11 +24,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.engine.BoardTheme
+import com.clavierhaus.gnubg.engine.CubeTutorMode
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
+import com.clavierhaus.gnubg.engine.TutorAnnotationMode
+import com.clavierhaus.gnubg.engine.TutorEquityDetail
+import com.clavierhaus.gnubg.engine.TutorFeedbackThreshold
+import com.clavierhaus.gnubg.engine.TutorModePreset
+import com.clavierhaus.gnubg.engine.TutorRolloutAccess
 
-enum class SettingsTab { GAME, BOARD, ENGINE, ANALYSIS, EXPERT }
+enum class SettingsTab { GAME, BOARD, ENGINE, TUTOR, EXPERT }
 
 private val ColorSettingsBg     = Color(0xFF082D6B)
 private val ColorPanelBg        = Color(0xFF0A3880)
@@ -86,7 +92,7 @@ fun SettingsScreen(
                     SettingsTab.GAME -> GameSettingsTab(settings, viewModel)
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
                     SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
-                    SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
+                    SettingsTab.TUTOR -> TutorSettingsTab(settings, viewModel)
                     SettingsTab.EXPERT -> ExpertSettingsTab()
                 }
             }
@@ -142,7 +148,7 @@ private fun SettingsTabs(
                 SettingsTab.GAME -> "Game"
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.ENGINE -> "Engine"
-                SettingsTab.ANALYSIS -> "Analysis"
+                SettingsTab.TUTOR -> "Tutor"
                 SettingsTab.EXPERT -> "Expert"
             }
 
@@ -306,58 +312,116 @@ private fun EngineSettingsTab(settings: GameSettings, vm: GameViewModel) {
 }
 
 @Composable
-private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) {
-    SettingsSection("Tutor") {
-        SettingsRow("Tutor mode", "Stored locally until GNUbg timing is safe") {
-            Switch(settings.tutorMode, { vm.setTutorMode(it) }, colors = switchColors)
+private fun TutorSettingsTab(settings: GameSettings, vm: GameViewModel) {
+    SettingsSection("Tutor mode") {
+        TutorModePreset.values().forEachIndexed { i, preset ->
+            SettingsRow(tutorModeLabel(preset), tutorModeSubtitle(preset)) {
+                RadioButton(
+                    selected = settings.tutorModePreset == preset,
+                    onClick = { vm.setTutorModePreset(preset) },
+                    colors = radioColors
+                )
+            }
+            if (i < TutorModePreset.values().size - 1) SettingsDivider()
         }
-        SettingsDivider()
-        SettingsRow("Hint", "Placeholder preference; board action comes later") {
-            Switch(settings.hint, { vm.setHint(it) }, colors = switchColors)
-        }
-        SettingsDivider()
-        DisabledSettingsRow("Warn before bad move", "GNUbg pendant: set warning / set tutor skill")
-        SettingsDivider()
-        DisabledSettingsRow("Explain move choice", "Future analysis output surface")
     }
 
-    SettingsSection("Output") {
-        SettingsRow("Show equity", "Presentation preference") {
-            Switch(settings.showEquity, { vm.setShowEquity(it) }, colors = switchColors)
+    SettingsSection("When to interrupt") {
+        TutorFeedbackThreshold.values().forEachIndexed { i, threshold ->
+            SettingsRow(
+                tutorFeedbackLabel(threshold),
+                tutorFeedbackSubtitle(threshold)
+            ) {
+                RadioButton(
+                    selected = settings.tutorFeedbackThreshold == threshold,
+                    onClick = { vm.setTutorFeedbackThreshold(threshold) },
+                    colors = radioColors
+                )
+            }
+            if (i < TutorFeedbackThreshold.values().size - 1) {
+                SettingsDivider()
+            }
         }
-        SettingsDivider()
-        SettingsRow("Show MWC", "Presentation preference") {
-            Switch(settings.showMWC, { vm.setShowMWC(it) }, colors = switchColors)
-        }
-        SettingsDivider()
-        DisabledSettingsRow("Show cube action", "Future analysis output control")
-        SettingsDivider()
-        DisabledSettingsRow("Show best move", "Future analysis output control")
-        SettingsDivider()
-        DisabledSettingsRow("Show alternatives", "Future analysis output control")
     }
 
-    SettingsSection("Thresholds") {
-        FloatStepperRow(
-            title = "Doubtful",
-            subtitle = "Local value; GNUbg command verified but quarantined",
-            value = settings.thresholdDoubtful,
-            onChange = vm::setThresholdDoubtful
-        )
-        SettingsDivider()
-        FloatStepperRow(
-            title = "Bad",
-            subtitle = "Local value; GNUbg command verified but quarantined",
-            value = settings.thresholdBad,
-            onChange = vm::setThresholdBad
-        )
-        SettingsDivider()
-        FloatStepperRow(
-            title = "Very bad",
-            subtitle = "Local value; GNUbg command verified but quarantined",
-            value = settings.thresholdVeryBad,
-            onChange = vm::setThresholdVeryBad
-        )
+    SettingsSection("Coach interaction") {
+        SettingsRow(
+            "Offer Try Again",
+            "Restore the pre-move position after a significant mistake"
+        ) {
+            Switch(
+                settings.offerTutorTryAgain,
+                { vm.setOfferTutorTryAgain(it) },
+                colors = switchColors
+            )
+        }
+    }
+
+    SettingsSection("Board annotations") {
+        TutorAnnotationMode.values().forEachIndexed { i, mode ->
+            SettingsRow(
+                tutorAnnotationLabel(mode),
+                tutorAnnotationSubtitle(mode)
+            ) {
+                RadioButton(
+                    selected = settings.tutorAnnotationMode == mode,
+                    onClick = { vm.setTutorAnnotationMode(mode) },
+                    colors = radioColors
+                )
+            }
+            if (i < TutorAnnotationMode.values().size - 1) {
+                SettingsDivider()
+            }
+        }
+    }
+
+    SettingsSection("Numbers") {
+        TutorEquityDetail.values().forEachIndexed { i, detail ->
+            SettingsRow(
+                tutorEquityLabel(detail),
+                tutorEquitySubtitle(detail)
+            ) {
+                RadioButton(
+                    selected = settings.tutorEquityDetail == detail,
+                    onClick = { vm.setTutorEquityDetail(detail) },
+                    colors = radioColors
+                )
+            }
+            if (i < TutorEquityDetail.values().size - 1) {
+                SettingsDivider()
+            }
+        }
+    }
+
+    SettingsSection("Cube tutor") {
+        CubeTutorMode.values().forEachIndexed { i, mode ->
+            SettingsRow(cubeTutorLabel(mode), cubeTutorSubtitle(mode)) {
+                RadioButton(
+                    selected = settings.cubeTutorMode == mode,
+                    onClick = { vm.setCubeTutorMode(mode) },
+                    colors = radioColors
+                )
+            }
+            if (i < CubeTutorMode.values().size - 1) SettingsDivider()
+        }
+    }
+
+    SettingsSection("Rollouts") {
+        TutorRolloutAccess.values().forEachIndexed { i, access ->
+            SettingsRow(
+                tutorRolloutLabel(access),
+                tutorRolloutSubtitle(access)
+            ) {
+                RadioButton(
+                    selected = settings.tutorRolloutAccess == access,
+                    onClick = { vm.setTutorRolloutAccess(access) },
+                    colors = radioColors
+                )
+            }
+            if (i < TutorRolloutAccess.values().size - 1) {
+                SettingsDivider()
+            }
+        }
     }
 }
 
@@ -401,6 +465,98 @@ private fun ExpertSettingsTab() {
         DisabledSettingsRow("Player setup timing", "Unsafe until match start sequencing is verified")
     }
 }
+
+
+private fun tutorModeLabel(value: TutorModePreset): String = when (value) {
+    TutorModePreset.OFF -> "Off"
+    TutorModePreset.GENTLE -> "Gentle"
+    TutorModePreset.SERIOUS -> "Serious"
+    TutorModePreset.CLASSIC -> "Classic"
+}
+
+private fun tutorModeSubtitle(value: TutorModePreset): String = when (value) {
+    TutorModePreset.OFF -> "No tutor interruptions"
+    TutorModePreset.GENTLE -> "Kind, minimal coaching"
+    TutorModePreset.SERIOUS -> "Show mistakes with more detail"
+    TutorModePreset.CLASSIC -> "Prefer GNUbg-style detail"
+}
+
+private fun tutorFeedbackLabel(value: TutorFeedbackThreshold): String =
+    when (value) {
+        TutorFeedbackThreshold.EVERY_DECISION -> "Every decision"
+        TutorFeedbackThreshold.INACCURACIES -> "Inaccuracies and worse"
+        TutorFeedbackThreshold.MISTAKES -> "Mistakes and worse"
+        TutorFeedbackThreshold.BLUNDERS -> "Blunders only"
+        TutorFeedbackThreshold.END_OF_GAME -> "End of game only"
+    }
+
+private fun tutorFeedbackSubtitle(value: TutorFeedbackThreshold): String =
+    when (value) {
+        TutorFeedbackThreshold.EVERY_DECISION -> "Coach after every move"
+        TutorFeedbackThreshold.INACCURACIES -> "Approximate loss ≥ 0.030"
+        TutorFeedbackThreshold.MISTAKES -> "Approximate loss ≥ 0.060"
+        TutorFeedbackThreshold.BLUNDERS -> "Approximate loss ≥ 0.120"
+        TutorFeedbackThreshold.END_OF_GAME -> "Silent during play"
+    }
+
+private fun tutorAnnotationLabel(value: TutorAnnotationMode): String =
+    when (value) {
+        TutorAnnotationMode.OFF -> "Off"
+        TutorAnnotationMode.BEST_MOVE_ONLY -> "Best move only"
+        TutorAnnotationMode.USER_VS_BEST -> "User vs best"
+        TutorAnnotationMode.FULL -> "Full visual explanation"
+    }
+
+private fun tutorAnnotationSubtitle(value: TutorAnnotationMode): String =
+    when (value) {
+        TutorAnnotationMode.OFF -> "No board overlays"
+        TutorAnnotationMode.BEST_MOVE_ONLY -> "Show GNUbg's preferred move"
+        TutorAnnotationMode.USER_VS_BEST -> "Compare your move with GNUbg"
+        TutorAnnotationMode.FULL -> "Arrows, highlights, and later shot badges"
+    }
+
+private fun tutorEquityLabel(value: TutorEquityDetail): String =
+    when (value) {
+        TutorEquityDetail.HIDDEN -> "Hidden by default"
+        TutorEquityDetail.LOSS_ONLY -> "Show loss only"
+        TutorEquityDetail.MOVE_EQUITIES -> "Show move equities"
+        TutorEquityDetail.CLASSIC -> "Classic detail"
+    }
+
+private fun tutorEquitySubtitle(value: TutorEquityDetail): String =
+    when (value) {
+        TutorEquityDetail.HIDDEN -> "Plain-language feedback first"
+        TutorEquityDetail.LOSS_ONLY -> "Show only the equity loss"
+        TutorEquityDetail.MOVE_EQUITIES -> "Show user and best move equities"
+        TutorEquityDetail.CLASSIC -> "Prefer technical GNUbg-style output"
+    }
+
+private fun cubeTutorLabel(value: CubeTutorMode): String = when (value) {
+    CubeTutorMode.OFF -> "Off"
+    CubeTutorMode.MAJOR_ERRORS -> "Major cube errors only"
+    CubeTutorMode.ALL_DECISIONS -> "All cube decisions"
+}
+
+private fun cubeTutorSubtitle(value: CubeTutorMode): String = when (value) {
+    CubeTutorMode.OFF -> "No cube tutor cards"
+    CubeTutorMode.MAJOR_ERRORS -> "Interrupt only on meaningful cube errors"
+    CubeTutorMode.ALL_DECISIONS -> "Coach every double/take/drop/pass decision"
+}
+
+private fun tutorRolloutLabel(value: TutorRolloutAccess): String =
+    when (value) {
+        TutorRolloutAccess.DISABLED -> "Disabled"
+        TutorRolloutAccess.ADVANCED_ONLY -> "Advanced only"
+        TutorRolloutAccess.CLASSIC_MODE -> "Classic mode"
+    }
+
+private fun tutorRolloutSubtitle(value: TutorRolloutAccess): String =
+    when (value) {
+        TutorRolloutAccess.DISABLED -> "No rollout entry point"
+        TutorRolloutAccess.ADVANCED_ONLY -> "Available only in deeper detail"
+        TutorRolloutAccess.CLASSIC_MODE -> "Expose rollout controls in Classic mode"
+    }
+
 
 @Composable
 private fun SettingsSection(
