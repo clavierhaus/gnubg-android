@@ -1,6 +1,6 @@
 package com.clavierhaus.gnubg.hub
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.clavierhaus.gnubg.R
 
 @Composable
 fun HomeHubScreen(
@@ -25,52 +32,43 @@ fun HomeHubScreen(
     onOptions: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp)
-    ) {
-        BasicText(
-            text = "gnu backgammon",
-            modifier = Modifier.align(Alignment.TopStart)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.home_hub_background),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
         )
 
-        // Reserved central visual field. Intentionally blank in this structural prototype.
-
-        Canvas(
+        BasicText(
+            text = "GNU Backgammon",
+            style = HomeTitleStyle,
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = 64.dp)
-                .height(210.dp)
-        ) {
-            drawLine(
-                color = Color.Black,
-                start = Offset(0f, 0f),
-                end = Offset(0f, size.height),
-                strokeWidth = 1f
-            )
-        }
+                .align(Alignment.TopStart)
+                .padding(start = 48.dp, top = 38.dp)
+        )
 
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .offset(x = 96.dp)
+                .offset(x = 64.dp)
         ) {
-            HomeHubEntry("play", onPlay)
+            HomeHubEntry("Play", onPlay)
             Spacer(modifier = Modifier.height(22.dp))
-            HomeHubEntry("learn", onLearn)
+            HomeHubEntry("Learn", onLearn)
             Spacer(modifier = Modifier.height(22.dp))
-            HomeHubEntry("analyse", onAnalyse)
+            HomeHubEntry("Analyse", onAnalyse)
             Spacer(modifier = Modifier.height(22.dp))
-            HomeHubEntry("options", onOptions)
+            HomeHubEntry("Options", onOptions)
         }
 
         BasicText(
-            text = "profile",
+            text = "Profile",
+            style = HomeSecondaryStyle,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .clickable(onClick = onProfile)
-                .padding(16.dp)
+                .padding(end = 42.dp, bottom = 34.dp)
         )
     }
 }
@@ -82,8 +80,42 @@ private fun HomeHubEntry(
 ) {
     BasicText(
         text = label,
+        style = HomeEntryStyle,
         modifier = Modifier
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp)
     )
 }
+
+private val HomeTitleStyle = TextStyle(
+    color = Color.White,
+    fontSize = 34.sp,
+    fontWeight = FontWeight.SemiBold,
+    shadow = Shadow(
+        color = Color.Black,
+        offset = Offset(2f, 2f),
+        blurRadius = 8f
+    )
+)
+
+private val HomeEntryStyle = TextStyle(
+    color = Color.White,
+    fontSize = 36.sp,
+    fontWeight = FontWeight.Medium,
+    shadow = Shadow(
+        color = Color.Black,
+        offset = Offset(2f, 2f),
+        blurRadius = 8f
+    )
+)
+
+private val HomeSecondaryStyle = TextStyle(
+    color = Color.White,
+    fontSize = 26.sp,
+    fontWeight = FontWeight.Medium,
+    shadow = Shadow(
+        color = Color.Black,
+        offset = Offset(2f, 2f),
+        blurRadius = 8f
+    )
+)
