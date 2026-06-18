@@ -369,10 +369,7 @@ JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandEndGame(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
-    pthread_mutex_lock(&gnubg_lock);
-    CommandEndGame(NULL);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_end_game();
 }
 
 JNIEXPORT void JNICALL
