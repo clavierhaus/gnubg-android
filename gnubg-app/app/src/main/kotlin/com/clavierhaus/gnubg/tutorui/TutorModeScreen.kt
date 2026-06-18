@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.clavierhaus.gnubg.engine.GameSettings
+import com.clavierhaus.gnubg.play.BackgammonBoard
 import com.clavierhaus.gnubg.play.TutorCoachCard
 import com.clavierhaus.gnubg.tutor.TutorSessionController
 import com.clavierhaus.gnubg.tutor.TutorSessionState
@@ -52,63 +58,83 @@ fun TutorModeScreen(
                 .clickable { onBackToHub() }
         )
 
-        Column(
+        Row(
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 56.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .fillMaxSize()
+                .padding(start = 46.dp, top = 58.dp, end = 32.dp, bottom = 58.dp),
+            horizontalArrangement = Arrangement.spacedBy(26.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = sessionState.title,
-                color = Color.White,
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = Modifier.width(310.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = sessionState.title,
+                    color = Color.White,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Text(
-                text = sessionState.subtitle,
-                color = Color(0xFFB3C9F0),
-                fontSize = 15.sp
-            )
+                Text(
+                    text = sessionState.subtitle,
+                    color = Color(0xFFB3C9F0),
+                    fontSize = 15.sp
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = sessionState.lessonTitle,
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+                Text(
+                    text = sessionState.lessonTitle,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Text(
-                text = sessionState.lessonDescription,
-                color = Color(0xFFB3C9F0),
-                fontSize = 13.sp
-            )
+                Text(
+                    text = sessionState.lessonDescription,
+                    color = Color(0xFFB3C9F0),
+                    fontSize = 13.sp
+                )
+
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF6A4C93), RoundedCornerShape(9.dp))
+                        .clickable {
+                            sessionState =
+                                if (sessionState.phase.name == "INTRO") {
+                                    controller.startPrototypeLesson(sessionState)
+                                } else {
+                                    controller.showPrototypeCoachCard(sessionState)
+                                }
+                        }
+                        .padding(horizontal = 18.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text =
+                            if (sessionState.phase.name == "INTRO") {
+                                "Start Tutor prototype"
+                            } else {
+                                "Show Coach Card prototype"
+                            },
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
             Box(
                 modifier = Modifier
-                    .background(Color(0xFF6A4C93), RoundedCornerShape(9.dp))
-                    .clickable {
-                        sessionState =
-                            if (sessionState.phase.name == "INTRO") {
-                                controller.startPrototypeLesson(sessionState)
-                            } else {
-                                controller.showPrototypeCoachCard(sessionState)
-                            }
-                    }
-                    .padding(horizontal = 18.dp, vertical = 10.dp)
+                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .background(Color(0xFF061D46), RoundedCornerShape(16.dp))
+                    .padding(12.dp)
             ) {
-                Text(
-                    text =
-                        if (sessionState.phase.name == "INTRO") {
-                            "Start Tutor prototype"
-                        } else {
-                            "Show Coach Card prototype"
-                        },
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                BackgammonBoard(
+                    settings = GameSettings(),
+                    gameState = sessionState.boardState,
+                    actions = null
                 )
             }
         }

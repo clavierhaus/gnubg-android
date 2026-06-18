@@ -1,5 +1,7 @@
 package com.clavierhaus.gnubg.tutor
 
+import com.clavierhaus.gnubg.engine.BoardState
+
 enum class TutorSessionPhase {
     INTRO,
     READY,
@@ -15,6 +17,7 @@ data class TutorSessionState(
     val lessonTitle: String = "Prototype lesson",
     val lessonDescription: String =
         "This neutral session skeleton does not use Regular Play.",
+    val boardState: BoardState = TutorBoardPreview.openingPosition(),
     val tutorUiState: TutorUiState = TutorUiState.Hidden
 )
 
