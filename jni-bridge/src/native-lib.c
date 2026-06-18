@@ -459,14 +459,14 @@ Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_applyMoveString(JNIEnv *env, jobject thiz,
                                                     jstring jmoveStr) {
+    (void)thiz;
     const char *moveStr = (*env)->GetStringUTFChars(env, jmoveStr, NULL);
+    (void)gnubg_mobile_command_move(moveStr);
+
     pthread_mutex_lock(&gnubg_lock);
-    char *szCopy = strdup(moveStr);
-    CommandMove(szCopy);
-    free(szCopy);
-    NextTurn(TRUE);
     jintArray result = pack_board(env, ms.anBoard);
     pthread_mutex_unlock(&gnubg_lock);
+
     (*env)->ReleaseStringUTFChars(env, jmoveStr, moveStr);
     return result;
 }
