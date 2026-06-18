@@ -27,6 +27,7 @@ int gnubg_mobile_command_next(const char *argument);
 int gnubg_mobile_command_accept(void);
 int gnubg_mobile_command_reject(void);
 int gnubg_mobile_command_decline(void);
+int gnubg_mobile_command_agree(void);
 
 #ifdef __cplusplus
 }
