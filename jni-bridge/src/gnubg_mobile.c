@@ -9,6 +9,7 @@ extern void CommandNewGame(char *);
 extern void CommandNewMatch(char *);
 extern void CommandNewSession(char *);
 extern void CommandEndGame(char *);
+extern void CommandResign(char *);
 extern int NextTurn(int fPlayNext);
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
@@ -61,6 +62,15 @@ int gnubg_mobile_command_new_session(int games) {
 int gnubg_mobile_command_end_game(void) {
     pthread_mutex_lock(&gnubg_lock);
     CommandEndGame(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_command_resign(const char *value) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandResign((char *)(value ? value : ""));
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

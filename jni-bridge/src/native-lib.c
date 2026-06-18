@@ -376,10 +376,7 @@ JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandResign(JNIEnv *env, jobject thiz, jstring value) {
     (void)thiz;
     char *sz = copy_jstring_or_empty(env, value);
-    pthread_mutex_lock(&gnubg_lock);
-    CommandResign(sz);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_resign(sz);
     free(sz);
 }
 

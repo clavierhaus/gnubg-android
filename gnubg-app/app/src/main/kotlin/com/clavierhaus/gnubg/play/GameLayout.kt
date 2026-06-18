@@ -90,7 +90,15 @@ fun GameLayout(
 
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
+                                val humanWonMatch =
+                                    gameState.matchLength > 1 &&
+                                    gameState.humanScore >= gameState.matchLength
+                                val engineWonMatch =
+                                    gameState.matchLength > 1 &&
+                                    gameState.engineScore >= gameState.matchLength
                                 val resultText = when {
+                                    humanWonMatch -> "You win\nthe match!"
+                                    engineWonMatch -> "Engine wins\nthe match"
                                     gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
                                     gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
                                     gameState.winner == 0 -> "You win"
