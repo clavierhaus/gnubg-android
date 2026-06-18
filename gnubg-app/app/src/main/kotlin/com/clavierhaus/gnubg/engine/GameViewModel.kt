@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clavierhaus.gnubg.Engine
+import com.clavierhaus.gnubg.tutor.BoardTutorAnnotations
+import com.clavierhaus.gnubg.tutor.TutorUiState
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +26,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showMatchSetup = MutableStateFlow(true)
     val showMatchSetup: StateFlow<Boolean> = _showMatchSetup.asStateFlow()
+
+    private val _tutorUiState =
+        MutableStateFlow<TutorUiState>(TutorUiState.Hidden)
+    val tutorUiState: StateFlow<TutorUiState> =
+        _tutorUiState.asStateFlow()
+
+    private val _boardTutorAnnotations =
+        MutableStateFlow(BoardTutorAnnotations())
+    val boardTutorAnnotations: StateFlow<BoardTutorAnnotations> =
+        _boardTutorAnnotations.asStateFlow()
 
     private val engineThread = Executors.newSingleThreadExecutor { r ->
         Thread(r, "gnubg-engine-thread")
@@ -747,6 +759,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    fun clearTutorState() {
+        _tutorUiState.value = TutorUiState.Hidden
+        _boardTutorAnnotations.value = BoardTutorAnnotations()
+    }
 
     private fun runSettingsCommand(command: String) {
         viewModelScope.launch(engineThread) {
