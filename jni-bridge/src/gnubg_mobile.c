@@ -16,6 +16,7 @@ extern void CommandReject(char *);
 extern void CommandDecline(char *);
 extern void CommandAgree(char *);
 extern void CommandRedouble(char *);
+extern void CommandDouble(char *);
 extern int NextTurn(int fPlayNext);
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
@@ -131,6 +132,15 @@ int gnubg_mobile_command_agree(void) {
 int gnubg_mobile_command_redouble(void) {
     pthread_mutex_lock(&gnubg_lock);
     CommandRedouble(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_command_double(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandDouble(NULL);
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

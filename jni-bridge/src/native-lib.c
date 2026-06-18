@@ -108,19 +108,10 @@ extern void CommandDrop(char *);
  */
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandDouble(JNIEnv *env, jobject thiz) {
-    pthread_mutex_lock(&gnubg_lock);
-    CommandDouble(NULL);
-    while (fNextTurn) NextTurn(TRUE);
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)env;
+    (void)thiz;
+    (void)gnubg_mobile_command_double();
 }
-
-
-
-
-/*
- * Engine.commandTake(): void — human accepts engine's double
- */
-
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_applyHumanDoubleTake(JNIEnv *env, jobject thiz) {
     (void)thiz;
