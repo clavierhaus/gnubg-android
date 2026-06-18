@@ -14,9 +14,6 @@ extern char *FormatMove(char *sz, const TanBoard anBoard, const int anMove[8]);
 extern void gnubg_init_tld(void);
 extern void gnubg_init_rollout(void);
 extern int gnubg_rollout(const TanBoard anBoard, float arOutput[], float arStdDev[], const cubeinfo *pci, rolloutcontext *prc);
-extern void CommandNewGame(char *);
-extern void CommandRoll(char *);
-extern void CommandMove(char *);
 extern void ClearMatch(void);
 extern int NextTurn(int fPlayNext);
 extern int ListCreate(listOLD *pl);
@@ -30,16 +27,6 @@ extern void CommandLoadGame(char *sz);
 extern void CommandSaveGame(char *sz);
 extern void CommandLoadPosition(char *sz);
 extern void CommandSavePosition(char *sz);
-extern void CommandNewMatch(char *);
-extern void CommandNewSession(char *);
-extern void CommandEndGame(char *);
-extern void CommandResign(char *);
-extern void CommandNext(char *);
-extern void CommandAccept(char *);
-extern void CommandReject(char *);
-extern void CommandDecline(char *);
-extern void CommandAgree(char *);
-extern void CommandRedouble(char *);
 
 #define LOG_TAG "gnubg-jni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
@@ -99,9 +86,6 @@ Java_com_clavierhaus_gnubg_Engine_getCubeDebugState(JNIEnv *env, jobject thiz) {
 }
 
 
-extern void CommandDouble(char *);
-extern void CommandTake(char *);
-extern void CommandDrop(char *);
 
 /*
  * Engine.commandDouble(): void — human offers cube
