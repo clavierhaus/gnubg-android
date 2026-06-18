@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include "gnubg_mobile.h"
 
 #include "config.h"
 #include "eval.h"

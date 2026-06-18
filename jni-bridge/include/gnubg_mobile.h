@@ -1,0 +1,25 @@
+#ifndef GNUBG_MOBILE_H
+#define GNUBG_MOBILE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * Platform-neutral GNUbg mobile facade.
+ *
+ * This layer is intentionally plain C.
+ * Android JNI must call into this facade.
+ * Future non-Android adapters should call the same facade.
+ *
+ * The facade must not expose JNI, Kotlin, Swift,
+ * Objective-C, Android lifecycle, or UI types.
+ */
+
+const char *gnubg_mobile_facade_version(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

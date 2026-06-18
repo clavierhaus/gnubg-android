@@ -7,6 +7,7 @@ set(GLIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/glib")
 add_library(gnubg-engine SHARED
     src/stubs.c
     src/native-lib.c
+    src/gnubg_mobile.c
     ${ENGINE}/eval.c
     ${ENGINE}/dice.c
     ${ENGINE}/bearoff.c
