@@ -40,6 +40,39 @@ objective comparison:
 
 It is better to say less than to teach a false lesson.
 
+## 3. Non-Negotiable Architecture Rule
+
+All new Tutor Mode and gameplay-support logic must be de-Androidified.
+
+Android code may own:
+
+- rendering;
+- Compose UI state collection;
+- user interaction dispatch;
+- Android lifecycle;
+- local preference persistence;
+- temporary ViewModel orchestration.
+
+Android code must not own:
+
+- backgammon rules;
+- tutor reasoning;
+- GNUbg command semantics;
+- move-quality interpretation;
+- shot-count analysis;
+- point-making analysis;
+- cube-decision interpretation;
+- Try Again game-state semantics.
+
+Those responsibilities belong either in:
+
+- the platform-neutral Kotlin tutor/game layer; or
+- the GNUbg mobile facade/native layer when the logic belongs beside GNUbg.
+
+The ViewModel may capture and expose state, but it must not become the
+Tutor Mode brain.
+
+
 ## 3. Architecture Overview
 
 Tutor Mode is split into four layers.
@@ -542,8 +575,13 @@ The board should receive a separate annotation state:
 
 ### Phase 3: Pre-Move Snapshot
 
-- preserve board/dice/move before commit;
-- add restore function for Try Again;
+- introduce a platform-neutral `TutorPreMoveSnapshot` model;
+- introduce a platform-neutral `TutorMoveContext` model;
+- capture board, dice, move string, match facts, and settings before
+  committing a human move;
+- expose the captured context through inert tutor state;
+- do not implement Try Again restoration yet;
+- do not place restoration semantics in Android code;
 - test no behavior change.
 
 ### Phase 4: Static Coach Card Prototype
@@ -560,7 +598,10 @@ The board should receive a separate annotation state:
 
 ### Phase 6: Try Again
 
-- wire restore;
+- add a neutral restore contract outside Android UI code;
+- route restoration through the platform-neutral game/tutor layer or
+  mobile facade;
+- let Android dispatch only the user's Try Again action;
 - ensure move selection resets correctly;
 - test normal move, bar entry, doubles, no-legal-move cases.
 
