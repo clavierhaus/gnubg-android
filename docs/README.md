@@ -37,3 +37,17 @@ The Android module may keep a tiny pointer README, but it should not have its ow
 ## Product and design
 
 - [GNU Backgammon Mobile Tutor: Mission Statement and Product Philosophy](gnubg_mobile_tutor_mission_statement.tex)
+
+## Building documentation
+
+From the repository root, build documentation with:
+
+    make docs
+
+To build only the mobile tutor mission statement PDF:
+
+    make tutor-mission-pdf
+
+The LaTeX source remains the editable source of truth. The generated
+PDF is intended as the public-facing rendered artifact.
+
