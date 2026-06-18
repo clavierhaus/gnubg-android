@@ -344,13 +344,9 @@ Java_com_clavierhaus_gnubg_Engine_commandNewMatch(JNIEnv *env, jobject thiz, jin
 
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandNewSession(JNIEnv *env, jobject thiz, jint games) {
+    (void)env;
     (void)thiz;
-    pthread_mutex_lock(&gnubg_lock);
-    char szGames[16];
-    snprintf(szGames, sizeof(szGames), "%d", (int)games);
-    CommandNewSession(szGames);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_new_session((int)games);
 }
 
 JNIEXPORT void JNICALL

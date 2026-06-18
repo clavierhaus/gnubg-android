@@ -7,6 +7,7 @@
 
 extern void CommandNewGame(char *);
 extern void CommandNewMatch(char *);
+extern void CommandNewSession(char *);
 extern int NextTurn(int fPlayNext);
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
@@ -37,6 +38,19 @@ int gnubg_mobile_command_new_match(int match_length) {
 
     pthread_mutex_lock(&gnubg_lock);
     CommandNewMatch(sz_match);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_command_new_session(int games) {
+    char sz_games[16];
+
+    snprintf(sz_games, sizeof(sz_games), "%d", games);
+
+    pthread_mutex_lock(&gnubg_lock);
+    CommandNewSession(sz_games);
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

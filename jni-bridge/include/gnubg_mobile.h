@@ -20,6 +20,7 @@ const char *gnubg_mobile_facade_version(void);
 
 int gnubg_mobile_command_new_game(void);
 int gnubg_mobile_command_new_match(int match_length);
+int gnubg_mobile_command_new_session(int games);
 
 #ifdef __cplusplus
 }
