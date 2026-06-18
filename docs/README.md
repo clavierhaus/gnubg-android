@@ -50,4 +50,4 @@ To build only the mobile tutor mission statement PDF:
 
 The LaTeX source remains the editable source of truth. The generated
 PDF is intended as the public-facing rendered artifact.
-
+- [Tutor Mode Implementation Plan](TUTOR_MODE_IMPLEMENTATION_PLAN.md)
