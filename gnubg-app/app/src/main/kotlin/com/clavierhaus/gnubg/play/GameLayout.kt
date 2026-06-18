@@ -189,7 +189,13 @@ fun GameLayout(
                         .fillMaxHeight()
                         .weight(0.82f)
                 ) {
-                    BackgammonBoard(settings, gameState, viewModel)
+                    BackgammonBoard(
+                        settings = settings,
+                        gameState = gameState,
+                        actions = remember(viewModel) {
+                            PlayBoardActions(viewModel)
+                        }
+                    )
                 }
             }
 
@@ -494,4 +500,16 @@ private fun MatchSetupScreen(
             }
         }
     }
+}
+
+
+private class PlayBoardActions(
+    private val viewModel: GameViewModel
+) : BoardActions {
+    override fun offerDouble() = viewModel.offerDouble()
+    override fun rollDice() = viewModel.rollDice()
+    override fun swapDice() = viewModel.swapDice()
+    override fun undo() = viewModel.undo()
+    override fun confirm() = viewModel.confirm()
+    override fun tapSource(point: Int) = viewModel.tapSource(point)
 }

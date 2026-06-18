@@ -37,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameSettings
-import com.clavierhaus.gnubg.engine.GameViewModel
 import androidx.compose.ui.layout.onSizeChanged
 
 private const val TOT_W  = 102f
@@ -111,7 +110,7 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
-    viewModel: GameViewModel? = null
+    actions: BoardActions? = null
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -119,7 +118,7 @@ fun BackgammonBoard(
     Box(modifier = Modifier
         .fillMaxSize()
         .pointerInput(
-            viewModel,
+            actions,
             gameState.phase,
             gameState.turn,
             gameState.fDoubled,
@@ -148,7 +147,7 @@ fun BackgammonBoard(
                 },
                 onTap = { offset ->
                     highlightedLandingPoints = emptySet()
-                if (viewModel == null) return@detectTapGestures
+                if (actions == null) return@detectTapGestures
                 val sx = size.width.toFloat() / TOT_W
                 val sy = size.height.toFloat() / TOT_H
                 val x = offset.x / sx
@@ -189,7 +188,7 @@ fun BackgammonBoard(
                     )
 
                     if (uiAllowsDouble) {
-                        viewModel.offerDouble()
+                        actions.offerDouble()
                     } else {
                         Log.i("gnubg-vm", "Board cube tap ignored by UI gate")
                     }
@@ -202,27 +201,27 @@ fun BackgammonBoard(
                 if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
                     y >= boardCY - DIE_W && y <= boardCY + DIE_W * 2.5f &&
                     x >= rightHalfCX - rollBtnW / 2f && x <= rightHalfCX + rollBtnW / 2f) {
-                    viewModel.rollDice()
+                    actions.rollDice()
                     return@detectTapGestures
                 }
                 // Tap dice area: swap dice (board units)
                 if (y >= boardCY - DIE_W * 2 && y <= boardCY &&
                     x >= undoLeft && x <= RIGHT_X) {
-                    viewModel.swapDice()
+                    actions.swapDice()
                     return@detectTapGestures
                 }
                 // Tap Undo button (board units) — lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft && x <= undoLeft + DIE_W) {
-                    viewModel.undo()
+                    actions.undo()
                     return@detectTapGestures
                 }
                 // Tap Commit button (board units) — lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft + DIE_W + diceGap && x <= RIGHT_X) {
-                    viewModel.confirm()
+                    actions.confirm()
                     return@detectTapGestures
                 }
 
@@ -230,7 +229,7 @@ fun BackgammonBoard(
                 val barLeft  = MID_X - BAR_W / 2f
                 val barRight = MID_X + BAR_W / 2f
                 if (x >= barLeft && x <= barRight && y >= TOT_H / 2f && y <= TOT_H - BRD_H) {
-                    viewModel.tapSource(0)  // point 0 = bar signal; tapSource checks humanOnBar
+                    actions.tapSource(0)  // point 0 = bar signal; tapSource checks humanOnBar
                     return@detectTapGestures
                 }
 
@@ -245,7 +244,7 @@ fun BackgammonBoard(
                         break
                     }
                 }
-                if (tapped >= 0) viewModel.tapSource(tapped)
+                if (tapped >= 0) actions.tapSource(tapped)
                 }
             )
         }
