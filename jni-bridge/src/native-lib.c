@@ -406,10 +406,7 @@ JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandDecline(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
-    pthread_mutex_lock(&gnubg_lock);
-    CommandDecline(NULL);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_decline();
 }
 
 JNIEXPORT void JNICALL
