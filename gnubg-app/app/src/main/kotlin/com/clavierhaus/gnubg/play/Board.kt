@@ -110,10 +110,12 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
-    actions: BoardActions? = null
+    actions: BoardActions? = null,
+    highlightedPoints: Set<Int> = emptySet()
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    val visibleHighlightedPoints = highlightedLandingPoints + highlightedPoints
 
     Box(modifier = Modifier
         .fillMaxSize()

@@ -18,6 +18,7 @@ data class TutorSessionState(
     val lessonDescription: String =
         "This neutral session skeleton does not use Regular Play.",
     val boardState: BoardState = TutorBoardPreview.openingPosition(),
+    val selectedPoint: Int? = null,
     val tutorUiState: TutorUiState = TutorUiState.Hidden
 )
 
@@ -31,6 +32,19 @@ class TutorSessionController {
             lessonDescription =
                 "This proves Tutor Mode has its own flow before GNUbg " +
                     "evaluation is wired."
+        )
+    }
+
+    fun selectPoint(
+        state: TutorSessionState,
+        point: Int
+    ): TutorSessionState {
+        if (point !in 1..24) return state
+
+        return state.copy(
+            phase = TutorSessionPhase.READY,
+            selectedPoint = if (state.selectedPoint == point) null else point,
+            tutorUiState = TutorUiState.Hidden
         )
     }
 
