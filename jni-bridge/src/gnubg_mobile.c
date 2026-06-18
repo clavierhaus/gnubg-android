@@ -22,6 +22,9 @@ extern void CommandDrop(char *);
 extern void CommandRoll(char *);
 extern void CommandMove(char *);
 extern int NextTurn(int fPlayNext);
+extern void ClearMatch(void);
+extern int ListCreate(listOLD *pl);
+extern listOLD lMatch;
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
 
@@ -181,6 +184,31 @@ int gnubg_mobile_command_take(void) {
 int gnubg_mobile_command_drop(void) {
     pthread_mutex_lock(&gnubg_lock);
     CommandDrop(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_start_match(int match_length) {
+    char szMatch[16];
+
+    snprintf(szMatch, sizeof(szMatch), "%d", match_length);
+
+    pthread_mutex_lock(&gnubg_lock);
+    ListCreate(&lMatch);
+    ClearMatch();
+    CommandNewMatch(szMatch);
+    CommandNewGame(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_next_game(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandNext("");
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

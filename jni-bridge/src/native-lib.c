@@ -290,28 +290,23 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchLength) {
+    (void)thiz;
+    (void)gnubg_mobile_start_match((int)matchLength);
+
     pthread_mutex_lock(&gnubg_lock);
-    ListCreate(&lMatch);
-    ClearMatch();
-    char szMatch[8];
-    snprintf(szMatch, sizeof(szMatch), "%d", (int)matchLength);
-    CommandNewMatch(szMatch);
-    CommandNewGame(NULL);
     jintArray result = pack_board(env, ms.anBoard);
     pthread_mutex_unlock(&gnubg_lock);
+
     return result;
 }
 
 
-static void drain_next_turns(void);
-
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_nextGame(JNIEnv *env, jobject thiz) {
     (void)thiz;
+    (void)gnubg_mobile_next_game();
 
     pthread_mutex_lock(&gnubg_lock);
-    CommandNext("");
-    drain_next_turns();
     jintArray result = pack_board(env, ms.anBoard);
     pthread_mutex_unlock(&gnubg_lock);
 
@@ -326,11 +321,6 @@ static char *copy_jstring_or_empty(JNIEnv *env, jstring js) {
     char *copy = strdup(raw);
     (*env)->ReleaseStringUTFChars(env, js, raw);
     return copy ? copy : strdup("");
-}
-
-static void drain_next_turns(void) {
-    while (fNextTurn)
-        NextTurn(TRUE);
 }
 
 JNIEXPORT void JNICALL

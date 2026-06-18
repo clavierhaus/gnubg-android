@@ -34,6 +34,8 @@ int gnubg_mobile_command_take(void);
 int gnubg_mobile_command_drop(void);
 int gnubg_mobile_command_roll(void);
 int gnubg_mobile_command_move(const char *move);
+int gnubg_mobile_start_match(int match_length);
+int gnubg_mobile_next_game(void);
 
 #ifdef __cplusplus
 }
