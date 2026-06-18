@@ -749,28 +749,14 @@ Java_com_clavierhaus_gnubg_Engine_savePosition(JNIEnv *env, jobject thiz, jstrin
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadSGF(JNIEnv *env, jobject thiz, jstring path) {
-    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
-    if (!szPath) return JNI_FALSE;
-    pthread_mutex_lock(&gnubg_lock);
-    char *szCopy = strdup(szPath);
-    CommandLoadMatch(szCopy);
-    free(szCopy);
-    pthread_mutex_unlock(&gnubg_lock);
-    (*env)->ReleaseStringUTFChars(env, path, szPath);
-    return JNI_TRUE;
+    (void)thiz;
+    return run_file_command(env, path, CommandLoadMatch);
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_saveSGF(JNIEnv *env, jobject thiz, jstring path) {
-    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
-    if (!szPath) return JNI_FALSE;
-    pthread_mutex_lock(&gnubg_lock);
-    char *szCopy = strdup(szPath);
-    CommandSaveMatch(szCopy);
-    free(szCopy);
-    pthread_mutex_unlock(&gnubg_lock);
-    (*env)->ReleaseStringUTFChars(env, path, szPath);
-    return JNI_TRUE;
+    (void)thiz;
+    return run_file_command(env, path, CommandSaveMatch);
 }
 
 static int android_gnubg_command_allowed(const char *cmd) {
