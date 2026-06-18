@@ -96,21 +96,47 @@ fun GameLayout(
                                 val engineWonMatch =
                                     gameState.matchLength > 1 &&
                                     gameState.engineScore >= gameState.matchLength
-                                val resultText = when {
-                                    humanWonMatch -> "You win\nthe match!"
-                                    engineWonMatch -> "Engine wins\nthe match"
-                                    gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
-                                    gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
-                                    gameState.winner == 0 -> "You win"
-                                    gameState.nPoints >= 3 -> "Engine wins\nBackgammon"
-                                    gameState.nPoints >= 2 -> "Engine wins\nGammon"
-                                    else -> "Engine wins"
+                                val matchInProgress =
+                                    gameState.matchLength > 1 &&
+                                    !humanWonMatch &&
+                                    !engineWonMatch
+
+                                if (matchInProgress) {
+                                    androidx.compose.runtime.LaunchedEffect(
+                                        gameState.humanScore,
+                                        gameState.engineScore,
+                                        gameState.matchLength
+                                    ) {
+                                        viewModel.newGame()
+                                    }
+                                    Text(
+                                        "Continuing match…",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                } else {
+                                    val resultText = when {
+                                        humanWonMatch -> "You win\nthe match!"
+                                        engineWonMatch -> "Engine wins\nthe match"
+                                        gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
+                                        gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
+                                        gameState.winner == 0 -> "You win"
+                                        gameState.nPoints >= 3 -> "Engine wins\nBackgammon"
+                                        gameState.nPoints >= 2 -> "Engine wins\nGammon"
+                                        else -> "Engine wins"
+                                    }
+                                    Text(resultText, color = Color.White, fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    GameButton("New Match", Color(0xFF1565C0)) { viewModel.newGame() }
+                                    if (onReturnToHub != null) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        GameButton("Exit", Color(0xFF243B68)) { onReturnToHub() }
+                                    }
                                 }
-                                Text(resultText, color = Color.White, fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                Spacer(modifier = Modifier.height(12.dp))
-                                GameButton("New Game", Color(0xFF1565C0)) { viewModel.newGame() }
                             }
                             gameState.phase == GamePhase.CUBE_OFFERED -> {
                                 Text("Cube offered!", color = Color.White, fontSize = 16.sp,

@@ -384,10 +384,7 @@ JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandNext(JNIEnv *env, jobject thiz, jstring argument) {
     (void)thiz;
     char *sz = copy_jstring_or_empty(env, argument);
-    pthread_mutex_lock(&gnubg_lock);
-    CommandNext(sz);
-    drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)gnubg_mobile_command_next(sz);
     free(sz);
 }
 

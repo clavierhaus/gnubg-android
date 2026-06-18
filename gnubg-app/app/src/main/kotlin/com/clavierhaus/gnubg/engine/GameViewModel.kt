@@ -630,8 +630,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun commandResign(value: String) {
         viewModelScope.launch(engineThread) {
+            val beforeScore = Engine.getMatchScore()
             Engine.commandResign(value)
-            refreshFromEngineAfterControl()
+            val afterScore = Engine.getMatchScore()
+
+            val humanDelta = afterScore[0] - beforeScore[0]
+            val engineDelta = afterScore[1] - beforeScore[1]
+
+            if (humanDelta != 0 || engineDelta != 0) {
+                val winner = if (humanDelta > engineDelta) 0 else 1
+                val points = kotlin.math.abs(humanDelta - engineDelta)
+                    .coerceAtLeast(1)
+
+                readMatchState(
+                    phase = GamePhase.GAME_OVER,
+                    winner = winner,
+                    nPoints = points
+                )
+            } else {
+                refreshFromEngineAfterControl()
+            }
         }
     }
 
