@@ -1,24 +1,20 @@
 package com.clavierhaus.gnubg.tutor
 
 object TutorStaticPrototype {
-    fun coachCardForCommittedMove(
-        context: TutorMoveContext?
-    ): TutorUiState {
-        if (context == null) return TutorUiState.Hidden
-
+    fun demoCoachCard(): TutorUiState {
         val hint = TutorHint(
             severity = TutorSeverity.MISTAKE,
             mainTheme = TutorTheme.SAFETY,
-            headline = "Tutor prototype",
+            headline = "Tutor Mode prototype",
             shortExplanation =
-                "This is a static Coach Card. Real GNUbg evaluation is not wired yet.",
+                "This card belongs to Tutor Mode, not Regular Play. " +
+                    "Real GNUbg evaluation is not wired yet.",
             measurableFacts = listOf(
-                "Captured move: ${context.userMove}",
-                "Dice: ${context.preMove.originalDice.first}-" +
-                    "${context.preMove.originalDice.second}",
-                "Board snapshot captured before commit"
+                "Separate Tutor Mode entry point",
+                "Reusable Coach Card UI",
+                "No Regular Play interruption"
             ),
-            userMove = context.userMove,
+            userMove = "prototype move",
             bestMove = "not evaluated yet",
             equityLoss = 0.000f,
             allowTryAgain = false,

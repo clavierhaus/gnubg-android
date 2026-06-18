@@ -27,6 +27,7 @@ import com.clavierhaus.gnubg.R
 @Composable
 fun HomeHubScreen(
     onPlay: () -> Unit,
+    onTutor: () -> Unit,
     onLearn: () -> Unit,
     onAnalyse: () -> Unit,
     onOptions: () -> Unit,
@@ -54,6 +55,8 @@ fun HomeHubScreen(
                 .offset(x = 64.dp)
         ) {
             HomeHubEntry("Play", onPlay)
+            Spacer(modifier = Modifier.height(22.dp))
+            HomeHubEntry("Tutor", onTutor)
             Spacer(modifier = Modifier.height(22.dp))
             HomeHubEntry("Learn", onLearn)
             Spacer(modifier = Modifier.height(22.dp))

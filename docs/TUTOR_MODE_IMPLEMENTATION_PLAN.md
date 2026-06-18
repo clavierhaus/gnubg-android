@@ -136,7 +136,60 @@ Responsibility:
 
 The UI renders tutor state. It does not decide backgammon meaning.
 
-## 4. Settings Subsection
+## 4. Mode Boundary: Play vs Tutor
+
+Tutor Mode is not Regular Play with overlays.
+
+The app must keep two distinct user-facing modes:
+
+### 4.1 Regular Play Mode
+
+Regular Play Mode is for playing GNU Backgammon normally.
+
+It may use:
+
+- the shared board renderer;
+- the shared engine facade;
+- shared lifecycle and match controls;
+- shared settings where appropriate.
+
+It must not show live tutor interruptions, Try Again coaching, guided
+move correction, or automatic explanation cards.
+
+### 4.2 Tutor Mode
+
+Tutor Mode is a separate learning flow.
+
+It may use the same board and engine infrastructure, but it owns
+different product semantics:
+
+- guided moves;
+- Coach Cards;
+- Try Again;
+- best-move reveal;
+- board annotations;
+- training positions;
+- post-move explanation;
+- eventually curated lessons and exercises.
+
+Tutor Mode may pause, rewind, retry, or simplify flow in ways that would
+be inappropriate in Regular Play Mode.
+
+### 4.3 Shared Infrastructure
+
+The two modes may share:
+
+- board rendering;
+- legal move rendering;
+- engine/facade APIs;
+- neutral tutor data models;
+- neutral analysis helpers;
+- reusable Coach Card UI.
+
+The two modes must not share mode-specific behaviour accidentally.
+
+
+## 5. Settings Subsection
 
 Tutor Mode needs a dedicated settings subsection, most likely under
 Options / Settings.
@@ -271,7 +324,7 @@ Default:
 Rollouts must be bounded, cancellable, and clearly labelled as deeper
 analysis.
 
-## 5. Kotlin Data Model
+## 6. Kotlin Data Model
 
 Initial package:
 
@@ -364,7 +417,7 @@ Source:
 
 Tutor decision layer.
 
-## 6. First Native / Facade Requirements
+## 7. First Native / Facade Requirements
 
 Before UI work, inspect existing evaluation exposure.
 
@@ -389,7 +442,7 @@ The first API should be narrow. It should support the MVP only.
 
 Avoid building a full analysis API before the UI loop is proven.
 
-## 7. MVP Flow
+## 8. MVP Flow
 
 ### 7.1 Before Move Commit
 
@@ -455,7 +508,7 @@ When tapped:
 - optionally toggle user move vs best move;
 - keep board visible.
 
-## 8. Board Annotation MVP
+## 9. Board Annotation MVP
 
 Initial annotations:
 
@@ -474,7 +527,7 @@ Annotations must be temporary or dismissible.
 
 The board must never become permanently cluttered.
 
-## 9. Shot Count Feature
+## 10. Shot Count Feature
 
 This is the first high-impact visual teaching feature.
 
@@ -494,7 +547,7 @@ Tutor message example:
 
 This is deterministic and safe.
 
-## 10. Point-Making Feature
+## 11. Point-Making Feature
 
 Detect whether GNUbg's best move makes a key point and the user's move
 does not.
@@ -515,7 +568,7 @@ Tutor message example:
 
 Only show this when the board delta clearly supports it.
 
-## 11. Cube Tutor MVP
+## 12. Cube Tutor MVP
 
 Cube Tutor should be a separate track.
 
@@ -537,7 +590,7 @@ Initial UI:
 
 No complex prose until the cube facts are reliable.
 
-## 12. Compose UI States
+## 13. Compose UI States
 
 Suggested state model:
 
@@ -558,7 +611,7 @@ The board should receive a separate annotation state:
         val shotBadges: List<ShotBadge>
     )
 
-## 13. Commit-Sized Implementation Phases
+## 14. Commit-Sized Implementation Phases
 
 ### Phase 1: Documentation and Settings Skeleton
 
@@ -627,7 +680,7 @@ The board should receive a separate annotation state:
 - show cube tutor card;
 - no advanced rollout UI yet.
 
-## 14. Test Matrix
+## 15. Test Matrix
 
 Minimum manual tests for each phase:
 
@@ -652,7 +705,7 @@ For Tutor Mode specifically:
 - Tutor state clears on new match.
 - Tutor state clears on return to hub.
 
-## 15. Non-Goals for MVP
+## 16. Non-Goals for MVP
 
 Do not start with:
 
@@ -668,7 +721,7 @@ Do not start with:
 
 These belong later.
 
-## 16. Success Definition
+## 17. Success Definition
 
 The first successful Tutor Mode release should make this interaction feel
 excellent:

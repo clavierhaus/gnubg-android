@@ -21,7 +21,6 @@ import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
 import com.clavierhaus.gnubg.options.SettingsScreen
-import com.clavierhaus.gnubg.tutor.TutorUiState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 
@@ -36,7 +35,6 @@ fun GameLayout(
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
     val showMatchSetup by viewModel.showMatchSetup.collectAsStateWithLifecycle()
-    val tutorUiState by viewModel.tutorUiState.collectAsStateWithLifecycle()
 
     if (showSettings) {
         SettingsScreen(
@@ -182,31 +180,6 @@ fun GameLayout(
                             onReturnHome = onReturnToHub
                         )
 
-                        if (viewModel.lastTutorMoveContext
-                                .collectAsStateWithLifecycle().value != null
-                        ) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(144.dp)
-                                    .height(34.dp)
-                                    .background(
-                                        Color(0xFF6A4C93),
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .clickable {
-                                        viewModel.showStaticTutorPrototype()
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Tutor card",
-                                    color = Color.White,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
                     }
                 }
 
@@ -230,21 +203,6 @@ fun GameLayout(
                     .size(24.dp)
                     .clickable { showSettings = true }
             )
-
-            when (val tutor = tutorUiState) {
-                is TutorUiState.CoachCard -> TutorCoachCard(
-                    hint = tutor.hint,
-                    onDismiss = viewModel::clearTutorState,
-                    onShowBestMove = {},
-                    onTryAgain = {},
-                    onMoreDetail = {},
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 28.dp, bottom = 24.dp)
-                )
-
-                else -> Unit
-            }
 
             PlayLifecycleConfirmationDialog(
                 action = pendingLifecycleAction,
