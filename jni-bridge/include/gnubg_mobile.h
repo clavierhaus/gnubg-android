@@ -25,6 +25,7 @@ int gnubg_mobile_command_end_game(void);
 int gnubg_mobile_command_resign(const char *value);
 int gnubg_mobile_command_next(const char *argument);
 int gnubg_mobile_command_accept(void);
+int gnubg_mobile_command_reject(void);
 
 #ifdef __cplusplus
 }

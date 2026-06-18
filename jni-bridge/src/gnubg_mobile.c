@@ -12,6 +12,7 @@ extern void CommandEndGame(char *);
 extern void CommandResign(char *);
 extern void CommandNext(char *);
 extern void CommandAccept(char *);
+extern void CommandReject(char *);
 extern int NextTurn(int fPlayNext);
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
@@ -91,6 +92,15 @@ int gnubg_mobile_command_next(const char *argument) {
 int gnubg_mobile_command_accept(void) {
     pthread_mutex_lock(&gnubg_lock);
     CommandAccept(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+int gnubg_mobile_command_reject(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandReject(NULL);
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 
