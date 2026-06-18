@@ -314,6 +314,20 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchL
 }
 
 
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_nextGame(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+
+    pthread_mutex_lock(&gnubg_lock);
+    CommandNext("");
+    drain_next_turns();
+    jintArray result = pack_board(env, ms.anBoard);
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return result;
+}
+
+
 static char *copy_jstring_or_empty(JNIEnv *env, jstring js) {
     if (!js) return strdup("");
     const char *raw = (*env)->GetStringUTFChars(env, js, 0);
