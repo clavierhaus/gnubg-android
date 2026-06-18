@@ -30,6 +30,7 @@ int gnubg_mobile_command_decline(void);
 int gnubg_mobile_command_agree(void);
 int gnubg_mobile_command_redouble(void);
 int gnubg_mobile_command_double(void);
+int gnubg_mobile_command_roll(void);
 
 #ifdef __cplusplus
 }
