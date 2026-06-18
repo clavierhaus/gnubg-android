@@ -4,6 +4,13 @@ import com.clavierhaus.gnubg.play.BoardActions
 import com.clavierhaus.gnubg.tutor.TutorSessionController
 import com.clavierhaus.gnubg.tutor.TutorSessionState
 
+/**
+ * Tutor-specific implementation of shared board actions.
+ *
+ * This adapter deliberately does not delegate to Regular Play. Tutor Mode
+ * owns its own flow, so most board affordances are no-ops until explicit
+ * Tutor semantics exist for them.
+ */
 class TutorBoardActions(
     private val controller: TutorSessionController,
     private val getState: () -> TutorSessionState,

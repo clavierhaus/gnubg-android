@@ -3,6 +3,12 @@ package com.clavierhaus.gnubg.tutor
 import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GamePhase
 
+/**
+ * Neutral board preview positions for Tutor Mode.
+ *
+ * These positions are not Regular Play sessions. They are lesson surfaces
+ * used by Tutor Mode until real Tutor session setup is connected to GNUbg.
+ */
 object TutorBoardPreview {
     fun openingPosition(): BoardState {
         val board = IntArray(50)

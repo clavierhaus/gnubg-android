@@ -1,5 +1,6 @@
 package com.clavierhaus.gnubg.tutor
 
+/** Severity assigned to a Tutor judgement. */
 enum class TutorSeverity {
     GOOD,
     INACCURACY,
@@ -59,6 +60,7 @@ data class TutorHint(
     val allowMoreDetail: Boolean = true
 )
 
+/** UI state rendered by Tutor surfaces. */
 sealed interface TutorUiState {
     data object Hidden : TutorUiState
 
@@ -98,6 +100,12 @@ data class BoardTutorAnnotations(
 )
 
 
+/**
+ * Captured facts from before a human move is committed.
+ *
+ * This is inert context. It must not become Android-only Try Again
+ * semantics. Future restoration must go through a neutral contract.
+ */
 data class TutorPreMoveSnapshot(
     val board: IntArray,
     val oldBoard: IntArray,

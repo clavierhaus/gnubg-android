@@ -9,6 +9,13 @@ enum class TutorSessionPhase {
     FINISHED
 }
 
+/**
+ * Neutral state for the separate Tutor Mode flow.
+ *
+ * This state is intentionally independent from Regular Play. Compose
+ * renders it, but Tutor session transitions belong to
+ * [TutorSessionController].
+ */
 data class TutorSessionState(
     val phase: TutorSessionPhase = TutorSessionPhase.INTRO,
     val title: String = "Tutor Mode",
@@ -23,6 +30,12 @@ data class TutorSessionState(
     val tutorUiState: TutorUiState = TutorUiState.Hidden
 )
 
+/**
+ * Neutral controller for Tutor Mode session transitions.
+ *
+ * This class owns Tutor flow semantics. Android UI code should dispatch
+ * user intent here rather than embedding lesson behaviour in Compose.
+ */
 class TutorSessionController {
     fun startPrototypeLesson(
         state: TutorSessionState = TutorSessionState()
