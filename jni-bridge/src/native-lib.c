@@ -157,10 +157,9 @@ Java_com_clavierhaus_gnubg_Engine_applyHumanDoubleTake(JNIEnv *env, jobject thiz
 
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandTake(JNIEnv *env, jobject thiz) {
-    pthread_mutex_lock(&gnubg_lock);
-    CommandTake(NULL);
-    while (fNextTurn) NextTurn(TRUE);
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)env;
+    (void)thiz;
+    (void)gnubg_mobile_command_take();
 }
 
 /*
