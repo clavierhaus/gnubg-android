@@ -53,7 +53,9 @@ class TutorSessionController {
     }
 
     private fun selectedPointText(point: Int?): String {
-        if (point == null) return "Tap a point on the tutor board."
+        if (point == null) {
+            return "Tap a point on the tutor board."
+        }
 
         val boardArea = when (point) {
             in 1..6 -> "your home board"
@@ -63,7 +65,7 @@ class TutorSessionController {
         }
 
         return "Point $point is in $boardArea. " +
-            "Tutor Mode can now attach teaching text to board selection " +
+            "Tutor Mode can attach teaching text to board selection " +
             "without using Regular Play actions."
     }
 
