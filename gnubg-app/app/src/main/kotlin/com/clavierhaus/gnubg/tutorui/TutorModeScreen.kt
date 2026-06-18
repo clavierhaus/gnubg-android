@@ -105,9 +105,7 @@ fun TutorModeScreen(
                 )
 
                 Text(
-                    text = sessionState.selectedPoint?.let {
-                        "Selected point: $it"
-                    } ?: "Tap a point on the tutor board",
+                    text = sessionState.selectedPointText,
                     color = Color(0xFFE8F0FF),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold

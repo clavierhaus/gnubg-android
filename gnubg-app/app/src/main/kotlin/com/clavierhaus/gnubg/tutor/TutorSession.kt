@@ -17,6 +17,7 @@ data class TutorSessionState(
     val lessonTitle: String = "Prototype lesson",
     val lessonDescription: String =
         "This neutral session skeleton does not use Regular Play.",
+    val selectedPointText: String = "Tap a point on the tutor board.",
     val boardState: BoardState = TutorBoardPreview.openingPosition(),
     val selectedPoint: Int? = null,
     val tutorUiState: TutorUiState = TutorUiState.Hidden
@@ -41,11 +42,29 @@ class TutorSessionController {
     ): TutorSessionState {
         if (point !in 1..24) return state
 
+        val nextPoint = if (state.selectedPoint == point) null else point
+
         return state.copy(
             phase = TutorSessionPhase.READY,
-            selectedPoint = if (state.selectedPoint == point) null else point,
+            selectedPoint = nextPoint,
+            selectedPointText = selectedPointText(nextPoint),
             tutorUiState = TutorUiState.Hidden
         )
+    }
+
+    private fun selectedPointText(point: Int?): String {
+        if (point == null) return "Tap a point on the tutor board."
+
+        val boardArea = when (point) {
+            in 1..6 -> "your home board"
+            in 7..12 -> "your outer board"
+            in 13..18 -> "opponent outer board"
+            else -> "opponent home board"
+        }
+
+        return "Point $point is in $boardArea. " +
+            "Tutor Mode can now attach teaching text to board selection " +
+            "without using Regular Play actions."
     }
 
     fun showPrototypeCoachCard(
