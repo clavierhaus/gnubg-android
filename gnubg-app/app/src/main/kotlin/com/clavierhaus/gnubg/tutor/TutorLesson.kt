@@ -10,6 +10,17 @@ enum class TutorLessonId {
 }
 
 /**
+ * Neutral description of the user interaction expected by a lesson step.
+ *
+ * Android UI may use this to decide which controls to show, but the
+ * meaning of the interaction belongs to the Tutor layer.
+ */
+enum class TutorLessonInteraction {
+    READ_ONLY,
+    POINT_SELECTION
+}
+
+/**
  * A single neutral Tutor lesson step.
  *
  * This is deliberately data-shaped. Android UI may render it, but should
@@ -18,7 +29,8 @@ enum class TutorLessonId {
 data class TutorLessonStep(
     val id: String,
     val title: String,
-    val instruction: String
+    val instruction: String,
+    val interaction: TutorLessonInteraction
 )
 
 /**
@@ -54,13 +66,15 @@ object TutorLessonCatalog {
                 id = "select-points",
                 title = "Tap points to identify board regions",
                 instruction = "Tap any point on the board. Tutor Mode will " +
-                    "identify the region without starting a Regular Play move."
+                    "identify the region without starting a Regular Play move.",
+                interaction = TutorLessonInteraction.POINT_SELECTION
             ),
             TutorLessonStep(
                 id = "compare-sides",
                 title = "Compare your side and opponent side",
                 instruction = "Use the selected-point explanation to compare " +
-                    "your home and outer boards with the opponent's boards."
+                    "your home and outer boards with the opponent's boards.",
+                interaction = TutorLessonInteraction.POINT_SELECTION
             )
         )
     )

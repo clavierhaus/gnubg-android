@@ -29,6 +29,10 @@ data class TutorSessionState(
     val currentStep: TutorLessonStep?
         get() = lesson.steps.getOrNull(currentStepIndex)
 
+    val currentInteraction: TutorLessonInteraction
+        get() = currentStep?.interaction
+            ?: TutorLessonInteraction.READ_ONLY
+
     val stepCount: Int
         get() = lesson.steps.size
 

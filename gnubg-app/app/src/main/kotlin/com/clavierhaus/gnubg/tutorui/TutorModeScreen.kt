@@ -112,6 +112,12 @@ fun TutorModeScreen(
                     fontSize = 12.sp
                 )
 
+                Text(
+                    text = "Interaction: ${sessionState.currentInteraction.name}",
+                    color = Color(0xFF8FAADC),
+                    fontSize = 11.sp
+                )
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
