@@ -93,16 +93,22 @@ fun TutorModeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = sessionState.lesson.firstStep?.title ?: sessionState.lesson.title,
+                    text = sessionState.currentStep?.title ?: sessionState.lesson.title,
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = sessionState.lesson.firstStep?.instruction ?: sessionState.lesson.subtitle,
+                    text = sessionState.currentStep?.instruction ?: sessionState.lesson.subtitle,
                     color = Color(0xFFB3C9F0),
                     fontSize = 13.sp
+                )
+
+                Text(
+                    text = sessionState.stepProgressText,
+                    color = Color(0xFF8FAADC),
+                    fontSize = 12.sp
                 )
 
                 val selectedLesson = sessionState.selectedPointLesson

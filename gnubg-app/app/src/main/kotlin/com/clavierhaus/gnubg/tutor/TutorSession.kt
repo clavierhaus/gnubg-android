@@ -19,12 +19,26 @@ enum class TutorSessionPhase {
 data class TutorSessionState(
     val phase: TutorSessionPhase = TutorSessionPhase.INTRO,
     val lesson: TutorLesson = TutorLessonCatalog.defaultLesson(),
+    val currentStepIndex: Int = 0,
     val selectedPointText: String = "Tap a point on the tutor board.",
     val boardState: BoardState = TutorBoardPreview.openingPosition(),
     val selectedPointLesson: TutorPointLesson? = null,
     val selectedPoint: Int? = null,
     val tutorUiState: TutorUiState = TutorUiState.Hidden
-)
+) {
+    val currentStep: TutorLessonStep?
+        get() = lesson.steps.getOrNull(currentStepIndex)
+
+    val stepCount: Int
+        get() = lesson.steps.size
+
+    val stepProgressText: String
+        get() = if (stepCount == 0) {
+            "No lesson steps"
+        } else {
+            "Step ${currentStepIndex + 1} of $stepCount"
+        }
+}
 
 /**
  * Neutral controller for Tutor Mode session transitions.
@@ -63,6 +77,40 @@ class TutorSessionController {
 
     private fun selectedPointText(lesson: TutorPointLesson?): String {
         return lesson?.body ?: TutorBoardLessonCatalog.DEFAULT_PROMPT
+    }
+
+
+    fun nextStep(
+        state: TutorSessionState
+    ): TutorSessionState {
+        val lastIndex = state.lesson.steps.lastIndex
+        if (lastIndex < 0) return state
+
+        val nextIndex = (state.currentStepIndex + 1)
+            .coerceAtMost(lastIndex)
+
+        return state.copy(
+            currentStepIndex = nextIndex,
+            selectedPoint = null,
+            selectedPointLesson = null,
+            selectedPointText = TutorBoardLessonCatalog.DEFAULT_PROMPT,
+            tutorUiState = TutorUiState.Hidden
+        )
+    }
+
+    fun previousStep(
+        state: TutorSessionState
+    ): TutorSessionState {
+        val previousIndex = (state.currentStepIndex - 1)
+            .coerceAtLeast(0)
+
+        return state.copy(
+            currentStepIndex = previousIndex,
+            selectedPoint = null,
+            selectedPointLesson = null,
+            selectedPointText = TutorBoardLessonCatalog.DEFAULT_PROMPT,
+            tutorUiState = TutorUiState.Hidden
+        )
     }
 
     fun showPrototypeCoachCard(
