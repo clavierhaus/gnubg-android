@@ -66,20 +66,7 @@ class TutorSessionController {
     }
 
     private fun selectedPointText(point: Int?): String {
-        if (point == null) {
-            return "Tap a point on the tutor board."
-        }
-
-        val boardArea = when (point) {
-            in 1..6 -> "your home board"
-            in 7..12 -> "your outer board"
-            in 13..18 -> "opponent outer board"
-            else -> "opponent home board"
-        }
-
-        return "Point $point is in $boardArea. " +
-            "Tutor Mode can attach teaching text to board selection " +
-            "without using Regular Play actions."
+        return TutorBoardLessonCatalog.selectedPointText(point)
     }
 
     fun showPrototypeCoachCard(
