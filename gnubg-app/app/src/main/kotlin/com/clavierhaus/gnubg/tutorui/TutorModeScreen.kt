@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -110,6 +111,35 @@ fun TutorModeScreen(
                     color = Color(0xFF8FAADC),
                     fontSize = 12.sp
                 )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            sessionState =
+                                controller.previousStep(sessionState)
+                        },
+                        enabled = sessionState.currentStepIndex > 0,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Back")
+                    }
+
+                    Button(
+                        onClick = {
+                            sessionState =
+                                controller.nextStep(sessionState)
+                        },
+                        enabled =
+                            sessionState.currentStepIndex <
+                                sessionState.stepCount - 1,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Next")
+                    }
+                }
 
                 val selectedLesson = sessionState.selectedPointLesson
 

@@ -55,6 +55,12 @@ object TutorLessonCatalog {
                 title = "Tap points to identify board regions",
                 instruction = "Tap any point on the board. Tutor Mode will " +
                     "identify the region without starting a Regular Play move."
+            ),
+            TutorLessonStep(
+                id = "compare-sides",
+                title = "Compare your side and opponent side",
+                instruction = "Use the selected-point explanation to compare " +
+                    "your home and outer boards with the opponent's boards."
             )
         )
     )
