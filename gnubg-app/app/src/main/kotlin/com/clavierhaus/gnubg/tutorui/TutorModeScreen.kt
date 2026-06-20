@@ -78,14 +78,14 @@ fun TutorModeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = sessionState.title,
+                    text = sessionState.lesson.title,
                     color = Color.White,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = sessionState.subtitle,
+                    text = sessionState.lesson.subtitle,
                     color = Color(0xFFB3C9F0),
                     fontSize = 13.sp
                 )
@@ -93,14 +93,14 @@ fun TutorModeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = sessionState.lessonTitle,
+                    text = sessionState.lesson.firstStep?.title ?: sessionState.lesson.title,
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = sessionState.lessonDescription,
+                    text = sessionState.lesson.firstStep?.instruction ?: sessionState.lesson.subtitle,
                     color = Color(0xFFB3C9F0),
                     fontSize = 13.sp
                 )

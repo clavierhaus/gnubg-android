@@ -18,12 +18,7 @@ enum class TutorSessionPhase {
  */
 data class TutorSessionState(
     val phase: TutorSessionPhase = TutorSessionPhase.INTRO,
-    val title: String = "Tutor Mode",
-    val subtitle: String =
-        "Separate learning flow. Shared infrastructure, different mode semantics.",
-    val lessonTitle: String = "Prototype lesson",
-    val lessonDescription: String =
-        "This neutral session skeleton does not use Regular Play.",
+    val lesson: TutorLesson = TutorLessonCatalog.defaultLesson(),
     val selectedPointText: String = "Tap a point on the tutor board.",
     val boardState: BoardState = TutorBoardPreview.openingPosition(),
     val selectedPointLesson: TutorPointLesson? = null,
@@ -42,11 +37,7 @@ class TutorSessionController {
         state: TutorSessionState = TutorSessionState()
     ): TutorSessionState {
         return state.copy(
-            phase = TutorSessionPhase.READY,
-            lessonTitle = "Prototype Coach Card",
-            lessonDescription =
-                "This proves Tutor Mode has its own flow before GNUbg " +
-                    "evaluation is wired."
+            phase = TutorSessionPhase.READY
         )
     }
 
