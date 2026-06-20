@@ -15,9 +15,11 @@ enum class TutorLessonId {
  * Android UI may use this to decide which controls to show, but the
  * meaning of the interaction belongs to the Tutor layer.
  */
-enum class TutorLessonInteraction {
-    READ_ONLY,
-    POINT_SELECTION
+enum class TutorLessonInteraction(
+    val taskLabel: String
+) {
+    READ_ONLY("Read the lesson"),
+    POINT_SELECTION("Tap board points")
 }
 
 /**

@@ -113,7 +113,7 @@ fun TutorModeScreen(
                 )
 
                 Text(
-                    text = "Interaction: ${sessionState.currentInteraction.name}",
+                    text = "Task: ${sessionState.currentInteraction.taskLabel}",
                     color = Color(0xFF8FAADC),
                     fontSize = 11.sp
                 )
