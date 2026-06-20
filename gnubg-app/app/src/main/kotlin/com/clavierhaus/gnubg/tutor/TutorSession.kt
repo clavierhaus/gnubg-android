@@ -26,6 +26,7 @@ data class TutorSessionState(
         "This neutral session skeleton does not use Regular Play.",
     val selectedPointText: String = "Tap a point on the tutor board.",
     val boardState: BoardState = TutorBoardPreview.openingPosition(),
+    val selectedPointLesson: TutorPointLesson? = null,
     val selectedPoint: Int? = null,
     val tutorUiState: TutorUiState = TutorUiState.Hidden
 )
@@ -56,17 +57,21 @@ class TutorSessionController {
         if (point !in 1..24) return state
 
         val nextPoint = if (state.selectedPoint == point) null else point
+        val lesson = nextPoint?.let {
+            TutorBoardLessonCatalog.pointLesson(it)
+        }
 
         return state.copy(
             phase = TutorSessionPhase.READY,
             selectedPoint = nextPoint,
-            selectedPointText = selectedPointText(nextPoint),
+            selectedPointLesson = lesson,
+            selectedPointText = selectedPointText(lesson),
             tutorUiState = TutorUiState.Hidden
         )
     }
 
-    private fun selectedPointText(point: Int?): String {
-        return TutorBoardLessonCatalog.selectedPointText(point)
+    private fun selectedPointText(lesson: TutorPointLesson?): String {
+        return lesson?.body ?: TutorBoardLessonCatalog.DEFAULT_PROMPT
     }
 
     fun showPrototypeCoachCard(
