@@ -104,11 +104,23 @@ fun TutorModeScreen(
                     fontSize = 13.sp
                 )
 
+                val selectedLesson = sessionState.selectedPointLesson
+
                 Text(
-                    text = sessionState.selectedPointText,
-                    color = Color(0xFFE8F0FF),
+                    text = selectedLesson?.title ?: "Board lesson",
+                    color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = selectedLesson?.body
+                        ?: sessionState.selectedPointText,
+                    color = Color(0xFFE8F0FF),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
                 )
 
                 Box(
