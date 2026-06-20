@@ -32,6 +32,7 @@ import com.clavierhaus.gnubg.play.BackgammonBoard
 import com.clavierhaus.gnubg.play.TutorCoachCard
 import com.clavierhaus.gnubg.tutor.TutorSessionController
 import com.clavierhaus.gnubg.tutor.TutorSessionState
+import com.clavierhaus.gnubg.tutor.TutorBoardLessonCatalog
 import com.clavierhaus.gnubg.tutor.TutorUiState
 
 @Composable
@@ -107,7 +108,8 @@ fun TutorModeScreen(
                 val selectedLesson = sessionState.selectedPointLesson
 
                 Text(
-                    text = selectedLesson?.title ?: "Board lesson",
+                    text = selectedLesson?.title
+                        ?: TutorBoardLessonCatalog.DEFAULT_TITLE,
                     color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold

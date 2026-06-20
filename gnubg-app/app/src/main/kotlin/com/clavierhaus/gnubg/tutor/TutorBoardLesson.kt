@@ -47,6 +47,7 @@ data class TutorPointLesson(
  * concepts such as builders, anchors, blots, shots, and prime structure.
  */
 object TutorBoardLessonCatalog {
+    const val DEFAULT_TITLE: String = "Board lesson"
     const val DEFAULT_PROMPT: String = "Tap a point on the tutor board."
 
     fun pointLesson(point: Int): TutorPointLesson? {
