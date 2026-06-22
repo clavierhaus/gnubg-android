@@ -1,0 +1,1290 @@
+== pwd ==
+/home/erweitert/gnubg-android
+
+== status ==
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorBoardLesson.kt
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorBoardPreview.kt
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorLesson.kt
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorSession.kt
+ D gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorStaticPrototype.kt
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutorui/TutorBoardActions.kt
+D  gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutorui/TutorModeScreen.kt
+?? tmp/
+
+== HomeHubScreen files ==
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameSettings.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/PreferencesManager.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/MainActivity.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/options/SettingsScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/BoardActions.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/TutorCoachCard.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/AppMode.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorModels.kt
+
+== HomeHubScreen contents ==
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameSettings.kt =====
+     1	package com.clavierhaus.gnubg.engine
+     2	
+     3	enum class BoardTheme { OCEAN, CLASSIC, FOREST, SYSTEM }
+     4	
+     5	enum class Difficulty(val label: String, val subtitle: String) {
+     6	    BEGINNER("Beginner", "Easy opponent"),
+     7	    INTERMEDIATE("Intermediate", "Moderate challenge"),
+     8	    ADVANCED("Advanced", "Strong opponent"),
+     9	    EXPERT("Expert", "World-class play")
+    10	}
+    11	
+    12	enum class TutorModePreset {
+    13	    OFF,
+    14	    GENTLE,
+    15	    SERIOUS,
+    16	    CLASSIC
+    17	}
+    18	
+    19	enum class TutorFeedbackThreshold {
+    20	    EVERY_DECISION,
+    21	    INACCURACIES,
+    22	    MISTAKES,
+    23	    BLUNDERS,
+    24	    END_OF_GAME
+    25	}
+    26	
+    27	enum class TutorAnnotationMode {
+    28	    OFF,
+    29	    BEST_MOVE_ONLY,
+    30	    USER_VS_BEST,
+    31	    FULL
+    32	}
+    33	
+    34	enum class TutorEquityDetail {
+    35	    HIDDEN,
+    36	    LOSS_ONLY,
+    37	    MOVE_EQUITIES,
+    38	    CLASSIC
+    39	}
+    40	
+    41	enum class CubeTutorMode {
+    42	    OFF,
+    43	    MAJOR_ERRORS,
+    44	    ALL_DECISIONS
+    45	}
+    46	
+    47	enum class TutorRolloutAccess {
+    48	    DISABLED,
+    49	    ADVANCED_ONLY,
+    50	    CLASSIC_MODE
+    51	}
+    52	
+    53	data class TutorPreferences(
+    54	    val tutorModePreset: TutorModePreset = TutorModePreset.OFF,
+    55	    val tutorFeedbackThreshold: TutorFeedbackThreshold =
+    56	        TutorFeedbackThreshold.MISTAKES,
+    57	    val tutorAnnotationMode: TutorAnnotationMode =
+    58	        TutorAnnotationMode.USER_VS_BEST,
+    59	    val tutorEquityDetail: TutorEquityDetail =
+    60	        TutorEquityDetail.LOSS_ONLY,
+    61	    val cubeTutorMode: CubeTutorMode = CubeTutorMode.MAJOR_ERRORS,
+    62	    val tutorRolloutAccess: TutorRolloutAccess =
+    63	        TutorRolloutAccess.ADVANCED_ONLY,
+    64	    val offerTutorTryAgain: Boolean = true
+    65	)
+    66	
+    67	data class GameSettings(
+    68	    val matchLength: Int = 1,
+    69	    val crawford: Boolean = true,
+    70	    val jacoby: Boolean = false,
+    71	    val automaticDoubles: Int = 0,
+    72	    val beavers: Boolean = false,
+    73	    val boardTheme: BoardTheme = BoardTheme.OCEAN,
+    74	    val showPointNumbers: Boolean = true,
+    75	    val showPipCount: Boolean = true,
+    76	    val difficulty: Difficulty = Difficulty.INTERMEDIATE,
+    77	
+    78	    val tutorModePreset: TutorModePreset = TutorModePreset.OFF,
+    79	    val tutorFeedbackThreshold: TutorFeedbackThreshold =
+    80	        TutorFeedbackThreshold.MISTAKES,
+    81	    val tutorAnnotationMode: TutorAnnotationMode =
+    82	        TutorAnnotationMode.USER_VS_BEST,
+    83	    val tutorEquityDetail: TutorEquityDetail =
+    84	        TutorEquityDetail.LOSS_ONLY,
+    85	    val cubeTutorMode: CubeTutorMode = CubeTutorMode.MAJOR_ERRORS,
+    86	    val tutorRolloutAccess: TutorRolloutAccess =
+    87	        TutorRolloutAccess.ADVANCED_ONLY,
+    88	    val offerTutorTryAgain: Boolean = true
+    89	)
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt =====
+     1	package com.clavierhaus.gnubg.engine
+     2	
+     3	import android.app.Application
+     4	import androidx.lifecycle.AndroidViewModel
+     5	import androidx.lifecycle.viewModelScope
+     6	import com.clavierhaus.gnubg.Engine
+     7	import com.clavierhaus.gnubg.tutor.BoardTutorAnnotations
+     8	import com.clavierhaus.gnubg.tutor.TutorMoveContext
+     9	import com.clavierhaus.gnubg.tutor.TutorPreMoveSnapshot
+    10	import com.clavierhaus.gnubg.tutor.TutorUiState
+    11	import kotlinx.coroutines.asCoroutineDispatcher
+    12	import kotlinx.coroutines.flow.MutableStateFlow
+    13	import kotlinx.coroutines.flow.StateFlow
+    14	import kotlinx.coroutines.flow.asStateFlow
+    15	import kotlinx.coroutines.launch
+    16	import java.util.concurrent.Executors
+    17	
+    18	class GameViewModel(application: Application) : AndroidViewModel(application) {
+    19	
+    20	    private val _settings = MutableStateFlow(GameSettings())
+    21	    val settings: StateFlow<GameSettings> = _settings.asStateFlow()
+    22	
+    23	    private val _gameState = MutableStateFlow(BoardState())
+    24	    val gameState: StateFlow<BoardState> = _gameState.asStateFlow()
+    25	
+    26	    private val _engineReady = MutableStateFlow(false)
+    27	    val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
+    28	
+    29	    private val _showMatchSetup = MutableStateFlow(true)
+    30	    val showMatchSetup: StateFlow<Boolean> = _showMatchSetup.asStateFlow()
+    31	
+    32	    private val _tutorUiState =
+    33	        MutableStateFlow<TutorUiState>(TutorUiState.Hidden)
+    34	    val tutorUiState: StateFlow<TutorUiState> =
+    35	        _tutorUiState.asStateFlow()
+    36	
+    37	    private val _boardTutorAnnotations =
+    38	        MutableStateFlow(BoardTutorAnnotations())
+    39	    val boardTutorAnnotations: StateFlow<BoardTutorAnnotations> =
+    40	        _boardTutorAnnotations.asStateFlow()
+    41	
+    42	    private val _lastTutorMoveContext =
+    43	        MutableStateFlow<TutorMoveContext?>(null)
+    44	    val lastTutorMoveContext: StateFlow<TutorMoveContext?> =
+    45	        _lastTutorMoveContext.asStateFlow()
+    46	
+    47	    private val engineThread = Executors.newSingleThreadExecutor { r ->
+    48	        Thread(r, "gnubg-engine-thread")
+    49	    }.asCoroutineDispatcher()
+    50	    private val actionInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
+    51	
+    52	    init {
+    53	        viewModelScope.launch {
+    54	            PreferencesManager.boardThemeFlow(application).collect { theme ->
+    55	                _settings.value = _settings.value.copy(boardTheme = theme)
+    56	            }
+    57	        }
+    58	        viewModelScope.launch {
+    59	            PreferencesManager.tutorPreferencesFlow(application).collect { prefs ->
+    60	                _settings.value = _settings.value.copy(
+    61	                    tutorModePreset = prefs.tutorModePreset,
+    62	                    tutorFeedbackThreshold = prefs.tutorFeedbackThreshold,
+    63	                    tutorAnnotationMode = prefs.tutorAnnotationMode,
+    64	                    tutorEquityDetail = prefs.tutorEquityDetail,
+    65	                    cubeTutorMode = prefs.cubeTutorMode,
+    66	                    tutorRolloutAccess = prefs.tutorRolloutAccess,
+    67	                    offerTutorTryAgain = prefs.offerTutorTryAgain
+    68	                )
+    69	            }
+    70	        }
+    71	        viewModelScope.launch(engineThread) {
+    72	            val weightsPath = AssetExtractor.extractWeights(application)
+    73	            Engine.initialise(weightsPath)
+    74	            _engineReady.value = true
+    75	        }
+    76	    }
+    77	
+    78	    fun startMatch(length: Int) {
+    79	        _settings.value = _settings.value.copy(matchLength = length)
+    80	        _showMatchSetup.value = false
+    81	        viewModelScope.launch(engineThread) {
+    82	            startNewGame(isNewMatch = true)
+    83	        }
+    84	    }
+    85	
+    86	    private fun readMatchState(
+    87	        phase: GamePhase,
+    88	        remainingDice: List<Int> = emptyList(),
+    89	        legalMoves: IntArray = IntArray(0),
+    90	        oldBoard: IntArray = IntArray(50),
+    91	        originalDice: Pair<Int, Int>? = null,
+    92	        engineDice: Pair<Int, Int>? = null,
+    93	        winner: Int = -1,
+    94	        nPoints: Int = 1,
+    95	        blockedDice: Set<Int> = emptySet(),
+    96	        moveHistory: List<MoveSnapshot> = emptyList()
+    97	    ) {
+    98	        val score       = Engine.getMatchScore()
+    99	        val matchLength = Engine.getMatchLength()
+   100	        val cubeInfo  = Engine.getMatchCubeInfo()
+   101	        val fDoubled  = cubeInfo[0] == 1
+   102	        val cubeOwner = cubeInfo[1]
+   103	        val cubeValue = cubeInfo[2]
+   104	        val turn      = Engine.getMatchTurn()
+   105	        val rawBoard  = Engine.getMatchBoard()
+   106	        val board     = if (turn == 1) Engine.swapBoard(rawBoard) else rawBoard
+   107	        val pips      = Engine.pipCount(board)
+   108	        val dicePair: Pair<Int, Int>? = originalDice ?: when {
+   109	            remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])
+   110	            remainingDice.size == 1 -> Pair(remainingDice[0], remainingDice[0])
+   111	            else -> null
+   112	        }
+   113	        _gameState.value = BoardState(
+   114	            matchScore     = score,
+   115	            matchLength    = matchLength,
+   116	            board          = board,
+   117	            oldBoard       = oldBoard,
+   118	            turn           = turn,
+   119	            dice           = dicePair,
+   120	            originalDice   = originalDice ?: dicePair,
+   121	            remainingDice  = remainingDice,
+   122	            legalMoves     = legalMoves,
+   123	            pipCountHuman  = pips[0],
+   124	            pipCountEngine = pips[1],
+   125	            phase          = phase,
+   126	            engineDice     = engineDice,
+   127	            winner         = winner,
+   128	            nPoints        = nPoints,
+   129	            blockedDice    = blockedDice,
+   130	            humanScore     = score[0],
+   131	            engineScore    = score[1],
+   132	            cubeValue      = cubeValue,
+   133	            cubeOwner      = cubeOwner,
+   134	            fDoubled       = fDoubled
+   135	        )
+   136	    }
+   137	
+   138	    private fun blockedDiceFor(moves: IntArray, d0: Int, d1: Int): Set<Int> {
+   139	        if (d0 == d1) return emptySet()
+   140	        val blocked = mutableSetOf<Int>()
+   141	        val s0 = (0 until moves.size step 8).any { m ->
+   142	            (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d0 } }
+   143	        val s1 = (0 until moves.size step 8).any { m ->
+   144	            (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d1 } }
+   145	        return blocked
+   146	    }
+   147	
+   148	    private fun startNewGame(isNewMatch: Boolean = true) {
+   149	        if (isNewMatch) Engine.newGame(_settings.value.matchLength) else Engine.nextGame()
+   150	        val turn = Engine.getMatchTurn()
+   151	        val dice = Engine.getMatchDice()
+   152	        val d0 = dice[0]; val d1 = dice[1]
+   153	        if (turn == 0 && d0 > 0) {
+   154	            val board    = Engine.getMatchBoard()
+   155	            val allMoves = Engine.getLegalMoves(board, d0, d1)
+   156	            readMatchState(
+   157	                phase         = GamePhase.HUMAN_MOVING,
+   158	                remainingDice = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1),
+   159	                legalMoves    = allMoves,
+   160	                oldBoard      = board,
+   161	                originalDice  = Pair(d0, d1),
+   162	                blockedDice   = blockedDiceFor(allMoves, d0, d1)
+   163	            )
+   164	        } else {
+   165	            val ed = Engine.getMoveRecordDice()
+   166	            readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
+   167	                engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
+   168	        }
+   169	    }
+   170	
+   171	    fun newGame() {
+   172	        viewModelScope.launch(engineThread) {
+   173	            val score = Engine.getMatchScore()
+   174	            val matchLength = Engine.getMatchLength()
+   175	            if (score[0] >= matchLength || score[1] >= matchLength || matchLength <= 1) {
+   176	                _showMatchSetup.value = true
+   177	            } else {
+   178	                startNewGame(isNewMatch = false)
+   179	            }
+   180	        }
+   181	    }
+   182	
+   183	    fun rollDice() {
+   184	        if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
+   185	        viewModelScope.launch(engineThread) {
+   186	            Engine.rollDice()
+   187	            val cubeAfter = Engine.getMatchCubeInfo()
+   188	            if (cubeAfter[0] == 1 && Engine.getMatchTurn() == 0) {
+   189	                readMatchState(phase = GamePhase.CUBE_OFFERED)
+   190	                return@launch
+   191	            }
+   192	            val turn = Engine.getMatchTurn()
+   193	            val dice = Engine.getMatchDice()
+   194	            val d0 = dice[0]; val d1 = dice[1]
+   195	            android.util.Log.i("gnubg-vm", "rollDice: turn=$turn d0=$d0 d1=$d1 gs=${Engine.getMatchStatus()}")
+   196	            if (turn == 0 && d0 > 0) {
+   197	                val board    = Engine.getMatchBoard()
+   198	                val remaining = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1)
+   199	                val allMoves = Engine.getLegalMoves(board, d0, d1)
+   200	                android.util.Log.i("gnubg-vm", "blocked check d0=$d0 d1=$d1 moves=${allMoves.size/8}")
+   201	                readMatchState(
+   202	                    phase         = GamePhase.HUMAN_MOVING,
+   203	                    remainingDice = remaining,
+   204	                    legalMoves    = allMoves,
+   205	                    oldBoard      = board,
+   206	                    originalDice  = Pair(d0, d1),
+   207	                    engineDice    = null,
+   208	                    blockedDice   = blockedDiceFor(allMoves, d0, d1)
+   209	                )
+   210	            } else {
+   211	                if (Engine.getMatchStatus() >= 2)
+   212	                    Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
+   213	                else {
+   214	                    val ed = Engine.getMoveRecordDice()
+   215	                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
+   216	                        engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
+   217	                }
+   218	            }
+   219	        }
+   220	    }
+   221	
+   222	
+   223	    private fun tryDestinationStackMove(state: BoardState, point: Int): BoardState? {
+   224	        if (point !in 1..24) return null
+   225	        if (state.remainingDice.size < 2) return null
+   226	
+   227	        // If a checker is on the bar, the normal bar-entry rules must stay explicit.
+   228	        if (state.board[49] > 0) return null
+   229	
+   230	        // Destination shortcut is only for empty points or opponent blots/points.
+   231	        // If this point contains our checker, a tap is a normal source tap.
+   232	        if (state.board[24 + point] > 0) return null
+   233	
+   234	        val dest = point - 1
+   235	        val results = mutableListOf<Pair<IntArray, List<Int>>>()
+   236	
+   237	        state.remainingDice.forEachIndexed { i, dieA ->
+   238	            val srcA = dest + dieA
+   239	            if (srcA in 0..23) {
+   240	                val b1 = Engine.applySubMove(state.board, srcA, dieA)
+   241	                if (b1.isNotEmpty()) {
+   242	                    val rem1 = state.remainingDice.toMutableList().also { it.removeAt(i) }
+   243	
+   244	                    rem1.forEachIndexed { j, dieB ->
+   245	                        val srcB = dest + dieB
+   246	                        if (srcB in 0..23) {
+   247	                            val b2 = Engine.applySubMove(b1, srcB, dieB)
+   248	                            if (b2.isNotEmpty()) {
+   249	                                val rem2 = rem1.toMutableList().also { it.removeAt(j) }
+   250	                                results.add(Pair(b2, rem2))
+   251	                            }
+   252	                        }
+   253	                    }
+   254	                }
+   255	            }
+   256	        }
+   257	
+   258	        if (results.isEmpty()) return null
+   259	
+   260	        val unique = results.distinctBy { (board, remaining) ->
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/PreferencesManager.kt =====
+     1	package com.clavierhaus.gnubg.engine
+     2	
+     3	import android.content.Context
+     4	import androidx.datastore.core.DataStore
+     5	import androidx.datastore.preferences.core.Preferences
+     6	import androidx.datastore.preferences.core.booleanPreferencesKey
+     7	import androidx.datastore.preferences.core.edit
+     8	import androidx.datastore.preferences.core.stringPreferencesKey
+     9	import androidx.datastore.preferences.preferencesDataStore
+    10	import kotlinx.coroutines.flow.Flow
+    11	import kotlinx.coroutines.flow.map
+    12	
+    13	val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "gnubg_prefs")
+    14	
+    15	object PreferencesManager {
+    16	    private val BOARD_THEME_KEY = stringPreferencesKey("board_theme")
+    17	
+    18	    private val TUTOR_MODE_PRESET_KEY =
+    19	        stringPreferencesKey("tutor_mode_preset")
+    20	    private val TUTOR_FEEDBACK_THRESHOLD_KEY =
+    21	        stringPreferencesKey("tutor_feedback_threshold")
+    22	    private val TUTOR_ANNOTATION_MODE_KEY =
+    23	        stringPreferencesKey("tutor_annotation_mode")
+    24	    private val TUTOR_EQUITY_DETAIL_KEY =
+    25	        stringPreferencesKey("tutor_equity_detail")
+    26	    private val CUBE_TUTOR_MODE_KEY =
+    27	        stringPreferencesKey("cube_tutor_mode")
+    28	    private val TUTOR_ROLLOUT_ACCESS_KEY =
+    29	        stringPreferencesKey("tutor_rollout_access")
+    30	    private val OFFER_TUTOR_TRY_AGAIN_KEY =
+    31	        booleanPreferencesKey("offer_tutor_try_again")
+    32	
+    33	    fun boardThemeFlow(context: Context): Flow<BoardTheme> =
+    34	        context.dataStore.data.map { prefs ->
+    35	            enumOrDefault(prefs[BOARD_THEME_KEY], BoardTheme.OCEAN)
+    36	        }
+    37	
+    38	    fun tutorPreferencesFlow(context: Context): Flow<TutorPreferences> =
+    39	        context.dataStore.data.map { prefs ->
+    40	            TutorPreferences(
+    41	                tutorModePreset = enumOrDefault(
+    42	                    prefs[TUTOR_MODE_PRESET_KEY],
+    43	                    TutorModePreset.OFF
+    44	                ),
+    45	                tutorFeedbackThreshold = enumOrDefault(
+    46	                    prefs[TUTOR_FEEDBACK_THRESHOLD_KEY],
+    47	                    TutorFeedbackThreshold.MISTAKES
+    48	                ),
+    49	                tutorAnnotationMode = enumOrDefault(
+    50	                    prefs[TUTOR_ANNOTATION_MODE_KEY],
+    51	                    TutorAnnotationMode.USER_VS_BEST
+    52	                ),
+    53	                tutorEquityDetail = enumOrDefault(
+    54	                    prefs[TUTOR_EQUITY_DETAIL_KEY],
+    55	                    TutorEquityDetail.LOSS_ONLY
+    56	                ),
+    57	                cubeTutorMode = enumOrDefault(
+    58	                    prefs[CUBE_TUTOR_MODE_KEY],
+    59	                    CubeTutorMode.MAJOR_ERRORS
+    60	                ),
+    61	                tutorRolloutAccess = enumOrDefault(
+    62	                    prefs[TUTOR_ROLLOUT_ACCESS_KEY],
+    63	                    TutorRolloutAccess.ADVANCED_ONLY
+    64	                ),
+    65	                offerTutorTryAgain =
+    66	                    prefs[OFFER_TUTOR_TRY_AGAIN_KEY] ?: true
+    67	            )
+    68	        }
+    69	
+    70	    suspend fun saveBoardTheme(context: Context, theme: BoardTheme) {
+    71	        context.dataStore.edit { prefs ->
+    72	            prefs[BOARD_THEME_KEY] = theme.name
+    73	        }
+    74	    }
+    75	
+    76	    suspend fun saveTutorModePreset(
+    77	        context: Context,
+    78	        value: TutorModePreset
+    79	    ) {
+    80	        context.dataStore.edit { prefs ->
+    81	            prefs[TUTOR_MODE_PRESET_KEY] = value.name
+    82	        }
+    83	    }
+    84	
+    85	    suspend fun saveTutorFeedbackThreshold(
+    86	        context: Context,
+    87	        value: TutorFeedbackThreshold
+    88	    ) {
+    89	        context.dataStore.edit { prefs ->
+    90	            prefs[TUTOR_FEEDBACK_THRESHOLD_KEY] = value.name
+    91	        }
+    92	    }
+    93	
+    94	    suspend fun saveTutorAnnotationMode(
+    95	        context: Context,
+    96	        value: TutorAnnotationMode
+    97	    ) {
+    98	        context.dataStore.edit { prefs ->
+    99	            prefs[TUTOR_ANNOTATION_MODE_KEY] = value.name
+   100	        }
+   101	    }
+   102	
+   103	    suspend fun saveTutorEquityDetail(
+   104	        context: Context,
+   105	        value: TutorEquityDetail
+   106	    ) {
+   107	        context.dataStore.edit { prefs ->
+   108	            prefs[TUTOR_EQUITY_DETAIL_KEY] = value.name
+   109	        }
+   110	    }
+   111	
+   112	    suspend fun saveCubeTutorMode(
+   113	        context: Context,
+   114	        value: CubeTutorMode
+   115	    ) {
+   116	        context.dataStore.edit { prefs ->
+   117	            prefs[CUBE_TUTOR_MODE_KEY] = value.name
+   118	        }
+   119	    }
+   120	
+   121	    suspend fun saveTutorRolloutAccess(
+   122	        context: Context,
+   123	        value: TutorRolloutAccess
+   124	    ) {
+   125	        context.dataStore.edit { prefs ->
+   126	            prefs[TUTOR_ROLLOUT_ACCESS_KEY] = value.name
+   127	        }
+   128	    }
+   129	
+   130	    suspend fun saveOfferTutorTryAgain(
+   131	        context: Context,
+   132	        value: Boolean
+   133	    ) {
+   134	        context.dataStore.edit { prefs ->
+   135	            prefs[OFFER_TUTOR_TRY_AGAIN_KEY] = value
+   136	        }
+   137	    }
+   138	
+   139	    private inline fun <reified T : Enum<T>> enumOrDefault(
+   140	        name: String?,
+   141	        defaultValue: T
+   142	    ): T {
+   143	        return try {
+   144	            if (name == null) defaultValue else enumValueOf<T>(name)
+   145	        } catch (_: IllegalArgumentException) {
+   146	            defaultValue
+   147	        }
+   148	    }
+   149	}
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt =====
+     1	package com.clavierhaus.gnubg.hub
+     2	
+     3	import androidx.compose.foundation.Image
+     4	import androidx.compose.foundation.clickable
+     5	import androidx.compose.foundation.layout.Box
+     6	import androidx.compose.foundation.layout.Column
+     7	import androidx.compose.foundation.layout.Spacer
+     8	import androidx.compose.foundation.layout.fillMaxSize
+     9	import androidx.compose.foundation.layout.height
+    10	import androidx.compose.foundation.layout.offset
+    11	import androidx.compose.foundation.layout.padding
+    12	import androidx.compose.foundation.text.BasicText
+    13	import androidx.compose.runtime.Composable
+    14	import androidx.compose.ui.Alignment
+    15	import androidx.compose.ui.Modifier
+    16	import androidx.compose.ui.geometry.Offset
+    17	import androidx.compose.ui.graphics.Color
+    18	import androidx.compose.ui.graphics.Shadow
+    19	import androidx.compose.ui.layout.ContentScale
+    20	import androidx.compose.ui.res.painterResource
+    21	import androidx.compose.ui.text.TextStyle
+    22	import androidx.compose.ui.text.font.FontWeight
+    23	import androidx.compose.ui.unit.dp
+    24	import androidx.compose.ui.unit.sp
+    25	import com.clavierhaus.gnubg.R
+    26	
+    27	@Composable
+    28	fun HomeHubScreen(
+    29	    onPlay: () -> Unit,
+    30	    onTutor: () -> Unit,
+    31	    onLearn: () -> Unit,
+    32	    onAnalyse: () -> Unit,
+    33	    onOptions: () -> Unit,
+    34	    onProfile: () -> Unit
+    35	) {
+    36	    Box(modifier = Modifier.fillMaxSize()) {
+    37	        Image(
+    38	            painter = painterResource(id = R.drawable.home_hub_background),
+    39	            contentDescription = null,
+    40	            modifier = Modifier.fillMaxSize(),
+    41	            contentScale = ContentScale.Crop
+    42	        )
+    43	
+    44	        BasicText(
+    45	            text = "GNU Backgammon",
+    46	            style = HomeTitleStyle,
+    47	            modifier = Modifier
+    48	                .align(Alignment.TopStart)
+    49	                .padding(start = 48.dp, top = 38.dp)
+    50	        )
+    51	
+    52	        Column(
+    53	            modifier = Modifier
+    54	                .align(Alignment.CenterStart)
+    55	                .offset(x = 64.dp)
+    56	        ) {
+    57	            HomeHubEntry("Play", onPlay)
+    58	            Spacer(modifier = Modifier.height(22.dp))
+    59	            HomeHubEntry("Tutor", onTutor)
+    60	            Spacer(modifier = Modifier.height(22.dp))
+    61	            HomeHubEntry("Learn", onLearn)
+    62	            Spacer(modifier = Modifier.height(22.dp))
+    63	            HomeHubEntry("Analyse", onAnalyse)
+    64	            Spacer(modifier = Modifier.height(22.dp))
+    65	            HomeHubEntry("Options", onOptions)
+    66	        }
+    67	
+    68	        BasicText(
+    69	            text = "Profile",
+    70	            style = HomeSecondaryStyle,
+    71	            modifier = Modifier
+    72	                .align(Alignment.BottomEnd)
+    73	                .clickable(onClick = onProfile)
+    74	                .padding(end = 42.dp, bottom = 34.dp)
+    75	        )
+    76	    }
+    77	}
+    78	
+    79	@Composable
+    80	private fun HomeHubEntry(
+    81	    label: String,
+    82	    onClick: () -> Unit
+    83	) {
+    84	    BasicText(
+    85	        text = label,
+    86	        style = HomeEntryStyle,
+    87	        modifier = Modifier
+    88	            .clickable(onClick = onClick)
+    89	            .padding(vertical = 4.dp)
+    90	    )
+    91	}
+    92	
+    93	private val HomeTitleStyle = TextStyle(
+    94	    color = Color.White,
+    95	    fontSize = 34.sp,
+    96	    fontWeight = FontWeight.SemiBold,
+    97	    shadow = Shadow(
+    98	        color = Color.Black,
+    99	        offset = Offset(2f, 2f),
+   100	        blurRadius = 8f
+   101	    )
+   102	)
+   103	
+   104	private val HomeEntryStyle = TextStyle(
+   105	    color = Color.White,
+   106	    fontSize = 36.sp,
+   107	    fontWeight = FontWeight.Medium,
+   108	    shadow = Shadow(
+   109	        color = Color.Black,
+   110	        offset = Offset(2f, 2f),
+   111	        blurRadius = 8f
+   112	    )
+   113	)
+   114	
+   115	private val HomeSecondaryStyle = TextStyle(
+   116	    color = Color.White,
+   117	    fontSize = 26.sp,
+   118	    fontWeight = FontWeight.Medium,
+   119	    shadow = Shadow(
+   120	        color = Color.Black,
+   121	        offset = Offset(2f, 2f),
+   122	        blurRadius = 8f
+   123	    )
+   124	)
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/MainActivity.kt =====
+     1	package com.clavierhaus.gnubg
+     2	
+     3	import android.content.pm.ActivityInfo
+     4	import android.os.Bundle
+     5	import android.view.WindowManager
+     6	import androidx.activity.ComponentActivity
+     7	import androidx.activity.compose.setContent
+     8	import androidx.activity.viewModels
+     9	import androidx.compose.runtime.getValue
+    10	import androidx.compose.runtime.mutableStateOf
+    11	import androidx.compose.runtime.remember
+    12	import androidx.compose.runtime.setValue
+    13	import androidx.core.view.WindowCompat
+    14	import androidx.core.view.WindowInsetsCompat
+    15	import androidx.core.view.WindowInsetsControllerCompat
+    16	import androidx.lifecycle.compose.collectAsStateWithLifecycle
+    17	import com.clavierhaus.gnubg.analyse.AnalyseScreen
+    18	import com.clavierhaus.gnubg.engine.GameViewModel
+    19	import com.clavierhaus.gnubg.hub.HomeHubScreen
+    20	import com.clavierhaus.gnubg.learn.LearnScreen
+    21	import com.clavierhaus.gnubg.options.OptionsModeScreen
+    22	import com.clavierhaus.gnubg.play.GameLayout
+    23	import com.clavierhaus.gnubg.profile.ProfileScreen
+    24	import com.clavierhaus.gnubg.shared.AppMode
+    25	import com.clavierhaus.gnubg.tutorui.TutorModeScreen
+    26	import com.clavierhaus.gnubg.ui.theme.GnubgTheme
+    27	
+    28	class MainActivity : ComponentActivity() {
+    29	    private val viewModel: GameViewModel by viewModels()
+    30	
+    31	    override fun onCreate(savedInstanceState: Bundle?) {
+    32	        super.onCreate(savedInstanceState)
+    33	        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+    34	
+    35	        WindowCompat.setDecorFitsSystemWindows(window, false)
+    36	        val controller = WindowInsetsControllerCompat(window, window.decorView)
+    37	        controller.hide(WindowInsetsCompat.Type.systemBars())
+    38	        controller.systemBarsBehavior =
+    39	            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    40	        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    41	
+    42	        setContent {
+    43	            GnubgTheme {
+    44	                var mode by remember { mutableStateOf(AppMode.HUB) }
+    45	                val settings by viewModel.settings.collectAsStateWithLifecycle()
+    46	
+    47	                when (mode) {
+    48	                    AppMode.HUB -> HomeHubScreen(
+    49	                        onPlay = { mode = AppMode.PLAY },
+    50	                        onTutor = { mode = AppMode.TUTOR },
+    51	                        onLearn = { mode = AppMode.LEARN },
+    52	                        onAnalyse = { mode = AppMode.ANALYSE },
+    53	                        onOptions = { mode = AppMode.OPTIONS },
+    54	                        onProfile = { mode = AppMode.PROFILE }
+    55	                    )
+    56	
+    57	                    AppMode.PLAY -> GameLayout(
+    58	                        viewModel = viewModel,
+    59	                        onReturnToHub = { mode = AppMode.HUB }
+    60	                    )
+    61	
+    62	                    AppMode.TUTOR -> TutorModeScreen(
+    63	                        onBackToHub = { mode = AppMode.HUB }
+    64	                    )
+    65	
+    66	                    AppMode.LEARN -> LearnScreen(
+    67	                        onBackToHub = { mode = AppMode.HUB }
+    68	                    )
+    69	
+    70	                    AppMode.ANALYSE -> AnalyseScreen(
+    71	                        onBackToHub = { mode = AppMode.HUB }
+    72	                    )
+    73	
+    74	                    AppMode.OPTIONS -> OptionsModeScreen(
+    75	                        settings = settings,
+    76	                        viewModel = viewModel,
+    77	                        onBackToHub = { mode = AppMode.HUB }
+    78	                    )
+    79	
+    80	                    AppMode.PROFILE -> ProfileScreen(
+    81	                        onBackToHub = { mode = AppMode.HUB }
+    82	                    )
+    83	                }
+    84	            }
+    85	        }
+    86	    }
+    87	
+    88	    override fun onWindowFocusChanged(hasFocus: Boolean) {
+    89	        super.onWindowFocusChanged(hasFocus)
+    90	        if (hasFocus) {
+    91	            val controller = WindowInsetsControllerCompat(window, window.decorView)
+    92	            controller.hide(WindowInsetsCompat.Type.systemBars())
+    93	            controller.systemBarsBehavior =
+    94	                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    95	        }
+    96	    }
+    97	}
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/options/SettingsScreen.kt =====
+     1	package com.clavierhaus.gnubg.options
+     2	
+     3	import androidx.compose.foundation.background
+     4	import androidx.compose.foundation.clickable
+     5	import androidx.compose.foundation.layout.*
+     6	import androidx.compose.foundation.rememberScrollState
+     7	import androidx.compose.foundation.shape.RoundedCornerShape
+     8	import androidx.compose.foundation.verticalScroll
+     9	import androidx.compose.material3.RadioButton
+    10	import androidx.compose.material3.RadioButtonDefaults
+    11	import androidx.compose.material3.Switch
+    12	import androidx.compose.material3.SwitchDefaults
+    13	import androidx.compose.material3.Text
+    14	import androidx.compose.material3.TextButton
+    15	import androidx.compose.runtime.Composable
+    16	import androidx.compose.runtime.getValue
+    17	import androidx.compose.runtime.mutableStateOf
+    18	import androidx.compose.runtime.remember
+    19	import androidx.compose.runtime.setValue
+    20	import androidx.compose.ui.Alignment
+    21	import androidx.compose.ui.Modifier
+    22	import androidx.compose.ui.graphics.Color
+    23	import androidx.compose.ui.text.font.FontWeight
+    24	import androidx.compose.ui.unit.dp
+    25	import androidx.compose.ui.unit.sp
+    26	import com.clavierhaus.gnubg.engine.BoardTheme
+    27	import com.clavierhaus.gnubg.engine.CubeTutorMode
+    28	import com.clavierhaus.gnubg.engine.Difficulty
+    29	import com.clavierhaus.gnubg.engine.GameSettings
+    30	import com.clavierhaus.gnubg.engine.GameViewModel
+    31	import com.clavierhaus.gnubg.engine.TutorAnnotationMode
+    32	import com.clavierhaus.gnubg.engine.TutorEquityDetail
+    33	import com.clavierhaus.gnubg.engine.TutorFeedbackThreshold
+    34	import com.clavierhaus.gnubg.engine.TutorModePreset
+    35	import com.clavierhaus.gnubg.engine.TutorRolloutAccess
+    36	
+    37	enum class SettingsTab { GAME, BOARD, ENGINE, TUTOR, EXPERT }
+    38	
+    39	private val ColorSettingsBg     = Color(0xFF082D6B)
+    40	private val ColorPanelBg        = Color(0xFF0A3880)
+    41	private val ColorTabActive      = Color(0xFF1976D2)
+    42	private val ColorTabInactive    = Color(0xFF0D47A1)
+    43	private val ColorTabText        = Color(0xFFB3C9F0)
+    44	private val ColorTabTextActive  = Color(0xFFFFFFFF)
+    45	private val ColorDivider        = Color(0xFF1565C0)
+    46	private val ColorSettingText    = Color(0xFFE8F0FF)
+    47	private val ColorSettingSubtext = Color(0xFF7B9CC8)
+    48	private val ColorDisabledText   = Color(0xFF5D7EA8)
+    49	
+    50	private val switchColors
+    51	    @Composable get() = SwitchDefaults.colors(
+    52	        checkedThumbColor = ColorTabTextActive,
+    53	        checkedTrackColor = ColorTabActive,
+    54	        uncheckedThumbColor = ColorTabText,
+    55	        uncheckedTrackColor = ColorTabInactive
+    56	    )
+    57	
+    58	private val radioColors
+    59	    @Composable get() = RadioButtonDefaults.colors(
+    60	        selectedColor = ColorTabTextActive,
+    61	        unselectedColor = ColorTabText
+    62	    )
+    63	
+    64	@Composable
+    65	fun SettingsScreen(
+    66	    settings: GameSettings,
+    67	    viewModel: GameViewModel,
+    68	    onDismiss: () -> Unit
+    69	) {
+    70	    var activeTab by remember { mutableStateOf(SettingsTab.GAME) }
+    71	
+    72	    Box(
+    73	        modifier = Modifier
+    74	            .fillMaxSize()
+    75	            .background(ColorSettingsBg)
+    76	    ) {
+    77	        Column(modifier = Modifier.fillMaxSize()) {
+    78	            SettingsHeader(onDismiss = onDismiss)
+    79	
+    80	            SettingsTabs(
+    81	                activeTab = activeTab,
+    82	                onTab = { activeTab = it }
+    83	            )
+    84	
+    85	            Column(
+    86	                modifier = Modifier
+    87	                    .fillMaxSize()
+    88	                    .verticalScroll(rememberScrollState())
+    89	                    .padding(horizontal = 18.dp, vertical = 14.dp)
+    90	            ) {
+    91	                when (activeTab) {
+    92	                    SettingsTab.GAME -> GameSettingsTab(settings, viewModel)
+    93	                    SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
+    94	                    SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
+    95	                    SettingsTab.TUTOR -> TutorSettingsTab(settings, viewModel)
+    96	                    SettingsTab.EXPERT -> ExpertSettingsTab()
+    97	                }
+    98	            }
+    99	        }
+   100	    }
+   101	}
+   102	
+   103	@Composable
+   104	private fun SettingsHeader(onDismiss: () -> Unit) {
+   105	    Row(
+   106	        modifier = Modifier
+   107	            .fillMaxWidth()
+   108	            .padding(horizontal = 22.dp, vertical = 12.dp),
+   109	        verticalAlignment = Alignment.CenterVertically
+   110	    ) {
+   111	        Text(
+   112	            text = "←",
+   113	            color = ColorTabTextActive,
+   114	            fontSize = 22.sp,
+   115	            modifier = Modifier
+   116	                .clickable { onDismiss() }
+   117	                .padding(end = 14.dp)
+   118	        )
+   119	        Column {
+   120	            Text(
+   121	                text = "Settings",
+   122	                color = ColorTabTextActive,
+   123	                fontSize = 22.sp,
+   124	                fontWeight = FontWeight.Bold
+   125	            )
+   126	            Text(
+   127	                text = "Configuration only. Game actions stay on the Play surface.",
+   128	                color = ColorSettingSubtext,
+   129	                fontSize = 12.sp
+   130	            )
+   131	        }
+   132	    }
+   133	}
+   134	
+   135	@Composable
+   136	private fun SettingsTabs(
+   137	    activeTab: SettingsTab,
+   138	    onTab: (SettingsTab) -> Unit
+   139	) {
+   140	    Row(
+   141	        modifier = Modifier
+   142	            .fillMaxWidth()
+   143	            .padding(horizontal = 14.dp),
+   144	        horizontalArrangement = Arrangement.spacedBy(6.dp)
+   145	    ) {
+   146	        SettingsTab.values().forEach { tab ->
+   147	            val label = when (tab) {
+   148	                SettingsTab.GAME -> "Game"
+   149	                SettingsTab.BOARD -> "Board"
+   150	                SettingsTab.ENGINE -> "Engine"
+   151	                SettingsTab.TUTOR -> "Tutor"
+   152	                SettingsTab.EXPERT -> "Expert"
+   153	            }
+   154	
+   155	            Box(
+   156	                modifier = Modifier
+   157	                    .weight(1f)
+   158	                    .background(
+   159	                        if (activeTab == tab) ColorTabActive else ColorTabInactive,
+   160	                        RoundedCornerShape(9.dp)
+   161	                    )
+   162	                    .clickable { onTab(tab) }
+   163	                    .padding(vertical = 9.dp),
+   164	                contentAlignment = Alignment.Center
+   165	            ) {
+   166	                Text(
+   167	                    text = label,
+   168	                    color = if (activeTab == tab) ColorTabTextActive else ColorTabText,
+   169	                    fontSize = 13.sp,
+   170	                    fontWeight = if (activeTab == tab) FontWeight.Bold else FontWeight.Normal
+   171	                )
+   172	            }
+   173	        }
+   174	    }
+   175	}
+   176	
+   177	@Composable
+   178	private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
+   179	    SettingsSection("Match") {
+   180	        StepperRow(
+   181	            title = "Match length",
+   182	            subtitle = "Default points for new matches",
+   183	            value = "${settings.matchLength}",
+   184	            onMinus = {
+   185	                if (settings.matchLength > 1) vm.setMatchLength(settings.matchLength - 1)
+   186	            },
+   187	            onPlus = {
+   188	                if (settings.matchLength < 25) vm.setMatchLength(settings.matchLength + 1)
+   189	            }
+   190	        )
+   191	        SettingsDivider()
+   192	        SettingsRow("Crawford rule", "Stored locally until GNUbg timing is safe") {
+   193	            Switch(settings.crawford, { vm.setCrawford(it) }, colors = switchColors)
+   194	        }
+   195	    }
+   196	
+   197	    SettingsSection("Money / session rules") {
+   198	        SettingsRow("Jacoby rule", "Stored locally until GNUbg timing is safe") {
+   199	            Switch(settings.jacoby, { vm.setJacoby(it) }, colors = switchColors)
+   200	        }
+   201	        SettingsDivider()
+   202	        StepperRow(
+   203	            title = "Automatic doubles",
+   204	            subtitle = "Session configuration value",
+   205	            value = "${settings.automaticDoubles}",
+   206	            onMinus = {
+   207	                if (settings.automaticDoubles > 0) vm.setAutomaticDoubles(settings.automaticDoubles - 1)
+   208	            },
+   209	            onPlus = {
+   210	                if (settings.automaticDoubles < 12) vm.setAutomaticDoubles(settings.automaticDoubles + 1)
+   211	            }
+   212	        )
+   213	        SettingsDivider()
+   214	        SettingsRow("Beavers", "Stored locally until GNUbg timing is safe") {
+   215	            Switch(settings.beavers, { vm.setBeavers(it) }, colors = switchColors)
+   216	        }
+   217	    }
+   218	
+   219	    SettingsSection("Cube rules") {
+   220	        DisabledSettingsRow("Cube enabled", "GNUbg pendant: set cube use on/off")
+   221	        SettingsDivider()
+   222	        DisabledSettingsRow("Maximum cube", "GNUbg pendant to be audited")
+   223	        SettingsDivider()
+   224	        DisabledSettingsRow("Crawford handling", "Will be bound through lifecycle-safe match setup")
+   225	    }
+   226	
+   227	    SettingsSection("Opening / session defaults") {
+   228	        DisabledSettingsRow("Starting side", "Future GNUbg-backed session option")
+   229	        SettingsDivider()
+   230	        DisabledSettingsRow("Dice / roll policy", "Future automatic roll / manual dice options")
+   231	    }
+   232	}
+   233	
+   234	@Composable
+   235	private fun BoardSettingsTab(settings: GameSettings, vm: GameViewModel) {
+   236	    SettingsSection("Appearance") {
+   237	        BoardTheme.values().forEachIndexed { i, theme ->
+   238	            SettingsRow(theme.name.lowercase().replaceFirstChar { it.uppercase() }) {
+   239	                RadioButton(
+   240	                    selected = settings.boardTheme == theme,
+   241	                    onClick = { vm.setBoardTheme(theme) },
+   242	                    colors = radioColors
+   243	                )
+   244	            }
+   245	            if (i < BoardTheme.values().size - 1) SettingsDivider()
+   246	        }
+   247	    }
+   248	
+   249	    SettingsSection("Board information") {
+   250	        SettingsRow("Point numbers", "Show numbers in the frame border") {
+   251	            Switch(settings.showPointNumbers, { vm.setShowPointNumbers(it) }, colors = switchColors)
+   252	        }
+   253	        SettingsDivider()
+   254	        SettingsRow("Pip count", "Show pip counts in the bar") {
+   255	            Switch(settings.showPipCount, { vm.setShowPipCount(it) }, colors = switchColors)
+   256	        }
+   257	        SettingsDivider()
+   258	        DisabledSettingsRow("Move landing hints", "Currently always available by long-press")
+   259	    }
+   260	
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/BoardActions.kt =====
+     1	package com.clavierhaus.gnubg.play
+     2	
+     3	/**
+     4	 * Abstract input contract for the shared board renderer.
+     5	 *
+     6	 * The board renderer must not know whether it is used by Regular Play,
+     7	 * Tutor Mode, or a future analysis surface. It reports user intent through
+     8	 * this interface, and the active mode decides what the intent means.
+     9	 */
+    10	interface BoardActions {
+    11	    fun offerDouble()
+    12	    fun rollDice()
+    13	    fun swapDice()
+    14	    fun undo()
+    15	    fun confirm()
+    16	    fun tapSource(point: Int)
+    17	}
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/TutorCoachCard.kt =====
+     1	package com.clavierhaus.gnubg.play
+     2	
+     3	import androidx.compose.foundation.background
+     4	import androidx.compose.foundation.layout.Arrangement
+     5	import androidx.compose.foundation.layout.Column
+     6	import androidx.compose.foundation.layout.Row
+     7	import androidx.compose.foundation.layout.Spacer
+     8	import androidx.compose.foundation.layout.fillMaxWidth
+     9	import androidx.compose.foundation.layout.padding
+    10	import androidx.compose.foundation.layout.width
+    11	import androidx.compose.foundation.shape.RoundedCornerShape
+    12	import androidx.compose.material3.Text
+    13	import androidx.compose.material3.TextButton
+    14	import androidx.compose.runtime.Composable
+    15	import androidx.compose.ui.Modifier
+    16	import androidx.compose.ui.graphics.Color
+    17	import androidx.compose.ui.text.font.FontWeight
+    18	import androidx.compose.ui.unit.dp
+    19	import androidx.compose.ui.unit.sp
+    20	import com.clavierhaus.gnubg.tutor.TutorHint
+    21	import com.clavierhaus.gnubg.tutor.TutorSeverity
+    22	
+    23	@Composable
+    24	fun TutorCoachCard(
+    25	    hint: TutorHint,
+    26	    onDismiss: () -> Unit,
+    27	    onShowBestMove: () -> Unit,
+    28	    onTryAgain: () -> Unit,
+    29	    onMoreDetail: () -> Unit,
+    30	    modifier: Modifier = Modifier
+    31	) {
+    32	    Column(
+    33	        modifier = modifier
+    34	            .width(360.dp)
+    35	            .background(Color(0xEE082D6B), RoundedCornerShape(16.dp))
+    36	            .padding(horizontal = 16.dp, vertical = 14.dp),
+    37	        verticalArrangement = Arrangement.spacedBy(8.dp)
+    38	    ) {
+    39	        Text(
+    40	            text = severityLabel(hint.severity),
+    41	            color = Color(0xFFB3C9F0),
+    42	            fontSize = 12.sp,
+    43	            fontWeight = FontWeight.Bold
+    44	        )
+    45	
+    46	        Text(
+    47	            text = hint.headline,
+    48	            color = Color.White,
+    49	            fontSize = 20.sp,
+    50	            fontWeight = FontWeight.Bold
+    51	        )
+    52	
+    53	        hint.shortExplanation?.let { explanation ->
+    54	            Text(
+    55	                text = explanation,
+    56	                color = Color(0xFFE8F0FF),
+    57	                fontSize = 14.sp
+    58	            )
+    59	        }
+    60	
+    61	        hint.measurableFacts.take(3).forEach { fact ->
+    62	            Text(
+    63	                text = "• $fact",
+    64	                color = Color(0xFFB3C9F0),
+    65	                fontSize = 12.sp
+    66	            )
+    67	        }
+    68	
+    69	        Row(
+    70	            modifier = Modifier.fillMaxWidth(),
+    71	            horizontalArrangement = Arrangement.End
+    72	        ) {
+    73	            if (hint.allowTryAgain) {
+    74	                TextButton(onClick = onTryAgain) {
+    75	                    Text("Try Again", color = Color.White)
+    76	                }
+    77	            }
+    78	
+    79	            if (hint.allowShowBestMove) {
+    80	                TextButton(onClick = onShowBestMove) {
+    81	                    Text("Best Move", color = Color.White)
+    82	                }
+    83	            }
+    84	
+    85	            if (hint.allowMoreDetail) {
+    86	                TextButton(onClick = onMoreDetail) {
+    87	                    Text("More", color = Color.White)
+    88	                }
+    89	            }
+    90	
+    91	            Spacer(modifier = Modifier.width(4.dp))
+    92	
+    93	            TextButton(onClick = onDismiss) {
+    94	                Text("Dismiss", color = Color.White)
+    95	            }
+    96	        }
+    97	    }
+    98	}
+    99	
+   100	private fun severityLabel(severity: TutorSeverity): String = when (severity) {
+   101	    TutorSeverity.GOOD -> "GOOD"
+   102	    TutorSeverity.INACCURACY -> "INACCURACY"
+   103	    TutorSeverity.MISTAKE -> "MISTAKE"
+   104	    TutorSeverity.BLUNDER -> "BLUNDER"
+   105	}
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/AppMode.kt =====
+     1	package com.clavierhaus.gnubg.shared
+     2	
+     3	enum class AppMode {
+     4	    HUB,
+     5	    PLAY,
+     6	    TUTOR,
+     7	    LEARN,
+     8	    ANALYSE,
+     9	    OPTIONS,
+    10	    PROFILE
+    11	}
+
+===== gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/TutorModels.kt =====
+     1	package com.clavierhaus.gnubg.tutor
+     2	
+     3	/** Severity assigned to a Tutor judgement. */
+     4	enum class TutorSeverity {
+     5	    GOOD,
+     6	    INACCURACY,
+     7	    MISTAKE,
+     8	    BLUNDER
+     9	}
+    10	
+    11	enum class TutorTheme {
+    12	    SAFETY,
+    13	    SHOT_COUNT,
+    14	    POINT_MAKING,
+    15	    EXPOSURE,
+    16	    RACE,
+    17	    CUBE_TAKE_PASS,
+    18	    GAMMON_DANGER
+    19	}
+    20	
+    21	data class TutorMove(
+    22	    val move: String,
+    23	    val equity: Float,
+    24	    val rank: Int
+    25	)
+    26	
+    27	data class TutorEvaluation(
+    28	    val userMove: String,
+    29	    val bestMove: String,
+    30	    val userEquity: Float,
+    31	    val bestEquity: Float,
+    32	    val equityLoss: Float,
+    33	    val severity: TutorSeverity,
+    34	    val topMoves: List<TutorMove> = emptyList()
+    35	)
+    36	
+    37	data class TutorFeatureDelta(
+    38	    val userShotsLeft: Int? = null,
+    39	    val bestShotsLeft: Int? = null,
+    40	    val userBlots: Int = 0,
+    41	    val bestBlots: Int = 0,
+    42	    val userMadePoints: List<Int> = emptyList(),
+    43	    val bestMadePoints: List<Int> = emptyList(),
+    44	    val userPipCount: Int = 0,
+    45	    val bestPipCount: Int = 0,
+    46	    val keyPointMadeByBest: Int? = null
+    47	)
+    48	
+    49	data class TutorHint(
+    50	    val severity: TutorSeverity,
+    51	    val mainTheme: TutorTheme?,
+    52	    val headline: String,
+    53	    val shortExplanation: String?,
+    54	    val measurableFacts: List<String> = emptyList(),
+    55	    val userMove: String,
+    56	    val bestMove: String,
+    57	    val equityLoss: Float,
+    58	    val allowTryAgain: Boolean = true,
+    59	    val allowShowBestMove: Boolean = true,
+    60	    val allowMoreDetail: Boolean = true
+    61	)
+    62	
+    63	/** UI state rendered by Tutor surfaces. */
+    64	sealed interface TutorUiState {
+    65	    data object Hidden : TutorUiState
+    66	
+    67	    data class CoachCard(
+    68	        val hint: TutorHint
+    69	    ) : TutorUiState
+    70	
+    71	    data class CompareMoves(
+    72	        val hint: TutorHint
+    73	    ) : TutorUiState
+    74	
+    75	    data class TryAgain(
+    76	        val hint: TutorHint
+    77	    ) : TutorUiState
+    78	
+    79	    data class Detail(
+    80	        val evaluation: TutorEvaluation
+    81	    ) : TutorUiState
+    82	}
+    83	
+    84	data class MoveArrow(
+    85	    val fromPoint: Int,
+    86	    val toPoint: Int,
+    87	    val checkerCount: Int = 1
+    88	)
+    89	
+    90	data class ShotBadge(
+    91	    val point: Int,
+    92	    val diceValues: List<Int>
+    93	)
+    94	
+    95	data class BoardTutorAnnotations(
+    96	    val userMoveArrows: List<MoveArrow> = emptyList(),
+    97	    val bestMoveArrows: List<MoveArrow> = emptyList(),
+    98	    val highlightedPoints: List<Int> = emptyList(),
+    99	    val shotBadges: List<ShotBadge> = emptyList()
+   100	)
+   101	
+   102	
+   103	/**
+   104	 * Captured facts from before a human move is committed.
+   105	 *
+   106	 * This is inert context. It must not become Android-only Try Again
+   107	 * semantics. Future restoration must go through a neutral contract.
+   108	 */
+   109	data class TutorPreMoveSnapshot(
+   110	    val board: IntArray,
+   111	    val oldBoard: IntArray,
+   112	    val originalDice: Pair<Int, Int>,
+   113	    val remainingDice: List<Int>,
+   114	    val legalMoves: IntArray,
+   115	    val blockedDice: Set<Int>,
+   116	    val pipCountHuman: Int,
+   117	    val pipCountEngine: Int,
+   118	    val cubeValue: Int,
+   119	    val cubeOwner: Int,
+   120	    val matchLength: Int,
+   121	    val humanScore: Int,
+   122	    val engineScore: Int
+   123	) {
+   124	    fun copyBoard(): IntArray = board.copyOf()
+   125	    fun copyOldBoard(): IntArray = oldBoard.copyOf()
+   126	    fun copyLegalMoves(): IntArray = legalMoves.copyOf()
+   127	}
+   128	
+   129	data class TutorMoveContext(
+   130	    val preMove: TutorPreMoveSnapshot,
+   131	    val userMove: String
+   132	)

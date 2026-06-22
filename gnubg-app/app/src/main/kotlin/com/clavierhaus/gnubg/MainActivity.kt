@@ -22,7 +22,6 @@ import com.clavierhaus.gnubg.options.OptionsModeScreen
 import com.clavierhaus.gnubg.play.GameLayout
 import com.clavierhaus.gnubg.profile.ProfileScreen
 import com.clavierhaus.gnubg.shared.AppMode
-import com.clavierhaus.gnubg.tutorui.TutorModeScreen
 import com.clavierhaus.gnubg.ui.theme.GnubgTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,7 +46,6 @@ class MainActivity : ComponentActivity() {
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
-                        onTutor = { mode = AppMode.TUTOR },
                         onLearn = { mode = AppMode.LEARN },
                         onAnalyse = { mode = AppMode.ANALYSE },
                         onOptions = { mode = AppMode.OPTIONS },
@@ -59,9 +57,6 @@ class MainActivity : ComponentActivity() {
                         onReturnToHub = { mode = AppMode.HUB }
                     )
 
-                    AppMode.TUTOR -> TutorModeScreen(
-                        onBackToHub = { mode = AppMode.HUB }
-                    )
 
                     AppMode.LEARN -> LearnScreen(
                         onBackToHub = { mode = AppMode.HUB }
