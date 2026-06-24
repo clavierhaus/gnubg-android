@@ -82,6 +82,17 @@ TEXT_FILES="$WORK_DIR/text_files.txt"
 BINARY_FILES="$WORK_DIR/binary_files.txt"
 RESOURCE_BINARIES="$WORK_DIR/resource_binaries.txt"
 
+GREP_EXCLUDES=(
+  --exclude-dir=.git
+  --exclude-dir=.gradle
+  --exclude-dir=.kotlin
+  --exclude-dir=tmp
+  --exclude-dir=build
+  --exclude-dir=.deps
+  --exclude-dir=autom4te.cache
+  --exclude-dir=glib
+)
+
 is_excluded_path() {
   case "$1" in
     .git|.git/*) return 0 ;;
@@ -178,6 +189,17 @@ emit_large_files() {
       printf '%6s %s\n' "$lines" "$f"
     fi
   done < "$TEXT_FILES" | sort -nr
+}
+
+review_grep_in() {
+  grep "${GREP_EXCLUDES[@]}" -RInE "$@"
+}
+
+emit_frequent_identifiers() {
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    grep -hoE "[A-Za-z_][A-Za-z0-9_]{3,}" "$f" || true
+  done < "$TEXT_FILES"     | sort     | uniq -c     | sort -nr     | sed -n "1,800p"
 }
 
 find . \
@@ -422,7 +444,7 @@ while IFS= read -r path; do
   esac
 done < "$TEXT_FILES"
 
-append_cmd "$build_system" "build dependency references" grep -RInE \
+append_cmd "$build_system" "build dependency references" review_grep_in \
   'plugin|android|kotlin|ndk|cmake|sdk|compileSdk|minSdk|targetSdk|namespace|applicationId|jniLibs|externalNativeBuild|CMake|sourceSets|dependencies' \
   settings.gradle settings.gradle.kts build.gradle build.gradle.kts gradle.properties local.properties gnubg-app jni-bridge CMakeLists.txt engine-core 2>/dev/null
 
@@ -556,23 +578,23 @@ GNUbg concepts. It is not allowed to become an independent backgammon engine.
 - SGF/game record semantics
 EOF_SOT
 
-append_cmd "$sot" "Android/Kotlin possible gameplay authority" grep -RInE \
+append_cmd "$sot" "Android/Kotlin possible gameplay authority" review_grep_in \
   'pip.?count|pipCount|equity|eval|evaluate|evaluation|analysis|analyse|tutor|review|doubling.?cube|cube|double|take|drop|bear.?off|bearoff|bar|valid.?move|legal.?move|legalMoves|GenerateMoves|getLegalMoves|applySubMove|move.?legal|dice|die|remainingDice|blockedDice|consume|turn|match.?score|matchScore|matchLength|Crawford|resign|no.?legal|board\[|BoardState|point|orientation|swapBoard|source|destination|src|dst|position|PositionId|SGF' \
   gnubg-app/app/src/main 2>/dev/null
 
-append_cmd "$sot" "JNI/native adapter possible gameplay authority" grep -RInE \
+append_cmd "$sot" "JNI/native adapter possible gameplay authority" review_grep_in \
   'pip.?count|pipCount|equity|eval|evaluate|evaluation|analysis|analyse|tutor|review|doubling.?cube|cube|double|take|drop|bear.?off|bearoff|bar|valid.?move|legal.?move|GenerateMoves|ApplySubMove|CommandMove|CommandRoll|CommandDouble|CommandTake|CommandDrop|CommandResign|PositionKey|EqualKeys|FormatMove|ParseMove|SwapSides|PipCount|TanBoard|anBoard|anDice|ms\.|msBoard|NextTurn|TurnDone|match|Crawford|SGF|position' \
   jni-bridge engine-core 2>/dev/null
 
-append_cmd "$sot" "Source-of-truth documentation claims" grep -RInE \
+append_cmd "$sot" "Source-of-truth documentation claims" review_grep_in \
   'source of truth|GNUbg.*truth|bible|authority|upstream|engine-core|embedded|adapted|facade|JNI|native|Android.*logic|Kotlin.*logic|de-Android|reinvent|duplicate' \
   docs README* code-analysis gnubg-app jni-bridge engine-core 2>/dev/null
 
-append_cmd "$sot" "Magic-number board/game logic outside engine-core" grep -RInE \
+append_cmd "$sot" "Magic-number board/game logic outside engine-core" review_grep_in \
   '(^|[^A-Za-z0-9_])(24|25|26|49|50|96|144|1296)([^A-Za-z0-9_]|$)|point - 1|24 \+|indices step|until 8|IntArray\(' \
   gnubg-app jni-bridge 2>/dev/null
 
-append_cmd "$sot" "Parallel state ownership indicators" grep -RInE \
+append_cmd "$sot" "Parallel state ownership indicators" review_grep_in \
   'board|Board|dice|Dice|cube|Cube|score|Score|match|Match|turn|Turn|phase|state|State|snapshot|Snapshot|cache|oldBoard|newBoard|current|previous|pending|confirmed|selected|available|legal|blocked' \
   gnubg-app jni-bridge docs 2>/dev/null
 
@@ -586,29 +608,33 @@ It highlights where multiple layers may own the same concept, or where the app
 may have implemented an almost-GNUbg instead of exposing GNUbg faithfully.
 EOF_REINV
 
-append_cmd "$reinvention" "Android-side gameplay semantics" grep -RInE \
+append_cmd "$reinvention" "Android-side gameplay semantics" review_grep_in \
   'legalMoves|remainingDice|blockedDice|applySubMove|findMove|formatMove|swapBoard|pipCount|getLegalMoves|source|destination|src|dst|bar|bear|cube|double|take|drop|resign|turn|moveStr|oldBoard|board\[|point|die|dice|match|score|analysis|tutor|review' \
   gnubg-app/app/src/main 2>/dev/null
 
-append_cmd "$reinvention" "Native/facade gameplay semantics" grep -RInE \
+append_cmd "$reinvention" "Native/facade gameplay semantics" review_grep_in \
   'GenerateMoves|ApplySubMove|FormatMove|ParseMove|CommandMove|CommandRoll|CommandDouble|CommandTake|CommandDrop|CommandResign|PositionKey|EqualKeys|SwapSides|PipCount|Bearoff|Cube|Legal|movelist|movefilter|TanBoard|anBoard|anDice|ms\.|snapshot' \
   jni-bridge engine-core 2>/dev/null
 
-append_cmd "$reinvention" "Frequent identifiers across codebase" bash -c '
-grep -RhoE "[A-Za-z_][A-Za-z0-9_]{3,}" gnubg-app jni-bridge engine-core docs code-analysis 2>/dev/null \
-  | sort | uniq -c | sort -nr | sed -n "1,800p"
-'
+append_cmd "$reinvention" "Frequent identifiers across codebase" \
+  emit_frequent_identifiers
 
 arch="$OUT_DIR/13_architecture_state_ownership.md"
 write_title "$arch" "Architecture and state ownership"
 append_cmd "$arch" "package/file ownership map" find gnubg-app jni-bridge engine-core docs code-analysis \
-  \( -path '*/build' -o -path '*/tmp' \) -prune -o -type f -print 2>/dev/null
+  \( -path '*/build' \
+     -o -path '*/tmp' \
+     -o -path '*/.gradle' \
+     -o -path '*/.kotlin' \
+     -o -path '*/.deps' \
+     -o -path 'jni-bridge/external/glib' \) \
+  -prune -o -type f -print 2>/dev/null
 
-append_cmd "$arch" "state ownership keywords" grep -RInE \
+append_cmd "$arch" "state ownership keywords" review_grep_in \
   'state|State|BoardState|GameViewModel|Engine|snapshot|cache|remember|mutable|Mutable|Flow|LiveData|DataStore|Preferences|settings|phase|turn|match|score|dice|board|cube|analysis|review|mode|navigation|route|screen|Screen' \
   gnubg-app jni-bridge engine-core docs 2>/dev/null
 
-append_cmd "$arch" "threading lifecycle synchronization" grep -RInE \
+append_cmd "$arch" "threading lifecycle synchronization" review_grep_in \
   'Thread|thread|Executor|Coroutine|Dispatchers|launch|suspend|mutex|pthread|lock|unlock|synchronized|volatile|lifecycle|onCreate|onDestroy|remember|LaunchedEffect|DisposableEffect|runBlocking|withContext' \
   gnubg-app jni-bridge engine-core docs 2>/dev/null
 
@@ -616,19 +642,19 @@ quality="$OUT_DIR/14_code_quality_hotspots.md"
 write_title "$quality" "Code quality hotspots"
 append_cmd "$quality" "large text files (>=250 lines)" emit_large_files
 
-append_cmd "$quality" "TODO/FIXME/HACK/temporary markers" grep -RInE \
+append_cmd "$quality" "TODO/FIXME/HACK/temporary markers" review_grep_in \
   'TODO|FIXME|HACK|XXX|temporary|temp|workaround|stub|placeholder|later|for now|not implemented|deprecated|dead|unused|remove|cleanup|clean-up' \
   gnubg-app jni-bridge engine-core docs code-analysis 2>/dev/null
 
-append_cmd "$quality" "magic numbers and board constants in Kotlin/JNI" grep -RInE \
+append_cmd "$quality" "magic numbers and board constants in Kotlin/JNI" review_grep_in \
   '(^|[^A-Za-z0-9_])(24|25|26|49|50|96|144|1296)([^A-Za-z0-9_]|$)|point - 1|24 \+|indices step|until 8|IntArray\(' \
   gnubg-app/app/src/main jni-bridge 2>/dev/null
 
-append_cmd "$quality" "error handling and logging" grep -RInE \
+append_cmd "$quality" "error handling and logging" review_grep_in \
   'try|catch|throw|require|check|assert|Log\.|println|printf|fprintf|g_warning|error|fatal|return null|return@|?:' \
   gnubg-app jni-bridge engine-core docs 2>/dev/null
 
-append_cmd "$quality" "imports and resource references" grep -RInE \
+append_cmd "$quality" "imports and resource references" review_grep_in \
   '^package |^import |R\.drawable|R\.string|R\.color|painterResource|stringResource|colorResource' \
   gnubg-app/app/src/main gnubg-app/app/src/main/res 2>/dev/null
 
@@ -645,11 +671,11 @@ done < "$TEXT_FILES"
 disc="$OUT_DIR/16_documentation_code_discrepancies.md"
 write_title "$disc" "Documentation/code discrepancy scan"
 
-append_cmd "$disc" "documentation architecture claims" grep -RInE \
+append_cmd "$disc" "documentation architecture claims" review_grep_in \
   'architecture|facade|JNI|native|Android|Kotlin|GNUbg|engine-core|source of truth|bible|authority|mode|tutor|analyse|analysis|cube|move|dice|board|bear|bar|documentation|handover|roadmap|TODO|FIXME' \
   docs README* code-analysis 2>/dev/null
 
-append_cmd "$disc" "code terms likely needing documentation" grep -RInE \
+append_cmd "$disc" "code terms likely needing documentation" review_grep_in \
   'HomeHub|GameViewModel|BoardState|Engine|SettingsScreen|Options|Analyse|Profile|Learn|Tutor|Review|Cube|Resign|Match|DataStore|Preferences|gnubg_mobile|native-lib|engine-core|CommandMove|GenerateMoves|ApplySubMove' \
   gnubg-app jni-bridge engine-core 2>/dev/null
 
@@ -657,19 +683,19 @@ append_cmd "$disc" "code terms likely needing documentation" grep -RInE \
   echo
   echo "## Automatic documentation gap flags"
   echo
-  if grep -RInE 'upstream|engine-core|adapt|vendor|embedded|source of truth|authority' docs README* 2>/dev/null >/dev/null; then
+  if review_grep_in 'upstream|engine-core|adapt|vendor|embedded|source of truth|authority' docs README* 2>/dev/null >/dev/null; then
     echo "- Upstream/GNUbg authority documentation: detected, review for accuracy."
   else
     echo "- Upstream/GNUbg authority documentation: not detected."
   fi
 
-  if grep -RInE 'facade|JNI|native|Android|Kotlin|architecture' docs README* 2>/dev/null >/dev/null; then
+  if review_grep_in 'facade|JNI|native|Android|Kotlin|architecture' docs README* 2>/dev/null >/dev/null; then
     echo "- Architecture/JNI/native documentation: detected, review for accuracy."
   else
     echo "- Architecture/JNI/native documentation: not detected."
   fi
 
-  if grep -RInE 'test|coverage|junit|androidTest|unit test' docs README* 2>/dev/null >/dev/null; then
+  if review_grep_in 'test|coverage|junit|androidTest|unit test' docs README* 2>/dev/null >/dev/null; then
     echo "- Test documentation: detected, review for accuracy."
   else
     echo "- Test documentation: not detected."
@@ -679,7 +705,19 @@ append_cmd "$disc" "code terms likely needing documentation" grep -RInE \
 tests="$OUT_DIR/17_test_coverage.md"
 write_title "$tests" "Test coverage"
 append_cmd "$tests" "test files" find . \
-  \( -path './.git' -o -path './tmp' -o -path './.gradle' -o -path './external/backgammon-teacher' -o -path '*/build' -o -path './jni-bridge/build-*' \) -prune \
+  \( -path './.git' \
+     -o -path './tmp' \
+     -o -path '*/tmp' \
+     -o -path './.gradle' \
+     -o -path '*/.gradle' \
+     -o -path './.kotlin' \
+     -o -path '*/.kotlin' \
+     -o -path './external/backgammon-teacher' \
+     -o -path '*/build' \
+     -o -path '*/.deps' \
+     -o -path './upstream-source/gnubg/autom4te.cache' \
+     -o -path './jni-bridge/build-*' \
+     -o -path './jni-bridge/external/glib' \) -prune \
   -o \( -iname '*test*' -o -path '*androidTest*' -o -path '*test*' \) -print
 
 while IFS= read -r path; do
@@ -692,7 +730,7 @@ while IFS= read -r path; do
   esac
 done < "$TEXT_FILES"
 
-append_cmd "$tests" "test dependencies and tasks" grep -RInE \
+append_cmd "$tests" "test dependencies and tasks" review_grep_in \
   'testImplementation|androidTestImplementation|junit|espresso|mockk|robolectric|connectedAndroidTest|testDebugUnitTest|CTest|add_test|enable_testing' \
   . 2>/dev/null
 
