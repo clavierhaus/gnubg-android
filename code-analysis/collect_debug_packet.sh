@@ -189,14 +189,16 @@ write_packet() {
   append_cmd "Recent commits" git --no-pager log --oneline -20
 
   append_cmd "Filtered top-level structure" bash -c '
-    find . -maxdepth 4 -type d \
-      ! -path "./.git*" \
-      ! -path "./tmp*" \
-      ! -path "./upstream-source*" \
-      ! -path "*/.gradle*" \
-      ! -path "*/.kotlin*" \
-      ! -path "*/build*" \
-      ! -path "*/external/glib*" \
+    find . -maxdepth 4 \
+      \( -path "./.git" \
+         -o -path "./tmp" \
+         -o -path "./upstream-source" \
+         -o -path "*/.gradle" \
+         -o -path "*/.kotlin" \
+         -o -path "*/build" \
+         -o -path "*/tmp" \
+         -o -path "*/external/glib" \) \
+      -prune -o -type d -print \
       | sed "s#^\./##" \
       | sort
   '
@@ -316,7 +318,34 @@ write_packet() {
 
   append_cmd "All reviewed text files manifest" bash -c '
     printf "%-78s %12s %s\n" "path" "bytes" "sha256"
-    review_files \
+
+    find \
+      gnubg-app \
+      jni-bridge \
+      docs \
+      doc \
+      code-analysis \
+      test-harness \
+      -type f \
+      ! -path "*/build/*" \
+      ! -path "*/tmp/*" \
+      ! -path "*/.gradle/*" \
+      ! -path "*/.kotlin/*" \
+      ! -path "jni-bridge/external/glib/*" \
+      ! -name "*.apk" \
+      ! -name "*.aab" \
+      ! -name "*.class" \
+      ! -name "*.o" \
+      ! -name "*.so" \
+      ! -name "*.jar" \
+      ! -name "*.pdf" \
+      ! -name "*.png" \
+      ! -name "*.jpg" \
+      ! -name "*.jpeg" \
+      ! -name "*.webp" \
+      ! -name "*.ttf" \
+      2>/dev/null \
+      | sort \
       | while IFS= read -r f; do
           [ -f "$f" ] || continue
           bytes="$(wc -c < "$f" | tr -d " ")"
@@ -352,6 +381,16 @@ acceptance_checks() {
 
   if grep -q '^upstream-source/' "$PACKET"; then
     echo "FAIL: packet contains upstream-source paths" >&2
+    exit 1
+  fi
+
+  if grep -q '^gnubg-app/tmp' "$PACKET"; then
+    echo "FAIL: packet contains gnubg-app/tmp paths" >&2
+    exit 1
+  fi
+
+  if grep -q 'review_files: command not found' "$PACKET"; then
+    echo "FAIL: manifest attempted to call unavailable review_files function" >&2
     exit 1
   fi
 
