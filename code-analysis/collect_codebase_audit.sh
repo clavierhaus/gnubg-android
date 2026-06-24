@@ -311,7 +311,7 @@ This applies to:
 - \`17_test_coverage.md\`: tests and test gaps
 - \`18_binary_resource_inventory.md\`: binary/resource inventory
 - \`19_all_text_sources.md\`: complete text source dump
-- \`20_integrity_hashes.md\`: hashes of generated files
+- \`20_integrity_hashes.sha256\`: hashes of generated files
 - \`21_archive.sha256\`: archive hash
 - \`resource_binaries/\`: copied Android resource binaries
 - \`codebase_audit_bundle.tar.gz\`: uploadable archive
@@ -715,35 +715,24 @@ while IFS= read -r path; do
   dump_file "$all_text" "$path"
 done < "$TEXT_FILES"
 
-integrity="$OUT_DIR/20_integrity_hashes.md"
+integrity="$OUT_DIR/20_integrity_hashes.sha256"
 TAR_PATH="$OUT_DIR/codebase_audit_bundle.tar.gz"
 ARCHIVE_HASH="$OUT_DIR/21_archive.sha256"
 
-write_title "$integrity" "Integrity hashes"
-
-{
-  echo "## Bundle files"
-  echo
-  echo "This section excludes this integrity manifest, the archive,"
-  echo "the archive hash, and internal .work scratch files."
-  echo
-  echo '```text'
-  (
-    cd "$OUT_DIR"
-    find . -type f \
-      ! -path './.work/*' \
-      ! -name '20_integrity_hashes.md' \
-      ! -name 'codebase_audit_bundle.tar.gz' \
-      ! -name '21_archive.sha256' \
-      -print \
-      | sed 's#^\./##' \
-      | sort \
-      | while IFS= read -r file; do
-          sha256sum "$file"
-        done
-  )
-  echo '```'
-} >> "$integrity"
+(
+  cd "$OUT_DIR"
+  find . -type f \
+    ! -path './.work/*' \
+    ! -name '20_integrity_hashes.sha256' \
+    ! -name 'codebase_audit_bundle.tar.gz' \
+    ! -name '21_archive.sha256' \
+    -print \
+    | sed 's#^\./##' \
+    | sort \
+    | while IFS= read -r file; do
+        sha256sum "$file"
+      done
+) > "$integrity"
 
 (
   cd "$OUT_DIR"
@@ -755,7 +744,8 @@ write_title "$integrity" "Integrity hashes"
     | sed 's#^\./##' \
     | sort > ".work/tar_files.txt"
 
-  tar -czf "codebase_audit_bundle.tar.gz" -T ".work/tar_files.txt"
+  tar -czf "codebase_audit_bundle.tar.gz" \
+    -T ".work/tar_files.txt"
 )
 
 (
@@ -770,10 +760,24 @@ echo "Uploadable archive:"
 echo "$TAR_PATH"
 echo
 echo "Archive hash:"
-echo "$OUT_DIR/21_archive.sha256"
+echo "$ARCHIVE_HASH"
 echo
 echo "Index:"
 echo "$INDEX"
+echo
+echo "Generated deliverable files:"
+find "$OUT_DIR" -maxdepth 2 -type f \
+  ! -path "$OUT_DIR/.work/*" \
+  -printf '%10s bytes  %p\n' \
+  | sort -nr \
+  | sed -n '1,220p'
+echo
+echo "Internal scratch files:"
+find "$OUT_DIR/.work" -maxdepth 1 -type f \
+  -printf '%10s bytes  %p\n' \
+  | sort -nr \
+  | sed -n '1,80p'
+echo
 
 if [ "$OPEN_INDEX" -eq 1 ]; then
   if [ -n "${PAGER:-}" ] && command -v "$PAGER" >/dev/null 2>&1; then

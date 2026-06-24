@@ -76,7 +76,7 @@ A run creates:
       17_test_coverage.md
       18_binary_resource_inventory.md
       19_all_text_sources.md
-      20_integrity_hashes.md
+      20_integrity_hashes.sha256
       21_archive.sha256
       resource_binaries/
       codebase_audit_bundle.tar.gz

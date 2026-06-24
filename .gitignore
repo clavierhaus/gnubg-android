@@ -153,3 +153,6 @@ gnubg-app/.gradle/
 gnubg-app/app/build/
 gnubg-app/tmp/
 gnubg-app/local.properties
+
+# Disposable local audit/build scratch output
+/tmp/
