@@ -67,6 +67,7 @@ if [ -z "$OUT_DIR" ]; then
 fi
 
 mkdir -p "$OUT_DIR/resource_binaries"
+mkdir -p "$OUT_DIR/llm_upload"
 WORK_DIR="$OUT_DIR/.work"
 mkdir -p "$WORK_DIR"
 
@@ -714,6 +715,96 @@ write_title "$all_text" "All captured text sources"
 while IFS= read -r path; do
   dump_file "$all_text" "$path"
 done < "$TEXT_FILES"
+
+LLM_UPLOAD="$OUT_DIR/llm_upload/00_full_review_context.md"
+
+{
+  echo "# GNUbg Android full review context"
+  echo
+  echo "This is a single-file upload bundle generated from the structured audit"
+  echo "sections. It is intended for LLM review plans with strict file-count limits."
+  echo
+  echo "Generated: $GENERATED_AT"
+  echo "Repository: $ROOT"
+  echo "Cutoff commit: $HEAD_FULL"
+  echo "Cutoff short: $HEAD_SHORT"
+  echo "Cutoff subject: $HEAD_SUBJECT"
+  echo "Cutoff date: $HEAD_DATE"
+  echo
+  echo "## Upload note"
+  echo
+  echo "This file intentionally duplicates the generated section files below."
+  echo "Use it when uploading individual audit sections would exceed the file-count"
+  echo "limit. The structured files remain available locally and in the tar archive."
+  echo
+  echo "## Included sections"
+  echo
+  printf '%s\n' \
+    "00_index.md" \
+    "01_repo_structure.txt" \
+    "02_git_log.txt" \
+    "03_build_system.md" \
+    "04_android_manifest.xml" \
+    "05_kotlin_sources.md" \
+    "06_java_sources.md" \
+    "07_android_resources.md" \
+    "08_jni_bridge.md" \
+    "09_cmake_and_headers.md" \
+    "10_engine_core_sources.md" \
+    "11_gnubg_source_of_truth_audit.md" \
+    "12_reinvention_duplication_scan.md" \
+    "13_architecture_state_ownership.md" \
+    "14_code_quality_hotspots.md" \
+    "15_documentation.md" \
+    "16_documentation_code_discrepancies.md" \
+    "17_test_coverage.md" \
+    "18_binary_resource_inventory.md" \
+    "19_all_text_sources.md"
+  echo
+} > "$LLM_UPLOAD"
+
+for section in \
+  00_index.md \
+  01_repo_structure.txt \
+  02_git_log.txt \
+  03_build_system.md \
+  04_android_manifest.xml \
+  05_kotlin_sources.md \
+  06_java_sources.md \
+  07_android_resources.md \
+  08_jni_bridge.md \
+  09_cmake_and_headers.md \
+  10_engine_core_sources.md \
+  11_gnubg_source_of_truth_audit.md \
+  12_reinvention_duplication_scan.md \
+  13_architecture_state_ownership.md \
+  14_code_quality_hotspots.md \
+  15_documentation.md \
+  16_documentation_code_discrepancies.md \
+  17_test_coverage.md \
+  18_binary_resource_inventory.md \
+  19_all_text_sources.md
+do
+  {
+    echo
+    echo
+    echo "================================================================"
+    echo "BEGIN GENERATED SECTION: $section"
+    echo "================================================================"
+    echo
+    cat "$OUT_DIR/$section"
+    echo
+    echo "================================================================"
+    echo "END GENERATED SECTION: $section"
+    echo "================================================================"
+  } >> "$LLM_UPLOAD"
+done
+
+echo "Single-file LLM upload bundle:"
+printf '%10s bytes  %s\n' \
+  "$(wc -c < "$LLM_UPLOAD" | tr -d ' ')" \
+  "$LLM_UPLOAD"
+echo
 
 integrity="$OUT_DIR/20_integrity_hashes.sha256"
 TAR_PATH="$OUT_DIR/codebase_audit_bundle.tar.gz"
