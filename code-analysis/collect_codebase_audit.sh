@@ -85,12 +85,15 @@ RESOURCE_BINARIES="$WORK_DIR/resource_binaries.txt"
 is_excluded_path() {
   case "$1" in
     .git|.git/*) return 0 ;;
-    .gradle|.gradle/*) return 0 ;;
-    tmp|tmp/*) return 0 ;;
+    .gradle|.gradle/*|*/.gradle|*/.gradle/*) return 0 ;;
+    .kotlin|.kotlin/*|*/.kotlin|*/.kotlin/*) return 0 ;;
+    tmp|tmp/*|*/tmp|*/tmp/*) return 0 ;;
     external/backgammon-teacher|external/backgammon-teacher/*) return 0 ;;
-    build|build/*) return 0 ;;
-    */build|*/build/*) return 0 ;;
+    build|build/*|*/build|*/build/*) return 0 ;;
+    */.deps|*/.deps/*) return 0 ;;
+    upstream-source/gnubg/autom4te.cache|upstream-source/gnubg/autom4te.cache/*) return 0 ;;
     jni-bridge/build-*) return 0 ;;
+    jni-bridge/external/glib|jni-bridge/external/glib/*) return 0 ;;
     *.apk|*.aab|*.aar|*.dex|*.class|*.o|*.lo|*.a|*.so|*.dylib|*.dll|*.exe) return 0 ;;
     *.zip|*.tar|*.tgz|*.gz|*.bz2|*.xz|*.7z) return 0 ;;
   esac
@@ -187,6 +190,7 @@ find . \
      -o -path '*/build' \) -prune \
   -o -type f -print \
   | sed 's#^\./##' \
+  | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^jni-bridge/external/glib(/|$)' \
   | sort > "$ALL_FILES"
 
 : > "$TEXT_FILES"
@@ -324,6 +328,9 @@ This applies to:
 - \`tmp/\`
 - build directories
 - generated native/CMake output
+- nested `.deps/` compiler dependency directories
+- `upstream-source/gnubg/autom4te.cache/`
+- `jni-bridge/external/glib/` vendored dependency tree
 - APK/AAB/class/object/shared-library build outputs
 - archive files
 - \`external/backgammon-teacher/\`
@@ -347,6 +354,7 @@ repo_structure="$OUT_DIR/01_repo_structure.txt"
        -o -path '*/build' \) -prune \
     -o -type d -print \
     | sed 's#^\./##' \
+    | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^jni-bridge/external/glib(/|$)' \
     | sort
   echo
   echo "== file counts =="

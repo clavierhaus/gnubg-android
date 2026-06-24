@@ -86,10 +86,14 @@ A run creates:
 The collector excludes:
 
 - `.git/`
-- `.gradle/`
-- `tmp/`
+- `.gradle/` and nested Gradle caches
+- `.kotlin/` and nested Kotlin caches
+- `tmp/` and nested scratch directories
 - build directories
 - generated native/CMake build output
+- nested `.deps/` compiler dependency directories
+- `upstream-source/gnubg/autom4te.cache/`
+- `jni-bridge/external/glib/` vendored dependency tree
 - APK/AAB/class/object/shared-library build outputs
 - archive files
 - `external/backgammon-teacher/`
