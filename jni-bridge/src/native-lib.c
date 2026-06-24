@@ -56,8 +56,11 @@ static int last_engine_dice[2] = {0, 0};
  */
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchCubeInfo(JNIEnv *env, jobject thiz) {
+    (void)thiz;
     jintArray result = (*env)->NewIntArray(env, 3);
-    jint buf[3] = { (jint)ms.fDoubled, (jint)ms.fCubeOwner, (jint)ms.nCube };
+    int c[3];
+    gnubg_mobile_get_cube_info(c);
+    jint buf[3] = { (jint)c[0], (jint)c[1], (jint)c[2] };
     (*env)->SetIntArrayRegion(env, result, 0, 3, buf);
     return result;
 }
@@ -66,21 +69,10 @@ JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getCubeDebugState(JNIEnv *env, jobject thiz) {
     (void)thiz;
     jintArray result = (*env)->NewIntArray(env, 13);
-    jint buf[13] = {
-        (jint)ms.gs,
-        (jint)ms.fTurn,
-        (jint)ms.fMove,
-        (jint)ms.anDice[0],
-        (jint)ms.anDice[1],
-        (jint)ms.fDoubled,
-        (jint)ms.fCubeOwner,
-        (jint)ms.nCube,
-        (jint)ms.fCrawford,
-        (jint)ms.fCubeUse,
-        (jint)ms.anScore[0],
-        (jint)ms.anScore[1],
-        (jint)ms.nMatchTo
-    };
+    int s[13];
+    gnubg_mobile_get_match_state(s);
+    jint buf[13];
+    for (int i = 0; i < 13; i++) buf[i] = (jint)s[i];
     (*env)->SetIntArrayRegion(env, result, 0, 13, buf);
     return result;
 }
@@ -164,16 +156,11 @@ Java_com_clavierhaus_gnubg_Engine_commandDrop(JNIEnv *env, jobject thiz) {
  */
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getGameResult(JNIEnv *env, jobject thiz) {
+    (void)thiz;
     jintArray result = (*env)->NewIntArray(env, 2);
-    jint buf[2] = {-1, 0};
-    if (plGame && plGame->plNext && plGame->plNext->p) {
-        moverecord *pmr = (moverecord *)plGame->plNext->p;
-        xmovegameinfo *pmgi = &pmr->g;
-        if (pmgi->fWinner >= 0) {
-            buf[0] = (jint)pmgi->fWinner;
-            buf[1] = (jint)pmgi->nPoints;
-        }
-    }
+    int r[2];
+    gnubg_mobile_get_game_result(r);
+    jint buf[2] = { (jint)r[0], (jint)r[1] };
     (*env)->SetIntArrayRegion(env, result, 0, 2, buf);
     return result;
 }
@@ -185,16 +172,11 @@ Java_com_clavierhaus_gnubg_Engine_getGameResult(JNIEnv *env, jobject thiz) {
  */
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMoveRecordDice(JNIEnv *env, jobject thiz) {
+    (void)thiz;
     jintArray result = (*env)->NewIntArray(env, 2);
-    jint buf[2] = {0, 0};
-    if (plLastMove && plLastMove->p) {
-        moverecord *pmr = (moverecord *)plLastMove->p;
-        if (pmr->mt == MOVE_SETDICE || pmr->mt == MOVE_NORMAL) {
-            buf[0] = (jint)pmr->anDice[0];
-            buf[1] = (jint)pmr->anDice[1];
-        }
-    }
-    LOGI("getMoveRecordDice: mt=%d dice=%d,%d", plLastMove && plLastMove->p ? ((moverecord*)plLastMove->p)->mt : -1, buf[0], buf[1]);
+    int d[2];
+    gnubg_mobile_get_move_record_dice(d);
+    jint buf[2] = { (jint)d[0], (jint)d[1] };
     (*env)->SetIntArrayRegion(env, result, 0, 2, buf);
     return result;
 }
@@ -447,14 +429,15 @@ JNIEXPORT jstring JNICALL
 Java_com_clavierhaus_gnubg_Engine_formatMove(JNIEnv *env, jobject thiz,
                                               jintArray jboard,
                                               jintArray jmove) {
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
     jint moveBuf[8];
     (*env)->GetIntArrayRegion(env, jmove, 0, 8, moveBuf);
-    int anMove[8];
-    for (int i = 0; i < 8; i++) anMove[i] = (int)moveBuf[i];
+    int anMove[8]; for (int i = 0; i < 8; i++) anMove[i] = (int)moveBuf[i];
     char sz[64] = {0};
-    FormatMove(sz, (ConstTanBoard)anBoard, anMove);
+    gnubg_mobile_format_move(in, anMove, sz, (int)sizeof(sz));
     return (*env)->NewStringUTF(env, sz);
 }
 
@@ -468,11 +451,18 @@ JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_applySubMove(JNIEnv *env, jobject thiz,
                                                 jintArray jboard,
                                                 jint iSrc, jint nRoll) {
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    if (ApplySubMove(anBoard, (int)iSrc, (int)nRoll, TRUE) != 0)
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50], out[50];
+    for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    if (gnubg_mobile_apply_sub_move(in, (int)iSrc, (int)nRoll, out) != 1)
         return (*env)->NewIntArray(env, 0);
-    return pack_board(env, anBoard);
+    jint outBuf[50];
+    for (int i = 0; i < 50; i++) outBuf[i] = (jint)out[i];
+    jintArray result = (*env)->NewIntArray(env, 50);
+    (*env)->SetIntArrayRegion(env, result, 0, 50, outBuf);
+    return result;
 }
 
 /*
@@ -517,22 +507,23 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchScore(JNIEnv *env, jobject thiz) {
     jintArray result = (*env)->NewIntArray(env, 3);
-    jint buf[3] = { (jint)ms.anScore[0], (jint)ms.anScore[1], (jint)ms.nMatchTo };
+    int s[3]; gnubg_mobile_get_match_score(s);
+    jint buf[3] = { (jint)s[0], (jint)s[1], (jint)s[2] };
     (*env)->SetIntArrayRegion(env, result, 0, 3, buf);
     return result;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchLength(JNIEnv *env, jobject thiz) {
-    return (jint)ms.nMatchTo;
+    (void)env; (void)thiz;
+    int s[13]; gnubg_mobile_get_match_state(s);
+    return (jint)s[12];
 }
 
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchWinner(JNIEnv *env, jobject thiz) {
-    if (ms.gs < GAME_OVER) return -1;
-    if (ms.anScore[0] > ms.anScore[1]) return 0;
-    if (ms.anScore[1] > ms.anScore[0]) return 1;
-    return -1;
+    (void)env; (void)thiz;
+    return (jint)gnubg_mobile_get_match_winner();
 }
 
 JNIEXPORT jintArray JNICALL
@@ -555,23 +546,29 @@ Java_com_clavierhaus_gnubg_Engine_getMatchDice(JNIEnv *env, jobject thiz) {
 
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchTurn(JNIEnv *env, jobject thiz) {
-    return (jint)ms.fTurn;
+    (void)env; (void)thiz;
+    int s[13]; gnubg_mobile_get_match_state(s);
+    return (jint)s[1];
 }
 
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchStatus(JNIEnv *env, jobject thiz) {
-    return (jint)ms.gs;
+    (void)env; (void)thiz;
+    int s[13]; gnubg_mobile_get_match_state(s);
+    return (jint)s[0];
 }
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_pipCount(JNIEnv *env, jobject thiz,
                                             jintArray jboard) {
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    unsigned int anPip[2];
-    PipCount((ConstTanBoard)anBoard, anPip);
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    int pips[2];
+    gnubg_mobile_pip_count(in, pips);
     jintArray result = (*env)->NewIntArray(env, 2);
-    jint buf[2] = { (jint)anPip[0], (jint)anPip[1] };
+    jint buf[2] = { (jint)pips[0], (jint)pips[1] };
     (*env)->SetIntArrayRegion(env, result, 0, 2, buf);
     return result;
 }
@@ -579,10 +576,17 @@ Java_com_clavierhaus_gnubg_Engine_pipCount(JNIEnv *env, jobject thiz,
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_swapBoard(JNIEnv *env, jobject thiz,
                                              jintArray jboard) {
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    SwapSides(anBoard);
-    return pack_board(env, anBoard);
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50], out[50];
+    for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    gnubg_mobile_swap_board(in, out);
+    jint outBuf[50];
+    for (int i = 0; i < 50; i++) outBuf[i] = (jint)out[i];
+    jintArray result = (*env)->NewIntArray(env, 50);
+    (*env)->SetIntArrayRegion(env, result, 0, 50, outBuf);
+    return result;
 }
 
 JNIEXPORT jfloatArray JNICALL
@@ -678,69 +682,79 @@ Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
 }
 
 
-static jboolean run_file_command(JNIEnv *env, jstring path, void (*command_fn)(char *)) {
-    const char *szPath = (*env)->GetStringUTFChars(env, path, 0);
-    if (!szPath) return JNI_FALSE;
-
-    pthread_mutex_lock(&gnubg_lock);
-    char *szCopy = strdup(szPath);
-    if (szCopy) {
-        command_fn(szCopy);
-        free(szCopy);
-    }
-    pthread_mutex_unlock(&gnubg_lock);
-
-    (*env)->ReleaseStringUTFChars(env, path, szPath);
-    return JNI_TRUE;
-}
-
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadGame(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandLoadGame);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_load_game(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_saveGame(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandSaveGame);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_save_game(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadMatch(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandLoadMatch);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_load_match(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_saveMatch(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandSaveMatch);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_save_match(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadPosition(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandLoadPosition);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_load_position(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_savePosition(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandSavePosition);
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_save_position(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_loadSGF(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandLoadMatch);
+    /* SGF load currently aliases to match load (unchanged behaviour). */
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_load_match(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_saveSGF(JNIEnv *env, jobject thiz, jstring path) {
     (void)thiz;
-    return run_file_command(env, path, CommandSaveMatch);
+    /* SGF save currently aliases to match save (unchanged behaviour). */
+    const char *p = (*env)->GetStringUTFChars(env, path, 0);
+    jboolean ok = (p && gnubg_mobile_save_match(p)) ? JNI_TRUE : JNI_FALSE;
+    if (p) (*env)->ReleaseStringUTFChars(env, path, p);
+    return ok;
 }
 
 static int android_gnubg_command_allowed(const char *cmd) {
