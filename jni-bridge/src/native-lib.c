@@ -234,6 +234,7 @@ Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
     }
     const char *weightsPath = (*env)->GetStringUTFChars(env, jWeightsPath, NULL);
     SetCubeInfo(&ci_default, 1, -1, 0, 0, (int[]){0, 0}, 0, 0, 0, VARIATION_STANDARD);
+    gnubg_mobile_set_default_cubeinfo();   /* keep facade defaults in sync */
     EvalInitialise((char *)weightsPath, NULL, 0, NULL);
     (*env)->ReleaseStringUTFChars(env, jWeightsPath, weightsPath);
     rngctxCurrent = InitRNG(NULL, NULL, TRUE, rngCurrent);
@@ -386,27 +387,27 @@ Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
                                                   jintArray jboard,
                                                   jint die0, jint die1,
                                                   jint fPartial) {
-    pthread_mutex_lock(&gnubg_lock);
-    if (!gnubg_initialised) {
-        pthread_mutex_unlock(&gnubg_lock);
-        return (*env)->NewIntArray(env, 0);
-    }
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    movelist ml;
-    memset(&ml, 0, sizeof(ml));
-    GenerateMoves(&ml, (ConstTanBoard)anBoard, (int)die0, (int)die1, (int)fPartial);
-    int nMoves = ml.cMoves;
-    jintArray result = (*env)->NewIntArray(env, nMoves * 8);
-    if (nMoves > 0) {
-        jint *buf = (jint *)malloc(nMoves * 8 * sizeof(jint));
-        for (int i = 0; i < nMoves; i++)
-            for (int j = 0; j < 8; j++)
-                buf[i * 8 + j] = ml.amMoves[i].anMove[j];
-        (*env)->SetIntArrayRegion(env, result, 0, nMoves * 8, buf);
+    (void)thiz;
+    if (!gnubg_initialised) return (*env)->NewIntArray(env, 0);
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    /* generous cap: gnubg never exceeds a few thousand sub-moves */
+    enum { CAP = 8 * 4096 };
+    int *moves = (int *)malloc(CAP * sizeof(int));
+    if (!moves) return (*env)->NewIntArray(env, 0);
+    int nMoves = gnubg_mobile_get_legal_moves(in, (int)die0, (int)die1,
+                                              (int)fPartial, moves, CAP);
+    if (nMoves < 0) nMoves = 0;
+    int nInts = nMoves * 8;
+    jintArray result = (*env)->NewIntArray(env, nInts);
+    if (nInts > 0) {
+        jint *buf = (jint *)malloc(nInts * sizeof(jint));
+        for (int i = 0; i < nInts; i++) buf[i] = (jint)moves[i];
+        (*env)->SetIntArrayRegion(env, result, 0, nInts, buf);
         free(buf);
     }
-    pthread_mutex_unlock(&gnubg_lock);
+    free(moves);
     return result;
 }
 
@@ -476,23 +477,14 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
                                             jintArray joldBoard,
                                             jintArray jcurBoard,
                                             jint die0, jint die1) {
-    TanBoard oldBoard, curBoard;
-    unpack_board(env, joldBoard, oldBoard);
-    unpack_board(env, jcurBoard, curBoard);
-    movelist ml;
-    memset(&ml, 0, sizeof(ml));
-    GenerateMoves(&ml, (ConstTanBoard)oldBoard, (int)die0, (int)die1, FALSE);
-    positionkey curKey;
-    PositionKey((ConstTanBoard)curBoard, &curKey);
+    (void)thiz;
+    jint oldBuf[50], curBuf[50];
+    (*env)->GetIntArrayRegion(env, joldBoard, 0, 50, oldBuf);
+    (*env)->GetIntArrayRegion(env, jcurBoard, 0, 50, curBuf);
+    int oldB[50], curB[50];
+    for (int i = 0; i < 50; i++) { oldB[i] = (int)oldBuf[i]; curB[i] = (int)curBuf[i]; }
     char sz[64] = {0};
-    for (unsigned int i = 0; i < ml.cMoves; i++) {
-        if (EqualKeys(ml.amMoves[i].key, curKey) &&
-            ml.amMoves[i].cMoves == ml.cMaxMoves &&
-            ml.amMoves[i].cPips  == ml.cMaxPips) {
-            FormatMove(sz, (ConstTanBoard)oldBoard, ml.amMoves[i].anMove);
-            break;
-        }
-    }
+    gnubg_mobile_find_move(oldB, curB, (int)die0, (int)die1, sz, (int)sizeof(sz));
     return (*env)->NewStringUTF(env, sz);
 }
 
@@ -592,15 +584,13 @@ Java_com_clavierhaus_gnubg_Engine_swapBoard(JNIEnv *env, jobject thiz,
 JNIEXPORT jfloatArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_evaluatePosition(JNIEnv *env, jobject thiz,
                                                     jintArray jboard) {
-    pthread_mutex_lock(&gnubg_lock);
-    if (!gnubg_initialised) { pthread_mutex_unlock(&gnubg_lock); return NULL; }
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
+    (void)thiz;
+    if (!gnubg_initialised) return NULL;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
     float arOutput[NUM_OUTPUTS] = {0};
-    int rc = EvaluatePosition(NULL, (ConstTanBoard)anBoard, arOutput,
-                               &ci_default, &ec_default);
-    pthread_mutex_unlock(&gnubg_lock);
-    if (rc != 0) return NULL;
+    if (gnubg_mobile_evaluate(in, arOutput, NUM_OUTPUTS) < 0) return NULL;
     jfloatArray result = (*env)->NewFloatArray(env, NUM_OUTPUTS);
     (*env)->SetFloatArrayRegion(env, result, 0, NUM_OUTPUTS, arOutput);
     return result;
@@ -609,13 +599,12 @@ Java_com_clavierhaus_gnubg_Engine_evaluatePosition(JNIEnv *env, jobject thiz,
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_classifyPosition(JNIEnv *env, jobject thiz,
                                                     jintArray jboard) {
-    pthread_mutex_lock(&gnubg_lock);
-    if (!gnubg_initialised) { pthread_mutex_unlock(&gnubg_lock); return -1; }
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    positionclass pc = ClassifyPosition((ConstTanBoard)anBoard, VARIATION_STANDARD);
-    pthread_mutex_unlock(&gnubg_lock);
-    return (jint)pc;
+    (void)thiz;
+    if (!gnubg_initialised) return -1;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    return (jint)gnubg_mobile_classify(in);
 }
 
 JNIEXPORT jintArray JNICALL
@@ -625,34 +614,26 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
                                                 jint fMove, jint matchTo,
                                                 jint score0, jint score1,
                                                 jint crawford) {
-    pthread_mutex_lock(&gnubg_lock);
-    if (!gnubg_initialised) { pthread_mutex_unlock(&gnubg_lock); return NULL; }
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    cubeinfo ci;
-    int anScore[2] = { (int)score0, (int)score1 };
-    SetCubeInfo(&ci, (int)cubeValue, (int)cubeOwner, (int)fMove, (int)matchTo,
-                anScore, (int)crawford, 0, 0, VARIATION_STANDARD);
-    evalsetup es;
-    memset(&es, 0, sizeof(es));
-    es.et = EVAL_EVAL;
-    es.ec = ec_default;
-    float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
-    memset(aarOutput, 0, sizeof(aarOutput));
-    int rc = GeneralCubeDecisionENoLocking(aarOutput, (ConstTanBoard)anBoard,
-                                            &ci, &ec_default, &es);
-    if (rc != 0) { pthread_mutex_unlock(&gnubg_lock); return NULL; }
-    float arDouble[4];
-    cubedecision cd = FindCubeDecision(arDouble, aarOutput, &ci);
-    pthread_mutex_unlock(&gnubg_lock);
+    (void)thiz;
+    if (!gnubg_initialised) return NULL;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    float out[14] = {0};
+    int decision = 0;
+    if (gnubg_mobile_cube_decision(in, (int)cubeValue, (int)cubeOwner,
+                                   (int)fMove, (int)matchTo, (int)score0,
+                                   (int)score1, (int)crawford,
+                                   out, 14, &decision) < 0)
+        return NULL;
     jintArray result = (*env)->NewIntArray(env, 16);
     jint buf[16];
     for (int i = 0; i < 7; i++) {
         int bits;
-        memcpy(&bits, &aarOutput[0][i], sizeof(int)); buf[i] = bits;
-        memcpy(&bits, &aarOutput[1][i], sizeof(int)); buf[7 + i] = bits;
+        memcpy(&bits, &out[i],     sizeof(int)); buf[i]     = bits;
+        memcpy(&bits, &out[7 + i], sizeof(int)); buf[7 + i] = bits;
     }
-    buf[14] = (jint)cd; buf[15] = 0;
+    buf[14] = (jint)decision; buf[15] = 0;
     (*env)->SetIntArrayRegion(env, result, 0, 16, buf);
     return result;
 }
@@ -660,24 +641,15 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
 JNIEXPORT jfloatArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_rollout(JNIEnv *env, jobject thiz,
                                            jintArray jboard, jint trials) {
-    pthread_mutex_lock(&gnubg_lock);
-    if (!gnubg_initialised) { pthread_mutex_unlock(&gnubg_lock); return NULL; }
-    TanBoard anBoard;
-    unpack_board(env, jboard, anBoard);
-    rolloutcontext rc_ro = rcRollout;
-    rc_ro.nTrials  = (unsigned int)(trials > 0 ? trials : 144);
-    rc_ro.fCubeful = 1;
-    rc_ro.fVarRedn = 1;
-    float arOutput[NUM_ROLLOUT_OUTPUTS] = {0};
-    float arStdDev[NUM_ROLLOUT_OUTPUTS] = {0};
-    int ret = gnubg_rollout((ConstTanBoard)anBoard, arOutput, arStdDev,
-                             &ci_default, &rc_ro);
-    pthread_mutex_unlock(&gnubg_lock);
-    if (ret != 0) return NULL;
+    (void)thiz;
+    if (!gnubg_initialised) return NULL;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    float out[14] = {0};
+    if (gnubg_mobile_rollout(in, (int)trials, out, 14) < 0) return NULL;
     jfloatArray result = (*env)->NewFloatArray(env, 14);
-    jfloat buf[14];
-    for (int i = 0; i < 7; i++) { buf[i] = arOutput[i]; buf[7+i] = arStdDev[i]; }
-    (*env)->SetFloatArrayRegion(env, result, 0, 14, buf);
+    (*env)->SetFloatArrayRegion(env, result, 0, 14, out);
     return result;
 }
 

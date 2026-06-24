@@ -77,6 +77,9 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
 int gnubg_mobile_rollout(const int board[50], int trials,
                          float *out, int out_cap);
 
+/* Initialise the facade's default cubeinfo (call once at engine init). */
+void gnubg_mobile_set_default_cubeinfo(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -413,7 +413,14 @@ FACADE_FILE_OP(gnubg_mobile_save_position, CommandSavePosition)
 static evalcontext fac_ec_default = {
     .fCubeful = 0, .nPlies = 1, .fUsePrune = 0, .fDeterministic = 1, .rNoise = 0.0f
 };
-static cubeinfo fac_ci_default;   /* set in gnubg_mobile_initialise() */
+static cubeinfo fac_ci_default;   /* set via gnubg_mobile_set_default_cubeinfo() */
+
+/* Initialise the facade's default cubeinfo. Call once at engine init, with the
+ * same arguments native-lib.c uses for its ci_default (money play, centred cube). */
+void gnubg_mobile_set_default_cubeinfo(void) {
+    int anScore[2] = {0, 0};
+    SetCubeInfo(&fac_ci_default, 1, -1, 0, 0, anScore, 0, 0, 0, VARIATION_STANDARD);
+}
 
 int gnubg_mobile_get_legal_moves(const int board[50], int d0, int d1,
                                  int f_partial, int *out_moves, int out_cap) {
