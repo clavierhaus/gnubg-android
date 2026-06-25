@@ -817,3 +817,11 @@ Java_com_clavierhaus_gnubg_Engine_runCommand(JNIEnv *env, jobject thiz, jstring 
     (*env)->ReleaseStringUTFChars(env, command, utf);
     return JNI_TRUE;
 }
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_engineCubeResponse(JNIEnv *env, jobject thiz,
+                                                     jboolean take) {
+    (void)env;
+    (void)thiz;
+    (void)gnubg_mobile_engine_cube_response(take ? 1 : 0);
+}

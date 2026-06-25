@@ -80,6 +80,9 @@ int gnubg_mobile_rollout(const int board[50], int trials,
 /* Initialise the facade's default cubeinfo (call once at engine init). */
 void gnubg_mobile_set_default_cubeinfo(void);
 
+/* Engine responds to a human double already on the table (take!=0 -> take). */
+int gnubg_mobile_engine_cube_response(int take);
+
 #ifdef __cplusplus
 }
 #endif

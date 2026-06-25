@@ -38,6 +38,7 @@ extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
+extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
 extern void CommandRoll(char *);
 extern void CommandMove(char *);
 extern int NextTurn(int fPlayNext);
@@ -203,6 +204,29 @@ int gnubg_mobile_command_take(void) {
 int gnubg_mobile_command_drop(void) {
     pthread_mutex_lock(&gnubg_lock);
     CommandDrop(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+/*
+ * Engine cube response to a double already on the table.
+ * Precondition: a human double has been registered (ms.fDoubled == TRUE) and it
+ * is now the engine player's turn. gnubg's CommandTake/CommandDrop refuse to act
+ * for a non-human player unless fComputerDecision is set, so we raise that flag
+ * around the call (mirroring play.c's ComputerTurn cube block), then drain.
+ *   take != 0 -> CommandTake (engine accepts; play continues)
+ *   take == 0 -> CommandDrop (engine passes; game ends, doubler awarded points)
+ */
+int gnubg_mobile_engine_cube_response(int take) {
+    pthread_mutex_lock(&gnubg_lock);
+    gnubg_set_computer_decision(1);
+    if (take)
+        CommandTake(NULL);
+    else
+        CommandDrop(NULL);
+    gnubg_set_computer_decision(0);
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

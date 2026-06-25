@@ -488,7 +488,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     // 14 OPTIONAL_DOUBLE_TAKE
                     // 16 OPTIONAL_DOUBLE_BEAVER -> no beaver UI/path yet; collapse to TAKE
                     //
-                    // Do not call CommandDouble().
+                    // Engine takes: register the human double, then engine takes it.
                     0, 2, 4, 5, 14, 16 -> {
                         if (decision == 4 || decision == 5 || decision == 16) {
                             android.util.Log.i(
@@ -497,45 +497,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                             )
                         }
 
-                        val applied = Engine.applyHumanDoubleTake()
-                        android.util.Log.i(
-                            "gnubg-vm",
-                            "offerDouble: applyHumanDoubleTake result=${applied.joinToString(",")}"
-                        )
-
-                        if (applied.size >= 8 && applied[0] == 1) {
-                            val after = _gameState.value.copy(
-                                phase = GamePhase.WAITING_FOR_ROLL,
-                                turn = applied[1],
-                                fDoubled = applied[5] != 0,
-                                cubeOwner = applied[6],
-                                cubeValue = applied[7],
-                                engineScore = if (applied.size >= 10) applied[8] else _gameState.value.engineScore,
-                                humanScore = if (applied.size >= 10) applied[9] else _gameState.value.humanScore
-                            )
-                            _gameState.value = after
-                            android.util.Log.i(
-                                "gnubg-vm",
-                                "offerDouble: UI cube state updated from apply result " +
-                                    "turn=${after.turn} fDoubled=${after.fDoubled} " +
-                                    "cubeOwner=${after.cubeOwner} cubeValue=${after.cubeValue} " +
-                                    "score=${after.engineScore}-${after.humanScore}"
-                            )
-                        } else {
-                            android.util.Log.e("gnubg-vm", "offerDouble: applyHumanDoubleTake failed/short result")
-                            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-                        }
+                        // Register the human double through the engine, then let the
+                        // engine take it (CommandTake runs for the engine player only
+                        // while fComputerDecision is set, which engineCubeResponse does).
+                        Engine.commandDouble()
+                        Engine.engineCubeResponse(true)
+                        android.util.Log.i("gnubg-vm", "offerDouble: human double taken by engine (via engine cube response)")
+                        readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
                     }
 
-                    // Engine passes/drops.
+                    // Engine passes/drops: register the double, engine drops, game ends.
                     //
                     // 1  DOUBLE_PASS
                     // 17 OPTIONAL_DOUBLE_PASS
-                    //
-                    // Pass/drop path is not implemented yet, so do not leave UI stuck thinking.
                     1, 17 -> {
-                        android.util.Log.i("gnubg-vm", "offerDouble: engine pass/drop path not implemented yet for cd=$decision")
-                        readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                        Engine.commandDouble()
+                        Engine.engineCubeResponse(false)
+                        val gr = Engine.getGameResult()
+                        android.util.Log.i("gnubg-vm", "offerDouble: engine dropped cd=$decision result=${gr.joinToString(",")}")
+                        readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
                     }
 
                     else -> {

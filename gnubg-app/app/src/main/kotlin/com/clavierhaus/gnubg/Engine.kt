@@ -44,6 +44,7 @@ object Engine {
     external fun applyHumanDoubleTake(): IntArray
     external fun commandTake()
     external fun commandDrop()
+    external fun engineCubeResponse(take: Boolean)
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
 
