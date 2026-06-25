@@ -41,7 +41,6 @@ object Engine {
     external fun getMatchCubeInfo(): IntArray  // [fDoubled, fCubeOwner, nCube]
     external fun getCubeDebugState(): IntArray  // [gs, fTurn, fMove, dice0, dice1, fDoubled, fCubeOwner, nCube, fCrawford, fCubeUse, score0, score1, matchTo]
     external fun commandDouble()
-    external fun applyHumanDoubleTake(): IntArray
     external fun commandTake()
     external fun commandDrop()
     external fun engineCubeResponse(take: Boolean)
