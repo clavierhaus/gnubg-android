@@ -10,14 +10,6 @@
 #include "positionid.h"
 #include "backgammon.h"
 #include "dice.h"
-extern void gnubg_init_tld(void);
-extern void gnubg_init_rollout(void);
-extern void ClearMatch(void);
-extern int NextTurn(int fPlayNext);
-extern int ListCreate(listOLD *pl);
-extern listOLD lMatch;
-extern rng rngCurrent;
-extern rngcontext *rngctxCurrent;
 
 #define LOG_TAG "gnubg-jni"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
@@ -25,16 +17,6 @@ extern rngcontext *rngctxCurrent;
 
 pthread_mutex_t gnubg_lock = PTHREAD_MUTEX_INITIALIZER;
 static int             gnubg_initialised = 0;
-
-static evalcontext ec_default = {
-    .fCubeful  = 0,
-    .nPlies    = 1,
-    .fUsePrune = 0,
-    .fDeterministic = 1,
-    .rNoise    = 0.0f
-};
-
-static cubeinfo ci_default;
 
 static int last_engine_dice[2] = {0, 0};
 
@@ -152,53 +134,25 @@ Java_com_clavierhaus_gnubg_Engine_getLastEngineDice(JNIEnv *env, jobject thiz) {
     return result;
 }
 
-static jintArray pack_board(JNIEnv *env, const unsigned int anBoard[2][25]) {
-    jintArray result = (*env)->NewIntArray(env, 50);
-    jint buf[50];
-    for (int i = 0; i < 25; i++) {
-        buf[i]      = (jint)anBoard[0][i];
-        buf[25 + i] = (jint)anBoard[1][i];
-    }
-    (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
-    return result;
-}
-
-static void unpack_board(JNIEnv *env, jintArray jboard, TanBoard anBoard) {
-    jint buf[50];
-    (*env)->GetIntArrayRegion(env, jboard, 0, 50, buf);
-    for (int i = 0; i < 25; i++) {
-        anBoard[0][i] = (unsigned int)buf[i];
-        anBoard[1][i] = (unsigned int)buf[25 + i];
-    }
-}
-
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
                                               jstring jWeightsPath) {
+    (void)thiz;
     pthread_mutex_lock(&gnubg_lock);
     if (gnubg_initialised) {
         pthread_mutex_unlock(&gnubg_lock);
         return JNI_TRUE;
     }
+    pthread_mutex_unlock(&gnubg_lock);
+
     const char *weightsPath = (*env)->GetStringUTFChars(env, jWeightsPath, NULL);
-    SetCubeInfo(&ci_default, 1, -1, 0, 0, (int[]){0, 0}, 0, 0, 0, VARIATION_STANDARD);
-    gnubg_mobile_set_default_cubeinfo();   /* keep facade defaults in sync */
-    EvalInitialise((char *)weightsPath, NULL, 0, NULL);
+    gnubg_mobile_initialise(weightsPath);
     (*env)->ReleaseStringUTFChars(env, jWeightsPath, weightsPath);
-    rngctxCurrent = InitRNG(NULL, NULL, TRUE, rngCurrent);
-    gnubg_init_tld();
-    gnubg_init_rollout();
-    ListCreate(&lMatch);
-    ClearMatch();
-    ap[0].pt = PLAYER_HUMAN;
-    ap[1].pt = PLAYER_GNU;
-    strcpy(ap[0].szName, "Human");
-    strcpy(ap[1].szName, "GNU");
-    ms.nMatchTo = 1;
-    ms.fJacoby  = FALSE;
-    fAutoRoll   = FALSE;  /* human rolls manually via UI */
+
+    pthread_mutex_lock(&gnubg_lock);
     gnubg_initialised = 1;
     pthread_mutex_unlock(&gnubg_lock);
+
     LOGI("Engine initialised");
     return JNI_TRUE;
 }
@@ -208,9 +162,12 @@ Java_com_clavierhaus_gnubg_Engine_newGame(JNIEnv *env, jobject thiz, jint matchL
     (void)thiz;
     (void)gnubg_mobile_start_match((int)matchLength);
 
-    pthread_mutex_lock(&gnubg_lock);
-    jintArray result = pack_board(env, ms.anBoard);
-    pthread_mutex_unlock(&gnubg_lock);
+    int b[50];
+    gnubg_mobile_get_board(b);
+    jintArray result = (*env)->NewIntArray(env, 50);
+    jint buf[50];
+    for (int i = 0; i < 50; i++) buf[i] = (jint)b[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
 
     return result;
 }
@@ -221,9 +178,12 @@ Java_com_clavierhaus_gnubg_Engine_nextGame(JNIEnv *env, jobject thiz) {
     (void)thiz;
     (void)gnubg_mobile_next_game();
 
-    pthread_mutex_lock(&gnubg_lock);
-    jintArray result = pack_board(env, ms.anBoard);
-    pthread_mutex_unlock(&gnubg_lock);
+    int b[50];
+    gnubg_mobile_get_board(b);
+    jintArray result = (*env)->NewIntArray(env, 50);
+    jint buf[50];
+    for (int i = 0; i < 50; i++) buf[i] = (jint)b[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
 
     return result;
 }
@@ -321,11 +281,11 @@ Java_com_clavierhaus_gnubg_Engine_rollDice(JNIEnv *env, jobject thiz) {
     (void)thiz;
     (void)gnubg_mobile_command_roll();
 
-    pthread_mutex_lock(&gnubg_lock);
-    jint dice[2] = { (jint)ms.anDice[0], (jint)ms.anDice[1] };
+    int d[2];
+    gnubg_mobile_get_dice(d);
+    jint dice[2] = { (jint)d[0], (jint)d[1] };
     jintArray result = (*env)->NewIntArray(env, 2);
     (*env)->SetIntArrayRegion(env, result, 0, 2, dice);
-    pthread_mutex_unlock(&gnubg_lock);
 
     return result;
 }
@@ -366,9 +326,12 @@ Java_com_clavierhaus_gnubg_Engine_applyMoveString(JNIEnv *env, jobject thiz,
     const char *moveStr = (*env)->GetStringUTFChars(env, jmoveStr, NULL);
     (void)gnubg_mobile_command_move(moveStr);
 
-    pthread_mutex_lock(&gnubg_lock);
-    jintArray result = pack_board(env, ms.anBoard);
-    pthread_mutex_unlock(&gnubg_lock);
+    int b[50];
+    gnubg_mobile_get_board(b);
+    jintArray result = (*env)->NewIntArray(env, 50);
+    jint buf[50];
+    for (int i = 0; i < 50; i++) buf[i] = (jint)b[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
 
     (*env)->ReleaseStringUTFChars(env, jmoveStr, moveStr);
     return result;
@@ -468,19 +431,23 @@ Java_com_clavierhaus_gnubg_Engine_getMatchWinner(JNIEnv *env, jobject thiz) {
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchBoard(JNIEnv *env, jobject thiz) {
-    pthread_mutex_lock(&gnubg_lock);
-    jintArray result = pack_board(env, ms.anBoard);
-    pthread_mutex_unlock(&gnubg_lock);
+    int b[50];
+    gnubg_mobile_get_board(b);
+    jintArray result = (*env)->NewIntArray(env, 50);
+    jint buf[50];
+    for (int i = 0; i < 50; i++) buf[i] = (jint)b[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
     return result;
 }
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchDice(JNIEnv *env, jobject thiz) {
-    pthread_mutex_lock(&gnubg_lock);
-    jint dice[2] = { (jint)ms.anDice[0], (jint)ms.anDice[1] };
+    (void)thiz;
+    int d[2];
+    gnubg_mobile_get_dice(d);
     jintArray result = (*env)->NewIntArray(env, 2);
+    jint dice[2] = { (jint)d[0], (jint)d[1] };
     (*env)->SetIntArrayRegion(env, result, 0, 2, dice);
-    pthread_mutex_unlock(&gnubg_lock);
     return result;
 }
 

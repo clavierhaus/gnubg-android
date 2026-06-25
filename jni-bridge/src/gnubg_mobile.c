@@ -45,6 +45,14 @@ extern int NextTurn(int fPlayNext);
 extern void ClearMatch(void);
 extern int ListCreate(listOLD *pl);
 extern listOLD lMatch;
+
+/* Engine initialisation symbols (Tier C: initialise extraction) */
+extern void  EvalInitialise(char *szWeights, char *szWeightsBinary, int fNoBearoff, void (*pfProgress)(unsigned int));
+extern void *InitRNG(unsigned long *pnSeed, int *pfInitFrom, int fSet, rng rngx);
+extern void  gnubg_init_tld(void);
+extern void  gnubg_init_rollout(void);
+extern rng           rngCurrent;
+extern rngcontext   *rngctxCurrent;
 extern int fNextTurn;
 extern pthread_mutex_t gnubg_lock;
 
@@ -567,4 +575,39 @@ int gnubg_mobile_rollout(const int board[50], int trials,
     if (ret != 0) return -1;
     for (i = 0; i < 7; i++) { out[i] = arOutput[i]; out[7 + i] = arStdDev[i]; }
     return 14;
+}
+
+/* ===========================================================================
+ * Tier C: engine initialisation, relocated from native-lib.c's initialise().
+ * Platform-neutral: takes the weights path as a plain C string, runs the full
+ * gnubg engine startup, sets both the engine and facade default cube info, and
+ * configures the human-vs-GNU player setup. The JNI wrapper keeps only the
+ * jstring round-trip and the gnubg_initialised guard (a static it owns).
+ * Returns 1 on success.
+ * =========================================================================== */
+int gnubg_mobile_initialise(const char *weights_path) {
+    pthread_mutex_lock(&gnubg_lock);
+
+    /* Default cube info: money play, centred cube (mirrors native-lib ci_default). */
+    gnubg_mobile_set_default_cubeinfo();
+
+    EvalInitialise((char *) weights_path, NULL, 0, NULL);
+
+    rngctxCurrent = InitRNG(NULL, NULL, TRUE, rngCurrent);
+    gnubg_init_tld();
+    gnubg_init_rollout();
+    ListCreate(&lMatch);
+    ClearMatch();
+
+    ap[0].pt = PLAYER_HUMAN;
+    ap[1].pt = PLAYER_GNU;
+    strcpy(ap[0].szName, "Human");
+    strcpy(ap[1].szName, "GNU");
+
+    ms.nMatchTo = 1;
+    ms.fJacoby  = FALSE;
+    fAutoRoll   = FALSE;   /* human rolls manually via UI */
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
 }

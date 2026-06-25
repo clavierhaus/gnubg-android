@@ -80,6 +80,11 @@ int gnubg_mobile_rollout(const int board[50], int trials,
 /* Initialise the facade's default cubeinfo (call once at engine init). */
 void gnubg_mobile_set_default_cubeinfo(void);
 
+/* Full engine initialisation (Tier C). Pass the neural-net weights path.
+ * Runs EvalInitialise/RNG/TLD/rollout setup, creates the match list, and
+ * configures the Human-vs-GNU players. Returns 1 on success. */
+int gnubg_mobile_initialise(const char *weights_path);
+
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 int gnubg_mobile_engine_cube_response(int take);
 
