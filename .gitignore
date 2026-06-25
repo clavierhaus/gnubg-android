@@ -62,25 +62,17 @@ engine-core/gnubgstock.*
 engine-core/render*.c
 engine-core/render*.h
 engine-core/sound.*
-engine-core/drawboard.*
 engine-core/html*.c
 engine-core/latex.c
 engine-core/text.c
-engine-core/analysis.*
 engine-core/dbprovider.*
 engine-core/export.*
-engine-core/external.*
-engine-core/format*.c
-engine-core/format*.h
 engine-core/glib-ext.*
 engine-core/import.c
 engine-core/make*.c
 engine-core/openurl.*
-engine-core/output.*
-engine-core/play.c
 engine-core/progress.*
 engine-core/relational.*
-engine-core/set.*
 engine-core/show.c
 engine-core/speed.c
 engine-core/timer.c
@@ -92,7 +84,6 @@ engine-core/inc3d.h
 engine-core/boarddim.h
 engine-core/pylocdefs.h
 engine-core/bearoffdump.c
-engine-core/matchid.*
 engine-core/board3d/
 engine-core/ABOUT-NLS
 engine-core/COPYING
@@ -156,3 +147,9 @@ gnubg-app/local.properties
 
 # Disposable local audit/build scratch output
 /tmp/
+
+# --- build output (generated; never track) ---
+jni-bridge/build-android-arm64/
+gnubg-app/build/
+**/.cxx/
+**/CMakeFiles/
