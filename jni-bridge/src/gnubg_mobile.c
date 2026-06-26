@@ -498,6 +498,73 @@ int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
     return (int) strlen(out_text);
 }
 
+/* Return ranked move candidates with cubeless 1-ply equity.
+ *
+ * Design notes:
+ *   - GenerateMoves already ranks by 0-ply evaluation; we re-evaluate each
+ *     candidate at 1-ply (fac_ec_default.nPlies == 1) for better accuracy.
+ *   - ApplyMove modifies a local copy of the board -- the original is untouched.
+ *   - Cubeless equity: negate the opponent-perspective result to get the
+ *     current player's equity (higher = better for the player).
+ *   - The lock is held for the entire enumeration so the engine state
+ *     (particularly the position cache) remains consistent.
+ *   - EvaluatePosition failure on a single candidate is non-fatal: we record
+ *     equity 0.0 and continue so the caller still gets a ranked list.
+ */
+int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
+                                int *out_moves, float *out_equities,
+                                int n_max) {
+    TanBoard anBoard;
+    movelist ml;
+    int i, j, n_written;
+
+    if (!out_moves || !out_equities || n_max <= 0) return -1;
+
+    facade_unpack_board(board, anBoard);
+
+    pthread_mutex_lock(&gnubg_lock);
+
+    memset(&ml, 0, sizeof(ml));
+    GenerateMoves(&ml, (ConstTanBoard) anBoard, d0, d1, FALSE);
+
+    n_written = (int) ml.cMoves < n_max ? (int) ml.cMoves : n_max;
+
+    for (i = 0; i < n_written; i++) {
+        TanBoard boardAfter;
+        float arOutput[NUM_OUTPUTS] = {0};
+        float equity = 0.0f;
+
+        /* Copy the pre-move board and apply this candidate move to it. */
+        memcpy(boardAfter, anBoard, sizeof(TanBoard));
+        ApplyMove(boardAfter, ml.amMoves[i].anMove, FALSE);
+
+        /* After the player moves it is the opponent's turn: swap sides so
+         * EvaluatePosition sees the board from the next player's perspective,
+         * then negate to recover the current player's cubeless equity. */
+        SwapSides(boardAfter);
+
+        if (EvaluatePosition(NULL, (ConstTanBoard) boardAfter, arOutput,
+                             &fac_ci_default, &fac_ec_default) == 0) {
+            /* arOutput: [0]=W [1]=WG [2]=WBG [3]=L [4]=LG [5]=LBG
+             * Opponent-perspective equity = W+WG+WBG - L-LG-LBG.
+             * Negate for current player's equity. */
+            /* NUM_OUTPUTS == 5: indices 0=W 1=WG 2=WBG 3=L 4=LG.
+             * Cubeless equity from current player's perspective. */
+            equity = -(arOutput[0] + arOutput[1] + arOutput[2]
+                      -arOutput[3] - arOutput[4]);
+        }
+
+        /* Write the 8-int move encoding (anMove[8] convention). */
+        for (j = 0; j < 8; j++)
+            out_moves[i * 8 + j] = ml.amMoves[i].anMove[j];
+
+        out_equities[i] = equity;
+    }
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return n_written;
+}
+
 int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap) {
     TanBoard anBoard;
     float arOutput[NUM_OUTPUTS] = {0};

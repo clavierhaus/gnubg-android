@@ -26,8 +26,21 @@ object Engine {
     external fun commandAgree()
     external fun commandRedouble()
     external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
-    external fun applyMoveString(moveStr: String): IntArray
-    external fun formatMove(board: IntArray, move: IntArray): String
+
+    /**
+     * Return ranked move candidates with cubeless 1-ply equity.
+     *
+     * Returns a flat IntArray with layout:
+     *   [0]         = n  (number of candidates)
+     *   [1 + i*9]   = anMove[0..7] for candidate i  (8 ints, same encoding as getLegalMoves)
+     *   [1 + i*9+8] = Float.fromBits(equity_i)       (cubeless equity, higher = better)
+     *
+     * candidates[0] is always the engine's best move.
+     * nMax is capped at 20 in the native layer.
+     */
+    external fun getCandidates(board: IntArray, die0: Int, die1: Int, nMax: Int = 10): IntArray
+
+    external fun applyMoveString(moveStr: String): IntArray    external fun formatMove(board: IntArray, move: IntArray): String
 
     // Match state queries
     external fun getMatchBoard(): IntArray
