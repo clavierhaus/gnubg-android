@@ -450,7 +450,37 @@ Java_com_clavierhaus_gnubg_Engine_applySubMove(JNIEnv *env, jobject thiz,
 }
 
 /*
- * Engine.findMove(oldBoard, curBoard, die0, die1): String
+ * Engine.applyAnMove(board, move): IntArray
+ * Wraps ApplyMove(TanBoard, anMove[8], fCheckLegal=FALSE) from eval.c, then
+ * swaps sides back to the input player-on-roll frame. The move is a full
+ * anMove[8] (4 from/to pairs, -1 = unused), e.g. a getCandidates entry.
+ * Returns the resulting board, or empty array on failure.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_applyAnMove(JNIEnv *env, jobject thiz,
+                                               jintArray jboard,
+                                               jintArray jmove) {
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50], out[50];
+    for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+
+    jint moveBuf[8];
+    (*env)->GetIntArrayRegion(env, jmove, 0, 8, moveBuf);
+    int move[8];
+    for (int i = 0; i < 8; i++) move[i] = (int)moveBuf[i];
+
+    if (gnubg_mobile_apply_anmove(in, move, out) != 1)
+        return (*env)->NewIntArray(env, 0);
+    jint outBuf[50];
+    for (int i = 0; i < 50; i++) outBuf[i] = (jint)out[i];
+    jintArray result = (*env)->NewIntArray(env, 50);
+    (*env)->SetIntArrayRegion(env, result, 0, 50, outBuf);
+    return result;
+}
+
+/*
  * Mirrors update_move() + Confirm(bd) in gtkboard.c:
  * GenerateMoves on oldBoard, find move whose position key matches curBoard,
  * accept only if cMoves==cMaxMoves && cPips==cMaxPips (maximum dice used).

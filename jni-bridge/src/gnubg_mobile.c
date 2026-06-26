@@ -410,6 +410,27 @@ int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
     return (rc == 0) ? 1 : 0;
 }
 
+/* Apply a full anMove[8] (4 from/to pairs, -1 = unused) to a board and return
+ * the resulting board. The move comes from gnubg's own generation (e.g. a
+ * getCandidates entry), so legality is not re-checked (fCheckLegal = FALSE).
+ * Used by the tutor to obtain the board after the engine's best move for
+ * feature comparison. Returns 1 on success, 0 on failure. */
+int gnubg_mobile_apply_anmove(const int in_board[50], const int in_move[8],
+                              int out_board[50]) {
+    TanBoard anBoard;
+    int rc;
+    facade_unpack_board(in_board, anBoard);
+    pthread_mutex_lock(&gnubg_lock);
+    rc = ApplyMove(anBoard, in_move, FALSE);
+    /* ApplyMove leaves the board from the opponent's perspective (sides swap
+     * after a move). Swap back so the result is in the same player-on-roll
+     * frame as the caller's input board, for like-with-like feature compare. */
+    SwapSides(anBoard);
+    pthread_mutex_unlock(&gnubg_lock);
+    facade_pack_board((ConstTanBoard) anBoard, out_board);
+    return (rc == 0) ? 1 : 0;
+}
+
 int gnubg_mobile_format_move(const int in_board[50], const int in_move[8],
                              char *out_text, int out_capacity) {
     TanBoard anBoard;

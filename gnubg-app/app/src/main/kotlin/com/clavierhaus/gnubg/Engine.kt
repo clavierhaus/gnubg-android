@@ -63,6 +63,15 @@ object Engine {
     // Board utilities
     external fun swapBoard(board: IntArray): IntArray
     external fun applySubMove(board: IntArray, iSrc: Int, nRoll: Int): IntArray
+
+    /**
+     * Apply a full anMove[8] (4 from/to pairs, -1 = unused) to a board and
+     * return the resulting board in the same player-on-roll frame. The move
+     * comes from gnubg's own generation (e.g. a getCandidates entry), so
+     * legality is not re-checked. Used by the tutor to obtain the best-move
+     * board for feature comparison. Returns empty array on failure.
+     */
+    external fun applyAnMove(board: IntArray, move: IntArray): IntArray
     external fun findMove(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): String
     external fun pipCount(board: IntArray): IntArray
 

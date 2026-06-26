@@ -52,6 +52,8 @@ int gnubg_mobile_swap_board(const int in_board[50], int out_board[50]);
 int gnubg_mobile_pip_count(const int in_board[50], int out_pips[2]);
 int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
                                 int out_board[50]);
+int gnubg_mobile_apply_anmove(const int in_board[50], const int in_move[8],
+                              int out_board[50]);
 int gnubg_mobile_format_move(const int in_board[50], const int in_move[8],
                              char *out_text, int out_capacity);
 

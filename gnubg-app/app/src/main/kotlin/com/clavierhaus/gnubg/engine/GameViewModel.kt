@@ -402,8 +402,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+
+            // --- Tutor analysis: capture candidates BEFORE applyMoveString ---
+            // getCandidates and findMove must see the same pre-move engine state.
+            val tutorCandRaw = Engine.getCandidates(state.oldBoard, origDice.first, origDice.second, 10)
+
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
+
+            // --- Tutor analysis (Phase 3: log-only, never affects gameplay) ---
+            try {
+                android.util.Log.i("gnubg-tutor", "hook: candRaw.size=${tutorCandRaw.size} n=${if (tutorCandRaw.isNotEmpty()) tutorCandRaw[0] else -1}")
+                if (tutorCandRaw.isNotEmpty() && tutorCandRaw[0] > 0) {
+                    val cands = com.clavierhaus.gnubg.tutor.TutorAnalyzer.decodeCandidates(tutorCandRaw)
+                    if (cands.isNotEmpty()) {
+                        val bestBoard = Engine.applyAnMove(state.oldBoard, cands[0].anMove)
+                        val playedCand = cands.firstOrNull { cand ->
+                            Engine.formatMove(state.oldBoard, cand.anMove) == moveStr
+                        }
+                        android.util.Log.i("gnubg-tutor", "diag: bestBoard=${bestBoard.size} anMove0=${cands[0].anMove.toList()}")
+                        if (bestBoard.isNotEmpty() && playedCand != null) {
+                            val analysis = com.clavierhaus.gnubg.tutor.TutorAnalyzer.analyze(
+                                tutorCandRaw, playedCand.equity, state.board, bestBoard
+                            )
+                            if (analysis != null) {
+                                android.util.Log.i("gnubg-tutor",
+                                    com.clavierhaus.gnubg.tutor.TutorAnalyzer.summarize(analysis))
+                            }
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                android.util.Log.e("gnubg-tutor", "analysis failed (non-fatal): ${t.message}")
+            }
+
             if (Engine.getMatchStatus() >= 2) {
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
                 return@launch

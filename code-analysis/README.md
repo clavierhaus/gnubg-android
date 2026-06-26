@@ -100,3 +100,20 @@ The collector excludes:
 
 `external/backgammon-teacher/` is excluded entirely because it is not part of
 the current concept.
+
+- `upstream-source/`
+
+
+## Review scope policy
+
+The audit keeps `engine-core/` as the in-bundle GNUbg authority and excludes
+`upstream-source/`.
+
+Section 10 contains only the engine-core C sources compiled by the JNI CMake
+build, plus matching local headers where present.
+
+Section 14 scans only maintained app/JNI code under `gnubg-app/` and
+`jni-bridge/`.
+
+Section 19 is a manifest with paths, byte sizes, and SHA-256 hashes. It does
+not dump file contents.

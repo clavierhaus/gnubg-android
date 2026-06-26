@@ -65,7 +65,7 @@ object TutorAnalyzer {
             val equity = Float.fromBits(raw[base + 8])
             out.add(CandidateMove(move, equity))
         }
-        return out
+        return out.sortedByDescending { it.equity }
     }
 
     /**

@@ -99,6 +99,7 @@ is_excluded_path() {
     .gradle|.gradle/*|*/.gradle|*/.gradle/*) return 0 ;;
     .kotlin|.kotlin/*|*/.kotlin|*/.kotlin/*) return 0 ;;
     tmp|tmp/*|*/tmp|*/tmp/*) return 0 ;;
+    upstream-source|upstream-source/*) return 0 ;;
     external/backgammon-teacher|external/backgammon-teacher/*) return 0 ;;
     build|build/*|*/build|*/build/*) return 0 ;;
     */.deps|*/.deps/*) return 0 ;;
@@ -206,13 +207,14 @@ find . \
   \( -path './.git' \
      -o -path './.gradle' \
      -o -path './tmp' \
+     -o -path './upstream-source' \
      -o -path './external/backgammon-teacher' \
      -o -path './build' \
      -o -path './jni-bridge/build-*' \
      -o -path '*/build' \) -prune \
   -o -type f -print \
   | sed 's#^\./##' \
-  | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^jni-bridge/external/glib(/|$)' \
+  | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^upstream-source(/|$)|^jni-bridge/external/glib(/|$)' \
   | sort > "$ALL_FILES"
 
 : > "$TEXT_FILES"
@@ -370,13 +372,14 @@ repo_structure="$OUT_DIR/01_repo_structure.txt"
     \( -path './.git' \
        -o -path './.gradle' \
        -o -path './tmp' \
+     -o -path './upstream-source' \
        -o -path './external/backgammon-teacher' \
        -o -path './build' \
        -o -path './jni-bridge/build-*' \
        -o -path '*/build' \) -prune \
     -o -type d -print \
     | sed 's#^\./##' \
-    | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^jni-bridge/external/glib(/|$)' \
+    | grep -Ev '(^|/)(\.gradle|\.kotlin|tmp|build|\.deps)(/|$)|^upstream-source/gnubg/autom4te\.cache(/|$)|^upstream-source(/|$)|^jni-bridge/external/glib(/|$)' \
     | sort
   echo
   echo "== file counts =="
@@ -522,14 +525,68 @@ while IFS= read -r path; do
 done < "$TEXT_FILES"
 
 engine_sources="$OUT_DIR/10_engine_core_sources.md"
-write_title "$engine_sources" "Engine-core and embedded GNUbg sources"
-while IFS= read -r path; do
-  case "$path" in
-    engine-core/*|engine-core/*/*|engine-core/*/*/*)
-      dump_file "$engine_sources" "$path"
+write_title "$engine_sources" "JNI-compiled engine-core source slice"
+
+compiled_engine_files="$WORK_DIR/compiled_engine_files.txt"
+compiled_engine_dump_files="$WORK_DIR/compiled_engine_dump_files.txt"
+
+awk '
+  /\$\{ENGINE\}\// {
+    line = $0
+    gsub(/[ \t\r]/, "", line)
+    gsub(/\$\{ENGINE\}\//, "engine-core/", line)
+    gsub(/[)]/, "", line)
+    if (line ~ /^engine-core\/.*\.(c|h)$/) {
+      print line
+    }
+  }
+' jni-bridge/CMakeLists.txt \
+  | sort -u > "$compiled_engine_files"
+
+{
+  echo "## Scope"
+  echo
+  echo "This section intentionally does not dump all of engine-core."
+  echo
+  echo "It includes only engine-core C sources compiled by"
+  echo "jni-bridge/CMakeLists.txt, plus matching local headers where present."
+  echo
+  echo "The full upstream-source mirror is excluded from this audit bundle."
+  echo
+} >> "$engine_sources"
+
+append_cmd "$engine_sources" \
+  "engine-core files compiled by JNI CMake build" \
+  cat "$compiled_engine_files"
+
+: > "$compiled_engine_dump_files"
+
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  [ -f "$f" ] || continue
+
+  printf '%s\n' "$f" >> "$compiled_engine_dump_files"
+
+  case "$f" in
+    *.c)
+      h="${f%.c}.h"
+      if [ -f "$h" ]; then
+        printf '%s\n' "$h" >> "$compiled_engine_dump_files"
+      fi
       ;;
   esac
-done < "$TEXT_FILES"
+done < "$compiled_engine_files"
+
+sort -u "$compiled_engine_dump_files" \
+  -o "$compiled_engine_dump_files"
+
+append_cmd "$engine_sources" \
+  "engine-core files dumped in this section" \
+  cat "$compiled_engine_dump_files"
+
+while IFS= read -r path; do
+  dump_file "$engine_sources" "$path"
+done < "$compiled_engine_dump_files"
 
 sot="$OUT_DIR/11_gnubg_source_of_truth_audit.md"
 write_title "$sot" "GNUbg source-of-truth audit"
@@ -640,23 +697,70 @@ append_cmd "$arch" "threading lifecycle synchronization" review_grep_in \
 
 quality="$OUT_DIR/14_code_quality_hotspots.md"
 write_title "$quality" "Code quality hotspots"
-append_cmd "$quality" "large text files (>=250 lines)" emit_large_files
 
-append_cmd "$quality" "TODO/FIXME/HACK/temporary markers" review_grep_in \
+{
+  echo "## Scope"
+  echo
+  echo "This section scans only maintained project code under:"
+  echo
+  echo "- gnubg-app/"
+  echo "- jni-bridge/"
+  echo
+  echo "It deliberately excludes engine-core and upstream-source."
+  echo "Those are GNUbg source material and should be inspected deliberately"
+  echo "through JNI/facade/symbol questions, not generic hotspot greps."
+  echo
+} >> "$quality"
+
+append_cmd "$quality" \
+  "large maintained app/JNI files" \
+  bash -c '
+    find gnubg-app jni-bridge \
+      \( -path "*/build" \
+         -o -path "*/tmp" \
+         -o -path "*/.gradle" \
+         -o -path "*/.kotlin" \
+         -o -path "jni-bridge/external/glib" \) \
+      -prune -o -type f -print 2>/dev/null \
+      | while IFS= read -r f; do
+          [ -f "$f" ] || continue
+          lines="$(wc -l < "$f" 2>/dev/null || echo 0)"
+          if [ "$lines" -ge 250 ]; then
+            printf "%6s %s\n" "$lines" "$f"
+          fi
+        done \
+      | sort -nr
+  '
+
+append_cmd "$quality" \
+  "TODO/FIXME/HACK/temporary markers in app/JNI" \
+  review_grep_in \
   'TODO|FIXME|HACK|XXX|temporary|temp|workaround|stub|placeholder|later|for now|not implemented|deprecated|dead|unused|remove|cleanup|clean-up' \
-  gnubg-app jni-bridge engine-core docs code-analysis 2>/dev/null
+  gnubg-app jni-bridge
 
-append_cmd "$quality" "magic numbers and board constants in Kotlin/JNI" review_grep_in \
-  '(^|[^A-Za-z0-9_])(24|25|26|49|50|96|144|1296)([^A-Za-z0-9_]|$)|point - 1|24 \+|indices step|until 8|IntArray\(' \
-  gnubg-app/app/src/main jni-bridge 2>/dev/null
+append_cmd "$quality" \
+  "debug logging and printf-style output in app/JNI" \
+  review_grep_in \
+  'println|Log\.|android\.util\.Log|fprintf\(|printf\(|g_print|g_warning|g_error' \
+  gnubg-app jni-bridge
 
-append_cmd "$quality" "error handling and logging" review_grep_in \
-  'try|catch|throw|require|check|assert|Log\.|println|printf|fprintf|g_warning|error|fatal|return null|return@|?:' \
-  gnubg-app jni-bridge engine-core docs 2>/dev/null
+append_cmd "$quality" \
+  "hard-coded paths in app/JNI" \
+  review_grep_in \
+  '/home/|/tmp/|/data/data|/sdcard|/data/local/tmp|AC_DATADIR|AC_PKGDATADIR' \
+  gnubg-app jni-bridge
 
-append_cmd "$quality" "imports and resource references" review_grep_in \
-  '^package |^import |R\.drawable|R\.string|R\.color|painterResource|stringResource|colorResource' \
-  gnubg-app/app/src/main gnubg-app/app/src/main/res 2>/dev/null
+append_cmd "$quality" \
+  "error handling traps in app/JNI" \
+  review_grep_in \
+  'catch|throw|Exception|Throwable|return false|return NULL|return -1|failed|failure|error|panic|fatal|assert\(' \
+  gnubg-app jni-bridge
+
+append_cmd "$quality" \
+  "magic numbers and gameplay semantic traps in app/JNI" \
+  review_grep_in \
+  '(^|[^A-Za-z0-9_])(24|25|26|27|28|16777215|999|-1|0x[0-9A-Fa-f]+)([^A-Za-z0-9_]|$)|legal|illegal|valid|invalid|dice|die|move|turn|cube|double|take|drop|resign|bear|bar|pip|score|match|game|board|position|orientation|swap' \
+  gnubg-app jni-bridge
 
 docs_out="$OUT_DIR/15_documentation.md"
 write_title "$docs_out" "Documentation"
@@ -707,6 +811,7 @@ write_title "$tests" "Test coverage"
 append_cmd "$tests" "test files" find . \
   \( -path './.git' \
      -o -path './tmp' \
+     -o -path './upstream-source' \
      -o -path '*/tmp' \
      -o -path './.gradle' \
      -o -path '*/.gradle' \
@@ -757,10 +862,26 @@ write_title "$binary_inv" "Binary and resource inventory"
 } >> "$binary_inv"
 
 all_text="$OUT_DIR/19_all_text_sources.md"
-write_title "$all_text" "All captured text sources"
-while IFS= read -r path; do
-  dump_file "$all_text" "$path"
-done < "$TEXT_FILES"
+write_title "$all_text" "Text source manifest"
+
+{
+  echo "This section is a manifest only."
+  echo
+  echo "It intentionally does not dump file contents."
+  echo "The tar archive is the source for full file content."
+  echo
+  echo '```text'
+  printf '%-80s\t%12s\t%s\n' "path" "bytes" "sha256"
+
+  while IFS= read -r path; do
+    [ -f "$path" ] || continue
+    bytes="$(wc -c < "$path" | tr -d ' ')"
+    sha="$(sha256sum "$path" | awk '{print $1}')"
+    printf '%-80s\t%12s\t%s\n' "$path" "$bytes" "$sha"
+  done < "$TEXT_FILES"
+
+  echo '```'
+} >> "$all_text"
 
 LLM_UPLOAD="$OUT_DIR/llm_upload/00_full_review_context.md"
 
