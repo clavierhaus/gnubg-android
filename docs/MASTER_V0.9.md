@@ -226,15 +226,40 @@ repository is now build-complete from a clean clone.
     src/main.c               <- links engine + facade + mobile-app.c, plays headless
   doc/                       <- documentation (this file; Makefile; LaTeX template)
   PROVENANCE.md              <- record of every local engine-core divergence
-  run.sh                     <- build + install + launch on device (see §7.6)
-  android-arm64.cross        <- Meson cross-file for the GLib build
-  build_glib_android.sh      <- GLib cross-build script
+### 7.6 Build and deploy scripts
+
+Two scripts live at the repo root and own the full build and deploy pipeline.
+
+**`build.sh` -- native build + APK package.** Run whenever C sources change
+(`engine-core/`, `jni-bridge/src/`, `jni-bridge/include/`):
+
+```
+./build.sh               # cmake --build + copy .so + gradlew assembleDebug
+./build.sh --native-only # cmake --build + copy .so only (skip Gradle)
+./build.sh --apk-only    # Gradle only (Kotlin-only changes, .so unchanged)
+./build.sh --reconfigure # wipe CMake dir and reconfigure from scratch
 ```
 
-> **Note vs MASTER V8:** the Android app is no longer a "next step" — it is the
-> `gnubg-app/` Gradle project, built with `./gradlew`. The bridge has gained the
-> facade (`gnubg_mobile.{c,h}`). The previously-untracked engine sources are now
-> tracked (Phase 12).
+Pipeline: (1) `cmake --build jni-bridge/build-android-arm64` recompiles
+`libgnubg-engine.so`; (2) copies it to
+`gnubg-app/app/src/main/jniLibs/arm64-v8a/`; (3) `./gradlew assembleDebug`.
+
+**`run_on_device.sh` -- install and launch.** Run after `build.sh`:
+
+```
+./run_on_device.sh               # install APK + launch
+./run_on_device.sh --no-build    # skip Gradle; install existing APK only
+./run_on_device.sh --logcat      # stream app log after launch (Ctrl-C stops)
+./run_on_device.sh --reinstall   # uninstall first (clears data), then install
+```
+
+`run.sh` is an alias for `run_on_device.sh` kept for convenience.
+
+**Standard workflow after any C source change:**
+`./build.sh` followed by `./run_on_device.sh --no-build`
+
+**Kotlin-only change:**
+`./build.sh --apk-only` followed by `./run_on_device.sh --no-build`
 
 ### 3.2 Build Toolchain
 
@@ -605,12 +630,13 @@ plays headlessly. Its purpose is to objectively demonstrate the de-Android
 invariant: build it, then `nm` the result and confirm there are **no `Java_`
 symbols** — i.e. the core plays a full game with no Android in the binary.
 
-> **Status:** the harness exists and links the facade. The final reduction of
-> `native-lib.c` to *zero* direct engine symbols (extracting `initialise` into
-> `gnubg_mobile_initialise` and routing the last `pack_board` callers through
-> the facade — "Tier B/C") is **pending**; until then the proof is demonstrated
-> at the facade level but `native-lib.c` still references engine init symbols.
-> See §8.
+> **Status:** the harness exists and links the facade. Engine init and the
+> board/dice paths are now fully facade-routed (Tier B/C, §8.2), so the only
+> remaining direct engine references in `native-lib.c` are the
+> `gnubg_on_board_changed` callback and `runCommand`/`HandleCommand`. Building
+> the harness and confirming via `nm` that the engine+facade play a full game
+> with no `Java_` symbols is deferred until iOS work begins; it is not on the
+> near-term path. See §8.
 
 ### 7.6 Deploy to device (run.sh)
 
@@ -641,22 +667,33 @@ from the application ID. Pure ASCII, safe to re-run.
   (Phase 11).
 - Repository build-completeness + `PROVENANCE.md` (Phase 12).
 - Dead-code cleanup — Tier A (removed unused externs and `applyHumanDoubleTake`).
+- Engine-symbol reduction — Tier B/C (extracted `initialise` into
+  `gnubg_mobile_initialise`; routed the board and dice readers through the
+  facade). `native-lib.c` now reaches the engine directly in only two named,
+  intentional places: the `gnubg_on_board_changed` callback and
+  `runCommand`/`HandleCommand`.
 
-### 8.2 Pending — engine-symbol reduction (Tier B/C)
+### 8.2 Completed — engine-symbol reduction (Tier B/C)
 
-To make `native-lib.c` reference **zero** direct engine symbols and so make the
-§7.5 portability proof airtight:
+`initialise`'s engine startup (`EvalInitialise`, `InitRNG`,
+`gnubg_init_tld/rollout`, `ListCreate`, `ClearMatch`, player setup) was
+extracted into `gnubg_mobile_initialise(weights)`; the JNI wrapper now keeps
+only the jstring round-trip and the `gnubg_initialised` guard. The board and
+dice readers (`pack_board` callers, `getMatchDice`, `rollDice`) route through the
+existing facade getters. Verified on device: the app initialises and plays.
 
-- **Tier B:** route the four remaining `pack_board(ms.anBoard)` callers
-  (`getMatchBoard`-style) through a facade getter.
-- **Tier C:** extract `initialise`'s engine startup (`EvalInitialise`,
-  `InitRNG`, `ClearMatch`, `NextTurn`, `ListCreate`, `gnubg_init_tld/rollout`)
-  into `gnubg_mobile_initialise(weights)`; the JNI wrapper keeps only the
-  jstring round-trip.
+`native-lib.c` now reaches the engine directly in only **two** intentional,
+documented places, neither of which is JNI marshalling:
 
-These rewire **working engine-startup/board code** and must be done with a
-device re-test of initialisation — deferred deliberately so as not to risk a
-working app for a cleanliness milestone in the same sitting.
+- **`gnubg_on_board_changed`** — the engine event callback (caches engine dice).
+  Belongs to the host-callback / vtable work (§8.3), not to bridge marshalling.
+- **`runCommand` → `HandleCommand`/`acTop`** — the arbitrary-gnubg-command path.
+  This is the command channel the Settings feature will drive, so it gains its
+  own facade verb (`gnubg_mobile_run_command`, with an allowlist) as part of the
+  Settings phase, where its policy design belongs.
+
+A fully zero-engine-symbol `native-lib.c` therefore awaits only those two phases;
+the de-Android invariant already holds for all gameplay and init paths.
 
 ### 8.3 Pending — gameplay features
 
