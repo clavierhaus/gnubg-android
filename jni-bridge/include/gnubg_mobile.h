@@ -68,6 +68,12 @@ int gnubg_mobile_get_legal_moves(const int board[50], int d0, int d1,
                                  int f_partial, int *out_moves, int out_cap);
 int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
                            int d0, int d1, char *out_text, int out_cap);
+/* Tutor analysis in one call. See gnubg_mobile.c for full documentation.
+ * out[52]: out[0]=played equity bits, out[1]=best equity bits, out[2..51]=best board.
+ * Returns 1 (played move found), 0 (not found), -1 (error).
+ * Call BEFORE applyMoveString. */
+int gnubg_mobile_tutor_analyze(const int old_board[50], const int cur_board[50],
+                                int d0, int d1, int out[52]);
 int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap);
 int gnubg_mobile_classify(const int board[50]);
 
