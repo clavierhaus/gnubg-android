@@ -64,18 +64,6 @@ object Engine {
     external fun swapBoard(board: IntArray): IntArray
     external fun applySubMove(board: IntArray, iSrc: Int, nRoll: Int): IntArray
     external fun findMove(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): String
-
-    /**
-     * Tutor analysis in one gnubg call. Call BEFORE applyMoveString.
-     *
-     * Returns IntArray[52] on success:
-     *   [0]     = Float.fromBits(played_equity)
-     *   [1]     = Float.fromBits(best_equity)
-     *   [2..51] = best-move board in player-on-roll frame (50 ints)
-     *
-     * Returns empty array if the played move was not found (e.g. dance).
-     */
-    external fun tutorAnalyze(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): IntArray
     external fun pipCount(board: IntArray): IntArray
 
     // Analysis

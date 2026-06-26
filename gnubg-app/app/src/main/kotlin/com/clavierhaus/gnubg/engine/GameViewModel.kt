@@ -402,34 +402,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
-
-            // --- Tutor analysis: one gnubg call BEFORE applyMoveString ---
-            // tutorAnalyze uses PositionKey (same as findMove) to identify the
-            // played move and evaluates all candidates inside gnubg. No move
-            // encodings cross JNI. Wrapped in try/catch: never affects gameplay.
-            try {
-                val raw = Engine.tutorAnalyze(state.oldBoard, state.board, origDice.first, origDice.second)
-                android.util.Log.i("gnubg-tutor", "raw.size=${raw.size} dice=${origDice.first},${origDice.second}")
-                if (raw.size == 52) {
-                    val playedEquity = Float.fromBits(raw[0])
-                    val bestEquity   = Float.fromBits(raw[1])
-                    val bestBoard    = raw.copyOfRange(2, 52)
-                    val equityLoss   = (bestEquity - playedEquity).coerceAtLeast(0f)
-                    val level        = com.clavierhaus.gnubg.tutor.BlunderClassifier.classify(equityLoss)
-                    val playedFV     = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(state.board)
-                    val bestFV       = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(bestBoard)
-                    val comparison   = com.clavierhaus.gnubg.tutor.FeatureExtractor.compare(playedFV, bestFV)
-                    val notable      = comparison.notableDeltas.take(3)
-                        .joinToString("; ") { "${it.feature} ${it.playedValue}->${it.bestValue}" }
-                    android.util.Log.i("gnubg-tutor",
-                        "level=$level loss=${"%.4f".format(equityLoss)} " +
-                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)} | " +
-                        notable.ifEmpty { "no notable deltas" })
-                }
-            } catch (t: Throwable) {
-                android.util.Log.e("gnubg-tutor", "analysis failed: ${t.message}")
-            }
-
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
             if (Engine.getMatchStatus() >= 2) {

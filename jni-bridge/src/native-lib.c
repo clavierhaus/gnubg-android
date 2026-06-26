@@ -472,37 +472,6 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
 }
 
 /*
- * Engine.tutorAnalyze(oldBoard, curBoard, die0, die1): IntArray
- * Wraps gnubg_mobile_tutor_analyze. Returns IntArray[52] when the played move
- * is found in the legal list:
- *   [0] = Float.fromBits(played_equity)
- *   [1] = Float.fromBits(best_equity)
- *   [2..51] = best-move board in player-on-roll frame
- * Returns empty array if the played move was not found (dance / mismatch).
- * Must be called BEFORE Engine.applyMoveString.
- */
-JNIEXPORT jintArray JNICALL
-Java_com_clavierhaus_gnubg_Engine_tutorAnalyze(JNIEnv *env, jobject thiz,
-                                                jintArray joldBoard,
-                                                jintArray jcurBoard,
-                                                jint die0, jint die1) {
-    (void)thiz;
-    jint oldBuf[50], curBuf[50];
-    (*env)->GetIntArrayRegion(env, joldBoard, 0, 50, oldBuf);
-    (*env)->GetIntArrayRegion(env, jcurBoard, 0, 50, curBuf);
-    int oldB[50], curB[50];
-    for (int i = 0; i < 50; i++) { oldB[i] = (int)oldBuf[i]; curB[i] = (int)curBuf[i]; }
-    int out[52] = {0};
-    int rc = gnubg_mobile_tutor_analyze(oldB, curB, (int)die0, (int)die1, out);
-    if (rc < 1) return (*env)->NewIntArray(env, 0);
-    jintArray result = (*env)->NewIntArray(env, 52);
-    jint buf[52];
-    for (int i = 0; i < 52; i++) buf[i] = (jint)out[i];
-    (*env)->SetIntArrayRegion(env, result, 0, 52, buf);
-    return result;
-}
-
-/*
  * Engine.getMatchWinner(): Int
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.
  * Reads ms.anScore — updated by ApplyGameOver in play.c.
