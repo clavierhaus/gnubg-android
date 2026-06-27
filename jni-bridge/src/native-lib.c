@@ -472,6 +472,30 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
 }
 
 /*
+ * Engine.tutorAnalyze(oldBoard): IntArray
+ * Wraps gnubg_mobile_tutor_analyze. Call AFTER applyMoveString.
+ * Returns IntArray[52]: [0]=played equity bits, [1]=best equity bits,
+ * [2..51]=best-move board. Empty array if no analyzable move.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_tutorAnalyze(JNIEnv *env, jobject thiz,
+                                                jintArray joldBoard) {
+    (void)thiz;
+    jint oldBuf[50];
+    (*env)->GetIntArrayRegion(env, joldBoard, 0, 50, oldBuf);
+    int oldB[50];
+    for (int i = 0; i < 50; i++) oldB[i] = (int)oldBuf[i];
+    int out[52] = {0};
+    int rc = gnubg_mobile_tutor_analyze(oldB, out);
+    if (rc < 1) return (*env)->NewIntArray(env, 0);
+    jintArray result = (*env)->NewIntArray(env, 52);
+    jint buf[52];
+    for (int i = 0; i < 52; i++) buf[i] = (jint)out[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 52, buf);
+    return result;
+}
+
+/*
  * Engine.getMatchWinner(): Int
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.
  * Reads ms.anScore — updated by ApplyGameOver in play.c.

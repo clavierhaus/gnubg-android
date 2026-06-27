@@ -404,6 +404,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
+
+            // --- Tutor analysis: gnubg's own AnalyzeMove on the played move ---
+            // Runs AFTER applyMoveString (the move record must be in plGame).
+            // Wrapped in try/catch: never affects gameplay.
+            try {
+                val raw = Engine.tutorAnalyze(state.oldBoard)
+                if (raw.size == 52) {
+                    val playedEquity = Float.fromBits(raw[0])
+                    val bestEquity   = Float.fromBits(raw[1])
+                    val bestBoard    = raw.copyOfRange(2, 52)
+                    val equityLoss   = (bestEquity - playedEquity).coerceAtLeast(0f)
+                    val level        = com.clavierhaus.gnubg.tutor.BlunderClassifier.classify(equityLoss)
+                    val playedFV     = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(state.board)
+                    val bestFV       = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(bestBoard)
+                    val comparison   = com.clavierhaus.gnubg.tutor.FeatureExtractor.compare(playedFV, bestFV)
+                    val notable      = comparison.notableDeltas.take(3)
+                        .joinToString("; ") { "${it.feature} ${it.playedValue}->${it.bestValue}" }
+                    android.util.Log.i("gnubg-tutor",
+                        "level=$level loss=${"%.4f".format(equityLoss)} " +
+                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)} | " +
+                        notable.ifEmpty { "no notable deltas" })
+                } else {
+                    android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")
+                }
+            } catch (t: Throwable) {
+                android.util.Log.e("gnubg-tutor", "analysis failed: ${t.message}")
+            }
+
             if (Engine.getMatchStatus() >= 2) {
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
                 return@launch

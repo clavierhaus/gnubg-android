@@ -64,6 +64,14 @@ object Engine {
     external fun swapBoard(board: IntArray): IntArray
     external fun applySubMove(board: IntArray, iSrc: Int, nRoll: Int): IntArray
     external fun findMove(oldBoard: IntArray, curBoard: IntArray, die0: Int, die1: Int): String
+
+    /**
+     * Tutor analysis via gnubg's AnalyzeMove. Call AFTER applyMoveString.
+     * oldBoard = pre-move board. Returns IntArray[52]:
+     *   [0] = Float.fromBits(played equity), [1] = Float.fromBits(best equity),
+     *   [2..51] = best-move board. Empty array if no analyzable move.
+     */
+    external fun tutorAnalyze(oldBoard: IntArray): IntArray
     external fun pipCount(board: IntArray): IntArray
 
     // Analysis
