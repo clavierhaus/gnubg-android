@@ -153,3 +153,4 @@ jni-bridge/build-android-arm64/
 gnubg-app/build/
 **/.cxx/
 **/CMakeFiles/
+gnubg-app/app/src/main/jniLibs/arm64-v8a/libgnubg-engine.so
