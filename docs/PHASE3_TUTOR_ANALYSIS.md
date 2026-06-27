@@ -1,94 +1,113 @@
-# Phase 3 Tutor Analysis -- gnubg-native approach
+# Phase 3 Tutor Analysis -- IMPLEMENTED
 
 ## Principle
-gnubg is the only authority for game logic, including move analysis. The tutor
-does NOT reinvent move matching, evaluation, or skill classification. It calls
-gnubg's own AnalyzeMove() and reads the results gnubg stores.
+gnubg is the sole authority for game logic, including move analysis. The tutor
+uses gnubg's own routines (FixMatchState, ApplyMoveRecord, FindnSaveBestMoves)
+to reconstruct state and score moves. Nothing is reinvented.
 
-## Status
-- HEAD baseline: clean (Phase 1 + Phase 2 committed).
-- Abandoned approach (do not revive): a hand-rolled gnubg_mobile_tutor_analyze
-  that searched the move list by PositionKey and re-evaluated each candidate.
-  It returned raw.size=0 because the custom loop corrupts the move list and
-  duplicates work gnubg already does. WIP commit 4d81ea9 holds that dead code;
-  revert to clean HEAD before implementing the correct approach.
+## Status: COMPLETE and verified on device (Pixel 8 Pro)
+A deliberate blunder produces level=HUGE_BLUNDER with a real equity loss; a
+best-equals-played move produces level=NONE loss=0.0000 with zero feature
+deltas. Real gnubg equities end to end.
 
-## The correct architecture: gnubg's AnalyzeMove
+## What it does
 
-gnubg's move analysis is AnalyzeMove(). The async wrapper asyncAnalyzeMove() is
-already vendored in the facade (engine-core) and calls:
+Single facade function `gnubg_mobile_tutor_analyze(const int old_board[50], int out[52])`,
+called from GameViewModel.confirm() AFTER applyMoveString. Steps:
 
-    AnalyzeMove(pmd->pmr, pmd->pms, plGame, NULL,
-                pmd->pesChequer, pmd->pesCube, pmd->aamf, NULL, NULL)
+1. **Locate the human's move record.** The last record in plGame may be the
+   engine's reply, so walk backward from plGame->plPrev to the last MOVE_NORMAL
+   whose player is human (ap[fPlayer].pt == PLAYER_HUMAN; this app sets
+   ap[0] = human).
 
-After AnalyzeMove runs on a move record, gnubg's own move_skill() reads quality:
+2. **Reconstruct the pre-move matchstate** by replaying the game exactly as
+   gnubg's AnalyzeGame does:
+   - AnalyzeMove on the first record (MOVE_GAMEINFO) initialises msAnalyse.
+   - For each subsequent record up to (not including) the human's move:
+     FixMatchState(&msAnalyse, pmr); if pmr->fPlayer != msAnalyse.fMove then
+     SwapSides(msAnalyse.anBoard) and set msAnalyse.fMove; ApplyMoveRecord(...).
+   - This leaves msAnalyse as the state BEFORE the human's move.
 
-    move_i = &pmr->ml.amMoves[pmr->n.iMove];   // the move that was PLAYED
-    move_0 = &pmr->ml.amMoves[0];              // the BEST move (list sorted)
-    skill  = Skill(move_i->rScore - move_0->rScore);
+3. **Score all legal moves** with gnubg's FindnSaveBestMoves (fAnalyse=TRUE) --
+   the same call AnalyzeMove uses internally (play.c ~65823). The move list
+   comes back sorted best-first with rScore filled.
 
-Therefore:
-  - played equity = pmr->ml.amMoves[pmr->n.iMove].rScore
-  - best   equity = pmr->ml.amMoves[0].rScore
-  - equity loss   = move_0->rScore - move_i->rScore   (>= 0)
-  - pmr->n.iMove is the index of the played move -- gnubg STORES it; no search.
+4. **Find the played move** by position key (pre-move board + pmr->n.anMove,
+   then PositionKey), matched against ml.amMoves[j].key.
 
-## moveData struct (engine-core, confirmed)
-    typedef struct {
-        moverecord *pmr;
-        matchstate *pms;
-        const evalsetup *pesChequer;
-        evalsetup *pesCube;
-        movefilter(*aamf)[MAX_FILTER_PLIES];
-    } moveData;
+5. **Read equities** as gnubg's move_skill() does:
+   - played = ml.amMoves[iPlayed].rScore
+   - best   = ml.amMoves[0].rScore
+   - out[0]/out[1] = float bits of played/best
 
-## Analysis setup globals (already vendored)
-    evalsetup  esAnalysisChequer = EVALSETUP_2PLY;
-    evalsetup  esAnalysisCube    = EVALSETUP_2PLY;
-    movefilter aamfAnalysis[MAX_FILTER_PLIES][MAX_FILTER_PLIES] = MOVEFILTER_NORMAL;
+6. **Best-move board** for feature comparison: old_board + ApplyMove(best anMove),
+   NO SwapSides -- same frame as the caller's played board (state.board, built
+   by applySubMove which also does not swap).
 
-## New facade function
+## Critical findings (the bugs that were fixed)
 
-    int gnubg_mobile_tutor_analyze(int out[52])
+- **Wrong record.** plGame->plPrev->p is the ENGINE's reply, not the human's
+  move. Fixed by walking back to the last human MOVE_NORMAL.
 
-  1. Get the LAST move record from plGame (the move just played by applyMoveString).
-     - plGame is the current game's move list (listOLD*).
-     - The last MOVE_NORMAL record is the human's move.
-  2. Build moveData md = { pmr=last_record, pms=&ms,
-        pesChequer=&esAnalysisChequer, pesCube=&esAnalysisCube, aamf=aamfAnalysis }.
-  3. Call asyncAnalyzeMove(&md)  (or AnalyzeMove directly).
-  4. Read:
-       out[0] = floatbits( pmr->ml.amMoves[pmr->n.iMove].rScore )   // played
-       out[1] = floatbits( pmr->ml.amMoves[0].rScore )              // best
-  5. Best-move board: ApplyMove(copy of pre-move board, amMoves[0].anMove),
-     SwapSides, pack into out[2..51].
+- **Wrong matchstate.** AnalyzeMove/FindnSaveBestMoves rebuild everything from
+  pms->anBoard. The global ms has advanced past the move; pms->anBoard MUST be
+  the pre-move board. Fixed by reconstructing msAnalyse via the AnalyzeGame
+  replay (FixMatchState + ApplyMoveRecord).
 
-IMPORTANT ordering: tutor_analyze runs AFTER applyMoveString (the move record
-must exist in plGame). This is the OPPOSITE of the abandoned hook ordering.
+- **inf rScore from the 2-ply/prune evalcontext.** esAnalysisChequer.ec
+  (EVALSETUP_2PLY, fUsePrune=TRUE) returns inf in this build. The facade's
+  proven getCandidates path uses fac_ec_default (1-ply) + fac_ci_default and
+  scores correctly. FindnSaveBestMoves is therefore called with
+  fac_ec_default/fac_ci_default. NOTE: this means the tutor currently evaluates
+  at 1-ply. Revisiting 2-ply/prune is a future improvement (see Handover).
 
-## GameViewModel.confirm() changes
-  - Move the tutor call to AFTER Engine.applyMoveString(moveStr).
-  - tutorAnalyze takes NO board arguments -- it reads plGame's last record.
-  - Signature: Engine.tutorAnalyze(): IntArray   (52 ints, or empty on failure).
+- **Feature-delta frame mismatch.** An extra SwapSides on the best board flipped
+  pip sign (pipDifference 8->-8 when played==best). Fixed by building the best
+  board in the played board's frame (no swap).
 
-## Open item to resolve first
-Confirm how the facade reaches plGame's last moverecord. Search engine-core for
-plGame, plLastMove, AddMoveRecord. gnubg's AddMoveRecord appends to plGame; the
-last element is the move just played.
+## Files
+- jni-bridge/include/gnubg_mobile.h    : gnubg_mobile_tutor_analyze decl
+- jni-bridge/src/gnubg_mobile.c        : implementation
+- jni-bridge/src/native-lib.c          : JNI tutorAnalyze(oldBoard) -> IntArray[52]
+- gnubg-app/.../Engine.kt               : external fun tutorAnalyze(oldBoard): IntArray
+- gnubg-app/.../engine/GameViewModel.kt : hook after applyMoveString (log-only)
 
-## Files to change (against clean HEAD)
-  - jni-bridge/src/gnubg_mobile.c     : implement tutor_analyze using AnalyzeMove
-  - jni-bridge/include/gnubg_mobile.h : signature (no board args)
-  - jni-bridge/src/native-lib.c       : tutorAnalyze JNI (no board args)
-  - gnubg-app/.../Engine.kt           : external fun tutorAnalyze(): IntArray
-  - gnubg-app/.../GameViewModel.kt    : hook AFTER applyMoveString, no board args
+## Output contract (IntArray[52])
+- [0]     = Float.fromBits(played equity)
+- [1]     = Float.fromBits(best equity)
+- [2..51] = best-move board, player-on-roll frame (same as state.board)
+- empty array => no analyzable human move (dance / not found)
 
 ## Verification
-  ./build_and_deploy.sh ; adb logcat | grep -E "gnubg-tutor|gnubg-vm"
-  Each human move -> gnubg-tutor line with real equity loss + feature deltas.
-  A known blunder must show level=BLUNDER with matching deltas.
+./build_and_deploy.sh ; adb logcat | grep -E "gnubg-tutor|gnubg-vm"
+- blunder  -> level=BLUNDER/HUGE_BLUNDER loss>0 with sensible deltas
+- best move-> level=NONE loss=0.0000, no notable deltas
+
+## Handover -- open items / next phases
+
+1. **Evaluation depth.** Tutor runs at 1-ply (fac_ec_default) because the 2-ply
+   /prune path (esAnalysisChequer) returns inf in this build. Investigate why
+   prune nets / 2-ply yield inf in FindnSaveBestMoves here; the get_candidates
+   1-ply path is the only proven-scoring route. Raising to 2-ply would match
+   desktop gnubg analysis strength.
+
+2. **Build artifact hygiene (do next).** libgnubg-engine.so is tracked and keeps
+   dirtying the tree. Run: git rm --cached
+   gnubg-app/app/src/main/jniLibs/arm64-v8a/libgnubg-engine.so and add it to
+   .gitignore so it never blocks a clean-tree check again.
+
+3. **Cube decisions.** Only chequer play is analysed. Cube-decision tutoring
+   (esAnalysisCube / the cube path in AnalyzeMove) is not yet wired.
+
+4. **Phase 4+: coaching layer.** The tutor now emits level + equity loss +
+   feature deltas to logcat. Next: PhraseLibrary (static GPL-3 coaching assets),
+   CoachCard UI, then tutorial/position-review modes. See MASTER 7.6.
+
+5. **Play Protect.** The device flags the app verdict=HARMFUL (logcat cna/bvv).
+   Awareness only; can interfere with install/run, unrelated to tutor logic.
 
 ## DO NOT
-  - Do not hand-roll move matching by PositionKey. gnubg stores iMove.
-  - Do not re-evaluate moves in a custom loop. AnalyzeMove fills amMoves[].rScore.
-  - Do not reinvent skill classification. gnubg's Skill()/move_skill() is authoritative.
+- Do not hand-roll move matching or evaluation. gnubg's FindnSaveBestMoves /
+  FixMatchState / ApplyMoveRecord / PositionKey are the authorities.
+- Do not pass the global ms to the analysis -- it has advanced past the move.
+- Do not add SwapSides to the best board -- it must match state.board's frame.
