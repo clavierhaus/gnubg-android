@@ -672,6 +672,17 @@ from the application ID. Pure ASCII, safe to re-run.
   facade). `native-lib.c` now reaches the engine directly in only two named,
   intentional places: the `gnubg_on_board_changed` callback and
   `runCommand`/`HandleCommand`.
+- **Tutor analysis -- chequer play (Phase 13).** After each human move,
+  `gnubg_mobile_tutor_analyze` reports the played-move equity, the best-move
+  equity, the equity loss, the blunder level, and feature deltas. It uses
+  gnubg's own routines throughout: it locates the human's move record in
+  `plGame`, reconstructs the pre-move matchstate by replaying the game with
+  `FixMatchState` + `ApplyMoveRecord` (as `AnalyzeGame` does), scores all legal
+  moves with `FindnSaveBestMoves` (`fAnalyse=TRUE`), and reads played/best
+  `rScore` as `move_skill()` does. Verified on device: a blunder yields
+  `level=HUGE_BLUNDER` with positive loss; best==played yields `loss=0.0000`.
+  Currently 1-ply (`fac_ec_default`); see `docs/PHASE3_TUTOR_ANALYSIS.md` for
+  the full design and the bugs fixed. Log-only; never affects gameplay.
 
 ### 8.2 Completed — engine-symbol reduction (Tier B/C)
 
@@ -701,6 +712,16 @@ the de-Android invariant already holds for all gameplay and init paths.
   the engine, but there is no beaver UI; beaver decisions currently collapse to
   take. Implementing the UI lets `gnubg_mobile_engine_cube_response` honour
   `CommandRedouble` for the beaver case.
+- **Tutor: 2-ply / prune evaluation.** The tutor evaluates at 1-ply because
+  `esAnalysisChequer` (2-ply, `fUsePrune`) returns `inf` from
+  `FindnSaveBestMoves` in this build, while the proven `fac_ec_default` 1-ply
+  path scores correctly. Investigating the 2-ply/prune path would match desktop
+  gnubg analysis strength.
+- **Tutor: cube-decision analysis.** Only chequer play is analysed; the cube
+  path (`esAnalysisCube`) is not yet wired into the tutor.
+- **Coaching layer (Phase 4+).** The tutor emits level + loss + deltas to
+  logcat. Next: `PhraseLibrary` (static GPL-3 coaching assets), `CoachCard` UI,
+  then tutorial / position-review modes.
 - **iOS adapter.** `Engine.swift` mirroring `Engine.kt` over the existing
   facade; `GameViewModel` → an `ObservableObject`; SwiftUI board. No facade or
   engine changes required — that is the whole point of the architecture.
@@ -709,6 +730,11 @@ the de-Android invariant already holds for all gameplay and init paths.
   iOS-readiness.
 - **Rename `android-app.c` → `mobile-app.c`** (it is already platform-neutral;
   the name is the last Android-ism in the C layer).
+- **Doc: reconcile build-script sections.** The two 7.6 sections still describe
+  the retired `build.sh` / `run.sh` / `run_on_device.sh`. These were replaced by
+  the single `build_and_deploy.sh` (owns native build, .so copy, Gradle-cache
+  wipe, assemble, install, launch, optional logcat). Both sections should be
+  merged and rewritten to `build_and_deploy.sh`.
 
 ### 8.4 Known Warnings
 
