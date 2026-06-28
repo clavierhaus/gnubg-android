@@ -67,7 +67,6 @@ engine-core/latex.c
 engine-core/text.c
 engine-core/dbprovider.*
 engine-core/export.*
-engine-core/glib-ext.*
 engine-core/import.c
 engine-core/make*.c
 engine-core/openurl.*
