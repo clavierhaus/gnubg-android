@@ -183,3 +183,16 @@ If you distribute a compiled Android application incorporating
    the GPL.
 
 See https://www.gnu.org/licenses/gpl-3.0.html for the full terms.
+
+## engine-core/glib-ext.{c,h} -- tracked from upstream
+
+`glib-ext.c` and `glib-ext.h` are copied verbatim from the vendored gnubg
+drop (`upstream-source/gnubg/`, identical to the rest of `engine-core/`).
+They are part of the Android build: `dice.c` and `external.c` include
+`glib-ext.h`, and `jni-bridge/CMakeLists.txt` lists `glib-ext.c` as an ENGINE
+source. They are NOT a local divergence -- they are stock upstream files.
+
+They were previously excluded by a `.gitignore` rule
+(`engine-core/glib-ext.*`) in the "GTK/UI/desktop files" block, which
+miscategorised them as desktop-only. That rule was removed and both files are
+now tracked, so the native build is reproducible from a clean clone.
