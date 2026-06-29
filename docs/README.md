@@ -1,46 +1,61 @@
 # Documentation index
 
-This directory contains the canonical project documentation for the GNU Backgammon Android port.
+Canonical project documentation for the GNU Backgammon Android port.
 
-## Current documents
+## Authoritative current state
 
-- `ROADMAP.md` — milestone history and next candidate work
-- `ARCHITECTURE.md` — architecture, ownership boundaries, and command-bridge policy
-- `BUILD.md` — build notes
-- `KNOWN-LIMITATIONS.md` — known limitations
-- `TECHNICAL-NOTES.md` — technical notes
-- `SETTINGS-UX-BLUEPRINT.md` — Settings UX blueprint and earlier planning
-- `STATUS_V0.8.10.md` — Home Hub scaffold milestone
-- `STATUS_V0.8.11.md` — GNUbg lifecycle bridge milestone
-- `SETTINGS_GNUBG_MAPPING_V0.8.13_DRAFT.md` — archived Settings/GNUbg command mapping draft
+The single source of truth for where the project is now is **`STATUS.md`**
+(current version V0.9.1). Read it first. Everything else is reference,
+history, or forward-looking design and defers to it.
 
-## Current source of truth
+## Living documents
 
-Current internal milestone: **V0.8.14**
+- `STATUS.md` -- authoritative current state (V0.9.1). Start here.
+- `MASTER_V0.9.md` -- deep engineering reference and full build history.
+- `ARCHITECTURE.md` -- ownership boundaries (gnubg authoritative; Kotlin owns
+  shell/presentation) and command-bridge policy.
+- `TECHNICAL-NOTES.md` -- interaction model and invariants (submove testing,
+  undo snapshots, cube path).
+- `PHASE3_TUTOR_ANALYSIS.md` -- tutor analysis internals (the chequer tutor;
+  canonical reference for the tutor pattern).
+- `ROADMAP.md` -- milestone arc (V0.8.x app-shell line, V0.9 engine-port line,
+  V0.9.1 consolidation) and forward plan.
 
-Settings now uses five grouped tabs:
+## Forward-looking / design
 
-- Game
-- Board
-- Engine
-- Analysis
-- Expert
+- `SETTINGS-UX-BLUEPRINT.md` -- aspirational Settings UX design. Partially
+  realised (the five-tab skeleton exists); the deep fine-tuning/exposure model
+  is not built.
+- `gnubg_mobile_tutor_mission_statement.tex` / `.pdf` -- product philosophy and
+  vision for the mobile tutor (not an engineering spec).
 
-The restricted GNUbg command bridge exists, but live Settings command dispatch is quarantined until a lifecycle-safe application path is implemented.
+## History (frozen snapshots, superseded by STATUS.md)
+
+Under `history/`:
+
+- `STATUS_V0.8.10.md` -- Home Hub scaffold milestone.
+- `STATUS_V0.8.11.md` -- GNUbg lifecycle bridge milestone.
+- `CHANGELOG-0.8.9.md` -- 0.8.9 changelog.
+- `SETTINGS_GNUBG_MAPPING_V0.8.13_DRAFT.md` -- archived Settings/GNUbg command
+  mapping draft.
+- `KNOWN-LIMITATIONS.md` -- superseded by the "Known gaps" section of STATUS.md.
+
+## Build status (also in BUILD.md)
+
+- `BUILD.md` -- build notes. NOTE: the single build/deploy entry point is
+  `./build_and_deploy.sh` at the repository root; older hand-rolled recipes are
+  superseded.
 
 ## Documentation rule
 
-Project-wide documentation belongs here at repository root under `docs/`.
-
-The Android module may keep a tiny pointer README, but it should not have its own project-level `docs/` directory.
-
-## Product and design
-
-- [GNU Backgammon Mobile Tutor: Mission Statement and Product Philosophy](gnubg_mobile_tutor_mission_statement.tex)
+Project-wide documentation lives here at repository root under `docs/`. The
+Android module may keep a tiny pointer README, but should not have its own
+project-level `docs/` directory, because the project spans the Android app, the
+JNI bridge, the engine core, and the upstream source.
 
 ## Building documentation
 
-From the repository root, build documentation with:
+From the repository root:
 
     make docs
 
@@ -48,6 +63,5 @@ To build only the mobile tutor mission statement PDF:
 
     make tutor-mission-pdf
 
-The LaTeX source remains the editable source of truth. The generated
-PDF is intended as the public-facing rendered artifact.
-
+The LaTeX source remains the editable source of truth for the mission
+statement; the generated PDF is the public-facing rendered artifact.
