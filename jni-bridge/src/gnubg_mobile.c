@@ -731,7 +731,8 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
     TanBoard anBoard;
     cubeinfo ci;
     int anScore[2];
-    evalsetup es;
+    evalsetup es;            /* unused after PORT switch to GetEvalCube; kept for ABI/struct stability this commit */
+    evalsetup *pesCube;
     float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
     float arDouble[4];
     cubedecision cd;
@@ -746,14 +747,25 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
      * stability; drop in a follow-up polish pass. */
     (void)cube_value; (void)cube_owner; (void)f_move; (void)match_to;
     (void)score0; (void)score1; (void)crawford; (void)anScore;
+    (void)es;  /* PORT B.1: dead after switch to GetEvalCube(); kept for follow-up polish */
     pthread_mutex_lock(&gnubg_lock);
     GetMatchStateCubeInfo(&ci, &ms);
-    memset(&es, 0, sizeof(es));
-    es.et = EVAL_EVAL;
-    es.ec = fac_ec_default;
+    /* PORT: evalcontext is now gnubg's own -- GetEvalCube() returns
+     * &esAnalysisCube if fEvalSameAsAnalysis else &esEvalCube
+     * (android-app.c:907). Both globals are seeded with EVALSETUP_2PLY
+     * (cubeful 2-ply, prune) at android-app.c:733,895, and respond to
+     * fEvalSameAsAnalysis exactly the way gnubg's own ComputerTurn cube
+     * branch (play.c:1132-1148) reads ap[ms.fTurn].esCube.
+     *
+     * Known risk: EVALSETUP_2PLY's chequer path returns inf in this
+     * build (see PHASE3_TUTOR_ANALYSIS.md). If the cube decision also
+     * returns inf, this call fails cleanly (rc != 0) and the caller
+     * gets -1. No invented fallback -- the port-rule-compliant
+     * fallback is aecSettings[strength_idx], a separate commit. */
+    pesCube = GetEvalCube();
     memset(aarOutput, 0, sizeof(aarOutput));
     rc = GeneralCubeDecisionENoLocking(aarOutput, (ConstTanBoard) anBoard,
-                                       &ci, &fac_ec_default, &es);
+                                       &ci, &pesCube->ec, pesCube);
     if (rc != 0) { pthread_mutex_unlock(&gnubg_lock); return -1; }
     cd = FindCubeDecision(arDouble, aarOutput, &ci);
     pthread_mutex_unlock(&gnubg_lock);
