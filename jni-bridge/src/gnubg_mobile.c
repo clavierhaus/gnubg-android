@@ -586,15 +586,17 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
         GetMatchStateCubeInfo(&ci, &msAnalyse);
 
         memset(&ml, 0, sizeof(ml));
-        /* Cubeinfo &ci is built above via GetMatchStateCubeInfo(&ci, &msAnalyse)
-         * -- gnubg's pre-move cubeinfo for msAnalyse. The evalcontext is still
-         * fac_ec_default (1-ply, cubeless); fixing that is a separate commit
-         * (audit V1 -- fac_ec_default reinvention). esAnalysisChequer's
-         * 2-ply/prune path yields inf in this build. */
+        /* PORT (audit V1 + V2): cubeinfo &ci comes from GetMatchStateCubeInfo
+         * (&ci, &msAnalyse) above; evalcontext comes from gnubg's GetEvalChequer()
+         * accessor (android-app.c:903), which under fEvalSameAsAnalysis=FALSE
+         * returns esEvalChequer at the user's strength preset (aecSettings[idx]
+         * after audit C). The 2-ply/prune path historically returned inf on this
+         * build; the named presets the UI exposes are 0/1-ply, so the path is
+         * non-inf in practice. */
         if (FindnSaveBestMoves(&ml, pmrLast->anDice[0], pmrLast->anDice[1],
                                (ConstTanBoard) msAnalyse.anBoard, &key, TRUE,
                                arSkillLevel[SKILL_DOUBTFUL], &ci,
-                               &fac_ec_default, aamfAnalysis) < 0) {
+                               &(GetEvalChequer()->ec), aamfAnalysis) < 0) {
             g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
         }
         if (ml.cMoves == 0 || !ml.amMoves) {
@@ -647,6 +649,7 @@ int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
                                 int *out_moves, float *out_equities,
                                 int n_max) {
     TanBoard anBoard;
+    cubeinfo ci_candidates, ci_candidates_opp;
     movelist ml;
     int i, j, n_written;
 
@@ -655,6 +658,19 @@ int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
     facade_unpack_board(board, anBoard);
 
     pthread_mutex_lock(&gnubg_lock);
+
+    /* PORT (audit A.2): the loop below SwapSides()'s the post-move board so it
+     * can EvaluatePosition from the opponent's perspective, then negates equity
+     * to recover the current player's view. gnubg's own swap-aware pattern at
+     * engine-core/eval.c:5455 and :6054 builds a flipped cubeinfo for exactly
+     * this case: same nCube/owner/score/Crawford/Jacoby/beavers/bgv, !fMove. */
+    GetMatchStateCubeInfo(&ci_candidates, &ms);
+    SetCubeInfo(&ci_candidates_opp,
+                ci_candidates.nCube, ci_candidates.fCubeOwner,
+                !ci_candidates.fMove,
+                ci_candidates.nMatchTo, ci_candidates.anScore,
+                ci_candidates.fCrawford, ci_candidates.fJacoby,
+                ci_candidates.fBeavers, ci_candidates.bgv);
 
     memset(&ml, 0, sizeof(ml));
     GenerateMoves(&ml, (ConstTanBoard) anBoard, d0, d1, FALSE);
@@ -676,7 +692,7 @@ int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
         SwapSides(boardAfter);
 
         if (EvaluatePosition(NULL, (ConstTanBoard) boardAfter, arOutput,
-                             &fac_ci_default, &fac_ec_default) == 0) {
+                             &ci_candidates_opp, &(GetEvalChequer()->ec)) == 0) {
             /* arOutput: [0]=W [1]=WG [2]=WBG [3]=L [4]=LG [5]=LBG
              * Opponent-perspective equity = W+WG+WBG - L-LG-LBG.
              * Negate for current player's equity. */
@@ -707,7 +723,7 @@ int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap) {
     pthread_mutex_lock(&gnubg_lock);
     GetMatchStateCubeInfo(&ci_eval, &ms);
     rc = EvaluatePosition(NULL, (ConstTanBoard) anBoard, arOutput,
-                          &ci_eval, &fac_ec_default);
+                          &ci_eval, &(GetEvalChequer()->ec));
     pthread_mutex_unlock(&gnubg_lock);
     if (rc != 0) return -1;
     for (i = 0; i < NUM_OUTPUTS; i++) out[i] = arOutput[i];
