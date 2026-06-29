@@ -16,13 +16,13 @@ while grep -q "fatal error: .* No such file or directory" build.log; do
     
     # Avoid infinite loop
     if grep -q "$MISSING_HEADER" "$PROCESSED_HEADERS"; then
-        echo "🛑 ERROR: Loop detected. $MISSING_HEADER was already copied but is still not found."
+        echo " ERROR: Loop detected. $MISSING_HEADER was already copied but is still not found."
         echo "Check if the source file expects a subdirectory (e.g., lib/simd.h)."
         exit 1
     fi
 
     if [[ "$MISSING_HEADER" == "glib.h" ]] || [[ "$MISSING_HEADER" == *"gobject"* ]]; then
-        echo "⚠️ Skipping system header: $MISSING_HEADER"
+        echo "WARN Skipping system header: $MISSING_HEADER"
         touch "$INCLUDE_DIR/$MISSING_HEADER"
     else
         # Search for the file in upstream
@@ -31,11 +31,11 @@ while grep -q "fatal error: .* No such file or directory" build.log; do
         if [ -n "$FOUND_PATH" ]; then
             DEST_DIR=$(dirname "$INCLUDE_DIR/$MISSING_HEADER_PATH")
             mkdir -p "$DEST_DIR"
-            echo "✅ Copying: $MISSING_HEADER_PATH to $DEST_DIR"
+            echo "OK Copying: $MISSING_HEADER_PATH to $DEST_DIR"
             cp "$FOUND_PATH" "$DEST_DIR/"
             echo "$MISSING_HEADER" >> "$PROCESSED_HEADERS"
         else
-            echo "🛑 FAILED: Could not locate $MISSING_HEADER."
+            echo " FAILED: Could not locate $MISSING_HEADER."
             exit 1
         fi
     fi
@@ -43,4 +43,4 @@ while grep -q "fatal error: .* No such file or directory" build.log; do
     make -C "$ENGINE_ROOT/build" > build.log 2>&1
 done
 
-echo "✅ All headers resolved."
+echo "OK All headers resolved."

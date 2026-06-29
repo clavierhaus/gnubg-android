@@ -55,7 +55,7 @@ fun GameLayout(
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
-                // Left panel — fixed proportion of screen
+                // Left panel -- fixed proportion of screen
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -110,7 +110,7 @@ fun GameLayout(
                                         viewModel.newGame()
                                     }
                                     Text(
-                                        "Continuing match…",
+                                        "Continuing match...",
                                         color = Color.White,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
@@ -147,7 +147,7 @@ fun GameLayout(
                                 GameButton("Drop", Color(0xFF8B1A1A)) { viewModel.dropDouble() }
                             }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
-                                Text("Thinking…", color = Color(0xFFB3C9F0), fontSize = 18.sp)
+                                Text("Thinking...", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
                                 // The roll action is shown directly on the board surface.
@@ -182,7 +182,7 @@ fun GameLayout(
                     }
                 }
 
-                // Board — remaining space
+                // Board -- remaining space
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -478,7 +478,7 @@ private fun MatchSetupScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             GameButton(
-                label = if (engineReady) "Start Match" else "Loading engine…",
+                label = if (engineReady) "Start Match" else "Loading engine...",
                 color = Color(0xFF2E7D32),
                 enabled = engineReady
             ) {

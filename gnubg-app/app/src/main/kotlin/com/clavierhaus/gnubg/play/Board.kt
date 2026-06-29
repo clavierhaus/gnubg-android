@@ -191,7 +191,7 @@ fun BackgammonBoard(
                 val totalDW = DIE_W * 2f + diceGap
                 val undoLeft = MID_X + BAR_W / 2f + HALF_W / 2f - DIE_W - diceGap / 2f
 
-                // Tap cube to double — must be FIRST to avoid Roll/bar interception.
+                // Tap cube to double -- must be FIRST to avoid Roll/bar interception.
                 // This uses the same board-relative centre/size as the drawn cube.
                 // Detailed cube legality remains in GameViewModel/GNUbg.
                 val cubeSzU = BAR_W * 0.75f
@@ -243,14 +243,14 @@ fun BackgammonBoard(
                     viewModel.swapDice()
                     return@detectTapGestures
                 }
-                // Tap Undo button (board units) — lower half of tray gap
+                // Tap Undo button (board units) -- lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft && x <= undoLeft + DIE_W) {
                     viewModel.undo()
                     return@detectTapGestures
                 }
-                // Tap Commit button (board units) — lower half of tray gap
+                // Tap Commit button (board units) -- lower half of tray gap
                 if (gameState.phase == GamePhase.HUMAN_MOVING &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft + DIE_W + diceGap && x <= RIGHT_X) {
@@ -258,7 +258,7 @@ fun BackgammonBoard(
                     return@detectTapGestures
                 }
 
-                // Tap on human bar checker (bottom half of bar) — triggers re-entry
+                // Tap on human bar checker (bottom half of bar) -- triggers re-entry
                 val barLeft  = MID_X - BAR_W / 2f
                 val barRight = MID_X + BAR_W / 2f
                 if (x >= barLeft && x <= barRight && y >= TOT_H / 2f && y <= TOT_H - BRD_H) {
@@ -353,12 +353,12 @@ fun BackgammonBoard(
             val tcW = tw * 0.85f            // checker width in tray
             val tcX = tx + (tw - tcW) / 2f  // centred in tray
 
-            // Engine borne off — top tray, stacked from top
+            // Engine borne off -- top tray, stacked from top
             for (i in 0 until engineBorneOff) {
                 val cy = topTrayY + i * tcH
                 drawTrayChecker(tcX, cy, tcW, tcH * 0.92f, p.checkerDark, p.checkerDarkRim)
             }
-            // Human borne off — bottom tray, stacked from top
+            // Human borne off -- bottom tray, stacked from top
             for (i in 0 until humanBorneOff) {
                 val cy = botTrayY + i * tcH
                 drawTrayChecker(tcX, cy, tcW, tcH * 0.92f, p.checkerLight, p.checkerLightRim)
@@ -417,7 +417,7 @@ fun BackgammonBoard(
                 val cx    = ux(pointCentreX(n))
                 val isTop = n in 13..24
 
-                // anBoard[0] = engine/dark: index (n-1) → UI point n
+                // anBoard[0] = engine/dark: index (n-1) -> UI point n
                 // anBoard[0] = engine/dark
                 val engineCount = gameState.board[24 - n]
                 if (engineCount > 0) {
@@ -513,7 +513,7 @@ fun BackgammonBoard(
                 val gap  = ux(PT_W * 0.15f)
                 val cy   = uy(TOT_H / 2f)
 
-                // Engine dice — left half, grayed
+                // Engine dice -- left half, grayed
                 gameState.engineDice?.let { (e0, e1) ->
                     val totalW = dw * 2f + gap
                     val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
@@ -523,7 +523,7 @@ fun BackgammonBoard(
                     }
                 }
 
-                // Roll button — right half, where player dice will appear
+                // Roll button -- right half, where player dice will appear
                 val gapCX   = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
                 val btnW    = dw * 2f + gap
                 val btnH    = dw * 1.2f
@@ -557,7 +557,7 @@ fun BackgammonBoard(
                 }
             }
 
-            // 8. Undo/Commit buttons drawn on canvas — same coordinate system as dice
+            // 8. Undo/Commit buttons drawn on canvas -- same coordinate system as dice
             if (gameState.phase == GamePhase.HUMAN_MOVING) {
                 val diceGap  = ux(PT_W * 0.15f)
                 val dw       = ux(DIE_W)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # init_repo.sh
 # Run once from /home/erweitert/gnubg-android/ to initialise the git repository
-# and push to GitHub (or GitLab — change the remote URL accordingly).
+# and push to GitHub (or GitLab -- change the remote URL accordingly).
 #
 # Prerequisites:
 #   git config --global user.name  "Your Name"
@@ -17,11 +17,11 @@ REMOTE_URL="https://github.com/clavierhaus/gnubg-android.git"
 set -euo pipefail
 cd /home/erweitert/gnubg-android
 
-# ── Initialise ────────────────────────────────────────────────────────────────
+# -- Initialise ----------------------------------------------------------------
 git init
 git checkout -b main
 
-# ── Stage everything the .gitignore allows ────────────────────────────────────
+# -- Stage everything the .gitignore allows ------------------------------------
 git add .gitignore
 git add README.md
 git add PROVENANCE.md
@@ -40,20 +40,20 @@ git add engine-core/*.c engine-core/*.h
 git add engine-core/lib/*.c engine-core/lib/*.h
 git add upstream-source/
 
-# ── Initial commit ────────────────────────────────────────────────────────────
-git commit -m "Initial commit: GNU Backgammon Android port — MASTER V6
+# -- Initial commit ------------------------------------------------------------
+git commit -m "Initial commit: GNU Backgammon Android port -- MASTER V6
 
 libgnubg-engine.so builds and runs on Android API 28, arm64-v8a.
 
 Engine: gnubg 1.08.003 (GPL-3.0-or-later), patched for Android.
 GLib:   2.88.1 cross-compiled for aarch64-linux-android28 (Meson).
-JNI:    5 entry points — initialise, evaluatePosition, findBestMove,
+JNI:    5 entry points -- initialise, evaluatePosition, findBestMove,
         classifyPosition, applyMove.
 
 See MASTER_V6.md for full architecture and build documentation.
 See PROVENANCE.md for upstream source documentation and licence compliance."
 
-# ── Push ─────────────────────────────────────────────────────────────────────
+# -- Push ---------------------------------------------------------------------
 git remote add origin "$REMOTE_URL"
 git push -u origin main
 

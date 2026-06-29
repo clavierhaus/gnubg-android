@@ -1,5 +1,5 @@
 /*
- * stubs.c — Android JNI stub layer for GNU Backgammon engine
+ * stubs.c -- Android JNI stub layer for GNU Backgammon engine
  *
  * Provides definitions for global variables and functions belonging to
  * the GTK/UI/desktop/threading layer. All signatures match the header
@@ -20,9 +20,9 @@
 #include "rollout.h"
 #include "lib/isaac.h"
 
-/* ── Global state variables ─────────────────────────────────────────────── */
+/* -- Global state variables ----------------------------------------------- */
 
-/* Defined in backgammon.h as extern matchstate ms — provide the storage */
+/* Defined in backgammon.h as extern matchstate ms -- provide the storage */
 matchstate ms;
 /* Defined in backgammon.h as extern player ap[2] */
 player ap[2];
@@ -43,20 +43,20 @@ char *szCurrentFileName = NULL;
 int positions[2][30][3] = {0};
 const char *szHomeDirectory = NULL;
 
-/* ── ThreadData td ───────────────────────────────────────────────────────── */
+/* -- ThreadData td --------------------------------------------------------- */
 ThreadData td;
 
-/* ── msBoard — returns current board position ────────────────────────────── */
+/* -- msBoard -- returns current board position ------------------------------ */
 ConstTanBoard msBoard(void) {
     return NULL;
 }
 
-/* ── save_autosave ───────────────────────────────────────────────────────── */
+/* -- save_autosave --------------------------------------------------------- */
 gboolean save_autosave(gpointer unused) {
     return FALSE;
 }
 
-/* ── Threading primitives ────────────────────────────────────────────────── */
+/* -- Threading primitives -------------------------------------------------- */
 void CloseThread(void *unused)                    {}
 void Mutex_Lock(Mutex *mutex)                     {}
 void Mutex_Release(Mutex *mutex)                  {}
@@ -70,13 +70,13 @@ void TLSSetValue(TLSItem pItem, size_t val)       {}
 
 ThreadLocalData *MT_CreateThreadLocalData(int id) { return NULL; }
 
-/* ── EXP_LOCK_FUN function pointer variables ─────────────────────────────── 
+/* -- EXP_LOCK_FUN function pointer variables ------------------------------- 
  * EXP_LOCK_FUN declares: typedef ret (*f_name)(...); extern f_name name;
  * We provide the storage for the function pointer and point it at the
  * NoLocking variant which is the real implementation in eval.c
  */
 
-/* ── WithLocking variants — single-threaded: just call NoLocking ─────────── */
+/* -- WithLocking variants -- single-threaded: just call NoLocking ----------- */
 int EvaluatePositionWithLocking(NNState *nnStates, const TanBoard anBoard,
         float arOutput[], cubeinfo * const pci, const evalcontext *pec) {
     return EvaluatePositionNoLocking(nnStates, anBoard, arOutput, pci, pec);
@@ -120,7 +120,7 @@ int BasicCubefulRolloutWithLocking(unsigned int aanBoard[][2][25],
         int nBasisCube, perArray *dicePerms, rngcontext *rngctxRollout,
         FILE *logfp) { return -1; }
 
-/* ── UI / progress stubs ─────────────────────────────────────────────────── */
+/* -- UI / progress stubs --------------------------------------------------- */
 void ProcessEvents(void)                 {}
 void progress(void)                      {}
 void ProgressValue(int val)              {}
@@ -128,7 +128,7 @@ void ProgressStart(const char *sz)       {}
 void ProgressEnd(void)                   {}
 void ProgressValueAdd(int val)           {}
 
-/* ── Misc engine callbacks ───────────────────────────────────────────────── */
+/* -- Misc engine callbacks ------------------------------------------------- */
 void LogCube(void)                       {}
 int GetManualDice(unsigned int anDice[2]) { return 0; }
 void SetRNG(rng *prng, rngcontext *rngctx, rng rngNew, char *szSeed) {}
@@ -137,11 +137,11 @@ double get_time(void) { return 0.0; }
 void FormatMove(void)                    {}
 moverecord *get_current_moverecord(int *pfHistory) { return NULL; }
 
-/* ── randomorg — network dice unavailable on Android ─────────────────────── */
+/* -- randomorg -- network dice unavailable on Android ----------------------- */
 void RandomorgDice(void)                               {}
 int  NetworkDice(unsigned int *pdice, int ndice)       { return -1; }
 
-/* ── Thread-local data initialisation ───────────────────────────────────────
+/* -- Thread-local data initialisation ---------------------------------------
  * MT_Get_aMoves() expands to td.tld->aMoves when USE_MULTITHREAD is off.
  * td.tld must point to a valid ThreadLocalData with an allocated aMoves buffer
  * before any move generation occurs (i.e. before any 1-ply evaluation).
@@ -173,7 +173,7 @@ void gnubg_init_tld(void) {
     }
 }
 
-/* ── Rollout global state ────────────────────────────────────────────────────
+/* -- Rollout global state ----------------------------------------------------
  * Docking points between the engine and the UI layer.
  * On desktop gnubg these are set by the GTK preferences dialog.
  * On Android they will be set by the Kotlin UI layer.
@@ -214,7 +214,7 @@ int fOutputMWC       = 0;
 int fOutputWinPC     = 0;
 int fOutputMatchPC   = 0;
 
-/* ── QuasiRandomSeed — copied from rollout.c (static there) ─────────────────
+/* -- QuasiRandomSeed -- copied from rollout.c (static there) -----------------
  * Uses irandinit/irand from lib/isaac.c (already in build).
  * Must be defined before gnubg_rollout().
  */
@@ -241,7 +241,7 @@ void QuasiRandomSeed(perArray * pArray, int n) {
     pArray->nPermutationSeed = n;
 }
 
-/* ── gnubg_init_rollout ──────────────────────────────────────────────────────
+/* -- gnubg_init_rollout ------------------------------------------------------
  * Allocates and seeds the rollout RNG context.
  * Called after EvalInitialise().
  */
@@ -250,7 +250,7 @@ void gnubg_init_rollout(void) {
         rngctxRollout = CopyRNGContext(rngctxCurrent);
 }
 
-/* ── gnubg_rollout ───────────────────────────────────────────────────────────
+/* -- gnubg_rollout -----------------------------------------------------------
  * Synchronous rollout bypassing MT task queue.
  * Calls BasicCubefulRolloutNoLocking directly for nTrials games.
  */

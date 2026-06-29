@@ -99,9 +99,15 @@ Compose UI (Kotlin)
 
 ## OUTPUT FORMAT
 
-- PURE ASCII everywhere -- source, comments, commit messages, docs. Replace
-  em-dash with --, curly apostrophe with ', arrow with ->.
-- Do not introduce non-ASCII characters into any file.
+- PURE ASCII in code, build scripts, and configuration: .c, .h, .kt, .sh,
+  .py, Makefiles, .gitignore, meson cross-files, etc. Replace em-dash with
+  --, curly apostrophe with ', arrow with ->. The ASCII discipline is for
+  files that get grepped, compiled, parsed, or piped through tooling.
+- UTF-8 is fine in documentation: docs/, README.md, PROVENANCE.md, and any
+  other .md or .tex prose. Em-dashes, section signs, curly quotes, and
+  similar typography are welcome where they make prose read better.
+- Commit messages: prefer ASCII for grep/tooling compatibility, but it is
+  not a hard rule.
 
 ## ROOT / SUDO
 

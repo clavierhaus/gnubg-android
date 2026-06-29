@@ -1,32 +1,32 @@
 /*
- * android-app.c — Android application shell for GNU Backgammon
+ * android-app.c -- Android application shell for GNU Backgammon
  *
  * This file is the Android equivalent of gnubg.c's application layer.
  * It contains portable functions extracted verbatim or adapted from gnubg.c,
  * plus Android-specific callbacks for sound, UI notification, and navigation.
  *
  * On desktop gnubg, these functions live in gnubg.c (the GTK application
- * shell, ~8000 lines). On Android, gnubg.c is NOT compiled — this file
+ * shell, ~8000 lines). On Android, gnubg.c is NOT compiled -- this file
  * replaces it entirely for the functions play.c and sgf.c require.
  *
  * Extraction sources (all from engine-core/gnubg.c, version 1.08.003):
- *   InitBoard            — line 1243
- *   NextTokenGeneral     — line 645
- *   NextToken            — line 769
- *   DisectPath           — line 5171
- *   setDefaultFileName   — line 5156 (GTK window title removed)
- *   UpdateSetting        — replaced by Android callback
- *   UpdateSettings       — line 1023 (ShowBoard replaced by callback)
- *   get_input_discard    — line 5648 (always returns TRUE on Android)
- *   swapGame             — line 4900
- *   NameIsKey            — line 4973
- *   AddKeyName           — line 5011
- *   DeleteKeyName        — line 4985
- *   CommandSwapPlayers   — line 5047
- *   CommandFirstGame     — navigation command (Android callback)
- *   CommandFirstMove     — navigation command (Android callback)
- *   SmartSit             — line 5119
- *   playSound            — replaced by Android audio callback
+ *   InitBoard            -- line 1243
+ *   NextTokenGeneral     -- line 645
+ *   NextToken            -- line 769
+ *   DisectPath           -- line 5171
+ *   setDefaultFileName   -- line 5156 (GTK window title removed)
+ *   UpdateSetting        -- replaced by Android callback
+ *   UpdateSettings       -- line 1023 (ShowBoard replaced by callback)
+ *   get_input_discard    -- line 5648 (always returns TRUE on Android)
+ *   swapGame             -- line 4900
+ *   NameIsKey            -- line 4973
+ *   AddKeyName           -- line 5011
+ *   DeleteKeyName        -- line 4985
+ *   CommandSwapPlayers   -- line 5047
+ *   CommandFirstGame     -- navigation command (Android callback)
+ *   CommandFirstMove     -- navigation command (Android callback)
+ *   SmartSit             -- line 5119
+ *   playSound            -- replaced by Android audio callback
  *
  * GNU Backgammon by clavierhaus.at
  * GNU Backgammon upstream: GPL-3.0-or-later
@@ -46,7 +46,7 @@
 #include "sound.h"
 #include "drawboard.h"
 
-/* ── Navigation event type ───────────────────────────────────────────────────
+/* -- Navigation event type ---------------------------------------------------
  * Mirrors gnubg command layer navigation, exposed to Android UI layer.
  */
 typedef enum {
@@ -67,7 +67,7 @@ void gnubg_on_board_changed(void);
 void gnubg_on_navigation_event(int ev);
 void gnubg_on_filename_changed(const char *sz);
 
-/* ── Globals defined here ────────────────────────────────────────────────────
+/* -- Globals defined here ----------------------------------------------------
  * Declared extern in backgammon.h / gnubg headers.
  * On desktop they live in gnubg.c. On Android they live here.
  */
@@ -78,15 +78,15 @@ int   fAutoSaveConfirmDelete = TRUE;
 int   fAutoSaveAnalysis      = FALSE;
 char *szCurrentFolder        = NULL;
 
-/* Key player names array — tracks bot/engine player identities */
+/* Key player names array -- tracks bot/engine player identities */
 char keyNames[MAX_KEY_NAMES][MAX_NAME_LEN] = { "" };
 int  keyNamesFirstEmpty = 0;
 
 /* Default player names */
 char default_names[2][MAX_NAME_LEN] = { "gnubg", "user" };
 
-/* ── InitBoard ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:1243 — copied verbatim.
+/* -- InitBoard ---------------------------------------------------------------
+ * Source: gnubg.c:1243 -- copied verbatim.
  * Sets up the standard starting position for the given variation.
  */
 void InitBoard(TanBoard anBoard, const bgvariation bgv) {
@@ -112,8 +112,8 @@ void InitBoard(TanBoard anBoard, const bgvariation bgv) {
     }
 }
 
-/* ── NextTokenGeneral ────────────────────────────────────────────────────────
- * Source: gnubg.c:645 — copied verbatim (debug outputerrf removed).
+/* -- NextTokenGeneral --------------------------------------------------------
+ * Source: gnubg.c:645 -- copied verbatim (debug outputerrf removed).
  * Tokenises a string on an arbitrary delimiter set, handling quoted strings.
  */
 char *NextTokenGeneral(char **ppch, const char *szTokens) {
@@ -165,16 +165,16 @@ char *NextTokenGeneral(char **ppch, const char *szTokens) {
     return pchSave;
 }
 
-/* ── NextToken ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:769 — copied verbatim.
+/* -- NextToken ---------------------------------------------------------------
+ * Source: gnubg.c:769 -- copied verbatim.
  * Tokenises on standard whitespace.
  */
 char *NextToken(char **ppch) {
     return NextTokenGeneral(ppch, " \t\n\r\v\f");
 }
 
-/* ── DisectPath ──────────────────────────────────────────────────────────────
- * Source: gnubg.c:5171 — copied verbatim.
+/* -- DisectPath --------------------------------------------------------------
+ * Source: gnubg.c:5171 -- copied verbatim.
  * Splits a file path into folder and filename (without extension).
  */
 void DisectPath(const char *path, const char *extension,
@@ -194,8 +194,8 @@ void DisectPath(const char *path, const char *extension,
     g_free(fnn);
 }
 
-/* ── setDefaultFileName ──────────────────────────────────────────────────────
- * Source: gnubg.c:5156 — adapted.
+/* -- setDefaultFileName ------------------------------------------------------
+ * Source: gnubg.c:5156 -- adapted.
  * GTK window title update replaced by Android callback.
  */
 void setDefaultFileName(char *path) {
@@ -205,18 +205,18 @@ void setDefaultFileName(char *path) {
     gnubg_on_filename_changed(szCurrentFileName);
 }
 
-/* ── UpdateSetting ───────────────────────────────────────────────────────────
+/* -- UpdateSetting -----------------------------------------------------------
  * On desktop, updates GTK widgets when a match setting changes.
  * On Android, posts a state-change notification to the Kotlin layer.
- * The pointer identifies which setting changed (same semantics as desktop —
+ * The pointer identifies which setting changed (same semantics as desktop --
  * callers pass &ms.nCube, &ms.fTurn etc.).
  */
 void UpdateSetting(void *pv) {
     gnubg_on_setting_changed(pv);
 }
 
-/* ── UpdateSettings ──────────────────────────────────────────────────────────
- * Source: gnubg.c:1023 — adapted.
+/* -- UpdateSettings ----------------------------------------------------------
+ * Source: gnubg.c:1023 -- adapted.
  * ShowBoard() replaced by gnubg_on_board_changed() Android callback.
  */
 void UpdateSettings(void) {
@@ -230,18 +230,18 @@ void UpdateSettings(void) {
     gnubg_on_board_changed();
 }
 
-/* ── get_input_discard ───────────────────────────────────────────────────────
- * Source: gnubg.c:5648 — adapted.
+/* -- get_input_discard -------------------------------------------------------
+ * Source: gnubg.c:5648 -- adapted.
  * On desktop, prompts user in terminal to confirm discarding a match.
- * On Android there is no terminal — always return TRUE (discard OK).
+ * On Android there is no terminal -- always return TRUE (discard OK).
  * The Android UI layer handles confirmation dialogs at a higher level.
  */
 int get_input_discard(void) {
     return TRUE;
 }
 
-/* ── swapGame ────────────────────────────────────────────────────────────────
- * Source: gnubg.c:4900 — copied verbatim.
+/* -- swapGame ----------------------------------------------------------------
+ * Source: gnubg.c:4900 -- copied verbatim.
  * Swaps player perspective in all move records of a single game.
  */
 static void swapGame(listOLD *plGame) {
@@ -288,8 +288,8 @@ static void swapGame(listOLD *plGame) {
     }
 }
 
-/* ── NameIsKey ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:4973 — copied verbatim.
+/* -- NameIsKey ---------------------------------------------------------------
+ * Source: gnubg.c:4973 -- copied verbatim.
  * Returns 1 if the player name is registered as a "key" (bot) name.
  */
 int NameIsKey(const char sz[]) {
@@ -300,8 +300,8 @@ int NameIsKey(const char sz[]) {
     return 0;
 }
 
-/* ── AddKeyName ──────────────────────────────────────────────────────────────
- * Source: gnubg.c:5011 — copied verbatim.
+/* -- AddKeyName --------------------------------------------------------------
+ * Source: gnubg.c:5011 -- copied verbatim.
  * Registers a player name as a key (bot) name.
  */
 int AddKeyName(const char sz[]) {
@@ -326,8 +326,8 @@ int AddKeyName(const char sz[]) {
     return 0;
 }
 
-/* ── DeleteKeyName ───────────────────────────────────────────────────────────
- * Source: gnubg.c:4985 — copied verbatim.
+/* -- DeleteKeyName -----------------------------------------------------------
+ * Source: gnubg.c:4985 -- copied verbatim.
  * Removes a player name from the key names array.
  */
 int DeleteKeyName(const char sz[]) {
@@ -345,8 +345,8 @@ int DeleteKeyName(const char sz[]) {
     return 0;
 }
 
-/* ── CommandSwapPlayers ──────────────────────────────────────────────────────
- * Source: gnubg.c:5047 — adapted.
+/* -- CommandSwapPlayers ------------------------------------------------------
+ * Source: gnubg.c:5047 -- adapted.
  * GTK update calls removed; Android layer notified via callback.
  */
 void CommandSwapPlayers(char *UNUSED(sz)) {
@@ -380,8 +380,8 @@ void CommandSwapPlayers(char *UNUSED(sz)) {
     gnubg_on_board_changed();
 }
 
-/* ── SmartSit ────────────────────────────────────────────────────────────────
- * Source: gnubg.c:5119 — copied verbatim.
+/* -- SmartSit ----------------------------------------------------------------
+ * Source: gnubg.c:5119 -- copied verbatim.
  * Swaps players if player 0 is a bot and player 1 is human,
  * so the human always plays from the standard position.
  */
@@ -397,8 +397,8 @@ void SmartSit(void) {
 
 /* CommandFirstMove: provided by play.c */
 
-/* ── playSound ───────────────────────────────────────────────────────────────
- * Source: sound.c — replaced by Android audio callback.
+/* -- playSound ---------------------------------------------------------------
+ * Source: sound.c -- replaced by Android audio callback.
  * On desktop, plays a WAV/OGG file via the platform audio system.
  * On Android, posts a sound event to the Kotlin layer for playback
  * via Android's SoundPool or MediaPlayer API.
@@ -411,8 +411,8 @@ void playSound(gnubgsound gs) {
     gnubg_on_sound_event(gs);
 }
 
-/* ── Android callback implementations ───────────────────────────────────────
- * Weak default implementations — no-ops until the Android UI layer
+/* -- Android callback implementations ---------------------------------------
+ * Weak default implementations -- no-ops until the Android UI layer
  * registers real implementations in native-lib.c via non-weak definitions.
  *
  * native-lib.c overrides these by defining non-weak versions that call
@@ -439,13 +439,13 @@ __attribute__((weak)) void gnubg_on_navigation_event(int ev)
 __attribute__((weak)) void gnubg_on_filename_changed(const char *sz)
     { (void)sz; }
 
-/* ── Rollout progress callbacks (replacing progress.c) ───────────────────────
- * progress.c is deeply GTK — it implements a rollout progress dialog with
+/* -- Rollout progress callbacks (replacing progress.c) -----------------------
+ * progress.c is deeply GTK -- it implements a rollout progress dialog with
  * GtkWidget, GtkListStore etc. These functions replace it on Android.
  * The Android layer receives progress via gnubg_on_rollout_progress().
  */
 
-/* Android rollout progress callback — weak default, overridden in native-lib.c */
+/* Android rollout progress callback -- weak default, overridden in native-lib.c */
 __attribute__((weak)) void gnubg_on_rollout_progress(int iGame, int nTrials,
         float rJsd, int fStopped) {
     (void)iGame; (void)nTrials; (void)rJsd; (void)fStopped;
@@ -479,7 +479,7 @@ int RolloutProgressEnd(void **pp, gboolean destroy) {
     return 0;
 }
 
-/* ── Additional globals from gnubg.c ─────────────────────────────────────────
+/* -- Additional globals from gnubg.c -----------------------------------------
  * Declared extern in backgammon.h / export.h, defined in gnubg.c on desktop.
  */
 #include "export.h"
@@ -524,8 +524,8 @@ exportsetup exsExport = {
     4, 4
 };
 
-/* ── GetMatchStateCubeInfo ───────────────────────────────────────────────────
- * Source: gnubg.c:1274 — copied verbatim.
+/* -- GetMatchStateCubeInfo ---------------------------------------------------
+ * Source: gnubg.c:1274 -- copied verbatim.
  */
 void GetMatchStateCubeInfo(cubeinfo *pci, const matchstate *pms) {
     SetCubeInfo(pci, pms->nCube, pms->fCubeOwner, pms->fMove,
@@ -533,15 +533,15 @@ void GetMatchStateCubeInfo(cubeinfo *pci, const matchstate *pms) {
                 pms->fJacoby, nBeavers, pms->bgv);
 }
 
-/* ── ShowBoard ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:1364 — adapted. GTK rendering replaced by Android callback.
+/* -- ShowBoard ---------------------------------------------------------------
+ * Source: gnubg.c:1364 -- adapted. GTK rendering replaced by Android callback.
  */
 void ShowBoard(void) {
     gnubg_on_board_changed();
 }
 
-/* ── Skill helper functions ──────────────────────────────────────────────────
- * Source: gnubg.c:2023-2148 — copied verbatim.
+/* -- Skill helper functions --------------------------------------------------
+ * Source: gnubg.c:2023-2148 -- copied verbatim.
  * Evaluate skill level of cube and move decisions.
  */
 static skilltype no_double_skill(moverecord *pmr, cubeinfo *pci) {
@@ -623,8 +623,8 @@ static skilltype move_skill(moverecord *pmr) {
     return Skill(move_i->rScore - move_0->rScore);
 }
 
-/* ── find_skills ─────────────────────────────────────────────────────────────
- * Source: gnubg.c:2150 — copied verbatim.
+/* -- find_skills -------------------------------------------------------------
+ * Source: gnubg.c:2150 -- copied verbatim.
  */
 void find_skills(moverecord *pmr, const matchstate *pms,
                  int did_double, int did_take) {
@@ -661,8 +661,8 @@ void find_skills(moverecord *pmr, const matchstate *pms,
         pmr->n.stMove = move_skill(pmr);
 }
 
-/* ── confirmOverwrite ────────────────────────────────────────────────────────
- * Source: gnubg.c:5135 — adapted.
+/* -- confirmOverwrite --------------------------------------------------------
+ * Source: gnubg.c:5135 -- adapted.
  * Always returns TRUE on Android; UI layer handles confirmation dialogs.
  */
 int confirmOverwrite(const char *sz, const int f) {
@@ -670,14 +670,14 @@ int confirmOverwrite(const char *sz, const int f) {
     return TRUE;
 }
 
-/* ── CommandShowScore ────────────────────────────────────────────────────────
+/* -- CommandShowScore --------------------------------------------------------
  * Posts board-changed notification (score is part of board state).
  */
 void CommandShowScore(char *UNUSED(sz)) {
     gnubg_on_board_changed();
 }
 
-/* ── RunAsyncProcess ─────────────────────────────────────────────────────────
+/* -- RunAsyncProcess ---------------------------------------------------------
  * Source: backgammon.h:274 defines AsyncFun as void (*)(void *).
  * On desktop runs function in a thread pool. On Android runs synchronously.
  */
@@ -686,7 +686,7 @@ int RunAsyncProcess(AsyncFun pf, void *p, const char *UNUSED(sz)) {
     return 0;
 }
 
-/* ── EVALSETUP_2PLY — copied from gnubg.c:348 ───────────────────────────────
+/* -- EVALSETUP_2PLY -- copied from gnubg.c:348 -------------------------------
  * Defined locally in gnubg.c, not in any header. Copied here verbatim.
  */
 #define EVALSETUP_2PLY { \
@@ -718,7 +718,7 @@ int RunAsyncProcess(AsyncFun pf, void *p, const char *UNUSED(sz)) {
   } \
 }
 
-/* ── Analysis globals from gnubg.c ──────────────────────────────────────────
+/* -- Analysis globals from gnubg.c ------------------------------------------
  * Source: gnubg.c lines 185-404
  */
 int          fAnalyseDice       = TRUE;
@@ -735,17 +735,17 @@ movefilter   aamfAnalysis[MAX_FILTER_PLIES][MAX_FILTER_PLIES] = MOVEFILTER_NORMA
 
 skilltype TutorSkill = SKILL_DOUBTFUL;
 
-/* ── asyncEvalRoll ───────────────────────────────────────────────────────────
- * Source: gnubg.c:5496 — copied verbatim.
+/* -- asyncEvalRoll -----------------------------------------------------------
+ * Source: gnubg.c:5496 -- copied verbatim.
  */
 void asyncEvalRoll(decisionData *pdd) {
     EvaluateRoll(pdd->aarOutput[0], ms.anDice[0], ms.anDice[1],
                  pdd->pboard, pdd->pci, pdd->pec);
-    /* EvaluateRoll has no return value — no error check needed */
+    /* EvaluateRoll has no return value -- no error check needed */
 }
 
-/* ── asyncMoveDecisionE ──────────────────────────────────────────────────────
- * Source: gnubg.c:5516 — copied verbatim.
+/* -- asyncMoveDecisionE ------------------------------------------------------
+ * Source: gnubg.c:5516 -- copied verbatim.
  */
 void asyncMoveDecisionE(decisionData *pdd) {
     int asyncRet = 0;
@@ -755,8 +755,8 @@ void asyncMoveDecisionE(decisionData *pdd) {
         asyncRet = -1;
 }
 
-/* ── asyncAnalyzeMove ────────────────────────────────────────────────────────
- * Source: gnubg.c:5502 — copied verbatim.
+/* -- asyncAnalyzeMove --------------------------------------------------------
+ * Source: gnubg.c:5502 -- copied verbatim.
  */
 void asyncAnalyzeMove(moveData *pmd) {
     int asyncRet = 0;
@@ -767,8 +767,8 @@ void asyncAnalyzeMove(moveData *pmd) {
         asyncRet = -1;
 }
 
-/* ── CheckGameExists ─────────────────────────────────────────────────────────
- * Source: gnubg.c:5586 — copied verbatim.
+/* -- CheckGameExists ---------------------------------------------------------
+ * Source: gnubg.c:5586 -- copied verbatim.
  */
 int CheckGameExists(void) {
     if (plGame) {
@@ -779,19 +779,19 @@ int CheckGameExists(void) {
     }
 }
 
-/* ── delete_autosave ─────────────────────────────────────────────────────────
- * Source: gnubg.c:5638 — adapted (autosave is static in gnubg.c, stubbed here).
+/* -- delete_autosave ---------------------------------------------------------
+ * Source: gnubg.c:5638 -- adapted (autosave is static in gnubg.c, stubbed here).
  * On Android autosave is managed by the Android filesystem layer.
  */
 void delete_autosave(void) {
-    /* Android: no autosave file to delete — managed by Android layer */
+    /* Android: no autosave file to delete -- managed by Android layer */
 }
 
-/* ── GiveAdvice ──────────────────────────────────────────────────────────────
- * Source: gnubg.c:5225 — adapted.
+/* -- GiveAdvice --------------------------------------------------------------
+ * Source: gnubg.c:5225 -- adapted.
  * On desktop: shows a GTK dialog asking user to confirm a bad move.
  * On Android: posts an advice event to the Kotlin layer; always returns TRUE
- * (do not block engine) — Android UI handles the confirmation asynchronously.
+ * (do not block engine) -- Android UI handles the confirmation asynchronously.
  */
 int GiveAdvice(skilltype Skill) {
     if (!fTutor)
@@ -802,8 +802,8 @@ int GiveAdvice(skilltype Skill) {
     return TRUE;
 }
 
-/* ── ProgressStartValue ──────────────────────────────────────────────────────
- * Source: gnubg.c:4002 — adapted.
+/* -- ProgressStartValue ------------------------------------------------------
+ * Source: gnubg.c:4002 -- adapted.
  * On desktop: starts a GTK progress bar.
  * On Android: no-op (progress handled by Android layer via rollout callback).
  */
@@ -811,7 +811,7 @@ void ProgressStartValue(char *sz, int iMax) {
     (void)sz; (void)iMax;
 }
 
-/* ── Additional globals from gnubg.c ─────────────────────────────────────────
+/* -- Additional globals from gnubg.c -----------------------------------------
  * Source: gnubg.c lines 187-227
  */
 int          fAutoBearoff  = FALSE;
@@ -820,8 +820,8 @@ int          fCheat        = FALSE;
 int          fTutorChequer = TRUE;
 unsigned int afCheatRoll[2] = { 0, 0 };
 
-/* ── asyncFindMove ───────────────────────────────────────────────────────────
- * Source: gnubg.c:5473 — copied verbatim (MT_SetResultFailed → local asyncRet)
+/* -- asyncFindMove -----------------------------------------------------------
+ * Source: gnubg.c:5473 -- copied verbatim (MT_SetResultFailed -> local asyncRet)
  */
 void asyncFindMove(findData *pfd) {
     int asyncRet = 0; (void)asyncRet;
@@ -831,8 +831,8 @@ void asyncFindMove(findData *pfd) {
         asyncRet = -1;
 }
 
-/* ── asyncCubeDecision ───────────────────────────────────────────────────────
- * Source: gnubg.c:5530 — copied verbatim.
+/* -- asyncCubeDecision -------------------------------------------------------
+ * Source: gnubg.c:5530 -- copied verbatim.
  */
 void asyncCubeDecision(decisionData *pdd) {
     int asyncRet = 0; (void)asyncRet;
@@ -842,8 +842,8 @@ void asyncCubeDecision(decisionData *pdd) {
         asyncRet = -1;
 }
 
-/* ── GetInputYN ──────────────────────────────────────────────────────────────
- * Source: gnubg.c:3887 — adapted.
+/* -- GetInputYN --------------------------------------------------------------
+ * Source: gnubg.c:3887 -- adapted.
  * On desktop: prompts user in terminal or GTK dialog.
  * On Android: always returns TRUE (UI layer handles confirmation dialogs).
  */
@@ -852,10 +852,10 @@ int GetInputYN(char *szPrompt) {
     return TRUE;
 }
 
-/* ── hint_double, hint_take, hint_move ───────────────────────────────────────
+/* -- hint_double, hint_take, hint_move ---------------------------------------
  * These are large functions in gnubg.c that implement the tutor system.
  * They evaluate the position, compare with the player's move, and offer
- * advice. For now, stub them — full implementation is part of the tutor
+ * advice. For now, stub them -- full implementation is part of the tutor
  * feature which requires the full analysis pipeline to be connected.
  */
 void hint_double(int show, int did_double) {
@@ -870,21 +870,21 @@ void hint_move(char *sz, gboolean show, procrecorddata *procdatarec) {
     (void)sz; (void)show; (void)procdatarec;
 }
 
-/* ── HandleCommand ───────────────────────────────────────────────────────────
- * Source: gnubg.c:1166 — the command dispatcher.
+/* -- HandleCommand -----------------------------------------------------------
+ * Source: gnubg.c:1166 -- the command dispatcher.
  * On Android the command system will be driven by the Kotlin layer.
- * For now stub it — full implementation requires commands.inc.
+ * For now stub it -- full implementation requires commands.inc.
  */
 void HandleCommand(char *sz, command *ac) {
     (void)sz; (void)ac;
     outputl(_("Commands not yet implemented on Android."));
 }
 
-/* ── ParseMov ────────────────────────────────────────────────────────────────
- * Move parser — find where it lives
+/* -- ParseMov ----------------------------------------------------------------
+ * Move parser -- find where it lives
  */
 
-/* ── Additional globals from gnubg.c ─────────────────────────────────────────
+/* -- Additional globals from gnubg.c -----------------------------------------
  * Source: gnubg.c lines 194-528
  */
 int          fConfirmNew        = TRUE;
@@ -897,8 +897,8 @@ char        *default_sgf_folder = NULL;
 int          fEvalSameAsAnalysis = FALSE;
 movefilter   aamfEval[MAX_FILTER_PLIES][MAX_FILTER_PLIES] = MOVEFILTER_NORMAL;
 
-/* ── GetEvalChequer / GetEvalCube / GetEvalMoveFilter ────────────────────────
- * Source: gnubg.c:410-426 — copied verbatim.
+/* -- GetEvalChequer / GetEvalCube / GetEvalMoveFilter ------------------------
+ * Source: gnubg.c:410-426 -- copied verbatim.
  */
 evalsetup *GetEvalChequer(void) {
     return fEvalSameAsAnalysis ? &esAnalysisChequer : &esEvalChequer;
@@ -934,8 +934,8 @@ void gnubg_mobile_set_engine_strength(int idx) {
      * strength selector only exposes the four named levels. */
 }
 
-/* ── PortableSignal / PortableSignalRestore ──────────────────────────────────
- * Source: gnubg.c:1094,1128 — adapted for Android/POSIX.
+/* -- PortableSignal / PortableSignalRestore ----------------------------------
+ * Source: gnubg.c:1094,1128 -- adapted for Android/POSIX.
  * Sets up signal handlers with SA_RESTART flag on POSIX systems.
  */
 void PortableSignal(int nSignal, void (*p)(int),
@@ -951,8 +951,8 @@ void PortableSignalRestore(int nSignal, psighandler *p) {
     sigaction(nSignal, p, NULL);
 }
 
-/* ── ParseNumber ─────────────────────────────────────────────────────────────
- * Source: gnubg.c:828 — copied verbatim.
+/* -- ParseNumber -------------------------------------------------------------
+ * Source: gnubg.c:828 -- copied verbatim.
  * Parses an integer token from a command string.
  */
 int ParseNumber(char **ppch) {
@@ -965,19 +965,19 @@ int ParseNumber(char **ppch) {
     return atoi(pchOrig);
 }
 
-/* ── acAnnotateMove ──────────────────────────────────────────────────────────
- * Command table for move annotation — referenced by play.c.
+/* -- acAnnotateMove ----------------------------------------------------------
+ * Command table for move annotation -- referenced by play.c.
  * On desktop defined via commands.inc. On Android provide a minimal stub.
  */
 command acAnnotateMove[] = {
     { NULL, NULL, NULL, NULL, NULL }
 };
 
-/* ── HandleCommand ───────────────────────────────────────────────────────────
- * Already stubbed above — duplicate declaration guard.
+/* -- HandleCommand -----------------------------------------------------------
+ * Already stubbed above -- duplicate declaration guard.
  */
 
-/* ── Additional globals from gnubg.c ─────────────────────────────────────────
+/* -- Additional globals from gnubg.c -----------------------------------------
  * Source: gnubg.c lines 189-274
  */
 int   fAutoDB           = FALSE;
@@ -990,7 +990,7 @@ int   fEvalSameAsAnalysis_dup = 0; /* already defined above */
 /* fQuiet: declared in sound.h, defined here */
 /* already defined in sound section above */
 
-/* ── Command tables — minimal stubs ──────────────────────────────────────────
+/* -- Command tables -- minimal stubs ------------------------------------------
  * acTop and acSetEvaluation are command dispatch tables defined via
  * commands.inc in gnubg.c. On Android the command system is driven by
  * the Kotlin layer; provide empty tables as placeholders.
@@ -1003,8 +1003,8 @@ command acTop[] = {
     { NULL, NULL, NULL, NULL, NULL }
 };
 
-/* ── ParseReal ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:808 — copied verbatim.
+/* -- ParseReal ---------------------------------------------------------------
+ * Source: gnubg.c:808 -- copied verbatim.
  */
 float ParseReal(char **ppch) {
     char *pch, *pchOrig;
@@ -1015,8 +1015,8 @@ float ParseReal(char **ppch) {
     return *pch ? ERR_VAL : r;
 }
 
-/* ── ParsePosition ───────────────────────────────────────────────────────────
- * Source: gnubg.c:885 — copied verbatim.
+/* -- ParsePosition -----------------------------------------------------------
+ * Source: gnubg.c:885 -- copied verbatim.
  */
 int ParsePosition(TanBoard an, char **ppch, char *pchDesc) {
     int i;
@@ -1052,8 +1052,8 @@ int ParsePosition(TanBoard an, char **ppch, char *pchDesc) {
     return PositionFromID(an, pch);
 }
 
-/* ── ParseKeyValue ───────────────────────────────────────────────────────────
- * Source: gnubg.c:982 — copied verbatim.
+/* -- ParseKeyValue -----------------------------------------------------------
+ * Source: gnubg.c:982 -- copied verbatim.
  */
 int ParseKeyValue(char **ppch, char *apch[2]) {
     if (!ppch || !(apch[0] = NextToken(ppch)))
@@ -1065,8 +1065,8 @@ int ParseKeyValue(char **ppch, char *apch[2]) {
     return 2;
 }
 
-/* ── SetToggle ───────────────────────────────────────────────────────────────
- * Source: gnubg.c:1052 — copied verbatim.
+/* -- SetToggle ---------------------------------------------------------------
+ * Source: gnubg.c:1052 -- copied verbatim.
  */
 int SetToggle(const char *szName, int *pf, char *sz,
               const char *szOn, const char *szOff) {
@@ -1093,7 +1093,7 @@ int SetToggle(const char *szName, int *pf, char *sz,
     return -1;
 }
 
-/* ── set_web_browser ─────────────────────────────────────────────────────────
+/* -- set_web_browser ---------------------------------------------------------
  * On desktop opens a URL in the system browser.
  * On Android, post a URL event to the Kotlin layer.
  */
@@ -1102,14 +1102,14 @@ void set_web_browser(const char *sz) {
     /* Android: URL opening handled by Kotlin layer via Intent */
 }
 
-/* ── ExtInitParse / ExtStartParse / ExtDestroyParse ──────────────────────────
- * External player protocol parser — in external.c on desktop.
+/* -- ExtInitParse / ExtStartParse / ExtDestroyParse --------------------------
+ * External player protocol parser -- in external.c on desktop.
  * Check if they're there or need stubs.
  */
 
-/* ── External parser stubs ───────────────────────────────────────────────────
+/* -- External parser stubs ---------------------------------------------------
  * ExtInitParse/ExtStartParse/ExtDestroyParse are generated from external_l.l
- * and external_y.y (lex/yacc). Not in build — stub for now.
+ * and external_y.y (lex/yacc). Not in build -- stub for now.
  * The external player protocol is a future feature.
  */
 int  ExtInitParse(void **scancontext) { (void)scancontext; return 0; }
@@ -1118,7 +1118,7 @@ void ExtStartParse(void *scanner, const char *szCommand) {
 }
 void ExtDestroyParse(void *scancontext) { (void)scancontext; }
 
-/* ── Final batch of globals and functions from gnubg.c ───────────────────────
+/* -- Final batch of globals and functions from gnubg.c -----------------------
  * Source: gnubg.c lines 150-257
  */
 
@@ -1139,8 +1139,8 @@ const char *aszAnalyzeFileSettingCommands[NUM_AnalyzeFileSettings] = {
 
 int fOutputRawboard = FALSE;
 
-/* ── ParsePlayer ─────────────────────────────────────────────────────────────
- * Source: gnubg.c:849 — copied verbatim.
+/* -- ParsePlayer -------------------------------------------------------------
+ * Source: gnubg.c:849 -- copied verbatim.
  * Parses a player name/number token, returns 0, 1, 2 (both), or -1 (error).
  */
 int ParsePlayer(char *sz) {
@@ -1157,8 +1157,8 @@ int ParsePlayer(char *sz) {
     return -1;
 }
 
-/* ── CompareNames ────────────────────────────────────────────────────────────
- * Source: gnubg.c:999 — copied verbatim.
+/* -- CompareNames ------------------------------------------------------------
+ * Source: gnubg.c:999 -- copied verbatim.
  * Case-insensitive comparison treating whitespace and underscores as equal.
  */
 int CompareNames(char *sz0, char *sz1) {
@@ -1170,7 +1170,7 @@ int CompareNames(char *sz0, char *sz1) {
     return 0;
 }
 
-/* ── Command tables — all defined via commands.inc in gnubg.c ────────────────
+/* -- Command tables -- all defined via commands.inc in gnubg.c ----------------
  * On Android the command system is driven by the Kotlin layer.
  * Provide empty sentinel-terminated tables as placeholders.
  * These will be populated when the command layer is implemented.
@@ -1186,7 +1186,7 @@ command acSetRolloutLimit[]     = { { NULL, NULL, NULL, NULL, NULL } };
 command acSetRolloutPlayer[]    = { { NULL, NULL, NULL, NULL, NULL } };
 command acSetTruncation[]       = { { NULL, NULL, NULL, NULL, NULL } };
 
-/* ── Final batch of globals from gnubg.c ─────────────────────────────────────
+/* -- Final batch of globals from gnubg.c -------------------------------------
  * Source: gnubg.c lines 148-527
  */
 char *szLang               = NULL;
@@ -1196,39 +1196,39 @@ int   nTutorSkillCurrent   = 0;
 char *default_import_folder = NULL;
 char *default_export_folder = NULL;
 
-/* HTML export type/CSS strings — defined in export.c or gnubg.c */
+/* HTML export type/CSS strings -- defined in export.c or gnubg.c */
 const char *aszHTMLExportType[] = { "gnu", "bbs", "fibs2html", NULL };
 const char *aszHTMLExportCSS[]  = { "head", "inline", "external", NULL };
 
-/* ── Command tables — final batch ────────────────────────────────────────────
+/* -- Command tables -- final batch --------------------------------------------
  * All defined via commands.inc in gnubg.c.
  */
 command acSetAnalysisPlayer[]   = { { NULL, NULL, NULL, NULL, NULL } };
 command acSetCheatPlayer[]      = { { NULL, NULL, NULL, NULL, NULL } };
 command acSetExportParameters[] = { { NULL, NULL, NULL, NULL, NULL } };
 
-/* ── CommandClearHint ────────────────────────────────────────────────────────
+/* -- CommandClearHint --------------------------------------------------------
  * Clears the hint display. On Android: board-changed notification.
  */
 void CommandClearHint(char *UNUSED(sz)) {
     gnubg_on_board_changed();
 }
 
-/* ── CommandNotImplemented ───────────────────────────────────────────────────
+/* -- CommandNotImplemented ---------------------------------------------------
  * Placeholder for commands not yet implemented on Android.
  */
 void CommandNotImplemented(char *UNUSED(sz)) {
     outputl(_("This command is not yet implemented on Android."));
 }
 
-/* ── CommandShowVariation ────────────────────────────────────────────────────
+/* -- CommandShowVariation ----------------------------------------------------
  * Shows variation info. On Android: board-changed notification.
  */
 void CommandShowVariation(char *UNUSED(sz)) {
     gnubg_on_board_changed();
 }
 
-/* ── SetupLanguage ───────────────────────────────────────────────────────────
+/* -- SetupLanguage -----------------------------------------------------------
  * On desktop sets up gettext locale. On Android locale is managed by the OS.
  */
 char *SetupLanguage(const char *newLangCode) {
@@ -1237,7 +1237,7 @@ char *SetupLanguage(const char *newLangCode) {
     return NULL;
 }
 
-/* ── Sound globals ───────────────────────────────────────────────────────────
+/* -- Sound globals -----------------------------------------------------------
  * Declared extern in sound.h. Defined here on Android.
  */
 int fSound = TRUE;

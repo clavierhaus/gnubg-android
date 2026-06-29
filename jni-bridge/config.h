@@ -1,5 +1,5 @@
 /*
- * config.h — Android shadow of engine-core/config.h
+ * config.h -- Android shadow of engine-core/config.h
  * Included instead of engine-core/config.h because jni-bridge/ is first
  * in the include path via -iquote. Pulls in the real config then overrides
  * what Android/aarch64 cannot support.
@@ -9,11 +9,11 @@
 /* GMP unavailable on Android */
 #undef HAVE_LIBGMP
 
-/* No libcurl on Android — random.org dice source disabled */
+/* No libcurl on Android -- random.org dice source disabled */
 #undef LIBCURL_PROTOCOL_HTTPS
 #undef HAVE_LIBCURL
 
-/* x86-specific SIMD — invalid on aarch64.
+/* x86-specific SIMD -- invalid on aarch64.
  * Undefining USE_SIMD_INSTRUCTIONS takes the plain malloc/free path in simd.h.
  * HAVE_NEON could be enabled later for an aarch64 SIMD optimisation pass. */
 #undef USE_SIMD_INSTRUCTIONS
@@ -30,7 +30,7 @@
  * USE_SIMD_INSTRUCTIONS, HAVE_NEON, USE_NEON are passed as -D flags.
  * Do not define them here to avoid double-definition warnings. */
 
-/* Disable GLib assertions — alignment asserts in NeuralNetEvaluateSSE
+/* Disable GLib assertions -- alignment asserts in NeuralNetEvaluateSSE
  * fire on aarch64 due to VLA alignment not guaranteed by clang.
  * vld1q_f32/vst1q_f32 handle unaligned access on aarch64 correctly. */
 #define G_DISABLE_ASSERT 1

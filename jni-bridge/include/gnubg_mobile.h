@@ -37,7 +37,7 @@ int gnubg_mobile_command_move(const char *move);
 int gnubg_mobile_start_match(int match_length);
 int gnubg_mobile_next_game(void);
 
-/* ── State readers (Tier 1) ───────────────────────────────────────────────── */
+/* -- State readers (Tier 1) ------------------------------------------------- */
 int gnubg_mobile_get_board(int out_board[50]);
 int gnubg_mobile_get_match_state(int out_state[13]);
 int gnubg_mobile_get_cube_info(int out_cube[3]);
@@ -47,7 +47,7 @@ int gnubg_mobile_get_game_result(int out_result[2]);
 int gnubg_mobile_get_match_score(int out_score[3]);
 int gnubg_mobile_get_match_winner(void);
 
-/* ── Board utilities (Tier 1) ─────────────────────────────────────────────── */
+/* -- Board utilities (Tier 1) ----------------------------------------------- */
 int gnubg_mobile_swap_board(const int in_board[50], int out_board[50]);
 int gnubg_mobile_pip_count(const int in_board[50], int out_pips[2]);
 int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
@@ -55,7 +55,7 @@ int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
 int gnubg_mobile_format_move(const int in_board[50], const int in_move[8],
                              char *out_text, int out_capacity);
 
-/* ── File / SGF ops (Tier 1) ──────────────────────────────────────────────── */
+/* -- File / SGF ops (Tier 1) ------------------------------------------------ */
 int gnubg_mobile_load_game(const char *path);
 int gnubg_mobile_save_game(const char *path);
 int gnubg_mobile_load_match(const char *path);
@@ -63,7 +63,7 @@ int gnubg_mobile_save_match(const char *path);
 int gnubg_mobile_load_position(const char *path);
 int gnubg_mobile_save_position(const char *path);
 
-/* ── Engine algorithms (Tier 2) ───────────────────────────────────────────── */
+/* -- Engine algorithms (Tier 2) --------------------------------------------- */
 int gnubg_mobile_get_legal_moves(const int board[50], int d0, int d1,
                                  int f_partial, int *out_moves, int out_cap);
 /* Set engine chequer-play strength to a gnubg preset (0=Beginner,1=Casual,

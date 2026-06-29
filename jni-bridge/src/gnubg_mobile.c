@@ -269,7 +269,7 @@ int gnubg_mobile_next_game(void) {
 
 
 /* ===========================================================================
- * Tier 1 — board (un)packing + state readers + board utils + file ops
+ * Tier 1 -- board (un)packing + state readers + board utils + file ops
  * Relocated from native-lib.c so the JNI layer becomes pure marshalling.
  * =========================================================================== */
 
@@ -439,7 +439,7 @@ FACADE_FILE_OP(gnubg_mobile_save_position, CommandSavePosition)
 #undef FACADE_FILE_OP
 
 /* ===========================================================================
- * Tier 2 — engine algorithms relocated whole from native-lib.c.
+ * Tier 2 -- engine algorithms relocated whole from native-lib.c.
  * Defaults mirror native-lib.c's ec_default/ci_default; set ci in initialise().
  * =========================================================================== */
 

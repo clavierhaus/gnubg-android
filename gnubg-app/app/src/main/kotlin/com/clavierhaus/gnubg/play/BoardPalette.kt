@@ -62,12 +62,12 @@ object BoardPalettes {
         bearoff          = Color(0xFF222222),
         numbers          = Color(0xFFAAAAAA),
         checkerDark      = Color(0xFF1A1A1A),
-        checkerDarkRim   = Color(0xFF444444),  // light gray column colour — subtle
+        checkerDarkRim   = Color(0xFF444444),  // light gray column colour -- subtle
         checkerLight     = Color(0xFFF0F0F0),
-        checkerLightRim  = Color(0xFF444444),  // same — unifies the palette
+        checkerLightRim  = Color(0xFF444444),  // same -- unifies the palette
         checkerHighlight = Color(0x47FFFFFF),
         diceDark         = Color(0xFF1A1A1A),
-        diceLight        = Color(0xFF444444),  // light gray — same as triangleA
+        diceLight        = Color(0xFF444444),  // light gray -- same as triangleA
         dicePip          = Color(0xFFFFFFFF),
         cubeFace         = Color(0xFF1A1A1A),
         cubeDot          = Color(0xFF444444),

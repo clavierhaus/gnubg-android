@@ -53,7 +53,7 @@ Java_com_clavierhaus_gnubg_Engine_getCubeDebugState(JNIEnv *env, jobject thiz) {
 
 
 /*
- * Engine.commandDouble(): void — human offers cube
+ * Engine.commandDouble(): void -- human offers cube
  */
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandDouble(JNIEnv *env, jobject thiz) {
@@ -69,7 +69,7 @@ Java_com_clavierhaus_gnubg_Engine_commandTake(JNIEnv *env, jobject thiz) {
 }
 
 /*
- * Engine.commandDrop(): void — human drops engine's double
+ * Engine.commandDrop(): void -- human drops engine's double
  */
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandDrop(JNIEnv *env, jobject thiz) {
@@ -97,7 +97,7 @@ Java_com_clavierhaus_gnubg_Engine_getGameResult(JNIEnv *env, jobject thiz) {
 
 /*
  * Engine.getMoveRecordDice(): IntArray[2]
- * Returns dice from plLastMove record — persists after TurnDone clears ms.anDice.
+ * Returns dice from plLastMove record -- persists after TurnDone clears ms.anDice.
  * Mirrors what gnubg GTK reads for board display.
  */
 JNIEXPORT jintArray JNICALL
@@ -112,7 +112,7 @@ Java_com_clavierhaus_gnubg_Engine_getMoveRecordDice(JNIEnv *env, jobject thiz) {
 }
 
 void gnubg_on_board_changed(void) {
-    /* Cache engine dice when engine rolls — ms.anDice cleared by TurnDone after move */
+    /* Cache engine dice when engine rolls -- ms.anDice cleared by TurnDone after move */
     if (ms.fTurn == 1 && ms.anDice[0] > 0) {
         last_engine_dice[0] = ms.anDice[0];
         last_engine_dice[1] = ms.anDice[1];
@@ -428,7 +428,7 @@ Java_com_clavierhaus_gnubg_Engine_formatMove(JNIEnv *env, jobject thiz,
 /*
  * Engine.applySubMove(board, iSrc, nRoll): IntArray
  * Wraps ApplySubMove(TanBoard, iSrc, nRoll, fCheckLegal) from eval.c.
- * Pure board geometry — no match record, no TurnDone.
+ * Pure board geometry -- no match record, no TurnDone.
  * Returns updated board, or empty array if move is illegal.
  */
 JNIEXPORT jintArray JNICALL
@@ -508,10 +508,10 @@ Java_com_clavierhaus_gnubg_Engine_tutorAnalyze(JNIEnv *env, jobject thiz,
 /*
  * Engine.getMatchWinner(): Int
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.
- * Reads ms.anScore — updated by ApplyGameOver in play.c.
+ * Reads ms.anScore -- updated by ApplyGameOver in play.c.
  */
 /*
- * Engine.getMatchScore(): IntArray[3] — [humanScore, engineScore, matchLength]
+ * Engine.getMatchScore(): IntArray[3] -- [humanScore, engineScore, matchLength]
  */
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_getMatchScore(JNIEnv *env, jobject thiz) {

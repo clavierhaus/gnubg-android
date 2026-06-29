@@ -103,7 +103,7 @@ private fun SettingsHeader(onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "←",
+            text = "<-",
             color = ColorTabTextActive,
             fontSize = 22.sp,
             modifier = Modifier
@@ -477,7 +477,7 @@ private fun StepperRow(
     SettingsRow(title, subtitle) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onMinus) {
-                Text("−", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("-", color = ColorTabTextActive, fontSize = 18.sp)
             }
             Text(value, color = ColorTabTextActive, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             TextButton(onClick = onPlus) {
@@ -502,7 +502,7 @@ private fun FloatStepperRow(
                 val next = (rounded - 0.01f).coerceAtLeast(0.00f)
                 onChange(kotlin.math.round(next * 100f) / 100f)
             }) {
-                Text("−", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("-", color = ColorTabTextActive, fontSize = 18.sp)
             }
             Text(
                 "%.2f".format(rounded),

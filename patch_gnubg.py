@@ -70,4 +70,4 @@ if "gameState.cubeOwner" not in b_code and "drawCube(cubeBarCX" in b_code:
     b_code = b_code.replace(old_cube, new_cube)
     with open(board_kt, "w") as f: f.write(b_code)
 
-print("✅ Files safely patched by Python.")
+print("OK Files safely patched by Python.")

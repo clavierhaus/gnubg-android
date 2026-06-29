@@ -1,4 +1,4 @@
-/* drawboard.h — Android stub: play.c includes this but uses no rendering symbols.
+/* drawboard.h -- Android stub: play.c includes this but uses no rendering symbols.
  * FORMATEDMOVESIZE is defined here (matches engine-core/drawboard.h:31). */
 #ifndef DRAWBOARD_H
 #define DRAWBOARD_H

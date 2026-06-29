@@ -16,7 +16,7 @@ mv MASTER_V6.pdf doc/ 2>/dev/null || true   # may not exist yet; make will gener
 
 echo "==> Moving MASTER_V6.md to repo root (if not already there)..."
 # MASTER_V6.md belongs at repo root, referenced as ../MASTER_V6.md from doc/Makefile
-ls MASTER_V6.md 2>/dev/null && echo "  MASTER_V6.md already at root" || echo "  WARNING: MASTER_V6.md not found — copy it here"
+ls MASTER_V6.md 2>/dev/null && echo "  MASTER_V6.md already at root" || echo "  WARNING: MASTER_V6.md not found -- copy it here"
 
 echo "==> Cleaning editor backups..."
 rm -f init_repo.sh~ autopuller.sh~
@@ -26,7 +26,7 @@ rm -f glib2.spec default-terminal.patch gnutls-hmac.patch
 
 echo "==> Updating .gitignore to cover new layout..."
 cat > .gitignore << 'EOF'
-# ─── Build output ─────────────────────────────────────────────────────────────
+# --- Build output -------------------------------------------------------------
 jni-bridge/build/
 glib-android-build/
 *.o
@@ -34,36 +34,36 @@ glib-android-build/
 *.so
 *.log
 
-# ─── GLib source tree (reproducible via build_glib_android.sh) ────────────────
+# --- GLib source tree (reproducible via build_glib_android.sh) ----------------
 glib-2.88.1/
 
-# ─── GLib SRPM extraction artefacts ───────────────────────────────────────────
+# --- GLib SRPM extraction artefacts -------------------------------------------
 glib2-*.src.rpm
 *.patch
 glib2.spec
 
-# ─── Android SDK / NDK (large; installed separately) ─────────────────────────
+# --- Android SDK / NDK (large; installed separately) -------------------------
 android-sdk/
 
-# ─── Installed GLib binaries (reproducible via build_glib_android.sh) ─────────
+# --- Installed GLib binaries (reproducible via build_glib_android.sh) ---------
 jni-bridge/external/
 
-# ─── CMake artefacts ──────────────────────────────────────────────────────────
+# --- CMake artefacts ----------------------------------------------------------
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 
-# ─── Meson artefacts ──────────────────────────────────────────────────────────
+# --- Meson artefacts ----------------------------------------------------------
 .mesonpy/
 meson-info/
 meson-logs/
 meson-private/
 
-# ─── Doc build output (generated; not tracked) ────────────────────────────────
+# --- Doc build output (generated; not tracked) --------------------------------
 doc/MASTER_V6.pdf
 doc/MASTER_V6.tex
 
-# ─── Misc ─────────────────────────────────────────────────────────────────────
+# --- Misc ---------------------------------------------------------------------
 *.zip
 *~
 .DS_Store

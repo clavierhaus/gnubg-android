@@ -1,5 +1,5 @@
 /*
- * stubs.c — Android JNI stub layer for GNU Backgammon engine
+ * stubs.c -- Android JNI stub layer for GNU Backgammon engine
  *
  * Provides definitions for global variables and functions belonging to
  * the GTK/UI/desktop/threading layer. All signatures match the header
@@ -20,9 +20,9 @@
 #include "rollout.h"
 #include "lib/isaac.h"
 
-/* ── Global state variables ─────────────────────────────────────────────── */
+/* -- Global state variables ----------------------------------------------- */
 
-/* Defined in backgammon.h as extern matchstate ms — provide the storage */
+/* Defined in backgammon.h as extern matchstate ms -- provide the storage */
 matchstate ms;
 /* Defined in backgammon.h as extern player ap[2] */
 player ap[2];
@@ -43,20 +43,20 @@ char *szCurrentFileName = NULL;
 int positions[2][30][3] = {0};
 const char *szHomeDirectory = NULL;
 
-/* ── ThreadData td ───────────────────────────────────────────────────────── */
+/* -- ThreadData td --------------------------------------------------------- */
 ThreadData td;
 
-/* ── msBoard — returns current board position ────────────────────────────── */
+/* -- msBoard -- returns current board position ------------------------------ */
 ConstTanBoard msBoard(void) {
     return (ConstTanBoard)ms.anBoard;
 }
 
-/* ── save_autosave ───────────────────────────────────────────────────────── */
+/* -- save_autosave --------------------------------------------------------- */
 gboolean save_autosave(gpointer unused) {
     return FALSE;
 }
 
-/* ── Threading primitives ────────────────────────────────────────────────── */
+/* -- Threading primitives -------------------------------------------------- */
 void CloseThread(void *unused)                    {}
 void Mutex_Lock(Mutex *mutex)                     {}
 void Mutex_Release(Mutex *mutex)                  {}
@@ -70,13 +70,13 @@ void TLSSetValue(TLSItem pItem, size_t val)       {}
 
 ThreadLocalData *MT_CreateThreadLocalData(int id) { return NULL; }
 
-/* ── EXP_LOCK_FUN function pointer variables ─────────────────────────────── 
+/* -- EXP_LOCK_FUN function pointer variables ------------------------------- 
  * EXP_LOCK_FUN declares: typedef ret (*f_name)(...); extern f_name name;
  * We provide the storage for the function pointer and point it at the
  * NoLocking variant which is the real implementation in eval.c
  */
 
-/* ── WithLocking variants — single-threaded: just call NoLocking ─────────── */
+/* -- WithLocking variants -- single-threaded: just call NoLocking ----------- */
 int EvaluatePositionWithLocking(NNState *nnStates, const TanBoard anBoard,
         float arOutput[], cubeinfo * const pci, const evalcontext *pec) {
     return EvaluatePositionNoLocking(nnStates, anBoard, arOutput, pci, pec);
@@ -120,7 +120,7 @@ int BasicCubefulRolloutWithLocking(unsigned int aanBoard[][2][25],
         int nBasisCube, perArray *dicePerms, rngcontext *rngctxRollout,
         FILE *logfp) { return -1; }
 
-/* ── UI / progress stubs ─────────────────────────────────────────────────── */
+/* -- UI / progress stubs --------------------------------------------------- */
 void ProcessEvents(void)                 {}
 void progress(void)                      {}
 void ProgressValue(int val)              {}
@@ -128,7 +128,7 @@ void ProgressStart(const char *sz)       {}
 void ProgressEnd(void)                   {}
 void ProgressValueAdd(int val)           {}
 
-/* ── Misc engine callbacks ───────────────────────────────────────────────── */
+/* -- Misc engine callbacks ------------------------------------------------- */
 /* LogCube: provided by set.c */
 int GetManualDice(unsigned int anDice[2]) { return 0; }
 /* SetRNG: provided by set.c */
@@ -137,18 +137,18 @@ double get_time(void) { return 0.0; }
 /* FormatMove: provided by format.c */
 /* get_current_moverecord: provided by play.c */
 
-/* ── randomorg — network dice unavailable on Android ─────────────────────── */
+/* -- randomorg -- network dice unavailable on Android ----------------------- */
 void RandomorgDice(void)                               {}
 int  NetworkDice(unsigned int *pdice, int ndice)       { return -1; }
 
-/* ── Thread-local data initialisation ───────────────────────────────────────
+/* -- Thread-local data initialisation ---------------------------------------
  * MT_Get_aMoves() expands to td.tld->aMoves when USE_MULTITHREAD is off.
  * td.tld must point to a valid ThreadLocalData with an allocated aMoves buffer
  * before any move generation occurs (i.e. before any 1-ply evaluation).
  * Called once from Engine.initialise() via gnubg_init_tld().
  */
 
-/* ── Rollout global state ────────────────────────────────────────────────────
+/* -- Rollout global state ----------------------------------------------------
  * Docking points between the engine and the UI layer.
  * On desktop gnubg these are set by the GTK preferences dialog.
  * On Android they will be set by the Kotlin UI layer.
@@ -189,7 +189,7 @@ int fShowProgress    = 0;
 /* fOutputWinPC: provided by android-app.c */
 /* fOutputMatchPC: provided by android-app.c */
 
-/* ── QuasiRandomSeed — copied from rollout.c (static there) ─────────────────
+/* -- QuasiRandomSeed -- copied from rollout.c (static there) -----------------
  * Uses irandinit/irand from lib/isaac.c (already in build).
  * Must be defined before gnubg_rollout().
  */
@@ -216,12 +216,12 @@ void QuasiRandomSeed(perArray * pArray, int n) {
     pArray->nPermutationSeed = n;
 }
 
-/* ── gnubg_init_rollout ──────────────────────────────────────────────────────
+/* -- gnubg_init_rollout ------------------------------------------------------
  * Allocates and seeds the rollout RNG context.
  * Called after EvalInitialise().
  */
 
-/* ── gnubg_rollout ───────────────────────────────────────────────────────────
+/* -- gnubg_rollout -----------------------------------------------------------
  * Synchronous rollout bypassing MT task queue.
  * Calls BasicCubefulRolloutNoLocking directly for nTrials games.
  */
@@ -231,11 +231,11 @@ void QuasiRandomSeed(perArray * pArray, int n) {
 
 #include <unistd.h>
 
-/* ── Thread-Local Storage (TLS) Allocator ───────────────────────────────── */
+/* -- Thread-Local Storage (TLS) Allocator --------------------------------- */
 
 #include <unistd.h>
 
-/* ── Thread-Local Storage (TLS) Allocator ───────────────────────────────── */
+/* -- Thread-Local Storage (TLS) Allocator --------------------------------- */
 static void gnubg_tls_destructor(gpointer data) {
     ThreadLocalData *tld = (ThreadLocalData *)data;
     if (tld) {
@@ -275,7 +275,7 @@ void gnubg_init_tld(void) {
     /* With GPrivate, initialization is lazy. No global setup needed. */
 }
 
-/* ── Rollout Infrastructure ─────────────────────────────────────────────── */
+/* -- Rollout Infrastructure ----------------------------------------------- */
 static GThreadPool *rollout_pool = NULL;
 
 typedef struct {
@@ -297,7 +297,7 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
     int task_index = GPOINTER_TO_INT(data);
     RolloutBarrier *barrier = (RolloutBarrier *)user_data;
 
-    /* Per-thread RNG context — copied lazily on first use */
+    /* Per-thread RNG context -- copied lazily on first use */
     rngcontext *local_rng = g_private_get(&gnubg_rng_key);
     if (!local_rng) {
         local_rng = CopyRNGContext(rngctxRollout);
