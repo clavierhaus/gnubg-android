@@ -56,10 +56,19 @@ called from GameViewModel.confirm() AFTER applyMoveString. Steps:
 
 - **inf rScore from the 2-ply/prune evalcontext.** esAnalysisChequer.ec
   (EVALSETUP_2PLY, fUsePrune=TRUE) returns inf in this build. The facade's
-  proven getCandidates path uses fac_ec_default (1-ply) + fac_ci_default and
-  scores correctly. FindnSaveBestMoves is therefore called with
-  fac_ec_default/fac_ci_default. NOTE: this means the tutor currently evaluates
-  at 1-ply. Revisiting 2-ply/prune is a future improvement (see Handover).
+  proven getCandidates path uses fac_ec_default (1-ply) and scores correctly.
+  FindnSaveBestMoves is therefore called with fac_ec_default (chequer evalcontext)
+  and a cubeinfo built via GetMatchStateCubeInfo(&ci, &msAnalyse) -- the
+  gnubg-native pre-move cubeinfo. NOTE: this means the tutor currently
+  evaluates at 1-ply. Revisiting 2-ply/prune is a future improvement (see
+  Handover, and MASTER_V0.9.md Phase 11.1 for the V1 audit item that will
+  replace fac_ec_default with gnubg's named context).
+- **Cubeinfo source (corrected V0.9.x).** The original implementation
+  passed fac_ci_default (a money-play frozen cubeinfo) to FindnSaveBestMoves.
+  That was a port-rule violation: from game 2 onward the tutor's analysis
+  ran with the wrong score / cube ownership / Crawford state. The facade
+  now passes the cubeinfo built via GetMatchStateCubeInfo against the
+  pre-move matchstate (msAnalyse). See MASTER_V0.9.md Phase 11.1.
 
 - **Feature-delta frame mismatch.** An extra SwapSides on the best board flipped
   pip sign (pipDifference 8->-8 when played==best). Fixed by building the best

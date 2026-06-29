@@ -75,6 +75,26 @@ behind a platform-neutral facade. Detailed narrative in `docs/MASTER_V0.9.md`.
 
 ## Next
 
+### Port-rule audit and remediation (V0.9.x)
+
+A cube-behavior anomaly in V0.9.1 surfaced a class of port-rule violations:
+facade call sites correctly named, but parameters hand-rolled instead of
+sourced from gnubg's named instances. `CLAUDE.md` gained a per-commit PORT
+CHECKPOINT in response. The audit findings and the remediation series are
+tracked in `MASTER_V0.9.md` Phase 11.1.
+
+- **V1 (active).** `fac_ec_default` cubeless 1-ply `evalcontext` used in
+  cube + chequer + analysis paths. Replace per-site with `*GetEvalCube()`
+  / `*GetEvalChequer()` or `ap[].esCube/esChequer`.
+- **V4 (active).** `gnubg_mobile_set_engine_strength` writes only
+  `esEvalChequer.ec`. Extend to the full set gnubg's command writes --
+  without this, the engine's `ComputerTurn` cube path runs at the
+  uninitialised default and never offers cube.
+- **V5 (active).** Kotlin `legalCubeWindow` hand-rolls cube legality;
+  replace with a facade verb wrapping `GetDPEq`.
+- **V6, V7, polish.** Minor cleanups; remove dead `fac_ci_default` and
+  dead JNI args from `gnubg_mobile_cube_decision`.
+
 ### In-progress: tournament UI polish
 
 - **Cube/resign feedback.** Brief toast on cube and resign actions (who

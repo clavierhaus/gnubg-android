@@ -179,6 +179,183 @@ Result: cube decisions, point math, beavers/Crawford handling, and game-over
 on a dropped double are all gnubg's, not the app's. (Beaver *UI* is not yet
 implemented; beaver decisions currently collapse to take — see §8.)
 
+### Phase 11.1: Port-rule audit and cube-path remediation (V0.9.x, in progress)
+
+Phase 11 established that the cube path was routed through gnubg's own
+machinery -- the human-double exchange and the take/drop response go through
+`CommandDouble`, `CommandTake`, `CommandDrop`, with `fComputerDecision` toggled
+around the engine response. That much is true at the call-site level.
+
+A live-play observation in V0.9.1 -- the engine appearing to drop too readily
+in moderately winning positions, and never offering the cube proactively --
+triggered a deeper audit. The audit found that the *call sites* into gnubg's
+cube and eval machinery were correctly named, but the *parameters* handed to
+those calls were hand-rolled rather than sourced from gnubg's named instances.
+This is a class of port-rule violation that the structural sourcing audit of
+Phase 11 had not caught: the facade was calling gnubg with values invented in
+the facade, which gnubg then used as if they were authoritative.
+
+#### The PORT CHECKPOINT framework
+
+To prevent recurrence, `CLAUDE.md` was extended with a per-commit operational
+checkpoint immediately under "THE ONE RULE THAT MATTERS MOST". For every
+change that touches game logic, cube logic, evaluation, or analysis, the
+checkpoint requires answering three questions in writing before any code
+lands:
+
+- **Q1.** What gnubg function, struct, enum, or named instance does the
+  equivalent thing? Name file path and approximate line number. If no named
+  counterpart exists, STOP and search before reinventing.
+- **Q2.** Am I about to construct a value (`evalcontext`, `evalsetup`,
+  `cubeinfo`, `movefilter`, ...) that gnubg already has a named instance of
+  (`ap[].esCube`, `ap[].esChequer`, `esEvalCube`, `esEvalChequer`,
+  `esAnalysisCube`, `esAnalysisChequer`, `aecSettings[]`, `EVALSETUP_2PLY`,
+  `MOVEFILTER_NORMAL`, `GetEvalCube()`, `GetEvalChequer()`,
+  `GetMatchStateCubeInfo()`, ...)? If yes, USE the named instance.
+- **Q3.** If extending an existing facade verb, does THAT verb itself obey
+  Q2, or did a prior hand inject a private struct? If the verb is itself a
+  reinvention, FIX THE VERB; do not layer further code on broken ground.
+
+A pre-existing private struct in the facade is NOT evidence that gnubg has
+nothing equivalent. It is most often evidence of an earlier port-rule
+violation that was never cleaned up.
+
+#### Audit findings (V1-V7)
+
+The audit enumerated seven concrete violations in the facade and Kotlin:
+
+- **V1 (active, evalcontext).** `fac_ec_default` in `jni-bridge/src/gnubg_mobile.c:446`
+  is a hand-rolled `evalcontext` with `fCubeful=0, nPlies=1, fUsePrune=0`. No
+  gnubg-named context has those values. It is passed to four call sites:
+  `FindnSaveBestMoves` (tutor analysis), `EvaluatePosition` (candidate
+  ranking and standalone eval), and `GeneralCubeDecisionENoLocking` (cube
+  decision). For cube decisions, `fCubeful=0` is fundamentally wrong:
+  gnubg's take/drop arithmetic depends on cubeful equity differentials. The
+  named counterparts are `ap[fMove].esCube.ec` and `ap[fMove].esChequer.ec`,
+  or the globals `esEvalCube`/`esEvalChequer` / `esAnalysisCube`/`esAnalysisChequer`
+  accessed via `GetEvalCube()` / `GetEvalChequer()`.
+
+- **V2 (FIXED, V0.9.x).** `fac_ci_default` in `gnubg_mobile.c:449` was a
+  `cubeinfo` frozen at engine init via `SetCubeInfo(&fac_ci_default, 1, -1, 0,
+  0, anScore, 0, 0, 0, VARIATION_STANDARD)` -- money play, centred cube,
+  scores 0-0, no Crawford/Jacoby/beavers. Used by every facade verb that
+  needed a cubeinfo. After game 1, the chequer tutor's blunder analysis,
+  `getCandidates`, `evaluatePosition`, `gnubg_mobile_rollout`, and
+  `gnubg_mobile_cube_decision` were all running with this dead value rather
+  than the live match cubeinfo. gnubg's `GetMatchStateCubeInfo`
+  (`jni-bridge/src/android-app.c:530`, also used by gnubg's own `ComputerTurn`
+  at `engine-core/play.c:1067`) is the named function that builds a cubeinfo
+  from the live `ms`. Four of the five sites now use it; the remaining site
+  (`get_candidates`) operates on a `SwapSides`'d board and requires
+  swap-aware cubeinfo handling that is being verified against gnubg's own
+  pattern before patching.
+
+- **V3 (FIXED, V0.9.x).** `gnubg_mobile_cube_decision` rebuilt cubeinfo from
+  JNI args -- Kotlin would read `getCubeDebugState()` and ship `cube_value,
+  cube_owner, f_move, match_to, score0, score1, crawford` back across JNI so
+  the facade could call `SetCubeInfo(&ci, ...)`. This round-trip lost
+  `fJacoby` and `fBeavers` (always passed as 0) and was a reinvention of
+  `GetMatchStateCubeInfo`. The args remain in the function signature this
+  V0.9.x series for JNI/Kotlin API stability; they will be removed in a
+  polish pass once the audit series stabilises.
+
+- **V4 (active, strength wiring).** `gnubg_mobile_set_engine_strength`
+  (`jni-bridge/src/android-app.c:927`) writes only `esEvalChequer.ec =
+  aecSettings[idx]`. It does not write `esEvalCube`, `ap[0].esCube`,
+  `ap[0].esChequer`, `ap[1].esCube`, or `ap[1].esChequer`. Desktop gnubg's
+  player-strength application pattern (`play.c:3542-3614`) explicitly stores
+  and restores BOTH chequer and cube contexts for both players. Because
+  `ComputerTurn` reads `ap[ms.fTurn].esCube.ec` at `play.c:1316` when deciding
+  whether to double, the slot the strength wiring never writes is exactly the
+  slot the engine reads. The default left in place (`EVALSETUP_2PLY`, the
+  path that returns inf in this build for chequer eval) is the structural
+  explanation for the engine never offering cube.
+
+- **V5 (active, Kotlin).** `legalCubeWindow` in
+  `gnubg-app/.../engine/GameViewModel.kt:478` cobbles together eight bitwise
+  conditions from `getCubeDebugState()` to decide if a double is legal.
+  CLAUDE.md prohibits Kotlin from inventing cube legality. gnubg's
+  cube-access check is `GetDPEq(NULL, NULL, &ci)` (used at `play.c:1311`); the
+  right shape is a facade verb (e.g. `gnubg_mobile_can_double`) that calls
+  `GetDPEq` plus the gnubg-named preconditions and returns 0/1, with Kotlin
+  reduced to a one-line call.
+
+- **V6 (minor).** `gnubg_mobile_get_match_winner` (`gnubg_mobile.c:373`)
+  compares `ms.anScore[0]` and `ms.anScore[1]` directly without gating on
+  `ms.nMatchTo`. Behaviourally equivalent to gnubg's pattern at `play.c:2797`
+  (`ms.nMatchTo && (ms.anScore[0] >= ms.nMatchTo || ms.anScore[1] >=
+  ms.nMatchTo)`) but invented in form.
+
+- **V7 (pending trace).** `last_engine_dice[2]` cache in
+  `jni-bridge/src/native-lib.c:21`. Marshalling-layer cache; trace pending to
+  confirm it does not override `ms.anDice` anywhere.
+
+#### Cube `cubedecision` enum mapping (V0.9.x)
+
+In parallel with the audit, the `when` block in `GameViewModel.offerDouble`
+that maps gnubg's `cubedecision` int to engine actions was found to be
+misaligned with `engine-core/eval.h` lines 192-214. The block hard-coded
+ordinals 0, 1, 2, 4, 5, 14, 16, 17 with labels that did not match the gnubg
+enum, and silently no-op'd every other ordinal:
+
+| ordinal | code claimed             | actual (eval.h)         |
+|---------|--------------------------|-------------------------|
+| 4       | `DOUBLE_BEAVER`          | `TOOGOOD_PASS`          |
+| 14      | `OPTIONAL_DOUBLE_TAKE`   | `NO_REDOUBLE_DEADCUBE`  |
+| 16      | `OPTIONAL_DOUBLE_BEAVER` | `OPTIONAL_DOUBLE_TAKE`  |
+| 17      | `OPTIONAL_DOUBLE_PASS`   | `OPTIONAL_REDOUBLE_TAKE`|
+
+Ordinals 3, 6, 7-12, 13, 15, 18-20 fell through to an `else` branch with no
+engine action. Fixed by introducing
+`gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/tutor/CubeDecision.kt` --
+an enum whose ordinals mirror eval.h exactly (21 values), plus a
+`cubeDecisionAction()` policy function that maps every cubedecision to its
+engine action per gnubg's own semantics. `offerDouble` now decodes via
+`CubeDecision.fromOrdinal` and switches on `CubeAction`. Beavers still
+collapse to TAKE (no beaver UI yet); `BEAVER_DECISIONS` is the seam where a
+beaver path slots in. `NOT_AVAILABLE` is treated as a defensive error since
+the legal-cube-window gating should prevent it from reaching the switch.
+
+#### Cubeinfo via `GetMatchStateCubeInfo` (V0.9.x)
+
+Per V2 + V3, four facade call sites now build cubeinfo via
+`GetMatchStateCubeInfo(&ci, &ms)` (or `&msAnalyse` for the tutor) rather than
+`fac_ci_default` or hand-rolled `SetCubeInfo` calls:
+
+- `gnubg_mobile_tutor_analyze` -> `FindnSaveBestMoves`
+- `gnubg_mobile_evaluate` -> `EvaluatePosition`
+- `gnubg_mobile_cube_decision` -> `GeneralCubeDecisionENoLocking`
+- `gnubg_mobile_rollout` -> `gnubg_rollout`
+
+`gnubg_mobile_get_candidates`'s `EvaluatePosition` call is the remaining
+cubeinfo site; it operates on a `SwapSides`'d board, so the cubeinfo's
+`fMove` must follow the swap to stay consistent with gnubg's evaluation
+frame. Pending verification of the gnubg-named pattern for swap-aware
+cubeinfo before patching, rather than inventing one.
+
+#### Remediation workstream
+
+The audit's open items roll into the `feature/cube-cubeinfo-20260629`
+branch and successors as separate commits, each subject to the PORT
+CHECKPOINT:
+
+- **B.1.** `gnubg_mobile_cube_decision` uses `*GetEvalCube()->ec` instead of
+  `fac_ec_default` (cubeful; respects `fEvalSameAsAnalysis` toggle).
+- **B.2.** Chequer call sites use `*GetEvalChequer()->ec` -- gated on
+  whether 2-ply chequer still returns inf in this build; the named gnubg
+  fallback is `aecSettings[strength_idx]` (cubeful at varying plies; 1-ply
+  at index 5).
+- **C (V4).** Strength wiring writes the full set of contexts gnubg's own
+  command writes: `ap[0].esChequer/esCube`, `ap[1].esChequer/esCube`, plus
+  the globals `esEvalChequer/esEvalCube`.
+- **D (V5).** Facade verb `gnubg_mobile_can_double` replaces `legalCubeWindow`
+  in Kotlin.
+- **E (V6).** `gnubg_mobile_get_match_winner` adopts gnubg's pattern.
+- **F (V7).** Trace `last_engine_dice` lifecycle.
+- **Polish.** Drop `fac_ci_default` and `gnubg_mobile_set_default_cubeinfo`
+  (dead after V2); drop the dead JNI args from `gnubg_mobile_cube_decision`
+  (dead after V3).
+
 ### Phase 12: Repository completeness & provenance (completed)
 
 An audit found that 10 engine `.c` files compiled into the Android build were

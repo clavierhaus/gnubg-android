@@ -25,7 +25,12 @@ build versionName: 0.9.1 · last engine milestone: Phase 13 (tutor analysis)
   gnubg authoritative for all legality and match state.
 - **Home Hub** start screen routing to Play / Learn / Analyse / Options / Profile.
 - **Settings**: five grouped tabs (Game, Board, Engine, Analysis, Expert).
-- **Cube**: human double via native gnubg cube decision on the real match board.
+- **Cube (V0.9.x audit ongoing)**: human cube decisions route through
+  gnubg's `GetMatchStateCubeInfo` against the live `ms`, and the Kotlin
+  `cubedecision` enum mapping mirrors `engine-core/eval.h` (21 values).
+  Cube evaluation depth (cubeful eval, V1) and engine-side proactive
+  cube (V4 strength wiring) remain open audit items -- see
+  `MASTER_V0.9.md` Phase 11.1.
 - **Engine port**: platform-neutral facade; native-lib reaches the engine
   directly in only two intentional places (board-changed callback, runCommand).
 - **Tutor analysis** (Phase 13): after each human move, gnubg's own routines
