@@ -74,7 +74,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val cubeValue = cubeInfo[2]
         val turn      = Engine.getMatchTurn()
         val rawBoard  = Engine.getMatchBoard()
-        val board     = if (turn == 1) Engine.swapBoard(rawBoard) else rawBoard
+        // Swap when the engine is the current MOVER (fMove=1), not just when fTurn=1.
+        // They diverge during an engine double: the engine doubles (fMove stays 1)
+        // but fTurn flips to 0 so the human can take/drop.  Without the extra guard
+        // the raw board (engine's coordinate frame) is used as-is, putting engine
+        // checkers in board[25..49] and human checkers in board[0..24] -- the tray
+        // then reads the engine's borne-off count as the human's.
+        val board     = if (turn == 1 || (fDoubled && turn == 0)) Engine.swapBoard(rawBoard) else rawBoard
         val pips      = Engine.pipCount(board)
         val dicePair: Pair<Int, Int>? = originalDice ?: when {
             remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])
