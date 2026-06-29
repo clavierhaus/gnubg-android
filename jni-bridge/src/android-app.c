@@ -912,26 +912,62 @@ TmoveFilter *GetEvalMoveFilter(void) {
     return fEvalSameAsAnalysis ? aamfAnalysis : aamfEval;
 }
 
-/* Set the engine player's chequer-play strength to one of gnubg's own
- * predefined presets (aecSettings). This is the gnubg-sanctioned mechanism --
- * identical to "set player gnubg chequer evaluation <preset>" on the desktop:
- * copy the preset evalcontext into the player's eval setup.
+/* Apply a gnubg preset (aecSettings[idx]) to the full set of evalcontexts
+ * that gnubg's own machinery consults during play.
+ *
+ * Per CLAUDE.md PORT CHECKPOINT (audit V4): the previous implementation
+ * wrote only esEvalChequer. The ComputerTurn cube branch at
+ * engine-core/play.c:1316 reads ap[ms.fTurn].esCube.ec, which our writing
+ * never touched. As a result the engine's proactive cube decision ran at
+ * the EVALSETUP_2PLY default the slot was initialised with and never
+ * proposed cube. Likewise GetEvalCube() (used by gnubg_mobile_cube_decision
+ * after audit B.1) returned esEvalCube at its 2-ply default rather than
+ * the user's chosen strength.
+ *
+ * Desktop gnubg's save/restore pattern at engine-core/play.c:3542-3614
+ * touches BOTH ap[i].esChequer.ec AND ap[i].esCube.ec for both players,
+ * which is the canonical pattern for "the player's strength changed".
+ * Mirror it: write all six evalsetups in scope -- the two globals
+ * (esEvalChequer, esEvalCube) consulted via GetEval*() under
+ * fEvalSameAsAnalysis=FALSE, and the four per-player slots
+ * (ap[0/1].esChequer/esCube) consulted by ComputerTurn and other
+ * play.c paths.
  *
  * idx maps to eval.h SETTINGS_*: 0=Beginner, 1=Casual play (NOVICE),
  * 2=Intermediate, 3=Advanced. Out-of-range idx is ignored.
  *
- * Also forces fEvalSameAsAnalysis = FALSE so GetEvalChequer() returns
- * esEvalChequer (our strength) rather than the analysis context, and applies
- * the preset's move filter. The cube eval is left at its existing setting.
+ * Analysis contexts (esAnalysisChequer, esAnalysisCube) are intentionally
+ * left alone -- analysis is a separate gnubg concept, sourced from
+ * different desktop commands, and the strength preset is a play-time
+ * setting. fEvalSameAsAnalysis is forced FALSE so GetEval*() returns the
+ * strength-preset esEval* contexts, not the analysis ones.
+ *
+ * Move filter: the four named presets (idx 0..3) have aiSettingsMoveFilter
+ * == -1, so aamfEval is left as-is. The strength selector only exposes
+ * named presets today; when ply presets become user-selectable, the
+ * move filter wiring lands here too.
  */
 void gnubg_mobile_set_engine_strength(int idx) {
     if (idx < 0 || idx >= NUM_SETTINGS) return;
     fEvalSameAsAnalysis = FALSE;
+
+    /* Globals consulted via GetEvalChequer() / GetEvalCube(). */
     esEvalChequer.et = EVAL_EVAL;
     esEvalChequer.ec = aecSettings[idx];
-    /* Named presets (0..3) carry no move filter (aiSettingsMoveFilter == -1);
-     * leave aamfEval as-is for those. Ply presets would set a filter, but the
-     * strength selector only exposes the four named levels. */
+    esEvalCube.et    = EVAL_EVAL;
+    esEvalCube.ec    = aecSettings[idx];
+
+    /* Per-player slots consulted by ComputerTurn (play.c:1316 cube branch,
+     * play.c:1441 chequer branch). Both players written so the strength
+     * applies regardless of which side is on roll. */
+    ap[0].esChequer.et = EVAL_EVAL;
+    ap[0].esChequer.ec = aecSettings[idx];
+    ap[0].esCube.et    = EVAL_EVAL;
+    ap[0].esCube.ec    = aecSettings[idx];
+    ap[1].esChequer.et = EVAL_EVAL;
+    ap[1].esChequer.ec = aecSettings[idx];
+    ap[1].esCube.et    = EVAL_EVAL;
+    ap[1].esCube.ec    = aecSettings[idx];
 }
 
 /* -- PortableSignal / PortableSignalRestore ----------------------------------
