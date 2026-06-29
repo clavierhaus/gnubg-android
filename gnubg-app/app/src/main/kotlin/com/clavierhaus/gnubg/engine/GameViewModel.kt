@@ -479,18 +479,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         "crawford=${dbg[8]} cubeUse=${dbg[9]} score=${dbg[10]}-${dbg[11]} match=${dbg[12]}"
                 )
 
-                val legalCubeWindow =
-                    dbg[0] == 1 &&          // GAME_PLAYING
-                    dbg[1] == 0 &&          // human turn
-                    dbg[2] == 0 &&          // before roll
-                    dbg[3] == 0 && dbg[4] == 0 &&
-                    dbg[5] == 0 &&          // no pending double
-                    dbg[8] == 0 &&          // not Crawford
-                    dbg[9] != 0 &&          // cube enabled
-                    (dbg[6] == -1 || dbg[6] == 0) // centred or human-owned
-
-                if (!legalCubeWindow) {
-                    android.util.Log.i("gnubg-vm", "offerDouble: rejected by legal cube window")
+                // PORT (audit V5): legality check is now Engine.canDouble(),
+                // which routes through facade verb gnubg_mobile_can_double() to
+                // engine seam gnubg_can_double() in engine-core/play.c. The seam
+                // mirrors CommandDouble's preconditions (play.c:2369) exactly
+                // (minus the desktop-only move_not_last_in_match_ok prompt), so
+                // the Kotlin side is no longer reimplementing cube legality.
+                if (!Engine.canDouble()) {
+                    android.util.Log.i("gnubg-vm", "offerDouble: rejected by engine canDouble()")
                     readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
                     return@launch
                 }

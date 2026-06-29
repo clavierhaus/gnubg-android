@@ -61,6 +61,20 @@ Java_com_clavierhaus_gnubg_Engine_commandDouble(JNIEnv *env, jobject thiz) {
     (void)thiz;
     (void)gnubg_mobile_command_double();
 }
+
+/*
+ * Engine.canDouble(): Boolean -- 1 iff a CommandDouble would succeed in
+ * the current matchstate. Mirrors CommandDouble's preconditions (play.c:2369)
+ * minus the desktop-only move_not_last_in_match_ok prompt. See
+ * engine-core/play.c gnubg_can_double() + PROVENANCE.md.
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_clavierhaus_gnubg_Engine_canDouble(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    if (!gnubg_initialised) return JNI_FALSE;
+    return gnubg_mobile_can_double() ? JNI_TRUE : JNI_FALSE;
+}
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandTake(JNIEnv *env, jobject thiz) {
     (void)env;

@@ -90,8 +90,10 @@ tracked in `MASTER_V0.9.md` Phase 11.1.
   `esEvalChequer.ec`. Extend to the full set gnubg's command writes --
   without this, the engine's `ComputerTurn` cube path runs at the
   uninitialised default and never offers cube.
-- **V5 (active).** Kotlin `legalCubeWindow` hand-rolls cube legality;
-  replace with a facade verb wrapping `GetDPEq`.
+- **V5 (FIXED V0.9.x).** Kotlin `legalCubeWindow` hand-rolled cube
+  legality; replaced with `Engine.canDouble()` routing through engine
+  seam `gnubg_can_double` (mirrors `CommandDouble` preconditions). See
+  `MASTER_V0.9.md` Phase 11.1 and PROVENANCE Seam 2.
 - **V6, V7, polish.** Minor cleanups; remove dead `fac_ci_default` and
   dead JNI args from `gnubg_mobile_cube_decision`.
 

@@ -30,6 +30,7 @@ int gnubg_mobile_command_decline(void);
 int gnubg_mobile_command_agree(void);
 int gnubg_mobile_command_redouble(void);
 int gnubg_mobile_command_double(void);
+int gnubg_mobile_can_double(void);   /* 1 if a double would succeed; 0 otherwise */
 int gnubg_mobile_command_take(void);
 int gnubg_mobile_command_drop(void);
 int gnubg_mobile_command_roll(void);

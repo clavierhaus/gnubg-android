@@ -57,6 +57,7 @@ object Engine {
     external fun getGameResult(): IntArray  // [fWinner, nPoints]
     external fun getMatchCubeInfo(): IntArray  // [fDoubled, fCubeOwner, nCube]
     external fun getCubeDebugState(): IntArray  // [gs, fTurn, fMove, dice0, dice1, fDoubled, fCubeOwner, nCube, fCrawford, fCubeUse, score0, score1, matchTo]
+    external fun canDouble(): Boolean
     external fun commandDouble()
     external fun commandTake()
     external fun commandDrop()

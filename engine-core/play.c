@@ -124,6 +124,25 @@ static int fEndGame = FALSE;
  * Visibility-only: fComputerDecision stays static; this is the single documented hook. */
 void gnubg_set_computer_decision(int f) { fComputerDecision = f; }
 
+/* Mobile port seam: same preconditions as CommandDouble (play.c:2369),
+ * minus move_not_last_in_match_ok (a desktop GetInputYN prompt that has no
+ * counterpart in the mobile flow). Pure read of ms / ap / fComputerDecision;
+ * no side effects. Returns 1 if a double command would succeed at the
+ * current matchstate, 0 otherwise. */
+int gnubg_can_double(void) {
+    if (ms.gs != GAME_PLAYING) return 0;
+    if (ap[ms.fTurn].pt != PLAYER_HUMAN && !fComputerDecision) return 0;
+    if (ms.fCrawford) return 0;
+    if (!ms.fCubeUse) return 0;
+    if (ms.fDoubled) return 0;
+    if (ms.fTurn != ms.fMove) return 0;
+    if (ms.anDice[0]) return 0;
+    if (ms.fCubeOwner >= 0 && ms.fCubeOwner != ms.fTurn) return 0;
+    if (ms.nCube >= (ms.nMatchTo ? MAXSCORE : MAX_CUBE)) return 0;
+    if (ms.nMatchTo && ms.nCube >= (ms.nMatchTo - ms.anScore[ms.fTurn])) return 0;
+    return 1;
+}
+
 static int fCrawfordState = -1;
 static long nSessionLen;
 

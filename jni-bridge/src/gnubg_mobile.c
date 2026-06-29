@@ -37,6 +37,7 @@ extern void CommandDecline(char *);
 extern void CommandAgree(char *);
 extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
+extern int  gnubg_can_double(void);   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
 extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
@@ -181,6 +182,17 @@ int gnubg_mobile_command_double(void) {
     pthread_mutex_unlock(&gnubg_lock);
 
     return 1;
+}
+
+/* Facade query: pure read, no side effects, no drain_next_turns. Held under
+ * gnubg_lock since the engine seam touches ms / ap / fComputerDecision which
+ * other facade verbs may mutate. */
+int gnubg_mobile_can_double(void) {
+    int r;
+    pthread_mutex_lock(&gnubg_lock);
+    r = gnubg_can_double();
+    pthread_mutex_unlock(&gnubg_lock);
+    return r;
 }
 
 int gnubg_mobile_command_roll(void) {

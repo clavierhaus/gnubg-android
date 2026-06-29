@@ -124,7 +124,51 @@ the minimum-surface exposure. The flag's existing read sites
 (play.c:1089, 1097, 1147, 1268, 1299, 1303, 1357, 1359, 1386, 1388, 1480,
 1482) retain upstream semantics; the setter is a write-only surface.
 
-**Scope:** Single function added.
+#### Seam 2: `gnubg_can_double` (reader)
+
+**Added code (immediately after Seam 1):**
+```c
+/* Mobile port seam: same preconditions as CommandDouble (play.c:2369),
+ * minus move_not_last_in_match_ok (a desktop GetInputYN prompt that has no
+ * counterpart in the mobile flow). Pure read of ms / ap / fComputerDecision;
+ * no side effects. Returns 1 if a double command would succeed at the
+ * current matchstate, 0 otherwise. */
+int gnubg_can_double(void) {
+    if (ms.gs != GAME_PLAYING) return 0;
+    if (ap[ms.fTurn].pt != PLAYER_HUMAN && !fComputerDecision) return 0;
+    if (ms.fCrawford) return 0;
+    if (!ms.fCubeUse) return 0;
+    if (ms.fDoubled) return 0;
+    if (ms.fTurn != ms.fMove) return 0;
+    if (ms.anDice[0]) return 0;
+    if (ms.fCubeOwner >= 0 && ms.fCubeOwner != ms.fTurn) return 0;
+    if (ms.nCube >= (ms.nMatchTo ? MAXSCORE : MAX_CUBE)) return 0;
+    if (ms.nMatchTo && ms.nCube >= (ms.nMatchTo - ms.anScore[ms.fTurn])) return 0;
+    return 1;
+}
+```
+
+**Rationale:** The mobile UI needs a single accurate "can the on-roll
+player double right now?" predicate. The Kotlin side previously
+hand-rolled a near-equivalent check using fields read out of the
+matchstate (audit V5 in `docs/MASTER_V0.9.md` Phase 11.1), which missed
+two of `CommandDouble`'s preconditions (cube-at-max-value and dead-cube)
+and hardcoded the assumption that the human is player 0. Reimplementing
+the preconditions in the facade or in Kotlin risks silent drift from
+upstream gnubg; the gnubg-correct source of truth is `CommandDouble`
+itself. This seam mirrors that source exactly so the Kotlin check
+becomes a single call.
+
+**Scope:** One function added. The desktop-only
+`move_not_last_in_match_ok` precondition is intentionally not mirrored:
+on desktop it prompts the user via `GetInputYN` ("Continuing will
+destroy the remainder of the match. Continue?"); on mobile there is no
+match-replay-destruction flow that would activate it.
+
+#### Combined scope
+
+Two functions added to play.c (`gnubg_set_computer_decision`,
+`gnubg_can_double`). No existing code in play.c is altered.
 
 ### engine-core/lib/neuralnetsse.c
 
@@ -186,7 +230,7 @@ identical to their upstream counterparts **except**:
 - `engine-core/config.h` — patched as documented above
 - `engine-core/lib/config.h` — created for this port (not in upstream)
 - `engine-core/lib/neuralnetsse.c` — one function modified as documented above
-- `engine-core/play.c` -- visibility seam added as documented above
+- `engine-core/play.c` -- two visibility seams added as documented above
 
 To verify unmodified files, clone the upstream repository and diff:
 

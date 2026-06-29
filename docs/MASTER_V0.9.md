@@ -271,14 +271,23 @@ The audit enumerated seven concrete violations in the facade and Kotlin:
   path that returns inf in this build for chequer eval) is the structural
   explanation for the engine never offering cube.
 
-- **V5 (active, Kotlin).** `legalCubeWindow` in
-  `gnubg-app/.../engine/GameViewModel.kt:478` cobbles together eight bitwise
-  conditions from `getCubeDebugState()` to decide if a double is legal.
-  CLAUDE.md prohibits Kotlin from inventing cube legality. gnubg's
-  cube-access check is `GetDPEq(NULL, NULL, &ci)` (used at `play.c:1311`); the
-  right shape is a facade verb (e.g. `gnubg_mobile_can_double`) that calls
-  `GetDPEq` plus the gnubg-named preconditions and returns 0/1, with Kotlin
-  reduced to a one-line call.
+- **V5 (FIXED, V0.9.x).** `legalCubeWindow` in
+  `gnubg-app/.../engine/GameViewModel.kt:478` was eight bitwise conditions
+  cobbled from `getCubeDebugState()`. The check hardcoded "human is player 0"
+  (via `dbg[1] == 0` and the `dbg[6]` cube-ownership check) and missed two
+  of `CommandDouble`'s preconditions: cube-at-max-value
+  (`ms.nCube >= MAXSCORE / MAX_CUBE`) and dead cube
+  (`ms.nCube >= ms.nMatchTo - ms.anScore[ms.fTurn]`). Replaced with
+  `Engine.canDouble()`, which routes through facade verb
+  `gnubg_mobile_can_double()` to a new engine seam `gnubg_can_double()`
+  in `engine-core/play.c`. The seam mirrors `CommandDouble`'s preconditions
+  (`play.c:2369`) exactly, minus the desktop-only `move_not_last_in_match_ok`
+  GetInputYN prompt that has no mobile counterpart. The seam is documented
+  as Seam 2 in `PROVENANCE.md`. Source of truth is now `CommandDouble`
+  itself; the Kotlin side is a single call. Note: the earlier suggestion
+  to use `GetDPEq` was narrower than what was needed -- `GetDPEq` is
+  cube-ownership only, while `CommandDouble` carries the full eleven-check
+  precondition list.
 
 - **V6 (minor).** `gnubg_mobile_get_match_winner` (`gnubg_mobile.c:373`)
   compares `ms.anScore[0]` and `ms.anScore[1]` directly without gating on
@@ -349,7 +358,8 @@ CHECKPOINT:
   command writes: `ap[0].esChequer/esCube`, `ap[1].esChequer/esCube`, plus
   the globals `esEvalChequer/esEvalCube`.
 - **D (V5).** Facade verb `gnubg_mobile_can_double` replaces `legalCubeWindow`
-  in Kotlin.
+  in Kotlin. **FIXED V0.9.x** -- engine seam `gnubg_can_double` mirrors
+  `CommandDouble` preconditions (see PROVENANCE Seam 2).
 - **E (V6).** `gnubg_mobile_get_match_winner` adopts gnubg's pattern.
 - **F (V7).** Trace `last_engine_dice` lifecycle.
 - **Polish.** Drop `fac_ci_default` and `gnubg_mobile_set_default_cubeinfo`
