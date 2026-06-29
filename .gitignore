@@ -152,3 +152,7 @@ jni-bridge/build-android-arm64/
 gnubg-app/build/
 **/.cxx/
 **/CMakeFiles/
+
+# Claude Code local-only state
+.claude/
+CLAUDE.md.generated.bak
