@@ -156,3 +156,8 @@ gnubg-app/build/
 # Claude Code local-only state
 .claude/
 CLAUDE.md.generated.bak
+
+# Junk-prevention patterns (Pass 3 cleanup)
+*.bak
+*-backup
+*.pre-*
