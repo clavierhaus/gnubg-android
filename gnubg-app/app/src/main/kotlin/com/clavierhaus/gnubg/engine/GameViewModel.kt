@@ -39,6 +39,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(engineThread) {
             val weightsPath = AssetExtractor.extractWeights(application)
             Engine.initialise(weightsPath)
+            // Apply the default engine strength (gnubg preset) before any game,
+            // so the first move uses it rather than the hardcoded 2-ply setup.
+            Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
             _engineReady.value = true
         }
     }
@@ -781,9 +784,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun setShowPointNumbers(on: Boolean) { _settings.value = _settings.value.copy(showPointNumbers = on) }
     fun setShowPipCount(on: Boolean)     { _settings.value = _settings.value.copy(showPipCount = on) }
     fun setDifficulty(d: Difficulty) {
-        // Keep local until GNUbg player/evaluation command timing is verified.
-        // Wrongly-timed player/evaluation commands can disturb match start.
         _settings.value = _settings.value.copy(difficulty = d)
+        // Apply the gnubg preset to the engine player's chequer eval context.
+        // Setting the eval setup is safe at any time -- it only affects the
+        // NEXT engine move evaluation, not in-flight match state.
+        viewModelScope.launch(engineThread) {
+            Engine.setEngineStrength(d.settingIndex)
+        }
     }
     fun setTutorMode(on: Boolean) {
         // Local-only until GNUbg Settings command timing is made lifecycle-safe.

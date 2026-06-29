@@ -66,6 +66,9 @@ int gnubg_mobile_save_position(const char *path);
 /* ── Engine algorithms (Tier 2) ───────────────────────────────────────────── */
 int gnubg_mobile_get_legal_moves(const int board[50], int d0, int d1,
                                  int f_partial, int *out_moves, int out_cap);
+/* Set engine chequer-play strength to a gnubg preset (0=Beginner,1=Casual,
+ * 2=Intermediate,3=Advanced). See android-app.c. */
+void gnubg_mobile_set_engine_strength(int idx);
 int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
                            int d0, int d1, char *out_text, int out_cap);
 /* Tutor analysis via gnubg's AnalyzeMove on the last played move (in plGame).

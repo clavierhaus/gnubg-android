@@ -472,6 +472,16 @@ Java_com_clavierhaus_gnubg_Engine_findMove(JNIEnv *env, jobject thiz,
 }
 
 /*
+ * Engine.setEngineStrength(idx): void
+ * idx: 0=Beginner 1=Casual play 2=Intermediate 3=Advanced (gnubg SETTINGS_*).
+ */
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setEngineStrength(JNIEnv *env, jobject thiz, jint idx) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_engine_strength((int)idx);
+}
+
+/*
  * Engine.tutorAnalyze(oldBoard): IntArray
  * Wraps gnubg_mobile_tutor_analyze. Call AFTER applyMoveString.
  * Returns IntArray[52]: [0]=played equity bits, [1]=best equity bits,

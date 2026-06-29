@@ -27,6 +27,10 @@ object Engine {
     external fun commandRedouble()
     external fun getLegalMoves(board: IntArray, die0: Int, die1: Int, fPartial: Int = 0): IntArray
 
+    /** Set engine chequer-play strength to a gnubg preset.
+     *  idx: 0=Beginner, 1=Casual play, 2=Intermediate, 3=Advanced. */
+    external fun setEngineStrength(idx: Int)
+
     /**
      * Return ranked move candidates with cubeless 1-ply equity.
      *

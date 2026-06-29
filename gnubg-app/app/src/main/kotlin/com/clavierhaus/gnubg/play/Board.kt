@@ -1,5 +1,7 @@
 package com.clavierhaus.gnubg.play
 
+import com.clavierhaus.gnubg.Engine
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.absoluteOffset
@@ -90,21 +92,51 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
     if (sourcePoint !in 1..24) return emptySet()
     if (gameState.board[24 + sourcePoint] <= 0) return emptySet()
 
-    val source = sourcePoint - 1
-    val result = linkedSetOf<Int>()
+    val origin = sourcePoint - 1
+    val dice = gameState.remainingDice
+    if (dice.isEmpty()) return emptySet()
+    val d0 = dice[0]
+    val d1 = if (dice.size > 1) dice[1] else dice[0]
 
-    for (m in gameState.legalMoves.indices step 8) {
-        for (j in 0 until 8 step 2) {
-            val src = gameState.legalMoves.getOrNull(m + j) ?: -1
-            val dst = gameState.legalMoves.getOrNull(m + j + 1) ?: -1
+    // Ask GNUbg for ALL legal sub-moves (fPartial = 1) for the current dice.
+    // Partial generation returns every intermediate step, so a combined move
+    // 24->18->13 appears as the chained pairs (24,18) and (18,13). We trace
+    // from the held checker through reachable points to every final landing,
+    // covering direct, double, and combined-move destinations. GNUbg remains
+    // the sole authority for legality; we only collect what it reports.
+    val partial = Engine.getLegalMoves(gameState.oldBoard, d0, d1, 1)
+    if (partial.isEmpty()) return emptySet()
 
-            if (src == source && dst in 0..23) {
-                result.add(dst + 1)
+    // Collect all directed sub-move edges (src -> dst), GNUbg 0-based coords.
+    val edges = ArrayList<Pair<Int, Int>>()
+    var m = 0
+    while (m + 1 < partial.size) {
+        var j = 0
+        while (j < 8) {
+            val src = partial.getOrNull(m + j) ?: -1
+            val dst = partial.getOrNull(m + j + 1) ?: -1
+            if (src in 0..24 && dst in 0..24) edges.add(src to dst)
+            j += 2
+        }
+        m += 8
+    }
+
+    // Breadth-first reachability from the held checker's origin through edges.
+    val reachable = linkedSetOf<Int>()
+    val frontier = ArrayDeque<Int>()
+    frontier.add(origin)
+    val seen = hashSetOf(origin)
+    while (frontier.isNotEmpty()) {
+        val cur = frontier.removeFirst()
+        for ((src, dst) in edges) {
+            if (src == cur && dst !in seen) {
+                seen.add(dst)
+                frontier.add(dst)
+                if (dst in 0..23) reachable.add(dst + 1)  // board point 1..24
             }
         }
     }
-
-    return result
+    return reachable
 }
 
 @Composable

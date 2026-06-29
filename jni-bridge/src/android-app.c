@@ -912,6 +912,28 @@ TmoveFilter *GetEvalMoveFilter(void) {
     return fEvalSameAsAnalysis ? aamfAnalysis : aamfEval;
 }
 
+/* Set the engine player's chequer-play strength to one of gnubg's own
+ * predefined presets (aecSettings). This is the gnubg-sanctioned mechanism --
+ * identical to "set player gnubg chequer evaluation <preset>" on the desktop:
+ * copy the preset evalcontext into the player's eval setup.
+ *
+ * idx maps to eval.h SETTINGS_*: 0=Beginner, 1=Casual play (NOVICE),
+ * 2=Intermediate, 3=Advanced. Out-of-range idx is ignored.
+ *
+ * Also forces fEvalSameAsAnalysis = FALSE so GetEvalChequer() returns
+ * esEvalChequer (our strength) rather than the analysis context, and applies
+ * the preset's move filter. The cube eval is left at its existing setting.
+ */
+void gnubg_mobile_set_engine_strength(int idx) {
+    if (idx < 0 || idx >= NUM_SETTINGS) return;
+    fEvalSameAsAnalysis = FALSE;
+    esEvalChequer.et = EVAL_EVAL;
+    esEvalChequer.ec = aecSettings[idx];
+    /* Named presets (0..3) carry no move filter (aiSettingsMoveFilter == -1);
+     * leave aamfEval as-is for those. Ply presets would set a filter, but the
+     * strength selector only exposes the four named levels. */
+}
+
 /* ── PortableSignal / PortableSignalRestore ──────────────────────────────────
  * Source: gnubg.c:1094,1128 — adapted for Android/POSIX.
  * Sets up signal handlers with SA_RESTART flag on POSIX systems.

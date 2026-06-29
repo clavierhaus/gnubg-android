@@ -439,8 +439,9 @@ private fun MatchSetupScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(
                     Difficulty.BEGINNER to "Beginner",
-                    Difficulty.ADVANCED to "Advanced",
-                    Difficulty.EXPERT to "Master"
+                    Difficulty.CASUAL to "Casual play",
+                    Difficulty.INTERMEDIATE to "Intermediate",
+                    Difficulty.ADVANCED to "Advanced"
                 ).forEach { (difficulty, label) ->
                     val selected = selectedDifficulty == difficulty
                     GameButton(
