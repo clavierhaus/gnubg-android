@@ -586,12 +586,14 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
         GetMatchStateCubeInfo(&ci, &msAnalyse);
 
         memset(&ml, 0, sizeof(ml));
-        /* Use fac_ec_default (1-ply) + fac_ci_default -- the evalcontext the
-         * facade's getCandidates uses and is proven to score correctly in this
-         * build. esAnalysisChequer's 2-ply/prune path yields inf here. */
+        /* Cubeinfo &ci is built above via GetMatchStateCubeInfo(&ci, &msAnalyse)
+         * -- gnubg's pre-move cubeinfo for msAnalyse. The evalcontext is still
+         * fac_ec_default (1-ply, cubeless); fixing that is a separate commit
+         * (audit V1 -- fac_ec_default reinvention). esAnalysisChequer's
+         * 2-ply/prune path yields inf in this build. */
         if (FindnSaveBestMoves(&ml, pmrLast->anDice[0], pmrLast->anDice[1],
                                (ConstTanBoard) msAnalyse.anBoard, &key, TRUE,
-                               arSkillLevel[SKILL_DOUBTFUL], &fac_ci_default,
+                               arSkillLevel[SKILL_DOUBTFUL], &ci,
                                &fac_ec_default, aamfAnalysis) < 0) {
             g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
         }
@@ -697,13 +699,15 @@ int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
 
 int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap) {
     TanBoard anBoard;
+    cubeinfo ci_eval;
     float arOutput[NUM_OUTPUTS] = {0};
     int rc, i;
     if (out_cap < NUM_OUTPUTS) return -1;
     facade_unpack_board(board, anBoard);
     pthread_mutex_lock(&gnubg_lock);
+    GetMatchStateCubeInfo(&ci_eval, &ms);
     rc = EvaluatePosition(NULL, (ConstTanBoard) anBoard, arOutput,
-                          &fac_ci_default, &fac_ec_default);
+                          &ci_eval, &fac_ec_default);
     pthread_mutex_unlock(&gnubg_lock);
     if (rc != 0) return -1;
     for (i = 0; i < NUM_OUTPUTS; i++) out[i] = arOutput[i];
@@ -734,10 +738,16 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
     int rc, i;
     if (out_cap < 14) return -1;
     facade_unpack_board(board, anBoard);
-    anScore[0] = score0; anScore[1] = score1;
+    /* PORT: cubeinfo now comes from gnubg's own GetMatchStateCubeInfo against
+     * the live ms. The JNI-marshalled args (cube_value, cube_owner, f_move,
+     * match_to, score0, score1, crawford) were a Kotlin round-trip
+     * reinvention of GetMatchStateCubeInfo that also lost fJacoby/fBeavers.
+     * The args are kept in the signature this commit for JNI/Kotlin API
+     * stability; drop in a follow-up polish pass. */
+    (void)cube_value; (void)cube_owner; (void)f_move; (void)match_to;
+    (void)score0; (void)score1; (void)crawford; (void)anScore;
     pthread_mutex_lock(&gnubg_lock);
-    SetCubeInfo(&ci, cube_value, cube_owner, f_move, match_to,
-                anScore, crawford, 0, 0, VARIATION_STANDARD);
+    GetMatchStateCubeInfo(&ci, &ms);
     memset(&es, 0, sizeof(es));
     es.et = EVAL_EVAL;
     es.ec = fac_ec_default;
@@ -755,6 +765,7 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
 int gnubg_mobile_rollout(const int board[50], int trials,
                          float *out, int out_cap) {
     TanBoard anBoard;
+    cubeinfo ci_rollout;
     rolloutcontext rc_ro;
     float arOutput[NUM_ROLLOUT_OUTPUTS] = {0};
     float arStdDev[NUM_ROLLOUT_OUTPUTS] = {0};
@@ -762,12 +773,13 @@ int gnubg_mobile_rollout(const int board[50], int trials,
     if (out_cap < 14) return -1;
     facade_unpack_board(board, anBoard);
     pthread_mutex_lock(&gnubg_lock);
+    GetMatchStateCubeInfo(&ci_rollout, &ms);
     rc_ro = rcRollout;
     rc_ro.nTrials  = (unsigned int) (trials > 0 ? trials : 144);
     rc_ro.fCubeful = 1;
     rc_ro.fVarRedn = 1;
     ret = gnubg_rollout((ConstTanBoard) anBoard, arOutput, arStdDev,
-                        &fac_ci_default, &rc_ro);
+                        &ci_rollout, &rc_ro);
     pthread_mutex_unlock(&gnubg_lock);
     if (ret != 0) return -1;
     for (i = 0; i < 7; i++) { out[i] = arOutput[i]; out[7 + i] = arStdDev[i]; }
