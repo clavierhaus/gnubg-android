@@ -34,6 +34,48 @@ coordinates, hold transient UI state (displayed dice order, uncommitted
 submove snapshots for undo), and call JNI. Kotlin must NOT invent game
 legality, cube legality, scoring, pip counts, or match progression.
 
+## THE PORT CHECKPOINT (per-commit, no exceptions)
+
+The rule above is the rule. This is the operational test that catches
+violations. Apply it before writing ANY C or Kotlin that touches game
+logic, cube logic, evaluation, or analysis. Apply it before suggesting
+ANY paste-once that does the same.
+
+For every change, answer these IN WRITING, in chat, before code:
+
+  Q1. What gnubg function, struct, enum, or named instance does the
+      equivalent thing? Name it -- file path and approximate line
+      number. If I cannot name one, I STOP and search engine-core/
+      until I find one or confirm there is none.
+
+  Q2. Am I about to construct a value (evalcontext, evalsetup,
+      cubeinfo, movefilter, or any parameter passed to a gnubg
+      routine) that gnubg already has a named instance of --
+      ap[].esCube, ap[].esChequer, esEvalCube, esEvalChequer,
+      esAnalysisCube, esAnalysisChequer, aecSettings[],
+      EVALSETUP_2PLY, MOVEFILTER_NORMAL, GetEvalCube(),
+      GetEvalChequer(), GetMatchStateCubeInfo(), and so on?
+
+      If yes -- USE the named instance. A "private evalcontext /
+      cubeinfo / movefilter / evalsetup" in the facade is, BY
+      DEFAULT, a BUG. The facade exposes gnubg; it does not
+      reparameterise gnubg with values invented by the porter.
+
+  Q3. If I am extending or calling an existing facade verb, does
+      THAT verb itself obey Q2, or did a prior hand inject a private
+      struct? If the verb itself is a reinvention, FIX THE VERB.
+      Do not layer further code on broken ground.
+
+A pre-existing private struct in the facade is NOT evidence that
+gnubg has nothing equivalent. It is most often evidence that an
+earlier port-rule violation was never cleaned up. Treat such structs
+as suspect, not authoritative.
+
+When the checkpoint fails -- by inattention, time pressure, or because
+pre-existing code seemed to authorize it -- the change is invalid.
+REVERT before adding more work on top. Do not paper over a violation
+with a more sophisticated violation.
+
 ## ARCHITECTURE (the layers, top to bottom)
 
 Compose UI (Kotlin)
