@@ -33,6 +33,7 @@ into `engine-core/` and `engine-core/lib/`:
 | `matchequity.c`, `matchequity.h` | `gnubg/matchequity.c`, `gnubg/matchequity.h` |
 | `mec.c`, `mec.h` | `gnubg/mec.c`, `gnubg/mec.h` |
 | `multithread.c`, `multithread.h` | `gnubg/multithread.c`, `gnubg/multithread.h` |
+| `play.c` | `gnubg/play.c` |
 | `positionid.c`, `positionid.h` | `gnubg/positionid.c`, `gnubg/positionid.h` |
 | `randomorg.h` | `gnubg/randomorg.h` |
 | `rollout.h` | `gnubg/rollout.h` |
@@ -97,6 +98,34 @@ for the full shadow mechanism documentation.
 `engine-core/lib/`, which would otherwise resolve to a non-existent or
 unpatched config in that subdirectory. See `MASTER_V6.md §5.3`.
 
+### engine-core/play.c
+
+**Origin:** Copied verbatim from `gnubg/play.c` (upstream version 1.08.003),
+then extended with **visibility seams** -- additional file-scope functions that
+expose internal static state to the facade. No upstream code is altered; only
+added.
+
+#### Seam 1: `gnubg_set_computer_decision` (setter)
+
+**Added code (immediately after the `fComputerDecision` static declaration):**
+```c
+/* Mobile port seam: allow the facade to drive CommandTake/CommandDrop/CommandDouble
+ * for the engine player (these no-op for a non-human player unless this flag is set).
+ * Visibility-only: fComputerDecision stays static; this is the single documented hook. */
+void gnubg_set_computer_decision(int f) { fComputerDecision = f; }
+```
+
+**Rationale:** The mobile facade needs to drive `CommandTake`, `CommandDrop`,
+and `CommandDouble` on the engine player's behalf so the engine can respond to
+a human's cube offer. These commands refuse to act on a non-human player
+unless `fComputerDecision` is TRUE. Because the flag is `static` in play.c it
+is otherwise unreachable from outside the translation unit; this setter is
+the minimum-surface exposure. The flag's existing read sites
+(play.c:1089, 1097, 1147, 1268, 1299, 1303, 1357, 1359, 1386, 1388, 1480,
+1482) retain upstream semantics; the setter is a write-only surface.
+
+**Scope:** Single function added.
+
 ### engine-core/lib/neuralnetsse.c
 
 **Origin:** Copied verbatim from `gnubg/lib/neuralnetsse.c` (upstream version
@@ -157,6 +186,7 @@ identical to their upstream counterparts **except**:
 - `engine-core/config.h` — patched as documented above
 - `engine-core/lib/config.h` — created for this port (not in upstream)
 - `engine-core/lib/neuralnetsse.c` — one function modified as documented above
+- `engine-core/play.c` -- visibility seam added as documented above
 
 To verify unmodified files, clone the upstream repository and diff:
 
