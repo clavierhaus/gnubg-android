@@ -37,6 +37,7 @@ into `engine-core/` and `engine-core/lib/`:
 | `positionid.c`, `positionid.h` | `gnubg/positionid.c`, `gnubg/positionid.h` |
 | `randomorg.h` | `gnubg/randomorg.h` |
 | `rollout.h` | `gnubg/rollout.h` |
+| `sgf.c`, `sgf.h` | `gnubg/sgf.c`, `gnubg/sgf.h` |
 | `util.c`, `util.h` | `gnubg/util.c`, `gnubg/util.h` |
 
 ### engine-core/lib/
@@ -97,6 +98,72 @@ for the full shadow mechanism documentation.
 **Rationale:** Intercepts `#include "config.h"` from source files in
 `engine-core/lib/`, which would otherwise resolve to a non-existent or
 unpatched config in that subdirectory. See `MASTER_V6.md §5.3`.
+
+### engine-core/multithread.h
+
+**Origin:** Adapted from `gnubg/multithread.h` (upstream version 1.08.003).
+The file diverges from `upstream-source/gnubg/multithread.h` at three
+locations.
+
+**Modification 1 -- ManualEvent condition variable type (~line 70):**
+
+Upstream declares the `cond` field as `GCond cond;`. engine-core wraps the
+field in a GLib version check that selects the POSIX pthread type under
+modern GLib:
+
+```c
+#if GLIB_CHECK_VERSION (2,32,0)
+    pthread_cond_t cond;
+#else
+    GCond *cond;
+#endif
+```
+
+**Modification 2 -- AsyncTask mutex types (~lines 94-95):**
+
+Upstream uses GLib's `Mutex` typedef for two struct fields. engine-core uses
+`pthread_mutex_t` directly:
+
+```
+upstream:                       engine-core:
+    Mutex queueLock;            pthread_mutex_t queueLock;
+    Mutex multiLock;            pthread_mutex_t multiLock;
+```
+
+These fields are inside `#if defined(USE_MULTITHREAD)`. `USE_MULTITHREAD`
+is disabled in `engine-core/config.h` (see the modifications list above),
+so the block is not compiled in the Android build today. The type change
+is forward-compatibility for any future enabling of multithreading: the
+NDK provides `pthread_mutex_t` directly, while `Mutex` is a GLib typedef
+whose availability depends on GLib threading headers being in scope.
+
+**Modification 3 -- Thread-local data access macros (~lines 193-196):**
+
+Upstream accesses thread-local data directly via the `td.tld` global field.
+engine-core routes the access through a `TLSGet` function:
+
+```c
+/* upstream */
+#define MT_Get_nnState() td.tld->pnnState
+#define MT_Get_aMoves() td.tld->aMoves
+#define MT_GetTLD() td.tld
+
+/* engine-core */
+extern void *TLSGet(void *item);
+#define MT_Get_nnState() ((ThreadLocalData *)TLSGet(NULL))->pnnState
+#define MT_Get_aMoves() ((ThreadLocalData *)TLSGet(NULL))->aMoves
+#define MT_GetTLD() ((ThreadLocalData *)TLSGet(NULL))
+```
+
+`TLSGet` is implemented in `jni-bridge/src/stubs.c:256`. The upstream
+`td.tld` direct-access pattern requires the multithread runtime's full
+task-dispatcher state, which the stubs layer does not maintain; the
+`TLSGet(NULL)` call lets the macros resolve to a single stub call without
+that runtime.
+
+**Scope:** Three field/macro hunks. No new function defined inside
+multithread.h; the `TLSGet` symbol it references is defined in the facade
+at `jni-bridge/src/stubs.c:256`.
 
 ### engine-core/play.c
 
@@ -221,6 +288,7 @@ created entirely for this Android port:
 | File | Purpose |
 |---|---|
 | `engine-core/lib/config.h` | Shadow config.h for lib/ subdirectory (see above) |
+| `engine-core/sgf_l.c`, `engine-core/sgf_y.c`, `engine-core/sgf_y.h` | flex/bison pre-generated parsers for SGF (Smart Game Format -- gnubg's match-recording file format). Shipped pre-generated so the Android build host does not need flex/bison installed. |
 
 ## Unmodified upstream files
 
@@ -231,6 +299,7 @@ identical to their upstream counterparts **except**:
 - `engine-core/lib/config.h` — created for this port (not in upstream)
 - `engine-core/lib/neuralnetsse.c` — one function modified as documented above
 - `engine-core/play.c` -- two visibility seams added as documented above
+- `engine-core/multithread.h` -- three port-compatibility hunks as documented above
 
 To verify unmodified files, clone the upstream repository and diff:
 
