@@ -4,6 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clavierhaus.gnubg.Engine
+import com.clavierhaus.gnubg.tutor.BEAVER_DECISIONS
+import com.clavierhaus.gnubg.tutor.CubeAction
+import com.clavierhaus.gnubg.tutor.CubeDecision
+import com.clavierhaus.gnubg.tutor.cubeDecisionAction
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -515,48 +519,66 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     "offerDouble: cubeDecision enum=$decision rawSize=${cd.size} raw0=${cd[0]}"
                 )
 
-                when (decision) {
-                    // Engine accepts/takes the human double.
-                    //
-                    // 0  DOUBLE_TAKE
-                    // 2  NODOUBLE_TAKE
-                    // 4  DOUBLE_BEAVER       -> no beaver UI/path yet; collapse to TAKE
-                    // 5  NODOUBLE_BEAVER     -> no beaver UI/path yet; collapse to TAKE
-                    // 14 OPTIONAL_DOUBLE_TAKE
-                    // 16 OPTIONAL_DOUBLE_BEAVER -> no beaver UI/path yet; collapse to TAKE
-                    //
-                    // Engine takes: register the human double, then engine takes it.
-                    0, 2, 4, 5, 14, 16 -> {
-                        if (decision == 4 || decision == 5 || decision == 16) {
+                val cdEnum = CubeDecision.fromOrdinal(decision)
+                if (cdEnum == null) {
+                    android.util.Log.e(
+                        "gnubg-vm",
+                        "offerDouble: cubeDecision returned unknown ordinal=$decision (eval.h has 21 values: 0..20)"
+                    )
+                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    return@launch
+                }
+
+                val action = cubeDecisionAction(cdEnum)
+                android.util.Log.i(
+                    "gnubg-vm",
+                    "offerDouble: gnubg cd=$cdEnum (ordinal=$decision) -> action=$action"
+                )
+
+                when (action) {
+                    CubeAction.TAKE -> {
+                        if (cdEnum in BEAVER_DECISIONS) {
                             android.util.Log.i(
                                 "gnubg-vm",
-                                "offerDouble: beaver decision cd=$decision collapsed to take; beaver UI/path not implemented"
+                                "offerDouble: beaver $cdEnum collapsed to take (no beaver UI yet)"
                             )
                         }
-
-                        // Register the human double through the engine, then let the
-                        // engine take it (CommandTake runs for the engine player only
-                        // while fComputerDecision is set, which engineCubeResponse does).
+                        // Register the human double through the engine, then let
+                        // the engine take it (CommandTake runs for the engine
+                        // player only while fComputerDecision is set, which
+                        // engineCubeResponse does).
                         Engine.commandDouble()
                         Engine.engineCubeResponse(true)
-                        android.util.Log.i("gnubg-vm", "offerDouble: human double taken by engine (via engine cube response)")
+                        android.util.Log.i(
+                            "gnubg-vm",
+                            "offerDouble: engine took human double ($cdEnum)"
+                        )
                         readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
                     }
 
-                    // Engine passes/drops: register the double, engine drops, game ends.
-                    //
-                    // 1  DOUBLE_PASS
-                    // 17 OPTIONAL_DOUBLE_PASS
-                    1, 17 -> {
+                    CubeAction.DROP -> {
                         Engine.commandDouble()
                         Engine.engineCubeResponse(false)
                         val gr = Engine.getGameResult()
-                        android.util.Log.i("gnubg-vm", "offerDouble: engine dropped cd=$decision result=${gr.joinToString(",")}")
-                        readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
+                        android.util.Log.i(
+                            "gnubg-vm",
+                            "offerDouble: engine dropped human double ($cdEnum) result=${gr.joinToString(",")}"
+                        )
+                        readMatchState(
+                            phase = GamePhase.GAME_OVER,
+                            winner = gr[0],
+                            nPoints = gr[1]
+                        )
                     }
 
-                    else -> {
-                        android.util.Log.i("gnubg-vm", "offerDouble: no double/take action for cd=$decision")
+                    CubeAction.NONE -> {
+                        // NOT_AVAILABLE: cube cannot be offered. legalCubeWindow
+                        // earlier in this function should have caught this; if
+                        // we got here, that gating is wrong.
+                        android.util.Log.e(
+                            "gnubg-vm",
+                            "offerDouble: cd=$cdEnum has no action; legalCubeWindow gating failed?"
+                        )
                         readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
                     }
                 }
