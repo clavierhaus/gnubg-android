@@ -39,7 +39,8 @@ extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
 extern int  gnubg_can_double(void);
 extern void gnubg_set_suppress_auto_forfeit(int);
-extern void InitMatchEquity(const char *szFileName);   /* seam in engine-core/play.c -- see PROVENANCE */
+extern void InitMatchEquity(const char *szFileName);
+extern int  LegalMove(const TanBoard anBoard, int iSrc, int nPips);  /* eval.c:2732 -- bear-off + opponent-block rule */   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
 extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
