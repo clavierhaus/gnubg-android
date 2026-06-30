@@ -644,11 +644,7 @@ Java_com_clavierhaus_gnubg_Engine_classifyPosition(JNIEnv *env, jobject thiz,
 
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
-                                                jintArray jboard,
-                                                jint cubeValue, jint cubeOwner,
-                                                jint fMove, jint matchTo,
-                                                jint score0, jint score1,
-                                                jint crawford) {
+                                                jintArray jboard) {
     (void)thiz;
     if (!gnubg_initialised) return NULL;
     jint inBuf[50];
@@ -656,10 +652,7 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
     int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
     float out[14] = {0};
     int decision = 0;
-    if (gnubg_mobile_cube_decision(in, (int)cubeValue, (int)cubeOwner,
-                                   (int)fMove, (int)matchTo, (int)score0,
-                                   (int)score1, (int)crawford,
-                                   out, 14, &decision) < 0)
+    if (gnubg_mobile_cube_decision(in, out, 14, &decision) < 0)
         return NULL;
     jintArray result = (*env)->NewIntArray(env, 16);
     jint buf[16];

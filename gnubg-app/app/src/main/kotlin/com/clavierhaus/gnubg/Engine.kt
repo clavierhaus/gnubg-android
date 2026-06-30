@@ -82,9 +82,7 @@ object Engine {
     // Analysis
     external fun evaluatePosition(board: IntArray): FloatArray?
     external fun classifyPosition(board: IntArray): Int
-    external fun cubeDecision(board: IntArray, cubeValue: Int, cubeOwner: Int, fMove: Int,
-                               matchTo: Int, score0: Int, score1: Int,
-                               crawford: Int): IntArray?
+    external fun cubeDecision(board: IntArray): IntArray?
     external fun rollout(board: IntArray, trials: Int): FloatArray?
 
     // Files / SGF

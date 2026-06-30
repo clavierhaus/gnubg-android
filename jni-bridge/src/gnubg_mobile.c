@@ -744,14 +744,10 @@ int gnubg_mobile_classify(const int board[50]) {
     return (int) pc;
 }
 
-int gnubg_mobile_cube_decision(const int board[50], int cube_value,
-                               int cube_owner, int f_move, int match_to,
-                               int score0, int score1, int crawford,
+int gnubg_mobile_cube_decision(const int board[50],
                                float *out, int out_cap, int *out_decision) {
     TanBoard anBoard;
     cubeinfo ci;
-    int anScore[2];
-    evalsetup es;            /* unused after PORT switch to GetEvalCube; kept for ABI/struct stability this commit */
     evalsetup *pesCube;
     float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
     float arDouble[4];
@@ -759,15 +755,6 @@ int gnubg_mobile_cube_decision(const int board[50], int cube_value,
     int rc, i;
     if (out_cap < 14) return -1;
     facade_unpack_board(board, anBoard);
-    /* PORT: cubeinfo now comes from gnubg's own GetMatchStateCubeInfo against
-     * the live ms. The JNI-marshalled args (cube_value, cube_owner, f_move,
-     * match_to, score0, score1, crawford) were a Kotlin round-trip
-     * reinvention of GetMatchStateCubeInfo that also lost fJacoby/fBeavers.
-     * The args are kept in the signature this commit for JNI/Kotlin API
-     * stability; drop in a follow-up polish pass. */
-    (void)cube_value; (void)cube_owner; (void)f_move; (void)match_to;
-    (void)score0; (void)score1; (void)crawford; (void)anScore;
-    (void)es;  /* PORT B.1: dead after switch to GetEvalCube(); kept for follow-up polish */
     pthread_mutex_lock(&gnubg_lock);
     GetMatchStateCubeInfo(&ci, &ms);
     /* PORT: evalcontext is now gnubg's own -- GetEvalCube() returns

@@ -89,9 +89,7 @@ int gnubg_mobile_classify(const int board[50]);
 int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
                                 int *out_moves, float *out_equities,
                                 int n_max);
-int gnubg_mobile_cube_decision(const int board[50], int cube_value,
-                               int cube_owner, int f_move, int match_to,
-                               int score0, int score1, int crawford,
+int gnubg_mobile_cube_decision(const int board[50],
                                float *out, int out_cap, int *out_decision);
 int gnubg_mobile_rollout(const int board[50], int trials,
                          float *out, int out_cap);

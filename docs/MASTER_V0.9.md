@@ -224,16 +224,22 @@ violation that was never cleaned up.
 
 The audit enumerated seven concrete violations in the facade and Kotlin:
 
-- **V1 (active, evalcontext).** `fac_ec_default` in `jni-bridge/src/gnubg_mobile.c:446`
-  is a hand-rolled `evalcontext` with `fCubeful=0, nPlies=1, fUsePrune=0`. No
-  gnubg-named context has those values. It is passed to four call sites:
+- **V1 (FIXED, V0.9.x).** `fac_ec_default` in `jni-bridge/src/gnubg_mobile.c`
+  was a hand-rolled `evalcontext` with `fCubeful=0, nPlies=1, fUsePrune=0`.
+  No gnubg-named context has those values. It was passed to four call sites:
   `FindnSaveBestMoves` (tutor analysis), `EvaluatePosition` (candidate
   ranking and standalone eval), and `GeneralCubeDecisionENoLocking` (cube
-  decision). For cube decisions, `fCubeful=0` is fundamentally wrong:
-  gnubg's take/drop arithmetic depends on cubeful equity differentials. The
-  named counterparts are `ap[fMove].esCube.ec` and `ap[fMove].esChequer.ec`,
-  or the globals `esEvalCube`/`esEvalChequer` / `esAnalysisCube`/`esAnalysisChequer`
-  accessed via `GetEvalCube()` / `GetEvalChequer()`.
+  decision). For cube decisions, `fCubeful=0` is fundamentally wrong --
+  gnubg's take/drop arithmetic depends on cubeful equity differentials, so
+  cube verdicts were systematically biased toward drops. Closed in two
+  parts: B.1 routed `gnubg_mobile_cube_decision` through `*GetEvalCube()`
+  (returns `&esAnalysisCube` if `fEvalSameAsAnalysis` else `&esEvalCube`,
+  both wired to the user's strength preset by audit C). B.2 routed the
+  three chequer-side sites (`tutor_analyze`, `evaluate`, `get_candidates`)
+  through `*GetEvalChequer()`. With audit C's strength wiring in place,
+  these accessors return aecSettings[idx] at the user's chosen depth,
+  defusing the EVALSETUP_2PLY inf-return historically seen on this build.
+  `fac_ec_default` is removed by the polish pass.
 
 - **V2 (FIXED, V0.9.x).** `fac_ci_default` in `gnubg_mobile.c:449` was a
   `cubeinfo` frozen at engine init via `SetCubeInfo(&fac_ci_default, 1, -1, 0,
@@ -362,9 +368,16 @@ CHECKPOINT:
   `CommandDouble` preconditions (see PROVENANCE Seam 2).
 - **E (V6).** `gnubg_mobile_get_match_winner` adopts gnubg's pattern.
 - **F (V7).** Trace `last_engine_dice` lifecycle.
-- **Polish.** Drop `fac_ci_default` and `gnubg_mobile_set_default_cubeinfo`
-  (dead after V2); drop the dead JNI args from `gnubg_mobile_cube_decision`
-  (dead after V3).
+- **Polish (FIXED V0.9.x).** Dropped `fac_ec_default`, `fac_ci_default`,
+  and `gnubg_mobile_set_default_cubeinfo` (all dead after V1, V2, V3) plus
+  the init-time caller in `gnubg_mobile_initialise` and the public header
+  declaration. Dropped the seven JNI-marshalled args of
+  `gnubg_mobile_cube_decision` (`cube_value`, `cube_owner`, `f_move`,
+  `match_to`, `score0`, `score1`, `crawford`) -- dead after V3 routed the
+  cubeinfo through `GetMatchStateCubeInfo`. Signature trimmed across the
+  facade header, C impl, JNI binding, Kotlin extern fun, and the
+  `GameViewModel` call site. Stale strings/comments referencing the
+  removed `legalCubeWindow` and `fac_ec_default` cleaned up.
 
 ### Phase 12: Repository completeness & provenance (completed)
 

@@ -492,16 +492,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val matchBoard = Engine.getMatchBoard()
-                val cd = Engine.cubeDecision(
-                    matchBoard,
-                    dbg[7],   // cube value
-                    dbg[6],   // cube owner
-                    dbg[2],   // fMove
-                    dbg[12],  // match length
-                    dbg[10],  // score0
-                    dbg[11],  // score1
-                    dbg[8]    // crawford
-                )
+                val cd = Engine.cubeDecision(matchBoard)
 
                 if (cd == null || cd.isEmpty()) {
                     android.util.Log.e("gnubg-vm", "offerDouble: cubeDecision returned null/empty")
