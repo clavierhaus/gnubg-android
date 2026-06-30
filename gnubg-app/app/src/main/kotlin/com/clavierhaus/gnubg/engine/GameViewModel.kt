@@ -312,6 +312,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
+
+            // Mirror gnubg GenerateMovesSub (eval.c:2787): iterate the
+            // legal-move list, stop at the first entry whose leading
+            // sub-move source matches the tap. If the iteration exits
+            // without a match, gnubg lists no legal play from src and
+            // the tap is a no-op.
+            val nLegal = state.legalMoves.size / 8
+            var matchIdx = -1
+            for (i in 0 until nLegal) {
+                if (state.legalMoves[i * 8] == src) { matchIdx = i; break }
+            }
+            if (matchIdx < 0) return@launch
+
             val die0 = state.remainingDice[0]
             val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
 
