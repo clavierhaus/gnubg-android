@@ -1,29 +1,20 @@
 package com.clavierhaus.gnubg.tutor
 
-import kotlin.math.abs
+import com.clavierhaus.gnubg.Engine
 
 /**
- * Classifies a move's equity loss into a BlunderLevel using a base threshold.
- *
- * equityLoss is best_equity - played_equity (>= 0; larger = worse move).
- * Bands are multiples of the base threshold:
- *   < 0.25x  -> NONE
- *   < 0.5x   -> INACCURACY
- *   < 1.0x   -> MISTAKE
- *   < 3.0x   -> BLUNDER
- *   >= 3.0x  -> HUGE_BLUNDER
+ * Classifies a move equity loss into a BlunderLevel using gnubg OWN
+ * classifier (Engine.skill -> analysis.c Skill), NOT a reimplemented band table.
+ * gnubg is the sole authority for skill thresholds (arSkillLevel, gnubg.c
+ * canonical 0.16/0.08/0.04). The previous version invented 0.25/0.5/1.0/3.0x
+ * multiplier bands and a fifth level; both are removed.
  */
 object BlunderClassifier {
 
-    fun classify(equityLoss: Float, base: Float = BlunderThreshold.NORMAL.value): BlunderLevel {
-        val loss = abs(equityLoss)
-        return when {
-            loss < 0.25f * base -> BlunderLevel.NONE
-            loss < 0.5f * base  -> BlunderLevel.INACCURACY
-            loss < 1.0f * base  -> BlunderLevel.MISTAKE
-            loss < 3.0f * base  -> BlunderLevel.BLUNDER
-            else                -> BlunderLevel.HUGE_BLUNDER
-        }
-    }
+    /**
+     * @param equityLoss best_equity - played_equity (>= 0; larger = worse).
+     * gnubg Skill() takes the signed delta (played - best <= 0), so we negate.
+     */
+    fun classify(equityLoss: Float): BlunderLevel =
+        BlunderLevel.fromGnubgOrdinal(Engine.skill(-equityLoss))
 }
-

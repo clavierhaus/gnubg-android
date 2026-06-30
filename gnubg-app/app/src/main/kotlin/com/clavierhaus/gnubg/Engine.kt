@@ -81,6 +81,10 @@ object Engine {
      *   [2..51] = best-move board. Empty array if no analyzable move.
      */
     external fun tutorAnalyze(oldBoard: IntArray): IntArray
+
+    /** gnubg own move classifier (analysis.c Skill). equityDelta = played - best
+     *  (<= 0). Returns gnubg skilltype ordinal: 0=VERYBAD 1=BAD 2=DOUBTFUL 3=NONE. */
+    external fun skill(equityDelta: Float): Int
     external fun pipCount(board: IntArray): IntArray
 
     // Analysis

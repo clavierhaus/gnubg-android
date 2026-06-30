@@ -78,7 +78,6 @@ object TutorAnalyzer {
      *                       expressed cubeless from the player's perspective)
      * @param playedBoard    board after the human's move
      * @param bestBoard      board after the engine's best move
-     * @param base           blunder threshold base
      *
      * Returns null if there were no candidates (e.g. no legal move / forfeit).
      */
@@ -86,8 +85,7 @@ object TutorAnalyzer {
         candidatesRaw: IntArray,
         playedEquity: Float,
         playedBoard: IntArray,
-        bestBoard: IntArray,
-        base: Float = BlunderThreshold.NORMAL.value
+        bestBoard: IntArray
     ): TutorAnalysis? {
         val candidates = decodeCandidates(candidatesRaw)
         if (candidates.isEmpty()) return null
@@ -95,7 +93,7 @@ object TutorAnalyzer {
         val best = candidates.first()
         val bestEquity = best.equity
         val equityLoss = (bestEquity - playedEquity).coerceAtLeast(0f)
-        val level = BlunderClassifier.classify(equityLoss, base)
+        val level = BlunderClassifier.classify(equityLoss)
 
         val playedFeatures = FeatureExtractor.extract(playedBoard)
         val bestFeatures = FeatureExtractor.extract(bestBoard)

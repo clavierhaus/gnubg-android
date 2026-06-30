@@ -1,24 +1,23 @@
 package com.clavierhaus.gnubg.tutor
 
 /**
- * Severity of a move error, measured by equity loss versus the engine's best
- * move. Thresholds are multiples of a configurable base threshold.
+ * Move-error severity, mirroring gnubg own skilltype (engine-core/analysis.h).
+ * gnubg classifies an equity loss into exactly these four levels via Skill()
+ * (analysis.c:287) using the arSkillLevel thresholds (gnubg.c canonical
+ * 0.16/0.08/0.04). The ordinals match gnubg enum 1:1 so the engine result
+ * maps directly: 0=VERY_BAD, 1=BAD, 2=DOUBTFUL, 3=NONE.
+ *
+ * Labels follow gnubg aszSkillType (play.c:85): "very bad", "bad", "doubtful".
  */
-enum class BlunderLevel {
-    NONE,
-    INACCURACY,
-    MISTAKE,
-    BLUNDER,
-    HUGE_BLUNDER
-}
+enum class BlunderLevel(val gnubgLabel: String?) {
+    VERY_BAD("very bad"),  // 0  SKILL_VERYBAD
+    BAD("bad"),            // 1  SKILL_BAD
+    DOUBTFUL("doubtful"),  // 2  SKILL_DOUBTFUL
+    NONE(null);            // 3  SKILL_NONE
 
-/**
- * Base equity-loss threshold presets. The classifier multiplies the base by
- * 0.25 / 0.5 / 1.0 / 3.0 to get the four severity bands.
- */
-enum class BlunderThreshold(val value: Float) {
-    LENIENT(0.15f),
-    NORMAL(0.08f),
-    STRICT(0.04f)
+    companion object {
+        /** Map a gnubg skilltype ordinal (from Engine.skill) to a BlunderLevel. */
+        fun fromGnubgOrdinal(ordinal: Int): BlunderLevel =
+            entries.getOrElse(ordinal) { NONE }
+    }
 }
-

@@ -505,10 +505,14 @@ float arLuckLevel[] = {
     0.6f    /* LUCK_VERYGOOD */
 };
 
+/* arSkillLevel: equity-loss thresholds for move classification. Values are
+ * gnubg.c canonical (0.16/0.08/0.04). A prior port revision used 0.75x-scaled
+ * values (0.12/0.06/0.03) with no recorded rationale; realigned to gnubg as the
+ * sole authority. Consumed by Skill() (analysis.c:287). See PROVENANCE.md. */
 float arSkillLevel[] = {
-    0.12f,  /* SKILL_VERYBAD  */
-    0.06f,  /* SKILL_BAD      */
-    0.03f,  /* SKILL_DOUBTFUL */
+    0.16f,  /* SKILL_VERYBAD  */
+    0.08f,  /* SKILL_BAD      */
+    0.04f,  /* SKILL_DOUBTFUL */
     0.0f    /* SKILL_NONE     */
 };
 

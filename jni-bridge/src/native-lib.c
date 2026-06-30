@@ -546,6 +546,12 @@ Java_com_clavierhaus_gnubg_Engine_tutorAnalyze(JNIEnv *env, jobject thiz,
     return result;
 }
 
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_skill(JNIEnv *env, jobject thiz, jfloat equityDelta) {
+    (void)env; (void)thiz;
+    return (jint) gnubg_mobile_skill((float) equityDelta);
+}
+
 /*
  * Engine.getMatchWinner(): Int
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.

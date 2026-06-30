@@ -564,6 +564,16 @@ int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
     return (int) strlen(out_text);
 }
 
+/* gnubg own skill classifier (analysis.c:287). Classifies an equity delta
+ * (played - best; <= 0, more negative = worse) into a skilltype ordinal using
+ * gnubg arSkillLevel thresholds (gnubg.c canonical 0.16/0.08/0.04). The UI
+ * must NOT reimplement these bands -- this is the single source of truth.
+ * Returns: 0=SKILL_VERYBAD, 1=SKILL_BAD, 2=SKILL_DOUBTFUL, 3=SKILL_NONE. */
+extern skilltype Skill(float r);
+int gnubg_mobile_skill(float equity_delta) {
+    return (int) Skill(equity_delta);
+}
+
 /* Tutor analysis using gnubg's own AnalyzeMove on the last played move.
  *
  * Call AFTER applyMoveString: the move record must already be in plGame.

@@ -302,6 +302,24 @@ git clone https://gitlab.com/gnubg/gnubg upstream-verify/
 diff upstream-verify/gnubg/lib/neuralnetsse.c engine-core/lib/neuralnetsse.c
 ```
 
+## jni-bridge globals re-provided from gnubg.c
+
+The de-GTK-d build omits gnubg gnubg.c, which on desktop defines many
+globals declared extern in backgammon.h. jni-bridge/src/android-app.c
+re-provides these for the Android build. They MUST match gnubg.c canonical
+values; the port is not a place to retune gnubg behaviour.
+
+**Finding (corrected):** arSkillLevel[] (the move-classification equity-loss
+thresholds consumed by Skill(), analysis.c:287) was found set to
+0.12 / 0.06 / 0.03 -- exactly 0.75x of gnubg.c canonical
+0.16 / 0.08 / 0.04 (SKILL_VERYBAD / SKILL_BAD / SKILL_DOUBTFUL). No rationale
+was recorded for the downscaling, which made the tutor harsher than gnubg (a
+move gnubg marks doubtful could be flagged bad). Realigned to gnubg.c values.
+Note arLuckLevel[] immediately above was already correct
+(0.6 / 0.3 / 0 / 0.3 / 0.6), confirming the skill divergence was an isolated
+deviation, not a systematic port choice. Source of truth:
+https://github.com/mormegil-cz/gnubg/blob/master/gnubg.c
+
 ## Files added (not from upstream)
 
 The following files in `engine-core/` have no upstream counterpart and were
