@@ -471,6 +471,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+            // Capture the match score before the move. A game-ending move triggers
+            // gnubgs NextTurn(TRUE) inside command_move, which scores the game AND
+            // auto-starts the next one -- so by the time we read state, ms.gs is
+            // back to GAME_PLAYING and getGameResult() reads the NEW games empty
+            // MOVE_GAMEINFO (fWinner=-1). The score delta survives the auto-advance
+            // (play.c:291 updates anScore synchronously before the new game starts),
+            // so it is the reliable game-over signal -- same pattern as commandResign.
+            val scoreBefore = Engine.getMatchScore()
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
 
@@ -501,8 +509,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.e("gnubg-tutor", "analysis failed: ${t.message}")
             }
 
-            if (Engine.getMatchStatus() >= 2) {
-                Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
+            // Game-over detection via score delta (survives the NextTurn
+            // auto-advance; see scoreBefore comment above). gnubg computed the
+            // score, so the delta -- and the winner/points derived from it -- is
+            // gnubg-authoritative. getMatchStatus()/getGameResult() are NOT used
+            // here because the auto-advance resets ms.gs and the game-info record.
+            val scoreAfter = Engine.getMatchScore()
+            val humanDelta  = scoreAfter[0] - scoreBefore[0]
+            val engineDelta = scoreAfter[1] - scoreBefore[1]
+            if (humanDelta != 0 || engineDelta != 0) {
+                val winner = if (humanDelta > engineDelta) 0 else 1
+                val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
+                readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
                 return@launch
             }
             val cubeInfo = Engine.getMatchCubeInfo()
