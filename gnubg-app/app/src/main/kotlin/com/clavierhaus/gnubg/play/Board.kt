@@ -502,9 +502,10 @@ fun BackgammonBoard(
                     diceToShow.forEachIndexed { i, face ->
                         val isUsed = usedMask.getOrElse(i) { false }
                         val baseColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
-                        val dieColor = if (diceDimmed) baseColor.copy(alpha = 0.4f) else baseColor
+                        val dieColor = if (diceDimmed) Color(0xFF888888) else baseColor
+                        val pipColor = if (diceDimmed) Color(0xFF444444) else p.dicePip
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
-                            dw, dh, face, dieColor, p.dicePip, p.frame)
+                            dw, dh, face, dieColor, pipColor, p.frame)
                     }
                 } else {
                     val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
