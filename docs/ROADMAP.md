@@ -106,10 +106,12 @@ tracked in `MASTER_V0.9.md` Phase 11.1.
 - **Cube/resign feedback.** Brief toast on cube and resign actions (who
   doubled/resigned, who took/passed). Deferred from the current tournament-UI
   branch.
-- **Bar-dance Continue.** When a checker on the bar cannot re-enter, show the
-  roll grayed and hand the turn to the engine via an explicit Continue button.
-  Requires a GamePhase.HUMAN_DANCED state; rollDice currently leaves the player
-  stuck in HUMAN_MOVING with no legal moves (a real dead-end bug).
+- **No-legal-move Continue (FIXED V0.9.x).** When a checker on the bar cannot
+  re-enter, or own home board is fully blocked, the UI shows the dice grayed
+  and the human confirms turn-end via a centered Continue button. The engine
+  seam gnubg_set_suppress_auto_forfeit (PROVENANCE Seam 3) defers gnubg own
+  CommandRoll auto-pass; passTurn in Kotlin calls Engine.applyMoveString("")
+  which routes to gnubg own no-legal-move path in CommandMove.
 
 ### Tutor: from log to coach
 

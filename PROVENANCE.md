@@ -232,10 +232,32 @@ on desktop it prompts the user via `GetInputYN` ("Continuing will
 destroy the remainder of the match. Continue?"); on mobile there is no
 match-replay-destruction flow that would activate it.
 
+#### Seam 3: `gnubg_set_suppress_auto_forfeit` (setter) + CommandRoll guard
+
+**Added code (immediately after Seam 2):**
+
+    static int fSuppressAutoForfeit = FALSE;
+    /* Mobile port seam: when set, CommandRoll skips its built-in no-legal-move
+     * auto-pass (the GenerateMoves==0 branch in CommandRoll) so the UI can
+     * render dice + a Continue button. The forfeited turn is then completed by
+     * the user tapping Continue, which calls CommandMove with empty input.
+     * Desktop gnubg has no UI for the no-legal-move moment so it auto-plays;
+     * mobile defers. Default FALSE preserves upstream behavior. */
+    void gnubg_set_suppress_auto_forfeit(int f) { fSuppressAutoForfeit = f; }
+
+**Modified code inside CommandRoll** (play.c CommandRoll body, one line inserted at the top of the existing `if (!GenerateMoves(...))` branch, immediately before the `playSound(...)` call):
+
+    if (fSuppressAutoForfeit) return;
+
+**Rationale:** Desktop gnubg `CommandRoll` is monolithic: after rolling the dice, it tests `GenerateMoves` for legal moves; if zero, it plays the no-legal-move sound, creates a `MOVE_NORMAL` no-move record, and calls `TurnDone` -- all inside a single `CommandRoll` invocation. The mobile UI needs a UX moment where the human sees the dice that left them with no legal move and confirms with a Continue tap before control transfers to the engine. Without the seam, the facade `drain_next_turns` then runs the engine turn before the human ever sees their dice, producing a rinse-repeat cascade where the player rolls and the engine has already moved before they can see the result.
+
+The seam adds a guard check at the top of CommandRoll no-legal-move branch; when the facade sets the flag at startup, the branch returns early leaving `ms.anDice` populated and `fNextTurn` clear. Kotlin sees dice on board, `getLegalMoves` returns empty, the UI renders a Continue button. The user tap calls `Engine.applyMoveString("")` which routes to `CommandMove(NULL)` -- gnubg own path for confirming a no-legal turn from the command line. `CommandMove` adds the same no-move record and calls `TurnDone`, identically to what CommandRoll would have done auto-play. The deferred turn-completion uses gnubg own primitive; only the timing changes.
+
+**Scope:** One static, one setter, one guard line. The guard sits at the top of CommandRoll existing `if (!GenerateMoves(...))` block; when the flag is FALSE (upstream behavior) the guard is a no-op and the block runs exactly as upstream.
+
 #### Combined scope
 
-Two functions added to play.c (`gnubg_set_computer_decision`,
-`gnubg_can_double`). No existing code in play.c is altered.
+Three functions and one static added to play.c (`gnubg_set_computer_decision`, `gnubg_can_double`, `gnubg_set_suppress_auto_forfeit`; the latter exposes a new file-scope static `fSuppressAutoForfeit`). One line of guard inserted inside `CommandRoll` (Seam 3); Seams 1 and 2 are pure additions.
 
 ### engine-core/lib/neuralnetsse.c
 

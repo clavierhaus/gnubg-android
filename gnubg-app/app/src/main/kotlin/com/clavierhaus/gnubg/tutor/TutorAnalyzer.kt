@@ -80,7 +80,7 @@ object TutorAnalyzer {
      * @param bestBoard      board after the engine's best move
      * @param base           blunder threshold base
      *
-     * Returns null if there were no candidates (e.g. no legal move / dance).
+     * Returns null if there were no candidates (e.g. no legal move / forfeit).
      */
     fun analyze(
         candidatesRaw: IntArray,

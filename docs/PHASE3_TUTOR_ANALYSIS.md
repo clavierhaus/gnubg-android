@@ -85,7 +85,7 @@ called from GameViewModel.confirm() AFTER applyMoveString. Steps:
 - [0]     = Float.fromBits(played equity)
 - [1]     = Float.fromBits(best equity)
 - [2..51] = best-move board, player-on-roll frame (same as state.board)
-- empty array => no analyzable human move (dance / not found)
+- empty array => no analyzable human move (forfeit / not found)
 
 ## Verification
 ./build_and_deploy.sh ; adb logcat | grep -E "gnubg-tutor|gnubg-vm"

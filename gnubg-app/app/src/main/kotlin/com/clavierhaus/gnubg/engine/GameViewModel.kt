@@ -405,9 +405,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    /* Pass turn when human cannot move. The engine seam
-     * gnubg_set_suppress_auto_dance defers gnubgs built-in dance auto-play;
-     * Engine.applyMoveString with empty string makes CommandMove see
+    /* Forfeit the roll when no legal move exists (e.g. close-out on the
+     * bar, or own home board fully blocked). The engine seam
+     * gnubg_set_suppress_auto_forfeit defers gnubg built-in CommandRoll
+     * auto-pass so the UI can show the dice + a Continue button.
+     * Engine.applyMoveString("") then makes CommandMove see
      * GenerateMoves == 0, add a no-move record, and call TurnDone. */
     fun passTurn() {
         val state = _gameState.value

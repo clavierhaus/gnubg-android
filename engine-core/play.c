@@ -124,13 +124,14 @@ static int fEndGame = FALSE;
  * Visibility-only: fComputerDecision stays static; this is the single documented hook. */
 void gnubg_set_computer_decision(int f) { fComputerDecision = f; }
 
-static int fSuppressAutoDance = FALSE;
-/* Mobile port seam: when set, CommandRoll skips its built-in dance auto-pass
- * (play.c CommandRoll body) so the UI can render dice + a Continue button.
- * The dance is then completed by the user tapping Continue, which calls
- * CommandMove with empty input. Desktop gnubg has no UI for the dance moment
- * so it auto-plays; mobile defers. Default FALSE preserves upstream behavior. */
-void gnubg_set_suppress_auto_dance(int f) { fSuppressAutoDance = f; }
+static int fSuppressAutoForfeit = FALSE;
+/* Mobile port seam: when set, CommandRoll skips its built-in no-legal-move
+ * auto-pass (the GenerateMoves==0 branch in CommandRoll) so the UI can
+ * render dice + a Continue button. The forfeited turn is then completed by
+ * the user tapping Continue, which calls CommandMove with empty input.
+ * Desktop gnubg has no UI for the no-legal-move moment so it auto-plays;
+ * mobile defers. Default FALSE preserves upstream behavior. */
+void gnubg_set_suppress_auto_forfeit(int f) { fSuppressAutoForfeit = f; }
 
 /* Mobile port seam: same preconditions as CommandDouble (play.c:2369),
  * minus move_not_last_in_match_ok (a desktop GetInputYN prompt that has no
@@ -4144,7 +4145,7 @@ CommandRoll(char *UNUSED(sz))
 
     if (!GenerateMoves(&ml, msBoard(), ms.anDice[0], ms.anDice[1], FALSE)) {
 
-        if (fSuppressAutoDance) return;
+        if (fSuppressAutoForfeit) return;
 
         playSound(ap[ms.fTurn].pt == PLAYER_HUMAN ? SOUND_HUMAN_DANCE : SOUND_BOT_DANCE);
 

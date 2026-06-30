@@ -38,7 +38,7 @@ extern void CommandAgree(char *);
 extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
 extern int  gnubg_can_double(void);
-extern void gnubg_set_suppress_auto_dance(int);
+extern void gnubg_set_suppress_auto_forfeit(int);
 extern void InitMatchEquity(const char *szFileName);   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
@@ -763,18 +763,17 @@ int gnubg_mobile_cube_decision(const int board[50],
     facade_unpack_board(board, anBoard);
     pthread_mutex_lock(&gnubg_lock);
     GetMatchStateCubeInfo(&ci, &ms);
-    /* PORT: evalcontext is now gnubg's own -- GetEvalCube() returns
+    /* PORT: evalcontext is gnubg's own -- GetEvalCube() returns
      * &esAnalysisCube if fEvalSameAsAnalysis else &esEvalCube
      * (android-app.c:907). Both globals are seeded with EVALSETUP_2PLY
-     * (cubeful 2-ply, prune) at android-app.c:733,895, and respond to
-     * fEvalSameAsAnalysis exactly the way gnubg's own ComputerTurn cube
-     * branch (play.c:1132-1148) reads ap[ms.fTurn].esCube.
+     * at android-app.c:894-895; setEngineStrength overwrites .ec with
+     * aecSettings[idx] for the user-selected level.
      *
-     * Known risk: EVALSETUP_2PLY's chequer path returns inf in this
-     * build (see PHASE3_TUTOR_ANALYSIS.md). If the cube decision also
-     * returns inf, this call fails cleanly (rc != 0) and the caller
-     * gets -1. No invented fallback -- the port-rule-compliant
-     * fallback is aecSettings[strength_idx], a separate commit. */
+     * History: this comment used to warn of Inf in the chequer path.
+     * The real cause was that InitMatchEquity was never called at
+     * startup -- aafMET[][] was BSS-zero so mwc2eq divided by zero
+     * and arDouble came back Inf/NaN. Fixed in V0.9.x by calling
+     * InitMatchEquity("") in gnubg_mobile_initialise. */
     pesCube = GetEvalCube();
     memset(aarOutput, 0, sizeof(aarOutput));
     rc = GeneralCubeDecisionENoLocking(aarOutput, (ConstTanBoard) anBoard,
@@ -826,8 +825,9 @@ int gnubg_mobile_rollout(const int board[50], int trials,
 int gnubg_mobile_initialise(const char *weights_path) {
     pthread_mutex_lock(&gnubg_lock);
 
-    /* Defer human bar-dance to the UI Continue tap (PROVENANCE Seam 3). */
-    gnubg_set_suppress_auto_dance(TRUE);
+    /* Defer the human no-legal-move auto-pass to the UI Continue tap
+     * (PROVENANCE Seam 3). */
+    gnubg_set_suppress_auto_forfeit(TRUE);
 
     EvalInitialise((char *) weights_path, NULL, 0, NULL);
 
