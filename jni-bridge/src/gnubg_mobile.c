@@ -40,7 +40,7 @@ extern void CommandDouble(char *);
 extern int  gnubg_can_double(void);
 extern void gnubg_set_suppress_auto_forfeit(int);
 extern void InitMatchEquity(const char *szFileName);
-extern int  LegalMove(const TanBoard anBoard, int iSrc, int nPips);  /* eval.c:2732 -- bear-off + opponent-block rule */   /* seam in engine-core/play.c -- see PROVENANCE */
+extern int  gnubg_legal_sub_move(const TanBoard anBoard, int iSrc, int nPips);  /* seam in engine-core/eval.c -- bear-off + opponent-block rule */   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
 extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
@@ -432,7 +432,7 @@ int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
      * sub-moves at source -- the UI then sees an empty IntArray return
      * (via the JNI wrapper) and leaves the board untouched, without
      * reinventing the bear-off rule in Kotlin. */
-    if (!LegalMove((ConstTanBoard) anBoard, i_src, n_roll)) {
+    if (!gnubg_legal_sub_move(anBoard, i_src, n_roll)) {
         pthread_mutex_unlock(&gnubg_lock);
         return 0;
     }

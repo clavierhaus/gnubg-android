@@ -2747,6 +2747,13 @@ LegalMove(const TanBoard anBoard, int iSrc, int nPips)
     return (nBack <= 5 && (iSrc == nBack || iDest == -1));
 }
 
+/* Mobile port seam: exposes the file-scope static LegalMove so the facade
+ * can gate apply_sub_move on bear-off legality without reinventing the
+ * rule in the Kotlin UI. Visibility-only; LegalMove stays static. */
+int gnubg_legal_sub_move(const TanBoard anBoard, int iSrc, int nPips) {
+    return LegalMove(anBoard, iSrc, nPips);
+}
+
 static int
 GenerateMovesSub(movelist * pml, int anRoll[], int nMoveDepth,
                  int iPip, int cPip, const TanBoard anBoard, int anMoves[], int fPartial)
