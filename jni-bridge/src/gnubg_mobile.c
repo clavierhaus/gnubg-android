@@ -452,20 +452,11 @@ FACADE_FILE_OP(gnubg_mobile_save_position, CommandSavePosition)
 
 /* ===========================================================================
  * Tier 2 -- engine algorithms relocated whole from native-lib.c.
- * Defaults mirror native-lib.c's ec_default/ci_default; set ci in initialise().
+ * Evalcontexts and cubeinfo are sourced per-call from gnubg's own named
+ * instances (GetEvalCube, GetEvalChequer, GetMatchStateCubeInfo); no defaults
+ * are cached at this layer (see PORT CHECKPOINT audit V1/V2/V3, closed in
+ * MASTER_V0.9.md Phase 11.1).
  * =========================================================================== */
-
-static evalcontext fac_ec_default = {
-    .fCubeful = 0, .nPlies = 1, .fUsePrune = 0, .fDeterministic = 1, .rNoise = 0.0f
-};
-static cubeinfo fac_ci_default;   /* set via gnubg_mobile_set_default_cubeinfo() */
-
-/* Initialise the facade's default cubeinfo. Call once at engine init, with the
- * same arguments native-lib.c uses for its ci_default (money play, centred cube). */
-void gnubg_mobile_set_default_cubeinfo(void) {
-    int anScore[2] = {0, 0};
-    SetCubeInfo(&fac_ci_default, 1, -1, 0, 0, anScore, 0, 0, 0, VARIATION_STANDARD);
-}
 
 int gnubg_mobile_get_legal_moves(const int board[50], int d0, int d1,
                                  int f_partial, int *out_moves, int out_cap) {
@@ -648,7 +639,8 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
  *
  * Design notes:
  *   - GenerateMoves already ranks by 0-ply evaluation; we re-evaluate each
- *     candidate at 1-ply (fac_ec_default.nPlies == 1) for better accuracy.
+ *     candidate via GetEvalChequer() -- the player's chequer evalcontext at
+ *     the current strength preset (audit V1, closed B.2) -- for better accuracy.
  *   - ApplyMove modifies a local copy of the board -- the original is untouched.
  *   - Cubeless equity: negate the opponent-perspective result to get the
  *     current player's equity (higher = better for the player).
@@ -836,9 +828,6 @@ int gnubg_mobile_rollout(const int board[50], int trials,
  * =========================================================================== */
 int gnubg_mobile_initialise(const char *weights_path) {
     pthread_mutex_lock(&gnubg_lock);
-
-    /* Default cube info: money play, centred cube (mirrors native-lib ci_default). */
-    gnubg_mobile_set_default_cubeinfo();
 
     EvalInitialise((char *) weights_path, NULL, 0, NULL);
 

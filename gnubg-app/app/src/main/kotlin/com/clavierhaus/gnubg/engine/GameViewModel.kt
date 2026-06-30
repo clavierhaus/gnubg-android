@@ -568,12 +568,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     CubeAction.NONE -> {
-                        // NOT_AVAILABLE: cube cannot be offered. legalCubeWindow
+                        // NOT_AVAILABLE: cube cannot be offered. Engine.canDouble()
                         // earlier in this function should have caught this; if
                         // we got here, that gating is wrong.
                         android.util.Log.e(
                             "gnubg-vm",
-                            "offerDouble: cd=$cdEnum has no action; legalCubeWindow gating failed?"
+                            "offerDouble: cd=$cdEnum has no action; Engine.canDouble() gating failed?"
                         )
                         readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
                     }
