@@ -327,32 +327,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
 
-            // Collect the dice gnubg itself authored for this src. Every legal
-            // move (state.legalMoves = GenerateMoves, fPartial=0) encodes its
-            // sub-moves as [src,dest, src,dest, ...] pairs across slots 0..3.
-            // A sub-move from src may sit in ANY slot (gnubg stores one
-            // dedup ordering per final position), so scan all four. The die
-            // is src-dest, taken from gnubgs own encoding -- never guessed.
-            val nLegal = state.legalMoves.size / 8
-            val candidateDice = LinkedHashSet<Int>()
-            for (i in 0 until nLegal) {
-                for (j in 0..3) {
-                    val sSlot = state.legalMoves[i * 8 + j * 2]
-                    val dSlot = state.legalMoves[i * 8 + j * 2 + 1]
-                    if (sSlot == src && dSlot >= 0) candidateDice.add(sSlot - dSlot)
-                }
-            }
-            if (candidateDice.isEmpty()) return@launch
-
-            // Try dice in remainingDice order so a dice swap actually changes
-            // which die plays first. Only dice gnubg authored for src
-            // (candidateDice) are eligible; the engine then has final say via
-            // applySubMove (facade LegalMove gate, engine-core/eval.c seam).
-            // distinct() collapses the doubles list [d,d,d,d] to one trial.
+            // Apply one sub-move that gnubg LegalMove accepts from src. Iterate
+            // the actual remaining dice in order (so a swap changes which die is
+            // tried first); Engine.applySubMove routes through the facade
+            // gnubg_legal_sub_move -> LegalMove (eval.c:2732), gnubgs authority
+            // for both in-board legality (Chris rule) and bear-off (all home +
+            // exact/highest die). No die is derived in Kotlin; the engine accepts
+            // or rejects each (src, die). Bear-off needs no special case: its
+            // legality is entirely inside LegalMove.
+            //
+            // The must-use-both / maximization rule is a property of the COMPLETE
+            // turn, enforced by confirm() via Engine.findMove (GenerateMoves +
+            // cMaxMoves/cMaxPips match). A tap sequence that cannot complete to a
+            // maximal legal move is rejected at confirm() and the player undoes --
+            // exactly as gnubgs own board UI behaves. It is NOT reimplemented here.
             var newBoard = IntArray(0)
             var usedDie  = -1
             for (d in state.remainingDice.distinct()) {
-                if (d !in candidateDice) continue
                 val b = Engine.applySubMove(state.board, src, d)
                 if (b.isNotEmpty()) { newBoard = b; usedDie = d; break }
             }
