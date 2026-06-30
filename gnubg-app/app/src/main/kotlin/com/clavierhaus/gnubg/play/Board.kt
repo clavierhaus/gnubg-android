@@ -196,11 +196,12 @@ fun BackgammonBoard(
                 // Detailed cube legality remains in GameViewModel/GNUbg.
                 val cubeSzU = BAR_W * 0.75f
                 val cubeGapU = cubeSzU * 0.18f
-                val upperPipCounterY = BRD_H + 9f
-                val lowerPipCounterY = TOT_H - BRD_H - 9f
+                // Owned cube sits exactly one cube-height (+gap) from the centred
+                // 64 position, NOT anchored to the pip counters -- that kept it
+                // clear of the bar ends where on-bar checkers stack.
                 val cubeCYU = when (gameState.cubeOwner) {
-                    1 -> upperPipCounterY + cubeSzU + cubeGapU
-                    0 -> lowerPipCounterY - cubeSzU - cubeGapU
+                    1 -> TOT_H / 2f - cubeSzU - cubeGapU
+                    0 -> TOT_H / 2f + cubeSzU + cubeGapU
                     else -> TOT_H / 2f
                 }
                 val cubeHit =
@@ -400,18 +401,17 @@ fun BackgammonBoard(
             }
 
             // Cube drawn after bar checkers.
-            // Position is bar-relative:
-            // - centred cube: middle of the bar, display 64
-            // - human-owned cube: below the upper pip counter
-            // - engine-owned cube: above the lower pip counter
+            // Position is centre-relative (clears bar checkers):
+            // - centred cube (no owner): middle of the bar, display 64
+            // - engine-owned cube: one cube-height above centre
+            // - human-owned cube: one cube-height below centre
             val cubeSzU = BAR_W * 0.75f
             val cubeGapU = cubeSzU * 0.18f
             val cubeCXU = MID_X
-            val upperPipCounterY = BRD_H + 9f
-            val lowerPipCounterY = TOT_H - BRD_H - 9f
+            // Must match the hit-test cubeCYU above exactly.
             val cubeCYU = when (gameState.cubeOwner) {
-                1 -> upperPipCounterY + cubeSzU + cubeGapU
-                0 -> lowerPipCounterY - cubeSzU - cubeGapU
+                1 -> TOT_H / 2f - cubeSzU - cubeGapU
+                0 -> TOT_H / 2f + cubeSzU + cubeGapU
                 else -> TOT_H / 2f
             }
             val cubeBarCX = ux(cubeCXU)
