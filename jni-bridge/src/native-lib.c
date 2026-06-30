@@ -653,19 +653,24 @@ Java_com_clavierhaus_gnubg_Engine_cubeDecision(JNIEnv *env, jobject thiz,
     jint inBuf[50];
     (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
     int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
-    float out[14] = {0};
+    float out[18] = {0};
     int decision = 0;
-    if (gnubg_mobile_cube_decision(in, out, 14, &decision) < 0)
+    if (gnubg_mobile_cube_decision(in, out, 18, &decision) < 0)
         return NULL;
-    jintArray result = (*env)->NewIntArray(env, 16);
-    jint buf[16];
+    jintArray result = (*env)->NewIntArray(env, 20);
+    jint buf[20];
     for (int i = 0; i < 7; i++) {
         int bits;
         memcpy(&bits, &out[i],     sizeof(int)); buf[i]     = bits;
         memcpy(&bits, &out[7 + i], sizeof(int)); buf[7 + i] = bits;
     }
-    buf[14] = (jint)decision; buf[15] = 0;
-    (*env)->SetIntArrayRegion(env, result, 0, 16, buf);
+    /* arDouble[0..3] (OPTIMAL, NODOUBLE, TAKE, DROP) at indices 14..17 */
+    for (int i = 0; i < 4; i++) {
+        int bits;
+        memcpy(&bits, &out[14 + i], sizeof(int)); buf[14 + i] = bits;
+    }
+    buf[18] = (jint)decision; buf[19] = 0;
+    (*env)->SetIntArrayRegion(env, result, 0, 20, buf);
     return result;
 }
 

@@ -528,7 +528,36 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                val decision = if (cd.size >= 15) cd[14] else cd[0]
+                /* Layout (cd.size == 20):
+                 *   cd[0..6]   = aarOutput[0][0..6] float-bits (primary eval)
+                 *   cd[7..13]  = aarOutput[1][0..6] float-bits (secondary eval)
+                 *   cd[14..17] = arDouble[OPTIMAL,NODOUBLE,TAKE,DROP] float-bits
+                 *   cd[18]     = cubedecision enum ordinal
+                 *   cd[19]     = reserved */
+                val decision = when {
+                    cd.size >= 19 -> cd[18]
+                    cd.size >= 15 -> cd[14]
+                    else          -> cd[0]
+                }
+                if (cd.size >= 18) {
+                    val win   = Float.fromBits(cd[0])
+                    val wg    = Float.fromBits(cd[1])
+                    val wbg   = Float.fromBits(cd[2])
+                    val lg    = Float.fromBits(cd[3])
+                    val lbg   = Float.fromBits(cd[4])
+                    val eqLess = Float.fromBits(cd[5])
+                    val eqFul  = Float.fromBits(cd[6])
+                    val optEq  = Float.fromBits(cd[14])
+                    val noDbl  = Float.fromBits(cd[15])
+                    val take   = Float.fromBits(cd[16])
+                    val drop   = Float.fromBits(cd[17])
+                    android.util.Log.i("gnubg-cube",
+                        "probs: win=%.4f wg=%.4f wbg=%.4f lg=%.4f lbg=%.4f eq_cubeless=%.4f eq_cubeful=%.4f"
+                            .format(win, wg, wbg, lg, lbg, eqLess, eqFul))
+                    android.util.Log.i("gnubg-cube",
+                        "arDouble: optimal=%.4f nodouble=%.4f take=%.4f drop=%.4f | nodbl-take=%+.4f take-drop=%+.4f"
+                            .format(optEq, noDbl, take, drop, noDbl - take, take - drop))
+                }
                 android.util.Log.i(
                     "gnubg-vm",
                     "offerDouble: cubeDecision enum=$decision rawSize=${cd.size} raw0=${cd[0]}"

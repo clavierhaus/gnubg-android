@@ -758,7 +758,7 @@ int gnubg_mobile_cube_decision(const int board[50],
     float arDouble[4];
     cubedecision cd;
     int rc, i;
-    if (out_cap < 14) return -1;
+    if (out_cap < 18) return -1;
     facade_unpack_board(board, anBoard);
     pthread_mutex_lock(&gnubg_lock);
     GetMatchStateCubeInfo(&ci, &ms);
@@ -782,8 +782,12 @@ int gnubg_mobile_cube_decision(const int board[50],
     cd = FindCubeDecision(arDouble, aarOutput, &ci);
     pthread_mutex_unlock(&gnubg_lock);
     for (i = 0; i < 7; i++) { out[i] = aarOutput[0][i]; out[7 + i] = aarOutput[1][i]; }
+    /* arDouble[0..3]: OPTIMAL, NODOUBLE, TAKE, DROP -- see engine-core/eval.h:56-59.
+     * gnubgs cubeful equity comparisons; FindCubeDecision uses them to classify
+     * the cube action. Exposing for offerDouble logging + future cube tutor. */
+    for (i = 0; i < 4; i++) out[14 + i] = arDouble[i];
     if (out_decision) *out_decision = (int) cd;
-    return 14;
+    return 18;
 }
 
 int gnubg_mobile_rollout(const int board[50], int trials,
