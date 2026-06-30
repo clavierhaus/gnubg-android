@@ -330,12 +330,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (candidateDice.isEmpty()) return@launch
 
-            // Let the engine decide which candidate is legal on the CURRENT
-            // board: applySubMove routes through the facade LegalMove gate
-            // (engine-core/eval.c seam). First die the engine accepts wins.
+            // Try dice in remainingDice order so a dice swap actually changes
+            // which die plays first. Only dice gnubg authored for src
+            // (candidateDice) are eligible; the engine then has final say via
+            // applySubMove (facade LegalMove gate, engine-core/eval.c seam).
+            // distinct() collapses the doubles list [d,d,d,d] to one trial.
             var newBoard = IntArray(0)
             var usedDie  = -1
-            for (d in candidateDice) {
+            for (d in state.remainingDice.distinct()) {
+                if (d !in candidateDice) continue
                 val b = Engine.applySubMove(state.board, src, d)
                 if (b.isNotEmpty()) { newBoard = b; usedDie = d; break }
             }
