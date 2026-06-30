@@ -30,6 +30,10 @@ object Engine {
     /** Set engine chequer-play strength to a gnubg preset.
      *  idx: 0=Beginner, 1=Casual play, 2=Intermediate, 3=Advanced. */
     external fun setEngineStrength(idx: Int)
+    external fun setAutoCrawford(on: Boolean)
+    external fun setJacoby(on: Boolean)
+    external fun setAutoDoubles(n: Int)
+    external fun setBeavers(n: Int)
 
     /**
      * Return ranked move candidates with cubeless 1-ply equity.

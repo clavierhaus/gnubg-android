@@ -498,6 +498,30 @@ Java_com_clavierhaus_gnubg_Engine_setEngineStrength(JNIEnv *env, jobject thiz, j
     gnubg_mobile_set_engine_strength((int)idx);
 }
 
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setAutoCrawford(JNIEnv *env, jobject thiz, jboolean on) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_auto_crawford(on ? 1 : 0);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setJacoby(JNIEnv *env, jobject thiz, jboolean on) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_jacoby(on ? 1 : 0);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setAutoDoubles(JNIEnv *env, jobject thiz, jint n) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_auto_doubles((int)n);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setBeavers(JNIEnv *env, jobject thiz, jint n) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_beavers((int)n);
+}
+
 /*
  * Engine.tutorAnalyze(oldBoard): IntArray
  * Wraps gnubg_mobile_tutor_analyze. Call AFTER applyMoveString.

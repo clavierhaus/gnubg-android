@@ -37,6 +37,10 @@ extern void CommandDecline(char *);
 extern void CommandAgree(char *);
 extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
+extern void CommandSetAutoCrawford(char *);  /* set.c -- safe global toggle (fAutoCrawford) */
+extern void CommandSetJacoby(char *);        /* set.c -- safe global toggle (fJacoby/ms.fJacoby) */
+extern void CommandSetAutoDoubles(char *);   /* set.c -- safe global (cAutoDoubles) */
+extern void CommandSetBeavers(char *);       /* set.c -- safe global (nBeavers) */
 extern int  gnubg_can_double(void);
 extern void gnubg_set_suppress_auto_forfeit(int);
 extern void InitMatchEquity(const char *szFileName);
@@ -90,6 +94,45 @@ int gnubg_mobile_command_new_match(int match_length) {
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 
+    return 1;
+}
+
+/* Tournament rule toggles. These wrap gnubgs own safe CommandSet* commands
+ * (set.c), which are pure global-state toggles with no match-state assertions.
+ * IMPORTANT: Crawford is auto-managed by gnubg per game (play.c:864 sets
+ * ms.fCrawford from score when fAutoCrawford && nMatchTo). The user-facing
+ * Crawford rule is therefore fAutoCrawford via CommandSetAutoCrawford -- NOT
+ * CommandSetCrawford, which is an in-match per-game command that asserts a
+ * player is 1-away and crashes when called as a settings toggle. */
+int gnubg_mobile_set_auto_crawford(int on) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSetAutoCrawford(on ? (char *) "on" : (char *) "off");
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+int gnubg_mobile_set_jacoby(int on) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSetJacoby(on ? (char *) "on" : (char *) "off");
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+int gnubg_mobile_set_auto_doubles(int n) {
+    char sz[16];
+    snprintf(sz, sizeof(sz), "%d", n);
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSetAutoDoubles(sz);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+int gnubg_mobile_set_beavers(int n) {
+    char sz[16];
+    snprintf(sz, sizeof(sz), "%d", n);
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSetBeavers(sz);
+    pthread_mutex_unlock(&gnubg_lock);
     return 1;
 }
 
@@ -863,6 +906,11 @@ int gnubg_mobile_initialise(const char *weights_path) {
     ms.nMatchTo = 1;
     ms.fJacoby  = FALSE;
     fAutoRoll   = FALSE;   /* human rolls manually via UI */
+    fAutoCrawford = TRUE;  /* gnubg default: auto-manage Crawford game per match
+                            * score (play.c:864). Without this, match play never
+                            * flags the Crawford game and the cube AI evaluates
+                            * under wrong match rules. UI toggles via
+                            * gnubg_mobile_set_auto_crawford. */
 
     pthread_mutex_unlock(&gnubg_lock);
     return 1;

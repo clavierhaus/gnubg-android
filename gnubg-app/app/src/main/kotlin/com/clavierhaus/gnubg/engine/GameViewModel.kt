@@ -46,6 +46,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // Apply the default engine strength (gnubg preset) before any game,
             // so the first move uses it rather than the hardcoded 2-ply setup.
             Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
+            // Push saved tournament rule preferences into the engine globals so
+            // the first match honors them. These are safe global toggles
+            // (set.c); the engine decides applicability per game/match.
+            val s = _settings.value
+            Engine.setAutoCrawford(s.crawford)
+            Engine.setJacoby(s.jacoby)
+            Engine.setAutoDoubles(s.automaticDoubles)
+            Engine.setBeavers(if (s.beavers) 3 else 0)
             _engineReady.value = true
         }
     }
@@ -861,21 +869,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _settings.value = _settings.value.copy(matchLength = n)
     }
     fun setCrawford(on: Boolean) {
-        // Local-only until GNUbg Crawford/default-match timing is verified.
-        // Smoke-test showed that command-backed Crawford can crash from Settings.
+        // Crawford is auto-managed by gnubg per game from the match score
+        // (play.c:864). The user rule is fAutoCrawford, toggled via the SAFE
+        // CommandSetAutoCrawford -- never CommandSetCrawford (the in-match
+        // per-game command that asserts a player is 1-away and crashed when
+        // called from Settings). Set on the engine thread; rule state only.
         _settings.value = _settings.value.copy(crawford = on)
+        viewModelScope.launch(engineThread) { Engine.setAutoCrawford(on) }
     }
     fun setJacoby(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(jacoby = on)
+        viewModelScope.launch(engineThread) { Engine.setJacoby(on) }
     }
     fun setAutomaticDoubles(n: Int) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
         _settings.value = _settings.value.copy(automaticDoubles = n)
+        viewModelScope.launch(engineThread) { Engine.setAutoDoubles(n) }
     }
     fun setBeavers(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
+        // gnubg stores a beaver COUNT (nBeavers). The UI toggle maps on->3
+        // (gnubgs standard allowance) / off->0, mirroring set.c:4690.
         _settings.value = _settings.value.copy(beavers = on)
+        viewModelScope.launch(engineThread) { Engine.setBeavers(if (on) 3 else 0) }
     }
     fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)

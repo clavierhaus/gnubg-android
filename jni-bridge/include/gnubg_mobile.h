@@ -20,6 +20,10 @@ const char *gnubg_mobile_facade_version(void);
 
 int gnubg_mobile_command_new_game(void);
 int gnubg_mobile_command_new_match(int match_length);
+int gnubg_mobile_set_auto_crawford(int on);
+int gnubg_mobile_set_jacoby(int on);
+int gnubg_mobile_set_auto_doubles(int n);
+int gnubg_mobile_set_beavers(int n);
 int gnubg_mobile_command_new_session(int games);
 int gnubg_mobile_command_end_game(void);
 int gnubg_mobile_command_resign(const char *value);
