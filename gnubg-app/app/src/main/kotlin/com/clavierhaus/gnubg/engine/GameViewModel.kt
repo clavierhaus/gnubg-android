@@ -313,26 +313,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
 
-            // Mirror gnubg GenerateMovesSub (eval.c:2787): iterate the
-            // legal-move list, stop at the first entry whose leading
-            // sub-move source matches the tap. If the iteration exits
-            // without a match, gnubg lists no legal play from src and
-            // the tap is a no-op.
+            // Collect the dice gnubg itself authored for this src. Every legal
+            // move (state.legalMoves = GenerateMoves, fPartial=0) encodes its
+            // sub-moves as [src,dest, src,dest, ...] pairs across slots 0..3.
+            // A sub-move from src may sit in ANY slot (gnubg stores one
+            // dedup ordering per final position), so scan all four. The die
+            // is src-dest, taken from gnubgs own encoding -- never guessed.
             val nLegal = state.legalMoves.size / 8
-            var matchIdx = -1
+            val candidateDice = LinkedHashSet<Int>()
             for (i in 0 until nLegal) {
-                if (state.legalMoves[i * 8] == src) { matchIdx = i; break }
+                for (j in 0..3) {
+                    val sSlot = state.legalMoves[i * 8 + j * 2]
+                    val dSlot = state.legalMoves[i * 8 + j * 2 + 1]
+                    if (sSlot == src && dSlot >= 0) candidateDice.add(sSlot - dSlot)
+                }
             }
-            if (matchIdx < 0) return@launch
+            if (candidateDice.isEmpty()) return@launch
 
-            val die0 = state.remainingDice[0]
-            val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
-
-            var newBoard = Engine.applySubMove(state.board, src, die0)
-            var usedDie  = die0
-            if (newBoard.isEmpty() && die1 > 0) {
-                newBoard = Engine.applySubMove(state.board, src, die1)
-                usedDie  = die1
+            // Let the engine decide which candidate is legal on the CURRENT
+            // board: applySubMove routes through the facade LegalMove gate
+            // (engine-core/eval.c seam). First die the engine accepts wins.
+            var newBoard = IntArray(0)
+            var usedDie  = -1
+            for (d in candidateDice) {
+                val b = Engine.applySubMove(state.board, src, d)
+                if (b.isNotEmpty()) { newBoard = b; usedDie = d; break }
             }
             if (newBoard.isEmpty()) return@launch
 
