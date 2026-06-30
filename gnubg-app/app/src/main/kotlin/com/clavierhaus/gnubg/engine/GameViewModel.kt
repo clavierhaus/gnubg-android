@@ -405,6 +405,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    /* Pass turn when human cannot move. The engine seam
+     * gnubg_set_suppress_auto_dance defers gnubgs built-in dance auto-play;
+     * Engine.applyMoveString with empty string makes CommandMove see
+     * GenerateMoves == 0, add a no-move record, and call TurnDone. */
+    fun passTurn() {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        if (state.legalMoves.isNotEmpty()) return
+        if (!state.board.contentEquals(state.oldBoard)) return
+        viewModelScope.launch(engineThread) {
+            if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
+            Engine.applyMoveString("")
+            readMatchState()
+        }
+    }
+
     fun confirm() {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return

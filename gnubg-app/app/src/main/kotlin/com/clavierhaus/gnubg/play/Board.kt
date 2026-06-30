@@ -243,15 +243,24 @@ fun BackgammonBoard(
                     viewModel.swapDice()
                     return@detectTapGestures
                 }
+                val tapCannotMove = gameState.phase == GamePhase.HUMAN_MOVING &&
+                    gameState.legalMoves.isEmpty() &&
+                    gameState.board.contentEquals(gameState.oldBoard)
+                if (tapCannotMove &&
+                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
+                    x >= undoLeft && x <= RIGHT_X) {
+                    viewModel.passTurn()
+                    return@detectTapGestures
+                }
                 // Tap Undo button (board units) -- lower half of tray gap
-                if (gameState.phase == GamePhase.HUMAN_MOVING &&
+                if (gameState.phase == GamePhase.HUMAN_MOVING && !tapCannotMove &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft && x <= undoLeft + DIE_W) {
                     viewModel.undo()
                     return@detectTapGestures
                 }
                 // Tap Commit button (board units) -- lower half of tray gap
-                if (gameState.phase == GamePhase.HUMAN_MOVING &&
+                if (gameState.phase == GamePhase.HUMAN_MOVING && !tapCannotMove &&
                     y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
                     x >= undoLeft + DIE_W + diceGap && x <= RIGHT_X) {
                     viewModel.confirm()
@@ -486,12 +495,14 @@ fun BackgammonBoard(
                 val gap = ux(PT_W * 0.15f)
                 val boardCentreY = uy(TOT_H / 2f)
 
+                val diceDimmed = gameState.phase == GamePhase.HUMAN_MOVING && gameState.legalMoves.isEmpty() && gameState.board.contentEquals(gameState.oldBoard)
                 if (gameState.turn == 0) {
                     val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
                     val startX = ux(MID_X + BAR_W / 2f + HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
                         val isUsed = usedMask.getOrElse(i) { false }
-                        val dieColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
+                        val baseColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
+                        val dieColor = if (diceDimmed) baseColor.copy(alpha = 0.4f) else baseColor
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, p.dicePip, p.frame)
                     }
@@ -557,8 +568,11 @@ fun BackgammonBoard(
                 }
             }
 
-            // 8. Undo/Commit buttons drawn on canvas -- same coordinate system as dice
-            if (gameState.phase == GamePhase.HUMAN_MOVING) {
+            // 8. Undo/Commit / Continue buttons drawn on canvas
+            val drawCannotMove = gameState.phase == GamePhase.HUMAN_MOVING &&
+                gameState.legalMoves.isEmpty() &&
+                gameState.board.contentEquals(gameState.oldBoard)
+            if (gameState.phase == GamePhase.HUMAN_MOVING && !drawCannotMove) {
                 val diceGap  = ux(PT_W * 0.15f)
                 val dw       = ux(DIE_W)
                 val bw       = dw * 2f                              // buttons twice die width
@@ -607,6 +621,41 @@ fun BackgammonBoard(
                     val textY = btnY + btnH / 2f - (btnPaint.descent() + btnPaint.ascent()) / 2f
                     canvas.nativeCanvas.drawText("Undo", undoLeft + btnW / 2f, textY, btnPaint)
                     canvas.nativeCanvas.drawText("Commit", cx + btnW / 2f, textY, btnPaint)
+                }
+            }
+
+            if (drawCannotMove) {
+                val diceGap  = ux(PT_W * 0.15f)
+                val dw       = ux(DIE_W)
+                val bw       = dw * 2f
+                val gapCX    = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
+                val contLeft = gapCX - diceGap * 0.5f - bw
+                val contW    = diceGap + 2f * bw
+                val btnY     = uy(TOT_H / 2f) + diceGap * 0.5f
+                val btnH     = uy(DIE_W)
+                val corner   = bw * 0.15f
+                val contPath = Path().apply {
+                    moveTo(contLeft + corner, btnY)
+                    lineTo(contLeft + contW - corner, btnY)
+                    quadraticTo(contLeft + contW, btnY, contLeft + contW, btnY + corner)
+                    lineTo(contLeft + contW, btnY + btnH - corner)
+                    quadraticTo(contLeft + contW, btnY + btnH, contLeft + contW - corner, btnY + btnH)
+                    lineTo(contLeft + corner, btnY + btnH)
+                    quadraticTo(contLeft, btnY + btnH, contLeft, btnY + btnH - corner)
+                    lineTo(contLeft, btnY + corner)
+                    quadraticTo(contLeft, btnY, contLeft + corner, btnY)
+                    close()
+                }
+                drawPath(contPath, Color(0xFF2E7D32))
+                drawIntoCanvas { canvas ->
+                    val btnPaint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = btnH * 0.45f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isAntiAlias = true; isFakeBoldText = true
+                    }
+                    val textY = btnY + btnH / 2f - (btnPaint.descent() + btnPaint.ascent()) / 2f
+                    canvas.nativeCanvas.drawText("Continue", contLeft + contW / 2f, textY, btnPaint)
                 }
             }
 

@@ -37,7 +37,8 @@ extern void CommandDecline(char *);
 extern void CommandAgree(char *);
 extern void CommandRedouble(char *);
 extern void CommandDouble(char *);
-extern int  gnubg_can_double(void);   /* seam in engine-core/play.c -- see PROVENANCE */
+extern int  gnubg_can_double(void);
+extern void gnubg_set_suppress_auto_dance(int);   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
 extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
@@ -819,6 +820,9 @@ int gnubg_mobile_rollout(const int board[50], int trials,
  * =========================================================================== */
 int gnubg_mobile_initialise(const char *weights_path) {
     pthread_mutex_lock(&gnubg_lock);
+
+    /* Defer human bar-dance to the UI Continue tap (PROVENANCE Seam 3). */
+    gnubg_set_suppress_auto_dance(TRUE);
 
     EvalInitialise((char *) weights_path, NULL, 0, NULL);
 
