@@ -312,6 +312,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             val src  = if (humanOnBar > 0 || point == 0) 24 else point - 1
+
+            // Pre-gate against gnubgs legal-move list (state.legalMoves is
+            // the GenerateMoves output for state.remainingDice). The first
+            // sub-move slot of each entry encodes the next legal sub-move
+            // from the current board. If no entry begins with the tapped
+            // src, gnubg has no legal play starting there and the tap is
+            // a no-op. Restores the pre-02c4e8d gate dropped by the v0.9.5
+            // commit/undo refactor. The facade gnubg_legal_sub_move check
+            // is defense in depth; this scan is the primary gate. See
+            // MASTER_V0.9.md Phase 11.2 for the ApplySubMove contract.
+            val nLegal = state.legalMoves.size / 8
+            var srcHasLegalSubMove = false
+            for (i in 0 until nLegal) {
+                if (state.legalMoves[i * 8] == src) { srcHasLegalSubMove = true; break }
+            }
+            if (!srcHasLegalSubMove) return@launch
+
             val die0 = state.remainingDice[0]
             val die1 = if (state.remainingDice.size > 1) state.remainingDice[1] else -1
 
