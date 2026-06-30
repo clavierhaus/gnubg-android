@@ -126,8 +126,11 @@ Java_com_clavierhaus_gnubg_Engine_getMoveRecordDice(JNIEnv *env, jobject thiz) {
 }
 
 void gnubg_on_board_changed(void) {
-    /* Cache engine dice when engine rolls -- ms.anDice cleared by TurnDone after move */
-    if (ms.fTurn == 1 && ms.anDice[0] > 0) {
+    /* Display-layer cache: copy ms.anDice before TurnDone clears it, so the
+     * UI can show what gnubg just rolled. Never written back into ms.anDice
+     * (traced in audit V7). Player-type check replaces previous hardcoded
+     * fTurn==1 -- mirrors gnubg pattern at play.c:1316. */
+    if (ap[ms.fTurn].pt != PLAYER_HUMAN && ms.anDice[0] > 0) {
         last_engine_dice[0] = ms.anDice[0];
         last_engine_dice[1] = ms.anDice[1];
         LOGI("cached engine dice: %d,%d", last_engine_dice[0], last_engine_dice[1]);

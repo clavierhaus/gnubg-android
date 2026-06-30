@@ -301,7 +301,7 @@ The audit enumerated seven concrete violations in the facade and Kotlin:
   (`ms.nMatchTo && (ms.anScore[0] >= ms.nMatchTo || ms.anScore[1] >=
   ms.nMatchTo)`) but invented in form.
 
-- **V7 (pending trace).** `last_engine_dice[2]` cache in
+- **V7 (FIXED, V0.9.x).** `last_engine_dice[2]` cache in
   `jni-bridge/src/native-lib.c:21`. Marshalling-layer cache; trace pending to
   confirm it does not override `ms.anDice` anywhere.
 
