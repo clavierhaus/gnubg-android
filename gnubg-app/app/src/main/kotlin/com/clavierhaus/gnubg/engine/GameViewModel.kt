@@ -84,6 +84,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val fDoubled  = cubeInfo[0] == 1
         val cubeOwner = cubeInfo[1]
         val cubeValue = cubeInfo[2]
+        // Engine is the sole authority on cube tappability (gnubg_can_double,
+        // play.c:2397 preconditions: Crawford, cube use, ownership, dead cube,
+        // match-value cap). The UI reads this rather than reimplementing any
+        // subset of the rule.
+        val canDouble = Engine.canDouble()
         val turn      = Engine.getMatchTurn()
         val rawBoard  = Engine.getMatchBoard()
         // Swap when the engine is the current MOVER (fMove=1), not just when fTurn=1.
@@ -120,7 +125,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             engineScore    = score[1],
             cubeValue      = cubeValue,
             cubeOwner      = cubeOwner,
-            fDoubled       = fDoubled
+            fDoubled       = fDoubled,
+            canDouble      = canDouble
         )
     }
 

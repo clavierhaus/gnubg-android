@@ -25,6 +25,7 @@ data class BoardState(
     val cubeValue: Int = 1,
     val cubeOwner: Int = -1,   // -1=centred, 0=human, 1=engine
     val fDoubled: Boolean = false,
+    val canDouble: Boolean = false,  // engine authority (gnubg_can_double); UI cube tappability
     val pipCountHuman: Int = 167,
     val pipCountEngine: Int = 167,
     val phase: GamePhase = GamePhase.WAITING_FOR_ROLL,
@@ -46,6 +47,7 @@ data class BoardState(
                cubeValue == other.cubeValue &&
                cubeOwner == other.cubeOwner &&
                fDoubled == other.fDoubled &&
+               canDouble == other.canDouble &&
                pipCountHuman == other.pipCountHuman &&
                pipCountEngine == other.pipCountEngine &&
                phase == other.phase &&
@@ -62,6 +64,7 @@ data class BoardState(
         result = 31 * result + cubeValue
         result = 31 * result + cubeOwner
         result = 31 * result + fDoubled.hashCode()
+        result = 31 * result + canDouble.hashCode()
         result = 31 * result + pipCountHuman
         result = 31 * result + pipCountEngine
         result = 31 * result + phase.hashCode()

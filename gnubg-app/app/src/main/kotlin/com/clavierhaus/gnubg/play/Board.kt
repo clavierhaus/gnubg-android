@@ -208,10 +208,10 @@ fun BackgammonBoard(
                     y >= cubeCYU - cubeSzU / 2f && y <= cubeCYU + cubeSzU / 2f
 
                 if (cubeHit) {
-                    val uiAllowsDouble =
-                        gameState.phase == GamePhase.WAITING_FOR_ROLL &&
-                        gameState.turn == 0 &&
-                        !gameState.fDoubled
+                    // Engine is the sole authority (gnubg_can_double). The UI no
+                    // longer reimplements any subset of the cube rule; it reads
+                    // the flag computed on the engine thread in readMatchState.
+                    val uiAllowsDouble = gameState.canDouble
 
                     Log.i(
                         "gnubg-vm",
