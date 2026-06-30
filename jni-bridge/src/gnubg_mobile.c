@@ -423,6 +423,18 @@ int gnubg_mobile_apply_sub_move(const int in_board[50], int i_src, int n_roll,
     int rc;
     facade_unpack_board(in_board, anBoard);
     pthread_mutex_lock(&gnubg_lock);
+    /* Gate on LegalMove (eval.c:2732) before ApplySubMove. ApplySubMoves
+     * own fCheckLegal arg only validates basic sanity (source non-empty,
+     * destination not blocked by opponent); the all-chequers-in-home rule
+     * for bear-off lives in LegalMove and is NOT applied by ApplySubMove.
+     * Routing through LegalMove first makes the facade reject illegal
+     * sub-moves at source -- the UI then sees an empty IntArray return
+     * (via the JNI wrapper) and leaves the board untouched, without
+     * reinventing the bear-off rule in Kotlin. */
+    if (!LegalMove((ConstTanBoard) anBoard, i_src, n_roll)) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
     rc = ApplySubMove(anBoard, i_src, n_roll, TRUE);
     pthread_mutex_unlock(&gnubg_lock);
     facade_pack_board((ConstTanBoard) anBoard, out_board);
