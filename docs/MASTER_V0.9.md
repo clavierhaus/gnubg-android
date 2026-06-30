@@ -295,7 +295,7 @@ The audit enumerated seven concrete violations in the facade and Kotlin:
   cube-ownership only, while `CommandDouble` carries the full eleven-check
   precondition list.
 
-- **V6 (minor).** `gnubg_mobile_get_match_winner` (`gnubg_mobile.c:373`)
+- **V6 (FIXED, V0.9.x).** `gnubg_mobile_get_match_winner` (`gnubg_mobile.c:373`)
   compares `ms.anScore[0]` and `ms.anScore[1]` directly without gating on
   `ms.nMatchTo`. Behaviourally equivalent to gnubg's pattern at `play.c:2797`
   (`ms.nMatchTo && (ms.anScore[0] >= ms.nMatchTo || ms.anScore[1] >=

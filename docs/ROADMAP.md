@@ -94,7 +94,7 @@ tracked in `MASTER_V0.9.md` Phase 11.1.
   legality; replaced with `Engine.canDouble()` routing through engine
   seam `gnubg_can_double` (mirrors `CommandDouble` preconditions). See
   `MASTER_V0.9.md` Phase 11.1 and PROVENANCE Seam 2.
-- **V6, V7.** Minor cleanups still pending: V6 = match-winner pattern
+- **V6 (FIXED V0.9.x).** match-winner mirrors gnubg pattern; V7 still pending: V6 = match-winner pattern
   (`gnubg_mobile_get_match_winner` adopts gnubg's `nMatchTo` gate); V7 =
   trace the `last_engine_dice` cache lifecycle.
 - **Polish (FIXED V0.9.x).** Removed dead `fac_ec_default` / `fac_ci_default`

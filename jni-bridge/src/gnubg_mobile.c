@@ -385,10 +385,14 @@ int gnubg_mobile_get_match_score(int out_score[3]) {
 int gnubg_mobile_get_match_winner(void) {
     int w;
     pthread_mutex_lock(&gnubg_lock);
-    if (ms.gs < GAME_OVER)                  w = -1;
-    else if (ms.anScore[0] > ms.anScore[1]) w = 0;
-    else if (ms.anScore[1] > ms.anScore[0]) w = 1;
-    else                                    w = -1;
+    /* gnubg pattern at engine-core/play.c:2816 -- gate on nMatchTo, then
+     * check which score crossed it. ms.gs is GAME state not MATCH state;
+     * the previous gate could return a false-positive winner between
+     * games of a multi-game match. */
+    if (!ms.nMatchTo)                            w = -1;
+    else if (ms.anScore[0] >= ms.nMatchTo)       w = 0;
+    else if (ms.anScore[1] >= ms.nMatchTo)       w = 1;
+    else                                         w = -1;
     pthread_mutex_unlock(&gnubg_lock);
     return w;
 }
