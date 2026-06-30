@@ -551,9 +551,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     val noDbl  = Float.fromBits(cd[15])
                     val take   = Float.fromBits(cd[16])
                     val drop   = Float.fromBits(cd[17])
+                    val winT   = Float.fromBits(cd[7])
+                    val eqFulT = Float.fromBits(cd[13])
                     android.util.Log.i("gnubg-cube",
-                        "probs: win=%.4f wg=%.4f wbg=%.4f lg=%.4f lbg=%.4f eq_cubeless=%.4f eq_cubeful=%.4f"
+                        "probs[0]: win=%.4f wg=%.4f wbg=%.4f lg=%.4f lbg=%.4f eq_cubeless=%.4f eq_cubeful=%.4f"
                             .format(win, wg, wbg, lg, lbg, eqLess, eqFul))
+                    android.util.Log.i("gnubg-cube",
+                        "probs[1]: win=%.4f eq_cubeful=%.4f (take branch)"
+                            .format(winT, eqFulT))
                     android.util.Log.i("gnubg-cube",
                         "arDouble: optimal=%.4f nodouble=%.4f take=%.4f drop=%.4f | nodbl-take=%+.4f take-drop=%+.4f"
                             .format(optEq, noDbl, take, drop, noDbl - take, take - drop))
