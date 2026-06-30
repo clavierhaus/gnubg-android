@@ -418,7 +418,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString("")
-            readMatchState()
+            if (Engine.getMatchStatus() >= 2) {
+                Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
+                return@launch
+            }
+            val cubeInfo = Engine.getMatchCubeInfo()
+            if (cubeInfo[0] == 1 && Engine.getMatchTurn() == 0) {
+                readMatchState(phase = GamePhase.CUBE_OFFERED)
+                return@launch
+            }
+            val mrd = Engine.getMoveRecordDice()
+            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
+            readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
         }
     }
 
