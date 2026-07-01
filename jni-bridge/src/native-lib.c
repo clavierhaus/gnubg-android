@@ -593,6 +593,7 @@ Java_com_clavierhaus_gnubg_Engine_getMatchBoard(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+
 /* Board in a stable human (player-0) frame, orientation resolved atomically
  * under the engine lock. Use this for DISPLAY -- it never flips mid-game. */
 JNIEXPORT jintArray JNICALL

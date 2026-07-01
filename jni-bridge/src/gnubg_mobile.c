@@ -253,7 +253,13 @@ int gnubg_mobile_command_roll(void) {
 int gnubg_mobile_command_move(const char *move) {
     pthread_mutex_lock(&gnubg_lock);
     CommandMove((char *)(move ? move : ""));
-    NextTurn(TRUE);
+    /* Drain, exactly as every other turn-driving verb does. gnubgs contract is
+     * that NextTurn processes ONE transition per call and sets fNextTurn while
+     * work remains (play.c uses while (fNextTurn) NextTurn(TRUE)). A single
+     * NextTurn(TRUE) only flipped to the opponent and left the opponents turn
+     * pending -- so the engine never rolled/played and, at game end, the game
+     * was never scored. Draining completes the turn sequence like the desktop. */
+    gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 
     return 1;
@@ -351,6 +357,7 @@ int gnubg_mobile_get_board(int out_board[50]) {
     pthread_mutex_unlock(&gnubg_lock);
     return 50;
 }
+
 
 /* Board in a STABLE human (player-0) frame, computed atomically.
  *
