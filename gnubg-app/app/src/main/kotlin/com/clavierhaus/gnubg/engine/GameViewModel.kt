@@ -96,9 +96,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // the raw board (engine's coordinate frame) is used as-is, putting engine
         // checkers in board[25..49] and human checkers in board[0..24] -- the tray
         // then reads the engine's borne-off count as the human's.
-        val swapped   = turn == 1 || (fDoubled && turn == 0)
-        android.util.Log.i("gnubg-vm", "readMatchState phase=$phase turn=$turn fDoubled=$fDoubled cubeOwner=$cubeOwner cube=$cubeValue swapped=$swapped score=${score[0]}-${score[1]} gs=${Engine.getMatchStatus()}")
-        val board     = if (swapped) Engine.swapBoard(rawBoard) else rawBoard
+        val board     = if (turn == 1 || (fDoubled && turn == 0)) Engine.swapBoard(rawBoard) else rawBoard
         val pips      = Engine.pipCount(board)
         val dicePair: Pair<Int, Int>? = originalDice ?: when {
             remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])
