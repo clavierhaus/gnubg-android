@@ -96,7 +96,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (src < 0) break            // -1 source = move terminator
                 if (dest >= 0) {
                     playable.add(src - dest)  // in-board: die is exact
-                    work = Engine.applySubMove(work, src, src - dest).ifEmpty { work }
+                    val nb = Engine.applySubMove(work, src, src - dest)
+                    if (nb.isNotEmpty()) work = nb
                 } else {
                     // bear-off (dest clamped to -1): the die is whichever remaining
                     // value the engine accepts from this source on the working board.
@@ -111,7 +112,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     if (chosen >= 0) {
                         playable.add(chosen)
-                        work = Engine.applySubMove(work, src, chosen).ifEmpty { work }
+                        val nb = Engine.applySubMove(work, src, chosen)
+                        if (nb.isNotEmpty()) work = nb
                     }
                 }
                 if (playable.containsAll(distinct)) return emptySet()
