@@ -216,9 +216,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun newGame() {
         viewModelScope.launch(engineThread) {
-            val score = Engine.getMatchScore()
             val matchLength = Engine.getMatchLength()
-            if (score[0] >= matchLength || score[1] >= matchLength || matchLength <= 1) {
+            // Match-over is gnubg decision, not a UI score comparison.
+            // getMatchWinner() (facade mirrors play.c:2816) returns 0/1 once a
+            // player has reached nMatchTo, else -1. It returns -1 for a single
+            // game (nMatchTo <= 1), so that case is handled explicitly -- a
+            // 1-pointer has no next game, so we always return to setup.
+            val matchOver = Engine.getMatchWinner() >= 0 || matchLength <= 1
+            if (matchOver) {
                 _showMatchSetup.value = true
             } else {
                 startNewGame(isNewMatch = false)
