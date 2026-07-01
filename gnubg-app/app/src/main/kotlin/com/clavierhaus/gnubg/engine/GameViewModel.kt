@@ -75,7 +75,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         engineDice: Pair<Int, Int>? = null,
         winner: Int = -1,
         nPoints: Int = 1,
-        blockedDice: Set<Int> = emptySet(),
         moveHistory: List<MoveSnapshot> = emptyList()
     ) {
         val score       = Engine.getMatchScore()
@@ -120,7 +119,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             engineDice     = engineDice,
             winner         = winner,
             nPoints        = nPoints,
-            blockedDice    = blockedDice,
             humanScore     = score[0],
             engineScore    = score[1],
             cubeValue      = cubeValue,
@@ -128,16 +126,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             fDoubled       = fDoubled,
             canDouble      = canDouble
         )
-    }
-
-    private fun blockedDiceFor(moves: IntArray, d0: Int, d1: Int): Set<Int> {
-        if (d0 == d1) return emptySet()
-        val blocked = mutableSetOf<Int>()
-        val s0 = (0 until moves.size step 8).any { m ->
-            (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d0 } }
-        val s1 = (0 until moves.size step 8).any { m ->
-            (0 until 8 step 2).any { j -> moves[m+j] >= 0 && moves[m+j] - moves[m+j+1] == d1 } }
-        return blocked
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
@@ -153,8 +141,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 remainingDice = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1),
                 legalMoves    = allMoves,
                 oldBoard      = board,
-                originalDice  = Pair(d0, d1),
-                blockedDice   = blockedDiceFor(allMoves, d0, d1)
+                originalDice  = Pair(d0, d1)
             )
         } else {
             val ed = Engine.getMoveRecordDice()
@@ -192,15 +179,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val board    = Engine.getMatchBoard()
                 val remaining = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1)
                 val allMoves = Engine.getLegalMoves(board, d0, d1)
-                android.util.Log.i("gnubg-vm", "blocked check d0=$d0 d1=$d1 moves=${allMoves.size/8}")
+                android.util.Log.i("gnubg-vm", "rollDice legal d0=$d0 d1=$d1 moves=${allMoves.size/8}")
                 readMatchState(
                     phase         = GamePhase.HUMAN_MOVING,
                     remainingDice = remaining,
                     legalMoves    = allMoves,
                     oldBoard      = board,
                     originalDice  = Pair(d0, d1),
-                    engineDice    = null,
-                    blockedDice   = blockedDiceFor(allMoves, d0, d1)
+                    engineDice    = null
                 )
             } else {
                 if (Engine.getMatchStatus() >= 2)
@@ -280,15 +266,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val nextMoves = if (newRemaining.isNotEmpty()) rawNextMoves else IntArray(0)
         val pips = Engine.pipCount(newBoard)
 
-        val newBlocked = if (newRemaining.size >= 2)
-            blockedDiceFor(nextMoves, newRemaining[0], newRemaining[1])
-        else emptySet()
-
         val snapshot = MoveSnapshot(
             board = state.board.copyOf(),
             remainingDice = state.remainingDice,
             legalMoves = state.legalMoves.copyOf(),
-            blockedDice = state.blockedDice,
             pipCountHuman = state.pipCountHuman,
             pipCountEngine = state.pipCountEngine
         )
@@ -302,7 +283,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             board          = newBoard,
             remainingDice  = newRemaining,
             legalMoves     = nextMoves,
-            blockedDice    = newBlocked,
             pipCountHuman  = pips[0],
             pipCountEngine = pips[1],
             dice           = state.dice,
@@ -372,15 +352,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 "tapSource: usedDie=$usedDie rawRemaining=$rawRemaining rawNextMoves=${rawNextMoves.size / 8} newRemaining=$newRemaining"
             )
 
-            val newBlocked = if (newRemaining.size >= 2)
-                blockedDiceFor(nextMoves, newRemaining[0], newRemaining[1])
-            else emptySet()
-
             val snapshot = MoveSnapshot(
                 board = state.board.copyOf(),
                 remainingDice = state.remainingDice,
                 legalMoves = state.legalMoves.copyOf(),
-                blockedDice = state.blockedDice,
                 pipCountHuman = state.pipCountHuman,
                 pipCountEngine = state.pipCountEngine
             )
@@ -389,7 +364,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 board          = newBoard,
                 remainingDice  = newRemaining,
                 legalMoves     = nextMoves,
-                blockedDice    = newBlocked,
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
@@ -407,7 +381,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             board          = snapshot.board.copyOf(),
             remainingDice  = snapshot.remainingDice,
             legalMoves     = snapshot.legalMoves.copyOf(),
-            blockedDice    = snapshot.blockedDice,
             pipCountHuman  = snapshot.pipCountHuman,
             pipCountEngine = snapshot.pipCountEngine,
             dice           = state.dice,

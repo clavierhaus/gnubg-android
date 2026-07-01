@@ -4,7 +4,6 @@ data class MoveSnapshot(
     val board: IntArray,
     val remainingDice: List<Int>,
     val legalMoves: IntArray,
-    val blockedDice: Set<Int>,
     val pipCountHuman: Int,
     val pipCountEngine: Int
 )
@@ -31,7 +30,6 @@ data class BoardState(
     val phase: GamePhase = GamePhase.WAITING_FOR_ROLL,
     val winner: Int = -1,
     val nPoints: Int = 1,
-    val blockedDice: Set<Int> = emptySet(),
     val humanScore: Int = 0,
     val engineScore: Int = 0,
 ) {
