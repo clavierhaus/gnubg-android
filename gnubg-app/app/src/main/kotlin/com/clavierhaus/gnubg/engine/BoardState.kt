@@ -25,6 +25,7 @@ data class BoardState(
     val cubeOwner: Int = -1,   // -1=centred, 0=human, 1=engine
     val fDoubled: Boolean = false,
     val canDouble: Boolean = false,  // engine authority (gnubg_can_double); UI cube tappability
+    val unplayableDice: Set<Int> = emptySet(),  // die faces gnubg lists no move for; greyed in UI
     val pipCountHuman: Int = 167,
     val pipCountEngine: Int = 167,
     val phase: GamePhase = GamePhase.WAITING_FOR_ROLL,

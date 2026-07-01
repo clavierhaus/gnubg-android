@@ -66,6 +66,60 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * The set of die faces (from remainingDice) that gnubg move generator
+     * never uses -- dice with no legal play, which the UI greys out.
+     *
+     * gnubg authority: legalMoves is GenerateMoves (fPartial=0), the complete
+     * maximal legal moves. A die is PLAYABLE iff some legal move contains a
+     * sub-move using it; the generator already enforces must-use-both and
+     * use-the-larger, so an unplayable die appears in no move. Each sub-move die
+     * comes from gnubg encoding: in-board dest>=0 gives die=src-dest; a bear-off
+     * sub-move clamps dest to -1 (die not recoverable from the list), so we
+     * resolve it via the engine -- the remaining die that applySubMove accepts
+     * from that source (facade LegalMove gate). No die is invented here.
+     */
+    private fun unplayableDiceFor(board: IntArray, moves: IntArray, remaining: List<Int>): Set<Int> {
+        if (remaining.isEmpty()) return emptySet()
+        val distinct = remaining.distinct()
+        if (moves.isEmpty()) return distinct.toSet()  // no legal move: all unplayable
+
+        val playable = mutableSetOf<Int>()
+        val nMoves = moves.size / 8
+        for (i in 0 until nMoves) {
+            // Replay this move sub-moves on a working board so a bear-off die
+            // can be resolved against the board state at that sub-move.
+            var work = board
+            for (j in 0..3) {
+                val src  = moves[i * 8 + j * 2]
+                val dest = moves[i * 8 + j * 2 + 1]
+                if (src < 0) break            // -1 source = move terminator
+                if (dest >= 0) {
+                    playable.add(src - dest)  // in-board: die is exact
+                    work = Engine.applySubMove(work, src, src - dest).ifEmpty { work }
+                } else {
+                    // bear-off (dest clamped to -1): the die is whichever remaining
+                    // value the engine accepts from this source on the working board.
+                    // Prefer a not-yet-seen die so each bear-off widens coverage; fall
+                    // back to any accepted die to keep the working board advancing.
+                    var chosen = -1
+                    for (d in distinct) {
+                        if (Engine.applySubMove(work, src, d).isNotEmpty()) {
+                            if (d !in playable) { chosen = d; break }
+                            if (chosen < 0) chosen = d
+                        }
+                    }
+                    if (chosen >= 0) {
+                        playable.add(chosen)
+                        work = Engine.applySubMove(work, src, chosen).ifEmpty { work }
+                    }
+                }
+                if (playable.containsAll(distinct)) return emptySet()
+            }
+        }
+        return distinct.filterNot { it in playable }.toSet()
+    }
+
     private fun readMatchState(
         phase: GamePhase,
         remainingDice: List<Int> = emptyList(),
@@ -103,6 +157,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             remainingDice.size == 1 -> Pair(remainingDice[0], remainingDice[0])
             else -> null
         }
+        // Die faces gnubg lists no legal play for (greyed in the UI). Computed
+        // against oldBoard -- the exact board legalMoves was generated from --
+        // only when it is the human turn with dice in play.
+        val unplayableDice =
+            if (turn == 0 && remainingDice.isNotEmpty())
+                unplayableDiceFor(oldBoard, legalMoves, remainingDice)
+            else emptySet()
         _gameState.value = BoardState(
             matchScore     = score,
             matchLength    = matchLength,
@@ -124,7 +185,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             cubeValue      = cubeValue,
             cubeOwner      = cubeOwner,
             fDoubled       = fDoubled,
-            canDouble      = canDouble
+            canDouble      = canDouble,
+            unplayableDice = unplayableDice
         )
     }
 

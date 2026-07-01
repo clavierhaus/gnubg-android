@@ -501,9 +501,13 @@ fun BackgammonBoard(
                     val startX = ux(MID_X + BAR_W / 2f + HALF_W / 2f) - totalW / 2f
                     diceToShow.forEachIndexed { i, face ->
                         val isUsed = usedMask.getOrElse(i) { false }
+                        // Grey a die when gnubg lists no legal play for that face
+                        // (unplayableDice, from the legal-move list), or the whole-
+                        // turn no-move case. Used dice keep their spent styling.
+                        val dimmed = !isUsed && (diceDimmed || face in gameState.unplayableDice)
                         val baseColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
-                        val dieColor = if (diceDimmed) Color(0xFF888888) else baseColor
-                        val pipColor = if (diceDimmed) Color(0xFF444444) else p.dicePip
+                        val dieColor = if (dimmed) Color(0xFF888888) else baseColor
+                        val pipColor = if (dimmed) Color(0xFF444444) else p.dicePip
                         drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
                             dw, dh, face, dieColor, pipColor, p.frame)
                     }
