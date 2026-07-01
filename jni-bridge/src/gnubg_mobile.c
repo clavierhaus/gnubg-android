@@ -352,6 +352,31 @@ int gnubg_mobile_get_board(int out_board[50]) {
     return 50;
 }
 
+/* Board in a STABLE human (player-0) frame, computed atomically.
+ *
+ * ms.anBoard is kept oriented so anBoard[1] is the player ON MOVE (fMove); gnubg
+ * SwapSides() it whenever fMove changes, so its raw frame ALTERNATES every turn.
+ * The UI must always show the human (player 0) at a fixed position. Reading the
+ * board and the orientation field in two separate locked calls let the engine
+ * thread change fMove between them -- the orientation could then be applied
+ * against the wrong board, flipping the display mid-game. Here fMove and anBoard
+ * are read under a SINGLE lock, so the packed board is always human-frame:
+ *   fMove==0 (human on move): anBoard[1]=human -> pack raw.
+ *   fMove==1 (engine on move): anBoard[1]=engine -> SwapSides first. */
+int gnubg_mobile_get_board_human(int out_board[50]) {
+    TanBoard tmp;
+    pthread_mutex_lock(&gnubg_lock);
+    if (ms.fMove == 1) {
+        memcpy(tmp, ms.anBoard, sizeof(TanBoard));
+        SwapSides(tmp);
+        facade_pack_board((ConstTanBoard) tmp, out_board);
+    } else {
+        facade_pack_board((ConstTanBoard) ms.anBoard, out_board);
+    }
+    pthread_mutex_unlock(&gnubg_lock);
+    return 50;
+}
+
 int gnubg_mobile_get_match_state(int out_state[13]) {
     pthread_mutex_lock(&gnubg_lock);
     out_state[0]  = (int) ms.gs;

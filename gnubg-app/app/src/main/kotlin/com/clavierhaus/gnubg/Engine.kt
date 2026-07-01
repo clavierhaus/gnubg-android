@@ -52,6 +52,7 @@ object Engine {
 
     // Match state queries
     external fun getMatchBoard(): IntArray
+    external fun getMatchBoardHuman(): IntArray  // stable human-frame board; use for display
     external fun getMatchDice(): IntArray
     external fun getMatchTurn(): Int
     external fun getMatchStatus(): Int

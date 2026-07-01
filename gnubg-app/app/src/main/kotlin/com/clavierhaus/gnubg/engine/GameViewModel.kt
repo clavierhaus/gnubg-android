@@ -145,14 +145,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // subset of the rule.
         val canDouble = Engine.canDouble()
         val turn      = Engine.getMatchTurn()
-        val rawBoard  = Engine.getMatchBoard()
-        // Swap when the engine is the current MOVER (fMove=1), not just when fTurn=1.
-        // They diverge during an engine double: the engine doubles (fMove stays 1)
-        // but fTurn flips to 0 so the human can take/drop.  Without the extra guard
-        // the raw board (engine's coordinate frame) is used as-is, putting engine
-        // checkers in board[25..49] and human checkers in board[0..24] -- the tray
-        // then reads the engine's borne-off count as the human's.
-        val board     = if (turn == 1 || (fDoubled && turn == 0)) Engine.swapBoard(rawBoard) else rawBoard
+        // Display board comes pre-oriented to a STABLE human (player-0) frame from
+        // a single atomic facade call. The old code read the board and an
+        // orientation field (fTurn) in two separate locked JNI calls and swapped
+        // in Kotlin; between the two reads the engine thread could change fMove
+        // and re-orient ms.anBoard, so the swap was applied against a board from a
+        // different instant -- flipping the display mid-game. Resolving
+        // orientation under one lock in the facade removes that race entirely; the
+        // UI does no swapping.
+        val board     = Engine.getMatchBoardHuman()
         val pips      = Engine.pipCount(board)
         val dicePair: Pair<Int, Int>? = originalDice ?: when {
             remainingDice.size >= 2 -> Pair(remainingDice[0], remainingDice[1])

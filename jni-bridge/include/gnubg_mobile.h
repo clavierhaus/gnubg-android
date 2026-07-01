@@ -44,6 +44,7 @@ int gnubg_mobile_next_game(void);
 
 /* -- State readers (Tier 1) ------------------------------------------------- */
 int gnubg_mobile_get_board(int out_board[50]);
+int gnubg_mobile_get_board_human(int out_board[50]);
 int gnubg_mobile_get_match_state(int out_state[13]);
 int gnubg_mobile_get_cube_info(int out_cube[3]);
 int gnubg_mobile_get_dice(int out_dice[2]);
