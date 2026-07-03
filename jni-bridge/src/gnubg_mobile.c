@@ -709,17 +709,18 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
         GetMatchStateCubeInfo(&ci, &msAnalyse);
 
         memset(&ml, 0, sizeof(ml));
-        /* PORT (audit V1 + V2): cubeinfo &ci comes from GetMatchStateCubeInfo
-         * (&ci, &msAnalyse) above; evalcontext comes from gnubg's GetEvalChequer()
-         * accessor (android-app.c:903), which under fEvalSameAsAnalysis=FALSE
-         * returns esEvalChequer at the user's strength preset (aecSettings[idx]
-         * after audit C). The 2-ply/prune path historically returned inf on this
-         * build; the named presets the UI exposes are 0/1-ply, so the path is
-         * non-inf in practice. */
+        /* PORT: tutor analysis uses the ANALYSIS chequer context
+         * (esAnalysisChequer, fixed EVALSETUP_2PLY), NOT the play-strength
+         * context. GetEvalChequer() returns esEvalChequer, which the opponent
+         * strength selector overwrites with a 0-ply preset -- coupling coaching
+         * quality to opponent difficulty, which is wrong. The cube path above
+         * already uses esAnalysisChequer; this matches it, so tutor analysis is
+         * always 2-ply regardless of chosen opponent strength. The engine 2-ply
+         * eval is confirmed healthy on this build. */
         if (FindnSaveBestMoves(&ml, pmrLast->anDice[0], pmrLast->anDice[1],
                                (ConstTanBoard) msAnalyse.anBoard, &key, TRUE,
                                arSkillLevel[SKILL_DOUBTFUL], &ci,
-                               &(GetEvalChequer()->ec), aamfAnalysis) < 0) {
+                               &esAnalysisChequer.ec, aamfAnalysis) < 0) {
             g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
         }
         if (ml.cMoves == 0 || !ml.amMoves) {
