@@ -68,23 +68,37 @@ fun GameLayout(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        // Engine avatar + score
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFF1565C0), RoundedCornerShape(24.dp)),
-                            contentAlignment = Alignment.Center
-                        ) { Text("GNU", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                        Text("${gameState.engineScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        Text("vs", color = Color(0xFFB3C9F0), fontSize = 12.sp)
-                        Text("${gameState.humanScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        // Human avatar
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFF2E7D32), RoundedCornerShape(24.dp)),
-                            contentAlignment = Alignment.Center
-                        ) { Text("You", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                        // Engine row: avatar name .... score
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color(0xFF1565C0), RoundedCornerShape(20.dp)),
+                                contentAlignment = Alignment.Center
+                            ) { Text("GNU", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text("${gameState.engineScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Human row: avatar name .... score
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color(0xFF2E7D32), RoundedCornerShape(20.dp)),
+                                contentAlignment = Alignment.Center
+                            ) { Text("You", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text("${gameState.humanScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -158,16 +172,6 @@ fun GameLayout(
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = when {
-                                gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> "Your turn"
-                                gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 1 -> "Engine's turn"
-                                else -> ""
-                            },
-                            color = Color(0xFFB3C9F0),
-                            fontSize = 16.sp
-                        )
 
                         androidx.compose.foundation.layout.Spacer(
                             modifier = Modifier.height(4.dp)
