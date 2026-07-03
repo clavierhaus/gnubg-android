@@ -45,12 +45,13 @@ fun GameLayout(
         )
     } else if (showMatchSetup) {
         MatchSetupScreen(
+            tutorMode = tutorMode,
             selectedLength = settings.matchLength,
             selectedDifficulty = settings.difficulty,
             engineReady = engineReady,
             onSelectLength = { viewModel.setMatchLength(it) },
             onSelectDifficulty = { viewModel.setDifficulty(it) },
-            onStart = { viewModel.startMatch(settings.matchLength) },
+            onStart = { viewModel.startMatch(if (tutorMode) 1 else settings.matchLength) },
             onSettings = { showSettings = true }
         )
     } else {
@@ -415,6 +416,7 @@ fun GameButton(
 
 @Composable
 private fun MatchSetupScreen(
+    tutorMode: Boolean,
     selectedLength: Int,
     selectedDifficulty: Difficulty,
     engineReady: Boolean,
@@ -435,7 +437,8 @@ private fun MatchSetupScreen(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                "GNU Backgammon",
+                if (tutorMode) "GNU Backgammon Live Game Analysis"
+                else "GNU Backgammon Tournament Match",
                 color = Color.White,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold
@@ -467,21 +470,23 @@ private fun MatchSetupScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                "Match length",
-                color = Color(0xFFB3C9F0),
-                fontSize = 18.sp
-            )
+            if (!tutorMode) {
+                Text(
+                    "Match length",
+                    color = Color(0xFFB3C9F0),
+                    fontSize = 18.sp
+                )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf(1, 3, 5, 7).forEach { n ->
-                    val selected = selectedLength == n
-                    GameButton(
-                        label = "$n",
-                        color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
-                        enabled = engineReady
-                    ) {
-                        onSelectLength(n)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf(1, 3, 5, 7).forEach { n ->
+                        val selected = selectedLength == n
+                        GameButton(
+                            label = "$n",
+                            color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
+                            enabled = engineReady
+                        ) {
+                            onSelectLength(n)
+                        }
                     }
                 }
             }
