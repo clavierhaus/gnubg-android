@@ -1,6 +1,7 @@
 package com.clavierhaus.gnubg.hub
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -32,14 +32,14 @@ fun HomeHubScreen(
     onOptions: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
             painter = painterResource(id = R.drawable.home_hub_background),
             contentDescription = null,
-            // Scale the image content down 15% so Crop reveals more of the large
-            // source (all three legs and the full lid) while staying full-bleed.
-            modifier = Modifier.fillMaxSize().scale(0.85f),
-            contentScale = ContentScale.Crop
+            // Fit preserves aspect (no distortion) and is device-independent;
+            // wider screens get black bars left/right, taller ones top/bottom.
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
         )
 
         BasicText(
