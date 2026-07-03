@@ -5,16 +5,28 @@ rule here conflicts with what seems easier or more idiomatic, the rule wins.
 
 ## THE ONE RULE THAT MATTERS MOST
 
-**gnubg is the SOLE authority for all game logic. PORT it, NEVER reinvent it.**
+**gnubg is the SOLE authority for all game logic AND all analysis. PORT it,
+NEVER reinvent it.**
 
 This is a true port of GNU Backgammon's engine to Android. The vendored C
 engine in engine-core/ already implements every rule, move, cube decision,
 score, and analysis. Your job is to expose and wire that existing logic --
 never to re-implement backgammon semantics in Kotlin or in new C.
 
+"Game logic" is NOT the only forbidden territory. gnubg also computes, inside
+its own evaluation, everything about what a position or move MEANS: shot
+counts, primes, blots, anchors, board strength, position class, race vs
+contact, blunder severity, which features matter. ALL of that is gnubg's, not
+yours. The crime is not limited to deciding a rule -- it includes describing,
+classifying, scoring, ranking, characterizing, or assigning quality/meaning to
+any position or move. If gnubg computes it internally and you recompute it in
+Kotlin, that is reinvention, FULL STOP, even when no rule of backgammon is
+being decided.
+
 Before writing ANY logic that decides legality, generates moves, evaluates a
-position, scores a move, makes a cube decision, computes pips, or progresses
-match state: STOP. Find the gnubg function that already does it and call it.
+position, scores a move, makes a cube decision, computes pips, progresses
+match state, OR describes/classifies/ranks/characterizes a position or move:
+STOP. Find the gnubg function that already does it and call it.
 If you are about to write a loop that computes something about the board,
 you are almost certainly reinventing -- search engine-core/ first.
 
@@ -32,7 +44,27 @@ If you cannot find the gnubg function, ASK -- do not invent one.
 Kotlin may ONLY: draw the board, compute hitboxes in board-relative
 coordinates, hold transient UI state (displayed dice order, uncommitted
 submove snapshots for undo), and call JNI. Kotlin must NOT invent game
-legality, cube legality, scoring, pip counts, or match progression.
+legality, cube legality, scoring, pip counts, match progression, OR any
+analysis, description, classification, or quality judgement of a position or
+move.
+
+## THE BRIGHT LINE (no interpretation required)
+
+If you write a function that reads the board array (board[...]) and returns
+anything other than a pixel/hitbox coordinate or a value gnubg literally handed
+you, STOP -- that is reinvention. Reading board[n] to compute a fact ABOUT the
+position (a count, a shot, a prime, a blot, an anchor, a strength, a class, a
+label, a "notable" difference) is gnubg's job, even if no rule is being
+decided. The board is gnubg's to interpret. Kotlin loops over board[] exist for
+exactly one purpose: drawing checkers and hit-testing taps. Any other loop over
+board[] is a bug.
+
+"Engine-free", "pure", "deterministic", "no engine calls", "unit-testable in
+isolation" are NOT virtues for analysis code -- they are the SIGNATURE OF A
+VIOLATION. Analysis is gnubg's job; "engine-free analysis" is a contradiction.
+If you catch yourself writing or justifying a file that describes a position
+without calling the engine, you are reinventing. The correct move is to call
+gnubg, or to not compute the value at all.
 
 ## THE PORT CHECKPOINT (per-commit, no exceptions)
 
@@ -65,6 +97,31 @@ For every change, answer these IN WRITING, in chat, before code:
       THAT verb itself obey Q2, or did a prior hand inject a private
       struct? If the verb itself is a reinvention, FIX THE VERB.
       Do not layer further code on broken ground.
+
+  Q4. Does this value get SHOWN to the user, or logged, as a fact
+      about the game -- a count, a quality, a classification, a
+      label, a severity, a "notable" difference, a position type,
+      a best move, a shot count, anything the user reads as truth
+      about the position? If yes, name the gnubg routine that
+      PRODUCES it. "I computed it in Kotlin" / "I derived it from
+      the board" is a FAILING answer. If gnubg does not expose it,
+      the answer is to NOT SHOW IT -- not to compute it myself.
+
+## THE NEW-FILE TRIPWIRE (this is where the invention accumulated)
+
+Before creating ANY new file that is not purely a Composable (i.e. anything
+under tutor/, engine/, jni-bridge/, or a new .c/.h/.kt that holds logic rather
+than UI layout), STOP and state IN CHAT, before writing a single line:
+
+  - which gnubg routine or struct this file wraps or exposes, by name; and
+  - that it contains no board interpretation of its own.
+
+If I cannot name the gnubg routine it wraps, the file must not be created --
+ASK instead. New non-UI files are exactly where five invented analysis files
+accumulated (FeatureExtractor, FeatureVector, FeatureDelta, PositionType,
+TutorAnalyzer). Requiring this statement per new file would have stopped all
+five before the first line. No new logic file without naming its gnubg basis
+first. No exceptions, no "I'll wire it to the engine later."
 
 A pre-existing private struct in the facade is NOT evidence that
 gnubg has nothing equivalent. It is most often evidence that an
@@ -164,7 +221,8 @@ Compose UI (Kotlin)
   Deep reference: docs/MASTER_V0.9.md. Tutor internals:
   docs/PHASE3_TUTOR_ANALYSIS.md.
 - Tutor analysis (Phase 13) is implemented and LOG-ONLY: after each human
-  move it logs blunder level, equity loss, feature deltas to tag gnubg-tutor.
+  move it logs blunder level and equity loss (gnubg equity + Engine.skill only;
+  the invented feature-delta analysis was removed) to tag gnubg-tutor.
   It has no UI surface yet. It evaluates at 1-ply (fac_ec_default); the
   2-ply/prune path returns inf in this build.
 - Engine strength is wired to gnubg's four named presets
