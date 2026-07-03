@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -35,7 +36,9 @@ fun HomeHubScreen(
         Image(
             painter = painterResource(id = R.drawable.home_hub_background),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            // Scale the image content down 15% so Crop reveals more of the large
+            // source (all three legs and the full lid) while staying full-bleed.
+            modifier = Modifier.fillMaxSize().scale(0.85f),
             contentScale = ContentScale.Crop
         )
 
