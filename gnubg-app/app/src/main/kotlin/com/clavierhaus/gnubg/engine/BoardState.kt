@@ -1,5 +1,15 @@
 package com.clavierhaus.gnubg.engine
 
+import com.clavierhaus.gnubg.tutor.BlunderLevel
+
+data class TutorAnalysis(
+    val level: BlunderLevel,
+    val equityLoss: Float,
+    val bestEquity: Float,
+    val playedEquity: Float,
+    val notable: String
+)
+
 data class MoveSnapshot(
     val board: IntArray,
     val remainingDice: List<Int>,
@@ -33,6 +43,7 @@ data class BoardState(
     val nPoints: Int = 1,
     val humanScore: Int = 0,
     val engineScore: Int = 0,
+    val tutorAnalysis: TutorAnalysis? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

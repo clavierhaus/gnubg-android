@@ -23,6 +23,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _gameState = MutableStateFlow(BoardState())
     val gameState: StateFlow<BoardState> = _gameState.asStateFlow()
 
+    private var lastTutorAnalysis: TutorAnalysis? = null
+
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
@@ -189,7 +191,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             cubeOwner      = cubeOwner,
             fDoubled       = fDoubled,
             canDouble      = canDouble,
-            unplayableDice = unplayableDice
+            unplayableDice = unplayableDice,
+            tutorAnalysis  = lastTutorAnalysis
         )
     }
 
@@ -615,6 +618,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         "level=$level loss=${"%.4f".format(equityLoss)} " +
                         "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)} | " +
                         notable.ifEmpty { "no notable deltas" })
+                    lastTutorAnalysis = TutorAnalysis(
+                        level = level,
+                        equityLoss = equityLoss,
+                        bestEquity = bestEquity,
+                        playedEquity = playedEquity,
+                        notable = notable
+                    )
                 } else {
                     android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")
                 }

@@ -180,12 +180,16 @@ fun GameLayout(
                         }
                         }
 
-                        PlayLifecyclePanel(
-                            onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
-                            onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
-                            onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
-                            onReturnHome = onReturnToHub
-                        )
+                        if (tutorMode) {
+                            TutorAnalysisPanel(gameState.tutorAnalysis)
+                        } else {
+                            PlayLifecyclePanel(
+                                onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
+                                onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
+                                onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
+                                onReturnHome = onReturnToHub
+                            )
+                        }
                     }
                 }
 
@@ -498,6 +502,46 @@ private fun MatchSetupScreen(
                 enabled = true
             ) {
                 onSettings()
+            }
+        }
+    }
+}
+
+@Composable
+private fun TutorAnalysisPanel(analysis: com.clavierhaus.gnubg.engine.TutorAnalysis?) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth().padding(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFF2E5A9E))
+        )
+        if (analysis == null) {
+            Text(
+                "Play a move to see analysis",
+                color = Color(0xFFB3C9F0),
+                fontSize = 13.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        } else {
+            val label = analysis.level.gnubgLabel
+            val verdictText = if (label == null) "Good move"
+                              else label.replaceFirstChar { it.uppercase() }
+            val verdictColor = when (analysis.level) {
+                com.clavierhaus.gnubg.tutor.BlunderLevel.VERY_BAD -> Color(0xFFE05252)
+                com.clavierhaus.gnubg.tutor.BlunderLevel.BAD      -> Color(0xFFE0A052)
+                com.clavierhaus.gnubg.tutor.BlunderLevel.DOUBTFUL -> Color(0xFFE0D052)
+                com.clavierhaus.gnubg.tutor.BlunderLevel.NONE     -> Color(0xFF66C066)
+            }
+            Text(verdictText, color = verdictColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Equity lost: ${"%.3f".format(analysis.equityLoss)}", color = Color.White, fontSize = 13.sp)
+            if (analysis.notable.isNotEmpty()) {
+                Text(analysis.notable, color = Color(0xFFB3C9F0), fontSize = 11.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
