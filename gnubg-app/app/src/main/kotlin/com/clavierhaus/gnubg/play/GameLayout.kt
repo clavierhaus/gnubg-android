@@ -56,13 +56,17 @@ fun GameLayout(
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left panel -- fixed proportion of screen
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(0.18f)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Avatar diameter scales with panel width so it adapts across
+                    // devices (phone/tablet) like the board checkers do, rather than
+                    // a fixed dp. Capped so it never dominates a very wide panel.
+                    val avatarSize = (maxWidth * 0.42f).coerceIn(28.dp, 64.dp)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
@@ -84,16 +88,16 @@ fun GameLayout(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .background(Color(0xFF1565C0), RoundedCornerShape(16.dp)),
+                                    .size(avatarSize)
+                                    .background(Color(0xFF1565C0), RoundedCornerShape(avatarSize / 2)),
                                 contentAlignment = Alignment.Center
                             ) { Text("GNU", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                             Text("${gameState.engineScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.weight(1f))
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .background(Color(0xFF2E7D32), RoundedCornerShape(16.dp)),
+                                    .size(avatarSize)
+                                    .background(Color(0xFF2E7D32), RoundedCornerShape(avatarSize / 2)),
                                 contentAlignment = Alignment.Center
                             ) { Text("You", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                             Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
