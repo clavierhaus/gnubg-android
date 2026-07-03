@@ -174,7 +174,7 @@ fun BackgammonBoard(
                     try {
                         awaitRelease()
                     } finally {
-                        highlightedLandingPoints = emptySet()
+                        if (draggingFrom == null) highlightedLandingPoints = emptySet()
                     }
                 },
                 onLongPress = { offset ->
@@ -336,7 +336,7 @@ fun BackgammonBoard(
                         // resolver (tryDestinationStackMove) for empty/opponent points;
                         // releasing back on the source is a no-op selection.
                         if (target in highlightedLandingPoints) {
-                            viewModel.tapSource(target)
+                            viewModel.dragMove(from, target)
                         }
                     }
                     draggingFrom = null

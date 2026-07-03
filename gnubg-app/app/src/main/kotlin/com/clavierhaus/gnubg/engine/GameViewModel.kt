@@ -360,6 +360,73 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun dragMove(from: Int, to: Int) {
+        val state = _gameState.value
+        if (state.phase != GamePhase.HUMAN_MOVING) return
+        if (state.remainingDice.isEmpty()) return
+        if (from index 66efa85..7ea6ab7 100644 1..24 || to index 66efa85..7ea6ab7 100644 0..24) return
+        viewModelScope.launch(engineThread) {
+            val src = from - 1
+            var newBoard = IntArray(0)
+            val usedDice = ArrayList<Int>()
+            for (d in state.remainingDice.distinct()) {
+                if (src - d == to - 1 || (to == 0 && src - d < 0)) {
+                    val b = Engine.applySubMove(state.board, src, d)
+                    if (b.isNotEmpty()) { newBoard = b; usedDice.add(d); break }
+                }
+            }
+            if (newBoard.isEmpty() && state.remainingDice.size >= 2) {
+                val dice = state.remainingDice
+                outer@ for (i in dice.indices) {
+                    for (j in dice.indices) {
+                        if (i == j) continue
+                        val dA = dice[i]; val dB = dice[j]
+                        val b1 = Engine.applySubMove(state.board, src, dA)
+                        if (b1.isEmpty()) continue
+                        val mid = src - dA
+                        if (mid < 0) continue
+                        if (mid - dB == to - 1 || (to == 0 && mid - dB < 0)) {
+                            val b2 = Engine.applySubMove(b1, mid, dB)
+                            if (b2.isNotEmpty()) {
+                                newBoard = b2; usedDice.add(dA); usedDice.add(dB); break@outer
+                            }
+                        }
+                    }
+                }
+            }
+            if (newBoard.isEmpty()) return@launch
+            val rawRemaining = state.remainingDice.toMutableList()
+            usedDice.forEach { rawRemaining.remove(it) }
+            val pips = Engine.pipCount(newBoard)
+            val rawNextMoves = if (rawRemaining.isNotEmpty()) {
+                val r0 = rawRemaining[0]
+                val r1 = if (rawRemaining.size > 1) rawRemaining[1] else r0
+                Engine.getLegalMoves(newBoard, r0, r1)
+            } else IntArray(0)
+            val newRemaining =
+                if (rawRemaining.isNotEmpty() && rawNextMoves.isEmpty()) emptyList()
+                else rawRemaining
+            val nextMoves = if (newRemaining.isNotEmpty()) rawNextMoves else IntArray(0)
+            android.util.Log.i("gnubg-vm", "dragMove: from=$from to=$to usedDice=$usedDice newRemaining=$newRemaining")
+            val snapshot = MoveSnapshot(
+                board = state.board.copyOf(),
+                remainingDice = state.remainingDice,
+                legalMoves = state.legalMoves.copyOf(),
+                pipCountHuman = state.pipCountHuman,
+                pipCountEngine = state.pipCountEngine
+            )
+            _gameState.value = state.copy(
+                board          = newBoard,
+                remainingDice  = newRemaining,
+                legalMoves     = nextMoves,
+                pipCountHuman  = pips[0],
+                pipCountEngine = pips[1],
+                dice           = state.dice,
+                moveHistory    = state.moveHistory + snapshot
+            )
+        }
+    }
+
     fun tapSource(point: Int) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
