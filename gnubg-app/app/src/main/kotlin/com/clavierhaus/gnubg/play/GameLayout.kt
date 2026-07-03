@@ -68,7 +68,7 @@ fun GameLayout(
                         verticalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(8.dp)
+                            .padding(start = 8.dp, end = 8.dp, top = 44.dp, bottom = 8.dp)
                     ) {
                         // Top group: scoreboard + divider + phase content
                         Column(
@@ -171,9 +171,6 @@ fun GameLayout(
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
                                 // The roll action is shown directly on the board surface.
-                            }
-                            gameState.phase == GamePhase.HUMAN_MOVING -> {
-                                Text("Your move", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                         }
                         }
