@@ -364,9 +364,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.remainingDice.isEmpty()) return
-        if (from !in 1..24 || to !in 0..24) return
+        if (from !in 0..24 || to !in 0..24) return
         viewModelScope.launch(engineThread) {
-            val src = from - 1
+            // from == 0 is the bar signal (matches tapSource): the human re-enters
+            // from gnubg point 24. Entry for die d lands on board point 25 - d, i.e.
+            // gnubg 0-based 24 - d, so the same src - d == to - 1 test below applies.
+            val src = if (from == 0) 24 else from - 1
             var newBoard = IntArray(0)
             val usedDice = ArrayList<Int>()
             for (d in state.remainingDice.distinct()) {

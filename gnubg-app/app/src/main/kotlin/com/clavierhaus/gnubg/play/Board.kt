@@ -140,6 +140,20 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
     return reachable
 }
 
+// Legal bar-entry target points for a human on the bar. gnubg is the authority:
+// try re-entry (src = 24, the bar) with each remaining die and keep the entry
+// point (board 25 - d) only where applySubMove succeeds.
+private fun barEntryPoints(gameState: BoardState): Set<Int> {
+    if (gameState.phase != GamePhase.HUMAN_MOVING) return emptySet()
+    if (gameState.board[49] <= 0) return emptySet()
+    val out = linkedSetOf<Int>()
+    for (d in gameState.remainingDice.distinct()) {
+        val b = Engine.applySubMove(gameState.board, 24, d)
+        if (b.isNotEmpty()) out.add(25 - d)
+    }
+    return out
+}
+
 @Composable
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
@@ -313,6 +327,16 @@ fun BackgammonBoard(
                     val sy = size.height.toFloat() / TOT_H
                     val ux = offset.x / sx
                     val uy = offset.y / sy
+                    val barLeft  = MID_X - BAR_W / 2f
+                    val barRight = MID_X + BAR_W / 2f
+                    if (gameState.board[49] > 0 &&
+                        ux >= barLeft && ux <= barRight &&
+                        uy >= TOT_H / 2f && uy <= TOT_H - BRD_H) {
+                        draggingFrom = 0
+                        dragPosUnits = Offset(ux, uy)
+                        highlightedLandingPoints = barEntryPoints(gameState)
+                        return@detectDragGestures
+                    }
                     val src = boardPointAt(ux, uy)
                     if (src in 1..24 && gameState.board[24 + src] > 0) {
                         draggingFrom = src
@@ -443,7 +467,7 @@ fun BackgammonBoard(
             // anBoard[1][24] = human/light checkers on bar (shown in bottom half)
             val barCentreX = ux(MID_X)
             val engineOnBar = gameState.board[24]
-            val humanOnBar  = gameState.board[49]
+            val humanOnBar  = gameState.board[49] - (if (draggingFrom == 0) 1 else 0)
             val barR = r * 0.9f
 
             // Engine bar checkers: below top pip count
