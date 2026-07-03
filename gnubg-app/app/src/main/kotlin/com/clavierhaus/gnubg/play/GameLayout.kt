@@ -68,36 +68,27 @@ fun GameLayout(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        // Engine row: avatar name .... score
+                        // Single-row scoreboard: GNU score .... You score
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color(0xFF1565C0), RoundedCornerShape(20.dp)),
+                                    .size(32.dp)
+                                    .background(Color(0xFF1565C0), RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
-                            ) { Text("GNU", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                            ) { Text("GNU", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+                            Text("${gameState.engineScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.weight(1f))
-                            Text("${gameState.engineScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Human row: avatar name .... score
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color(0xFF2E7D32), RoundedCornerShape(20.dp)),
+                                    .size(32.dp)
+                                    .background(Color(0xFF2E7D32), RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
-                            ) { Text("You", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text("${gameState.humanScore}", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            ) { Text("You", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+                            Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
