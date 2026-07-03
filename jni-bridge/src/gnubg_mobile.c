@@ -223,8 +223,12 @@ int gnubg_mobile_command_redouble(void) {
 
 int gnubg_mobile_command_double(void) {
     pthread_mutex_lock(&gnubg_lock);
+    /* Do NOT drain here. CommandDouble offers the cube and hands the turn
+     * to the responder, leaving fDoubled and fNextTurn set. Draining would
+     * run NextTurn immediately and auto-resolve the pending double before
+     * the caller decides take or drop, destroying the two-step offer/respond
+     * flow. The response verb, via CommandTake/CommandDrop, is what drains. */
     CommandDouble(NULL);
-    gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 
     return 1;
