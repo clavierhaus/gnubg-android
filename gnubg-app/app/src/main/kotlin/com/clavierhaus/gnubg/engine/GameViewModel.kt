@@ -364,7 +364,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.remainingDice.isEmpty()) return
-        if (from index 66efa85..7ea6ab7 100644 1..24 || to index 66efa85..7ea6ab7 100644 0..24) return
+        if (from !in 1..24 || to !in 0..24) return
         viewModelScope.launch(engineThread) {
             val src = from - 1
             var newBoard = IntArray(0)
