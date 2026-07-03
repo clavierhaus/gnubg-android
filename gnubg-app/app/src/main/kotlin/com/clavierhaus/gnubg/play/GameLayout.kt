@@ -66,7 +66,7 @@ fun GameLayout(
                     // Avatar diameter scales with panel width so it adapts across
                     // devices (phone/tablet) like the board checkers do, rather than
                     // a fixed dp. Capped so it never dominates a very wide panel.
-                    val avatarSize = (maxWidth * 0.42f).coerceIn(28.dp, 64.dp)
+                    val avatarSize = (maxWidth * 0.29f).coerceIn(20.dp, 45.dp)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
