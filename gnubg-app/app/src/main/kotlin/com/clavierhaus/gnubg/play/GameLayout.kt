@@ -65,9 +65,17 @@ fun GameLayout(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(8.dp)
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
                     ) {
+                        // Top group: scoreboard + divider + phase content
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                         // Single-row scoreboard: GNU score .... You score
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -91,7 +99,14 @@ fun GameLayout(
                             Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        // Thin blue divider below the scoreboard; space below is reserved
+                        // for future match-context / tutor UI.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color(0xFF2E5A9E))
+                        )
 
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
@@ -161,12 +176,7 @@ fun GameLayout(
                                 Text("Your move", color = Color(0xFFB3C9F0), fontSize = 18.sp)
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        androidx.compose.foundation.layout.Spacer(
-                            modifier = Modifier.height(4.dp)
-                        )
+                        }
 
                         PlayLifecyclePanel(
                             onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
