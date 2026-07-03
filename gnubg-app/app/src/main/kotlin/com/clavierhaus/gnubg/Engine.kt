@@ -88,6 +88,10 @@ object Engine {
     external fun skill(equityDelta: Float): Int
     external fun pipCount(board: IntArray): IntArray
 
+    /** gnubg own position-feature inputs (eval.c CalculateHalfInputs), both sides.
+     *  FloatArray[2*MORE_INPUTS]: player0 block then player1 block, raw normalised. */
+    external fun positionFeatures(board: IntArray): FloatArray
+
     // Analysis
     external fun evaluatePosition(board: IntArray): FloatArray?
     external fun classifyPosition(board: IntArray): Int

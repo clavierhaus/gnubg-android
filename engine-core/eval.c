@@ -57,137 +57,9 @@ enum {
 };
 
 
-/* Contact inputs -- see Berliner for most of these */
-enum {
-    /* n - number of checkers off
-     *
-     * off1 -  1         n >= 5
-     * n/5       otherwise
-     *
-     * off2 -  1         n >= 10
-     * (n-5)/5   n < 5 < 10
-     * 0         otherwise
-     *
-     * off3 -  (n-10)/5  n > 10
-     * 0         otherwise
-     */
-
-    I_OFF1, I_OFF2, I_OFF3,
-
-    /* Minimum number of pips required to break contact.
-     *
-     * For each checker x, N(x) is checker location,
-     * C(x) is max({forall o : N(x) - N(o)}, 0)
-     *
-     * Break Contact : (sum over x of C(x)) / 152
-     *
-     * 152 is degree of contact of start position.
-     */
-    I_BREAK_CONTACT,
-
-    /* Location of back checker (Normalized to [01])
-     */
-    I_BACK_CHEQUER,
-
-    /* Location of most backward anchor (Normalized to [01])
-     */
-    I_BACK_ANCHOR,
-
-    /* Forward anchor in opponents home.
-     *
-     * Normalized in the following way:  If there is an anchor in opponents
-     * home at point k (1 <= k <= 6), value is k/6. Otherwise, if there is an
-     * anchor in points (7 <= k <= 12), take k/6 as well. Otherwise set to 2.
-     *
-     * This is an attempt for some continuity, since a 0 would be the "same" as
-     * a forward anchor at the bar.
-     */
-    I_FORWARD_ANCHOR,
-
-    /* Average number of pips opponent loses from hits.
-     *
-     * Some heuristics are required to estimate it, since we have no idea what
-     * the best move actually is.
-     *
-     * 1. If board is weak (less than 3 inner points made), don't consider
-     *    hitting on points 23 and 24.
-     * 2. Don't break inner points to hit.
-     */
-    I_PIPLOSS,
-
-    /* Number of rolls that hit at least one checker.
-     */
-    I_P1,
-
-    /* Number of rolls that hit at least two checkers.
-     */
-    I_P2,
-
-    /* How many rolls permit the back checker to escape (Normalized to [01])
-     */
-    I_BACKESCAPES,
-
-    /* Maximum containment of opponent checkers, from our points 9 to op back
-     * checker.
-     *
-     * Value is (1 - n/36), where n is number of rolls to escape.
-     */
-    I_ACONTAIN,
-
-    /* Above squared */
-    I_ACONTAIN2,
-
-    /* Maximum containment, from our point 9 to home.
-     * Value is (1 - n/36), where n is number of rolls to escape.
-     */
-    I_CONTAIN,
-
-    /* Above squared */
-    I_CONTAIN2,
-
-    /* For all checkers out of home,
-     * sum (Number of rolls that let x escape * distance from home)
-     *
-     * Normalized by dividing by 3600.
-     */
-    I_MOBILITY,
-
-    /* One sided moment.
-     * Let A be the point of weighted average:
-     * A = sum of N(x) for all x) / nCheckers.
-     *
-     * Then for all x : A < N(x), M = (average (N(X) - A)^2)
-     *
-     * Diveded by 400 to normalize.
-     */
-    I_MOMENT2,
-
-    /* Average number of pips lost when on the bar.
-     * Normalized to [01]
-     */
-    I_ENTER,
-
-    /* Probablity of one checker not entering from bar.
-     * 1 - (1 - n/6)^2, where n is number of closed points in op home.
-     */
-    I_ENTER2,
-
-    I_TIMING,
-
-    I_BACKBONE,
-
-    I_BACKG,
-
-    I_BACKG1,
-
-    I_FREEPIP,
-
-    I_BACKRESCAPES,
-
-    MORE_INPUTS
-};
-
-#define MINPPERPOINT 4
+/* Contact-input enum (I_OFF1..MORE_INPUTS) and MINPPERPOINT moved to eval.h
+ * so the tutor facade can call CalculateHalfInputs and index its output.
+ * See PROVENANCE.md. */
 
 #define NUM_INPUTS ((25 * MINPPERPOINT + MORE_INPUTS) * 2)
 #define NUM_RACE_INPUTS ( HALF_RACE_INPUTS * 2 )
@@ -737,7 +609,7 @@ EvalInitialise(char *szWeights, char *szWeightsBinary, int fNoBearoff, void (*pf
 
 /* Calculates inputs for any contact position, for one player only. */
 
-static void
+extern void
 CalculateHalfInputs(const unsigned int anBoard[25], const unsigned int anBoardOpp[25], float afInput[])
 {
     int i, j, k, l, nOppBack, n, aHit[39], nBoard;

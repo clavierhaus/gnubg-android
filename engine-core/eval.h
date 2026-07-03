@@ -546,4 +546,78 @@ extern int EvaluatePerfectCubeful(const TanBoard anBoard, float arEquity[], bgva
 extern neuralnet nnContact, nnRace, nnCrashed;
 extern neuralnet nnpContact, nnpRace, nnpCrashed;
 
+/* Contact-input enum (I_OFF1..MORE_INPUTS) and MINPPERPOINT relocated here from
+ * eval.c so the mobile tutor facade can call CalculateHalfInputs and index its
+ * output. See PROVENANCE.md. Visibility change only -- no logic changed. */
+/* Contact inputs -- see Berliner for most of these */
+enum {
+    /* n - number of checkers off */
+    I_OFF1, I_OFF2, I_OFF3,
+
+    /* Position of the block furthest back. */
+    I_BREAK_CONTACT,
+
+    /* Position of the checker furthest back. */
+    I_BACK_CHEQUER,
+
+    /* Position of the back anchor. */
+    I_BACK_ANCHOR,
+
+    /* Position of the forward anchor. */
+    I_FORWARD_ANCHOR,
+
+    /* Average number of pips opponent loses from hits. */
+    I_PIPLOSS,
+
+    /* Number of rolls that hit at least one checker. */
+    I_P1,
+
+    /* Number of rolls that hit at least two checkers. */
+    I_P2,
+
+    /* How many rolls let the back checker escape. */
+    I_BACKESCAPES,
+
+    I_ACONTAIN,
+    /* Above squared */
+    I_ACONTAIN2,
+
+    I_CONTAIN,
+    /* Above squared */
+    I_CONTAIN2,
+
+    /* For all checkers, contribution of mobility. */
+    I_MOBILITY,
+
+    /* Second moment about centre of mass. */
+    I_MOMENT2,
+
+    /* Enter from the bar. */
+    I_ENTER,
+
+    /* Probability of entering from the bar. */
+    I_ENTER2,
+
+    I_TIMING,
+
+    I_BACKBONE,
+
+    I_BACKG,
+
+    I_BACKG1,
+
+    I_FREEPIP,
+
+    I_BACKRESCAPES,
+
+    MORE_INPUTS
+};
+
+#define MINPPERPOINT 4
+
+/* Exposed (un-staticed in eval.c) so the mobile tutor facade can compute gnubg's
+ * own position-feature inputs for a board. See PROVENANCE.md. */
+extern void CalculateHalfInputs(const unsigned int anBoard[25],
+                                const unsigned int anBoardOpp[25], float afInput[]);
+
 #endif

@@ -362,6 +362,18 @@ int gnubg_mobile_get_board(int out_board[50]) {
     return 50;
 }
 
+/* gnubg own position-feature inputs (eval.c CalculateHalfInputs), both sides.
+ * Raw normalised; denormalisation deferred. board[0..24]=p0, [25..49]=p1.
+ * out[0..MORE_INPUTS-1]=p0, [MORE_INPUTS..]=p1. Returns 2*MORE_INPUTS or -1. */
+int gnubg_mobile_position_features(const int board[50], float out[]) {
+    TanBoard anBoard;
+    if (!board || !out) return -1;
+    facade_unpack_board(board, anBoard);
+    CalculateHalfInputs(anBoard[0], anBoard[1], out);
+    CalculateHalfInputs(anBoard[1], anBoard[0], out + MORE_INPUTS);
+    return 2 * MORE_INPUTS;
+}
+
 
 /* Board in a STABLE human (player-0) frame, computed atomically.
  *

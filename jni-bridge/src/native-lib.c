@@ -552,6 +552,24 @@ Java_com_clavierhaus_gnubg_Engine_skill(JNIEnv *env, jobject thiz, jfloat equity
     return (jint) gnubg_mobile_skill((float) equityDelta);
 }
 
+JNIEXPORT jfloatArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_positionFeatures(JNIEnv *env, jobject thiz,
+                                                    jintArray jboard) {
+    (void)thiz;
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int b[50];
+    for (int i = 0; i < 50; i++) b[i] = (int)inBuf[i];
+    float out[2 * MORE_INPUTS];
+    int rc = gnubg_mobile_position_features(b, out);
+    if (rc < 1) return (*env)->NewFloatArray(env, 0);
+    jfloatArray result = (*env)->NewFloatArray(env, rc);
+    jfloat fbuf[2 * MORE_INPUTS];
+    for (int i = 0; i < rc; i++) fbuf[i] = (jfloat)out[i];
+    (*env)->SetFloatArrayRegion(env, result, 0, rc, fbuf);
+    return result;
+}
+
 /*
  * Engine.getMatchWinner(): Int
  * Returns 0 if human (ap[0]) won, 1 if engine (ap[1]) won, -1 if game still playing.

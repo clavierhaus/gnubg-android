@@ -259,6 +259,28 @@ The seam adds a guard check at the top of CommandRoll no-legal-move branch; when
 
 Three functions and one static added to play.c (`gnubg_set_computer_decision`, `gnubg_can_double`, `gnubg_set_suppress_auto_forfeit`; the latter exposes a new file-scope static `fSuppressAutoForfeit`). One line of guard inserted inside `CommandRoll` (Seam 3); Seams 1 and 2 are pure additions.
 
+### engine-core/eval.c, engine-core/eval.h
+
+**Origin:** Copied verbatim from upstream gnubg/eval.c, gnubg/eval.h (1.08.003),
+then modified with **visibility changes only** -- no logic changed.
+
+The mobile tutor exposes gnubg own position-feature inputs (shot count via I_P1,
+pip loss, containment, timing, mobility, etc.) computed by CalculateHalfInputs,
+which was static. Two visibility-only edits:
+
+1. The Contact-inputs enum (I_OFF1 .. MORE_INPUTS) and #define MINPPERPOINT 4
+   were relocated from eval.c to eval.h (a marker comment marks the former spot).
+   Member order and values are identical, so all integer input indices are
+   unchanged. NUM_INPUTS / NUM_RACE_INPUTS / NUM_PRUNING_INPUTS stay in eval.c
+   and still resolve (eval.c sees eval.h transitively via backgammon.h).
+2. CalculateHalfInputs changed static void -> extern void; eval.h gained the
+   matching extern declaration.
+
+**Rationale:** the facade verb gnubg_mobile_position_features calls
+CalculateHalfInputs once per side and returns gnubg raw normalised inputs. No
+gnubg computation is reimplemented or altered; only symbol linkage and the enum
+file location changed. gnubg remains the sole authority for the values.
+
 ### engine-core/lib/neuralnetsse.c
 
 **Origin:** Copied verbatim from `gnubg/lib/neuralnetsse.c` (upstream version
