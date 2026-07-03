@@ -6,8 +6,7 @@ data class TutorAnalysis(
     val level: BlunderLevel,
     val equityLoss: Float,
     val bestEquity: Float,
-    val playedEquity: Float,
-    val notable: String
+    val playedEquity: Float
 )
 
 data class MoveSnapshot(

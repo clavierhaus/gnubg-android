@@ -606,24 +606,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (raw.size == 52) {
                     val playedEquity = Float.fromBits(raw[0])
                     val bestEquity   = Float.fromBits(raw[1])
-                    val bestBoard    = raw.copyOfRange(2, 52)
                     val equityLoss   = (bestEquity - playedEquity).coerceAtLeast(0f)
                     val level        = com.clavierhaus.gnubg.tutor.BlunderClassifier.classify(equityLoss)
-                    val playedFV     = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(state.board)
-                    val bestFV       = com.clavierhaus.gnubg.tutor.FeatureExtractor.extract(bestBoard)
-                    val comparison   = com.clavierhaus.gnubg.tutor.FeatureExtractor.compare(playedFV, bestFV)
-                    val notable      = comparison.notableDeltas.take(3)
-                        .joinToString("; ") { "${it.feature} ${it.playedValue}->${it.bestValue}" }
                     android.util.Log.i("gnubg-tutor",
                         "level=$level loss=${"%.4f".format(equityLoss)} " +
-                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)} | " +
-                        notable.ifEmpty { "no notable deltas" })
+                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)}")
                     lastTutorAnalysis = TutorAnalysis(
                         level = level,
                         equityLoss = equityLoss,
                         bestEquity = bestEquity,
-                        playedEquity = playedEquity,
-                        notable = notable
+                        playedEquity = playedEquity
                     )
                 } else {
                     android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")

@@ -533,21 +533,24 @@ private fun TutorAnalysisPanel(analysis: com.clavierhaus.gnubg.engine.TutorAnaly
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         } else {
+            // gnubg labels a move only when it is a mistake (aszSkillType:
+            // very bad / bad / doubtful; NULL for SKILL_NONE). No invented verdict.
             val label = analysis.level.gnubgLabel
-            val verdictText = if (label == null) "Good move"
-                              else label.replaceFirstChar { it.uppercase() }
-            val verdictColor = when (analysis.level) {
-                com.clavierhaus.gnubg.tutor.BlunderLevel.VERY_BAD -> Color(0xFFE05252)
-                com.clavierhaus.gnubg.tutor.BlunderLevel.BAD      -> Color(0xFFE0A052)
-                com.clavierhaus.gnubg.tutor.BlunderLevel.DOUBTFUL -> Color(0xFFE0D052)
-                com.clavierhaus.gnubg.tutor.BlunderLevel.NONE     -> Color(0xFF66C066)
+            if (label != null) {
+                val verdictColor = when (analysis.level) {
+                    com.clavierhaus.gnubg.tutor.BlunderLevel.VERY_BAD -> Color(0xFFE05252)
+                    com.clavierhaus.gnubg.tutor.BlunderLevel.BAD      -> Color(0xFFE0A052)
+                    com.clavierhaus.gnubg.tutor.BlunderLevel.DOUBTFUL -> Color(0xFFE0D052)
+                    com.clavierhaus.gnubg.tutor.BlunderLevel.NONE     -> Color.White
+                }
+                Text(
+                    label.replaceFirstChar { it.uppercase() },
+                    color = verdictColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            Text(verdictText, color = verdictColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("Equity lost: ${"%.3f".format(analysis.equityLoss)}", color = Color.White, fontSize = 13.sp)
-            if (analysis.notable.isNotEmpty()) {
-                Text(analysis.notable, color = Color(0xFFB3C9F0), fontSize = 11.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            }
         }
     }
 }
