@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import android.util.Log
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -147,6 +148,12 @@ fun BackgammonBoard(
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    // Drag-to-move prototype state. draggingFrom is the source point (1..24) the
+    // finger picked up from; dragPosUnits is the current finger position in board
+    // units. Both null when no drag is in progress. Drag coexists with tap: this
+    // is a separate pointerInput, and detectDragGestures only fires past touch slop.
+    var draggingFrom by remember { mutableStateOf<Int?>(null) }
+    var dragPosUnits by remember { mutableStateOf<Offset?>(null) }
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -288,6 +295,58 @@ fun BackgammonBoard(
                     }
                 }
                 if (tapped >= 0) viewModel.tapSource(tapped)
+                }
+            )
+        }
+        .pointerInput(
+            viewModel,
+            gameState.phase,
+            gameState.turn,
+            gameState.legalMoves,
+            gameState.remainingDice
+        ) {
+            detectDragGestures(
+                onDragStart = { offset ->
+                    if (viewModel == null) return@detectDragGestures
+                    if (gameState.phase != GamePhase.HUMAN_MOVING) return@detectDragGestures
+                    val sx = size.width.toFloat() / TOT_W
+                    val sy = size.height.toFloat() / TOT_H
+                    val ux = offset.x / sx
+                    val uy = offset.y / sy
+                    val src = boardPointAt(ux, uy)
+                    if (src in 1..24 && gameState.board[24 + src] > 0) {
+                        draggingFrom = src
+                        dragPosUnits = Offset(ux, uy)
+                        highlightedLandingPoints = landingPointsForSource(gameState, src)
+                    }
+                },
+                onDrag = { change, _ ->
+                    if (draggingFrom == null) return@detectDragGestures
+                    val sx = size.width.toFloat() / TOT_W
+                    val sy = size.height.toFloat() / TOT_H
+                    dragPosUnits = Offset(change.position.x / sx, change.position.y / sy)
+                },
+                onDragEnd = {
+                    val from = draggingFrom
+                    val pos = dragPosUnits
+                    if (viewModel != null && from != null && pos != null) {
+                        val target = boardPointAt(pos.x, pos.y)
+                        // Release on a highlighted legal landing -> dispatch through the
+                        // existing move path. tapSource(target) routes to the destination
+                        // resolver (tryDestinationStackMove) for empty/opponent points;
+                        // releasing back on the source is a no-op selection.
+                        if (target in highlightedLandingPoints) {
+                            viewModel.tapSource(target)
+                        }
+                    }
+                    draggingFrom = null
+                    dragPosUnits = null
+                    highlightedLandingPoints = emptySet()
+                },
+                onDragCancel = {
+                    draggingFrom = null
+                    dragPosUnits = null
+                    highlightedLandingPoints = emptySet()
                 }
             )
         }
@@ -708,6 +767,21 @@ fun BackgammonBoard(
                         }
                     }
                 }
+            }
+
+            // Floating checker follows the finger during a drag (prototype).
+            dragPosUnits?.let { pos ->
+                val boardBottom = size.height - uy(BRD_H)
+                val boardTop    = size.height - boardBottom
+                val maxVisibleCheckers = 5f
+                val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
+                val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
+                val stepFactor = 2.05f
+                val insetFactor = 0.12f
+                val maxRByWidth = ux(PT_W) * 0.40f
+                val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
+                val fr = minOf(maxRByWidth, maxRByHeight)
+                drawChecker(ux(pos.x), uy(pos.y), fr, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
             }
         } // end Canvas
         
