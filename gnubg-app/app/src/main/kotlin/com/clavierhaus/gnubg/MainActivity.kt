@@ -46,8 +46,7 @@ class MainActivity : ComponentActivity() {
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
-                        onLearn = { mode = AppMode.LEARN },
-                        onAnalyse = { mode = AppMode.ANALYSE },
+                        onLiveAnalysis = { mode = AppMode.LIVE_ANALYSIS },
                         onOptions = { mode = AppMode.OPTIONS },
                         onProfile = { mode = AppMode.PROFILE }
                     )
@@ -55,6 +54,12 @@ class MainActivity : ComponentActivity() {
                     AppMode.PLAY -> GameLayout(
                         viewModel = viewModel,
                         onReturnToHub = { mode = AppMode.HUB }
+                    )
+
+                    AppMode.LIVE_ANALYSIS -> GameLayout(
+                        viewModel = viewModel,
+                        onReturnToHub = { mode = AppMode.HUB },
+                        tutorMode = true
                     )
 
                     AppMode.LEARN -> LearnScreen(

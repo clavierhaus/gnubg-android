@@ -27,7 +27,8 @@ import androidx.compose.material3.TextButton
 @Composable
 fun GameLayout(
     viewModel: GameViewModel,
-    onReturnToHub: (() -> Unit)? = null
+    onReturnToHub: (() -> Unit)? = null,
+    tutorMode: Boolean = false
 ) {
     var showSettings by remember { mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
