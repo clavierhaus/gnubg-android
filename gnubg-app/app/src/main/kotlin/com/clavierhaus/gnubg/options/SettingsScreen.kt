@@ -362,7 +362,30 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
 }
 
 @Composable
+private fun AboutLicenseSection() {
+    SettingsSection("About & License") {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+            Text("GNU Backgammon for Android", color = ColorTabTextActive, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text("A modified derivative of GNU Backgammon.", color = ColorTabText, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("This program is free software, licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).", color = ColorTabText, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("It comes with ABSOLUTELY NO WARRANTY. You may redistribute it under the conditions of the GPL. You have the right to the complete corresponding source code.", color = ColorTabText, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS. The Android port is Copyright (C) 2025-2026 clavierhaus.", color = ColorTabText, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Source, full license (COPYING), attribution (NOTICE), and modifications (PROVENANCE.md):", color = ColorTabText, fontSize = 13.sp)
+            Text("https://github.com/clavierhaus/gnubg-android", color = ColorTabTextActive, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = ColorTabText, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
 private fun ExpertSettingsTab() {
+    AboutLicenseSection()
+
     SettingsSection("GNUbg command bridge") {
         DisabledSettingsRow("Restricted command bridge", "Implemented, but not fired from live Settings")
         SettingsDivider()

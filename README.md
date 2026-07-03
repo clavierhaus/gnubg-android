@@ -60,3 +60,45 @@ Do not use `adb uninstall` unless explicitly necessary.
 
 - [Documentation index](docs/README.md)
 - [GNU Backgammon Mobile Tutor: Mission Statement and Product Philosophy](docs/gnubg_mobile_tutor_mission_statement.tex)
+
+## License
+
+This program is a modified derivative of **GNU Backgammon** and is licensed
+under the **GNU General Public License, version 3 or (at your option) any later
+version (GPL-3.0-or-later)**.
+
+- Full license text: [`COPYING`](COPYING)
+- Attribution, copyright holders, and modification notice: [`NOTICE`](NOTICE)
+- Record of every divergence from upstream GNU Backgammon: [`PROVENANCE.md`](PROVENANCE.md)
+
+GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the
+GNU Backgammon AUTHORS; the per-file copyright notices in `engine-core/`
+retain the authoritative attribution. The Android front end, JNI bridge, and
+port integration are Copyright (C) 2025-2026 clavierhaus
+<gnubg@clavierhaus.at>.
+
+This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+are welcome to redistribute it under the conditions of the GPL. The complete
+corresponding source is this repository:
+<https://github.com/clavierhaus/gnubg-android>.
+
+## License
+
+This program is a modified derivative of **GNU Backgammon** and is licensed
+under the **GNU General Public License, version 3 or (at your option) any later
+version (GPL-3.0-or-later)**.
+
+- Full license text: [`COPYING`](COPYING)
+- Attribution, copyright holders, and modification notice: [`NOTICE`](NOTICE)
+- Record of every divergence from upstream GNU Backgammon: [`PROVENANCE.md`](PROVENANCE.md)
+
+GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the
+GNU Backgammon AUTHORS; the per-file copyright notices in `engine-core/`
+retain the authoritative attribution. The Android front end, JNI bridge, and
+port integration are Copyright (C) 2025-2026 clavierhaus
+<gnubg@clavierhaus.at>.
+
+This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you
+are welcome to redistribute it under the conditions of the GPL. The complete
+corresponding source is this repository:
+<https://github.com/clavierhaus/gnubg-android>.

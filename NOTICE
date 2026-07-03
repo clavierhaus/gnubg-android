@@ -1,0 +1,63 @@
+GNU Backgammon for Android (gnubg-android)
+==========================================
+
+This program is a modified derivative work of GNU Backgammon.
+
+  GNU Backgammon is Copyright (C) 1984, 1989-1990, 2000-2025
+    Free Software Foundation, Inc.
+  and Copyright (C) 1996-2025 by the GNU Backgammon AUTHORS, including
+  (among others) Gary Wong, Joern Thyssen, Joseph Heled, Oystein Johansen,
+  Jim Segrave, Michael Petch, Christian Anthon, and the wider gnubg
+  contributor community. See the per-file copyright notices retained in
+  engine-core/ for the authoritative, complete attribution.
+
+  The Android front end, JNI bridge, and port integration are
+  Copyright (C) 2025-2026 clavierhaus <gnubg@clavierhaus.at>.
+
+License
+-------
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program (see the file COPYING). If not, see
+<https://www.gnu.org/licenses/>.
+
+Modifications
+-------------
+
+As required by the GNU GPL (which requires modified versions to be marked as
+changed), this is a MODIFIED version of GNU Backgammon. The engine core in
+engine-core/ is derived from upstream GNU Backgammon (version 1.08.003) and
+has been modified for the Android port. Every divergence from upstream --
+build configuration, threading, and the visibility/facade seams that let the
+Android layer drive and read the engine -- is documented in PROVENANCE.md.
+The upstream engine remains the sole authority for all game logic, cube logic,
+match and session state, analysis, tutor behaviour, rollout, and command
+semantics; the Android layer provides only the user interface, presentation,
+persistence, and a command-translation bridge.
+
+Corresponding Source
+--------------------
+
+The complete corresponding source for this program, including the engine core,
+the JNI bridge, the Android application, and the record of modifications, is
+available at:
+
+  https://github.com/clavierhaus/gnubg-android
+
+Anyone who receives a binary of this program is entitled to the complete
+corresponding source under the terms of the GNU General Public License v3.
+
+Upstream GNU Backgammon
+-----------------------
+
+GNU Backgammon home page:  https://www.gnu.org/software/gnubg/
+Upstream source:           https://ftp.gnu.org/gnu/gnubg/
