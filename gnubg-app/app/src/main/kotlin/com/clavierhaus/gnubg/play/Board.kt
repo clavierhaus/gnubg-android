@@ -507,8 +507,10 @@ fun BackgammonBoard(
                     }
                 }
 
-                // anBoard[1] = human/light
-                val humanCount = gameState.board[24 + n]
+                // anBoard[1] = human/light. While dragging, the picked-up checker
+                // leaves its source stack: subtract one at draggingFrom so it does
+                // not render both in the stack and under the finger.
+                val humanCount = gameState.board[24 + n] - (if (draggingFrom == n) 1 else 0)
                 if (humanCount > 0) {
                     val show = minOf(humanCount, 5)
                     for (i in 0 until show) {
