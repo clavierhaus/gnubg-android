@@ -200,7 +200,7 @@ fun GameLayout(
                         .fillMaxHeight()
                         .weight(0.82f)
                 ) {
-                    BackgammonBoard(settings, gameState, viewModel)
+                    BackgammonBoard(settings, gameState, viewModel, tutorMode)
                 }
             }
 
