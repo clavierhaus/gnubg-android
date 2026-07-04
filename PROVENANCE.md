@@ -168,44 +168,39 @@ at `jni-bridge/src/stubs.c:256`.
 ### engine-core/play.c
 
 **Origin:** Copied verbatim from `gnubg/play.c` (upstream version 1.08.003),
-then extended with **visibility seams** -- additional file-scope functions that
-expose internal static state to the facade. No upstream code is altered; only
-added.
+then extended with two **visibility seams** -- additional file-scope functions
+that expose or gate internal static state for the facade. No upstream logic is
+altered except the one guard line in Seam 2's CommandDouble and Seam 3's
+CommandRoll, both documented below.
 
-#### Seam 1: `gnubg_set_computer_decision` (setter)
+History note: an earlier port carried a third seam,
+`gnubg_set_computer_decision` (a setter exposing the static `fComputerDecision`
+so Kotlin could force `CommandTake`/`CommandDrop` for the engine after a human
+double). That seam was **removed** when the engine's cube response was returned
+to gnubg's own `ComputerTurn` (the `else if (ms.fDoubled)` branch decides
+take/drop/beaver natively). The facade now simply offers the cube and drains the
+turn loop; gnubg decides. `fComputerDecision` remains as gnubg's **own** static
+flag, used only by gnubg's native ComputerTurn -- it is stock upstream, not a
+divergence.
 
-**Added code (immediately after the `fComputerDecision` static declaration):**
+#### Seam 1: `gnubg_can_double` (rule gate, shared with CommandDouble)
+
+**Added function, and CommandDouble rewired to call it as its single rule gate.**
+
 ```c
-/* Mobile port seam: allow the facade to drive CommandTake/CommandDrop/CommandDouble
- * for the engine player (these no-op for a non-human player unless this flag is set).
- * Visibility-only: fComputerDecision stays static; this is the single documented hook. */
-void gnubg_set_computer_decision(int f) { fComputerDecision = f; }
-```
-
-**Rationale:** The mobile facade needs to drive `CommandTake`, `CommandDrop`,
-and `CommandDouble` on the engine player's behalf so the engine can respond to
-a human's cube offer. These commands refuse to act on a non-human player
-unless `fComputerDecision` is TRUE. Because the flag is `static` in play.c it
-is otherwise unreachable from outside the translation unit; this setter is
-the minimum-surface exposure. The flag's existing read sites
-(play.c:1089, 1097, 1147, 1268, 1299, 1303, 1357, 1359, 1386, 1388, 1480,
-1482) retain upstream semantics; the setter is a write-only surface.
-
-#### Seam 2: `gnubg_can_double` (reader)
-
-**Added code (immediately after Seam 1):**
-```c
-/* Mobile port seam: same preconditions as CommandDouble (play.c:2369),
- * minus move_not_last_in_match_ok (a desktop GetInputYN prompt that has no
- * counterpart in the mobile flow). Pure read of ms / ap / fComputerDecision;
- * no side effects. Returns 1 if a double command would succeed at the
- * current matchstate, 0 otherwise. */
+/* Mobile port seam (DELIBERATE, DOCUMENTED DEVIATION). gnubg has no
+ * side-effect-free "may I double?" query: the CLI never needed one. A touch GUI
+ * must know whether to render the cube as tappable BEFORE the tap, so this is
+ * the SINGLE SOURCE OF TRUTH for CommandDouble's pure-read rule preconditions --
+ * CommandDouble itself calls this (below), so there is one copy, no drift. It
+ * excludes move_not_last_in_match_ok (an interactive GetInputYN prompt, not a
+ * rule). A pending redouble (ms.fDoubled) is treated as can-double = 1. */
 int gnubg_can_double(void) {
     if (ms.gs != GAME_PLAYING) return 0;
     if (ap[ms.fTurn].pt != PLAYER_HUMAN && !fComputerDecision) return 0;
     if (ms.fCrawford) return 0;
     if (!ms.fCubeUse) return 0;
-    if (ms.fDoubled) return 0;
+    /* ms.fDoubled (pending redouble) intentionally NOT rejected -- see above. */
     if (ms.fTurn != ms.fMove) return 0;
     if (ms.anDice[0]) return 0;
     if (ms.fCubeOwner >= 0 && ms.fCubeOwner != ms.fTurn) return 0;
@@ -215,51 +210,80 @@ int gnubg_can_double(void) {
 }
 ```
 
-**Rationale:** The mobile UI needs a single accurate "can the on-roll
-player double right now?" predicate. The Kotlin side previously
-hand-rolled a near-equivalent check using fields read out of the
-matchstate (audit V5 in `docs/MASTER_V0.9.md` Phase 11.1), which missed
-two of `CommandDouble`'s preconditions (cube-at-max-value and dead-cube)
-and hardcoded the assumption that the human is player 0. Reimplementing
-the preconditions in the facade or in Kotlin risks silent drift from
-upstream gnubg; the gnubg-correct source of truth is `CommandDouble`
-itself. This seam mirrors that source exactly so the Kotlin check
-becomes a single call.
+**CommandDouble** (play.c ~2407) was changed so its per-condition precondition
+block is replaced by a single call to this gate:
 
-**Scope:** One function added. The desktop-only
-`move_not_last_in_match_ok` precondition is intentionally not mirrored:
-on desktop it prompts the user via `GetInputYN` ("Continuing will
-destroy the remainder of the match. Continue?"); on mobile there is no
-match-replay-destruction flow that would activate it.
+```c
+    if (!gnubg_can_double()) {
+        outputl(_("You can't double now."));
+        return;
+    }
+```
 
-#### Seam 3: `gnubg_set_suppress_auto_forfeit` (setter) + CommandRoll guard
+**Rationale:** The mobile UI needs a single accurate "can the on-roll player
+double right now?" predicate to decide cube tappability before the tap. Rather
+than mirror CommandDouble's preconditions in a *second* place (which risks silent
+drift), CommandDouble now calls this gate itself -- so there is exactly one copy
+of the rule. The individual upstream precondition messages are collapsed into one
+generic message; no code parses those strings. On the engine's own decision path
+(ComputerTurn), the gate's `fComputerDecision` term keeps behavior unchanged. A
+pending redouble (`ms.fDoubled`) is treated as can-double so the redouble
+dispatch in CommandDouble still fires.
 
-**Added code (immediately after Seam 2):**
+**Scope:** One function added; one precondition block in CommandDouble replaced
+by a call to it. `move_not_last_in_match_ok` (a desktop `GetInputYN` prompt, not
+a rule) is intentionally excluded and still runs separately in CommandDouble.
+
+#### Seam 2: `gnubg_set_suppress_auto_forfeit` (setter) + CommandRoll guard (human-scoped)
+
+**Added code:**
 
     static int fSuppressAutoForfeit = FALSE;
-    /* Mobile port seam: when set, CommandRoll skips its built-in no-legal-move
-     * auto-pass (the GenerateMoves==0 branch in CommandRoll) so the UI can
-     * render dice + a Continue button. The forfeited turn is then completed by
-     * the user tapping Continue, which calls CommandMove with empty input.
-     * Desktop gnubg has no UI for the no-legal-move moment so it auto-plays;
-     * mobile defers. Default FALSE preserves upstream behavior. */
+    /* Mobile port seam (DELIBERATE, DOCUMENTED DEVIATION). gnubg's CommandRoll
+     * forfeits a no-legal-move roll ATOMICALLY (records the dance and calls
+     * TurnDone before returning); it has no native pause point. A touch GUI needs
+     * the human to see their danced dice before the turn passes. When set,
+     * CommandRoll defers ONLY the HUMAN's no-legal-move auto-pass so the UI can
+     * show dice + a Continue affordance; Continue calls CommandMove with empty
+     * input to complete the forfeit. Scope is HUMAN-ONLY: the engine always
+     * auto-forfeits as upstream does. */
     void gnubg_set_suppress_auto_forfeit(int f) { fSuppressAutoForfeit = f; }
 
-**Modified code inside CommandRoll** (play.c CommandRoll body, one line inserted at the top of the existing `if (!GenerateMoves(...))` branch, immediately before the `playSound(...)` call):
+**Modified code inside CommandRoll** (one line at the top of the existing
+no-legal-move `if (!GenerateMoves(...))` branch, before `playSound(...)`):
 
-    if (fSuppressAutoForfeit) return;
+    if (fSuppressAutoForfeit && ap[ms.fTurn].pt == PLAYER_HUMAN) return;
 
-**Rationale:** Desktop gnubg `CommandRoll` is monolithic: after rolling the dice, it tests `GenerateMoves` for legal moves; if zero, it plays the no-legal-move sound, creates a `MOVE_NORMAL` no-move record, and calls `TurnDone` -- all inside a single `CommandRoll` invocation. The mobile UI needs a UX moment where the human sees the dice that left them with no legal move and confirms with a Continue tap before control transfers to the engine. Without the seam, the facade `drain_next_turns` then runs the engine turn before the human ever sees their dice, producing a rinse-repeat cascade where the player rolls and the engine has already moved before they can see the result.
+**Rationale:** Desktop gnubg `CommandRoll` is monolithic: after rolling, if
+`GenerateMoves` finds no legal move it plays the no-move sound, records a
+`MOVE_NORMAL` no-move, and calls `TurnDone` -- all in one invocation. The mobile
+UI needs the human to see the dice that left them stuck and confirm with a
+Continue tap before control transfers. The guard returns early, leaving
+`ms.anDice` populated and `fNextTurn` clear; Kotlin sees dice + empty
+`getLegalMoves` and renders Continue, whose tap routes to `CommandMove(NULL)` --
+gnubg's own no-legal-turn confirmation path. Only the timing changes; the
+turn-completion uses gnubg's own primitive.
 
-The seam adds a guard check at the top of CommandRoll no-legal-move branch; when the facade sets the flag at startup, the branch returns early leaving `ms.anDice` populated and `fNextTurn` clear. Kotlin sees dice on board, `getLegalMoves` returns empty, the UI renders a Continue button. The user tap calls `Engine.applyMoveString("")` which routes to `CommandMove(NULL)` -- gnubg own path for confirming a no-legal turn from the command line. `CommandMove` adds the same no-move record and calls `TurnDone`, identically to what CommandRoll would have done auto-play. The deferred turn-completion uses gnubg own primitive; only the timing changes.
+**The `ap[ms.fTurn].pt == PLAYER_HUMAN` scope is load-bearing.** An earlier
+version guarded on `fSuppressAutoForfeit` alone, which also suppressed the
+*engine's* auto-forfeit -- stalling the game near bear-off (the engine's turn was
+left with dice 0,0 and never completed, freezing play). Scoping to HUMAN ensures
+the engine always forfeits atomically as upstream does, so it can never stall.
 
-**Scope:** One static, one setter, one guard line. The guard sits at the top of CommandRoll existing `if (!GenerateMoves(...))` block; when the flag is FALSE (upstream behavior) the guard is a no-op and the block runs exactly as upstream.
+**Scope:** One static, one setter, one human-scoped guard line. When the flag is
+FALSE (upstream behavior) the guard is a no-op.
 
 #### Combined scope
 
-Three functions and one static added to play.c (`gnubg_set_computer_decision`, `gnubg_can_double`, `gnubg_set_suppress_auto_forfeit`; the latter exposes a new file-scope static `fSuppressAutoForfeit`). One line of guard inserted inside `CommandRoll` (Seam 3); Seams 1 and 2 are pure additions.
+Two functions and one static added to play.c (`gnubg_can_double`,
+`gnubg_set_suppress_auto_forfeit`; the latter exposes the new static
+`fSuppressAutoForfeit`). CommandDouble's precondition block replaced by a call to
+`gnubg_can_double`. One human-scoped guard line inserted in CommandRoll. The
+former `gnubg_set_computer_decision` seam has been removed; `fComputerDecision`
+is now touched only by stock gnubg code.
 
 ### engine-core/eval.c, engine-core/eval.h
+
 
 **Origin:** Copied verbatim from upstream gnubg/eval.c, gnubg/eval.h (1.08.003),
 then modified with **visibility changes only** -- no logic changed.
@@ -280,6 +304,20 @@ which was static. Two visibility-only edits:
 CalculateHalfInputs once per side and returns gnubg raw normalised inputs. No
 gnubg computation is reimplemented or altered; only symbol linkage and the enum
 file location changed. gnubg remains the sole authority for the values.
+
+**Seam: `gnubg_legal_sub_move` (thin LegalMove wrapper).** Added to eval.c:
+
+```c
+int gnubg_legal_sub_move(const TanBoard anBoard, int iSrc, int nPips) {
+    return LegalMove(anBoard, iSrc, nPips);
+}
+```
+
+A one-line visibility wrapper exposing gnubg's own `LegalMove` to the facade
+(`gnubg_mobile_apply_sub_move` gates on it before `ApplySubMove`, so the
+all-chequers-home bear-off rule -- which lives in `LegalMove`, not
+`ApplySubMove` -- is enforced by gnubg, not reinvented in Kotlin). No logic
+added; it just calls the upstream function.
 
 ### engine-core/lib/neuralnetsse.c
 
