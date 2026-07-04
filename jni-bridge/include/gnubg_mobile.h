@@ -91,15 +91,7 @@ int gnubg_mobile_position_features(const int board[50], float out[]);
 int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap);
 int gnubg_mobile_classify(const int board[50]);
 
-/* Return up to n_max ranked candidates for the position after rolling d0/d1.
- * out_moves : flat int array, n_max * 8 ints (one anMove[8] per candidate).
- * out_equities: float array, n_max floats (cubeless equity, best-first).
- * Returns the number of candidates written (0 if no legal moves), -1 on error.
- * Candidates are ordered best-first by 1-ply evaluation.
- * The caller owns both output buffers. */
-int gnubg_mobile_get_candidates(const int board[50], int d0, int d1,
-                                int *out_moves, float *out_equities,
-                                int n_max);
+
 int gnubg_mobile_cube_decision(const int board[50],
                                float *out, int out_cap, int *out_decision);
 int gnubg_mobile_rollout(const int board[50], int trials,
