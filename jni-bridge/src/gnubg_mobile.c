@@ -617,21 +617,21 @@ int gnubg_mobile_skill(float equity_delta) {
  *
  * Returns 1 on success, 0 if no analyzable move record, -1 on error.
  */
-int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
+/* Shared analysis replay (used by tutor_analyze and analyze_played_move).
+ * Finds the human's last MOVE_NORMAL, reconstructs the pre-move matchstate by
+ * replaying the game exactly as gnubg's AnalyzeGame does, scores all legal moves
+ * with FindnSaveBestMoves at the fixed 2-ply analysis context, and locates the
+ * played move's index. On success returns 1 and fills *pml (caller MUST g_free
+ * pml->amMoves), *piPlayed, and *pmsAnalyse. Returns 0 if no analyzable move,
+ * -1 on error. Caller holds gnubg_lock. */
+static int analyze_replay(movelist *pml, unsigned int *piPlayed,
+                          matchstate *pmsAnalyse) {
     listOLD *pl;
     moverecord *pmr, *pmrLast;
-    matchstate msAnalyse;
     statcontext *psc;
-    union { float f; unsigned int bits; } u;
 
-    if (!out) return -1;
     if (!plGame || plGame->plNext == plGame) return 0;
 
-    pthread_mutex_lock(&gnubg_lock);
-
-    /* The move we analyse is the human's -- the last MOVE_NORMAL by a human
-     * player (ap[fPlayer].pt == PLAYER_HUMAN). The very last record may be the
-     * engine's reply, so walk backward to find the human's move. */
     pmrLast = NULL;
     {
         listOLD *plScan;
@@ -642,97 +642,132 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
             }
         }
     }
-    if (!pmrLast) { pthread_mutex_unlock(&gnubg_lock); return 0; }
+    if (!pmrLast) return 0;
 
-    /* Reconstruct the pre-move matchstate by replaying the game exactly as
-     * gnubg's AnalyzeGame does: AnalyzeMove on the MOVE_GAMEINFO record inits
-     * msAnalyse, then FixMatchState + ApplyMoveRecord walk forward, stopping
-     * before pmrLast. */
     pl  = plGame->plNext;
     pmr = (moverecord *) pl->p;
-    if (!pmr || pmr->mt != MOVE_GAMEINFO) { pthread_mutex_unlock(&gnubg_lock); return 0; }
+    if (!pmr || pmr->mt != MOVE_GAMEINFO) return 0;
     psc = &pmr->g.sc;
-    if (AnalyzeMove(pmr, &msAnalyse, plGame, psc,
+    if (AnalyzeMove(pmr, pmsAnalyse, plGame, psc,
                     &esAnalysisChequer, &esAnalysisCube, aamfAnalysis, NULL, NULL) < 0) {
-        pthread_mutex_unlock(&gnubg_lock); return 0;
+        return 0;
     }
     for (pl = pl->plNext; pl != plGame && pl->p != pmrLast; pl = pl->plNext) {
         pmr = (moverecord *) pl->p;
-        FixMatchState(&msAnalyse, pmr);
-        if (pmr->fPlayer != msAnalyse.fMove) {
-            SwapSides(msAnalyse.anBoard);
-            msAnalyse.fMove = pmr->fPlayer;
+        FixMatchState(pmsAnalyse, pmr);
+        if (pmr->fPlayer != pmsAnalyse->fMove) {
+            SwapSides(pmsAnalyse->anBoard);
+            pmsAnalyse->fMove = pmr->fPlayer;
         }
-        ApplyMoveRecord(&msAnalyse, plGame, pmr);
+        ApplyMoveRecord(pmsAnalyse, plGame, pmr);
     }
 
-    /* Score all legal moves exactly as gnubg's AnalyzeMove does internally
-     * (play.c ~65823): FindnSaveBestMoves with fAnalyse=TRUE fills rScore and
-     * sorts best-first. Then find the played move by position key. */
-    FixMatchState(&msAnalyse, pmrLast);
-    if (pmrLast->fPlayer != msAnalyse.fMove) {
-        SwapSides(msAnalyse.anBoard);
-        msAnalyse.fMove = pmrLast->fPlayer;
+    FixMatchState(pmsAnalyse, pmrLast);
+    if (pmrLast->fPlayer != pmsAnalyse->fMove) {
+        SwapSides(pmsAnalyse->anBoard);
+        pmsAnalyse->fMove = pmrLast->fPlayer;
     }
     {
-        movelist ml;
         cubeinfo ci;
         positionkey key;
         TanBoard anBoardMove;
         unsigned int j, iPlayed;
 
-        memcpy(anBoardMove, msAnalyse.anBoard, sizeof(anBoardMove));
+        memcpy(anBoardMove, pmsAnalyse->anBoard, sizeof(anBoardMove));
         ApplyMove(anBoardMove, pmrLast->n.anMove, FALSE);
         PositionKey((ConstTanBoard) anBoardMove, &key);
 
-        GetMatchStateCubeInfo(&ci, &msAnalyse);
+        GetMatchStateCubeInfo(&ci, pmsAnalyse);
 
-        memset(&ml, 0, sizeof(ml));
-        /* PORT: tutor analysis uses the ANALYSIS chequer context
-         * (esAnalysisChequer, fixed EVALSETUP_2PLY), NOT the play-strength
-         * context. GetEvalChequer() returns esEvalChequer, which the opponent
-         * strength selector overwrites with a 0-ply preset -- coupling coaching
-         * quality to opponent difficulty, which is wrong. The cube path above
-         * already uses esAnalysisChequer; this matches it, so tutor analysis is
-         * always 2-ply regardless of chosen opponent strength. The engine 2-ply
-         * eval is confirmed healthy on this build. */
-        if (FindnSaveBestMoves(&ml, pmrLast->anDice[0], pmrLast->anDice[1],
-                               (ConstTanBoard) msAnalyse.anBoard, &key, TRUE,
+        memset(pml, 0, sizeof(*pml));
+        /* PORT: fixed 2-ply analysis context (esAnalysisChequer), independent of
+         * the opponent-strength selector -- see the tutor-ply fix commit. */
+        if (FindnSaveBestMoves(pml, pmrLast->anDice[0], pmrLast->anDice[1],
+                               (ConstTanBoard) pmsAnalyse->anBoard, &key, TRUE,
                                arSkillLevel[SKILL_DOUBTFUL], &ci,
                                &esAnalysisChequer.ec, aamfAnalysis) < 0) {
-            g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
+            g_free(pml->amMoves); pml->amMoves = NULL; return -1;
         }
-        if (ml.cMoves == 0 || !ml.amMoves) {
-            g_free(ml.amMoves);
-            pthread_mutex_unlock(&gnubg_lock); return 0;
-        }
-
-        iPlayed = ml.cMoves;
-        for (j = 0; j < ml.cMoves; j++)
-            if (EqualKeys(key, ml.amMoves[j].key)) { iPlayed = j; break; }
-        if (iPlayed >= ml.cMoves) {
-            g_free(ml.amMoves);
-            pthread_mutex_unlock(&gnubg_lock); return 0;
+        if (pml->cMoves == 0 || !pml->amMoves) {
+            g_free(pml->amMoves); pml->amMoves = NULL; return 0;
         }
 
-
-        u.f = ml.amMoves[iPlayed].rScore; out[0] = (int) u.bits;
-        u.f = ml.amMoves[0].rScore;       out[1] = (int) u.bits;
-
-        {
-            /* Best board in the SAME frame as the caller's played board
-             * (state.board): old_board + ApplyMove, NO SwapSides, exactly as
-             * applySubMove builds the played board. */
-            TanBoard bestBoard;
-            facade_unpack_board(old_board, bestBoard);
-            ApplyMove(bestBoard, ml.amMoves[0].anMove, FALSE);
-            facade_pack_board((ConstTanBoard) bestBoard, out + 2);
+        iPlayed = pml->cMoves;
+        for (j = 0; j < pml->cMoves; j++)
+            if (EqualKeys(key, pml->amMoves[j].key)) { iPlayed = j; break; }
+        if (iPlayed >= pml->cMoves) {
+            g_free(pml->amMoves); pml->amMoves = NULL; return 0;
         }
-        g_free(ml.amMoves);
+        *piPlayed = iPlayed;
     }
+    return 1;
+}
+
+int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
+    matchstate msAnalyse;
+    movelist ml;
+    unsigned int iPlayed;
+    union { float f; unsigned int bits; } u;
+    int rc;
+
+    if (!out) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse);
+    if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
+
+    u.f = ml.amMoves[iPlayed].rScore; out[0] = (int) u.bits;
+    u.f = ml.amMoves[0].rScore;       out[1] = (int) u.bits;
+
+    {
+        /* Best board in the SAME frame as the caller's played board
+         * (state.board): old_board + ApplyMove, NO SwapSides, exactly as
+         * applySubMove builds the played board. */
+        TanBoard bestBoard;
+        facade_unpack_board(old_board, bestBoard);
+        ApplyMove(bestBoard, ml.amMoves[0].anMove, FALSE);
+        facade_pack_board((ConstTanBoard) bestBoard, out + 2);
+    }
+    g_free(ml.amMoves);
 
     pthread_mutex_unlock(&gnubg_lock);
     return 1;
+}
+
+/* Analysis-mode detail for the played move: gnubg's Hint-window probability
+ * breakdown + equities, all in the mover's frame (ScoreMove applies
+ * InvertEvaluationR, so arEvalMove is the mover's perspective, matching rScore).
+ * out[7]: [0]=Win [1]=WinGammon [2]=WinBackgammon [3]=LoseGammon
+ *         [4]=LoseBackgammon [5]=cubeful equity (rScore) [6]=cubeless (rScore2).
+ * Win/gammon/bg are cumulative exactly as gnubg reports them (Win includes
+ * gammon+bg; WinGammon includes bg). Returns 7 on success, 0/-1 otherwise. */
+int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]) {
+    matchstate msAnalyse;
+    movelist ml;
+    unsigned int iPlayed;
+    int rc;
+    (void) old_board;
+
+    if (!out) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse);
+    if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
+
+    {
+        const move *pm = &ml.amMoves[iPlayed];
+        out[0] = pm->arEvalMove[OUTPUT_WIN];
+        out[1] = pm->arEvalMove[OUTPUT_WINGAMMON];
+        out[2] = pm->arEvalMove[OUTPUT_WINBACKGAMMON];
+        out[3] = pm->arEvalMove[OUTPUT_LOSEGAMMON];
+        out[4] = pm->arEvalMove[OUTPUT_LOSEBACKGAMMON];
+        out[5] = pm->rScore;
+        out[6] = pm->rScore2;
+    }
+    g_free(ml.amMoves);
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return 7;
 }
 
 /* Return ranked move candidates with cubeless 1-ply equity.

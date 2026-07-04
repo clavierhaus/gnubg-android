@@ -20,6 +20,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val gameState: StateFlow<BoardState> = _gameState.asStateFlow()
 
     private var lastTutorAnalysis: TutorAnalysis? = null
+    private var lastAnalysisDetail: MoveAnalysisDetail? = null
 
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
@@ -188,7 +189,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             fDoubled       = fDoubled,
             canDouble      = canDouble,
             unplayableDice = unplayableDice,
-            tutorAnalysis  = lastTutorAnalysis
+            tutorAnalysis  = lastTutorAnalysis,
+            analysisDetail = lastAnalysisDetail
         )
     }
 
@@ -647,10 +649,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         bestEquity = bestEquity,
                         playedEquity = playedEquity
                     )
-                    // Refresh the panel with the new verdict. Unguarded, single
-                    // targeted update -- no race (we never cleared to null, so the
-                    // worst case is the panel briefly shows the prior verdict).
-                    _gameState.value = _gameState.value.copy(tutorAnalysis = lastTutorAnalysis)
+                    // Analysis-mode detail: gnubg's probability breakdown for the
+                    // played move (Win/Wg/Wbg/Lg/Lbg + equities). Same replay, so
+                    // fetch alongside the verdict.
+                    val det = Engine.analyzePlayedMove(oldBoard)
+                    lastAnalysisDetail = if (det.size == 7) {
+                        MoveAnalysisDetail(
+                            win = det[0], winGammon = det[1], winBackgammon = det[2],
+                            loseGammon = det[3], loseBackgammon = det[4],
+                            equityCubeful = det[5], equityCubeless = det[6]
+                        )
+                    } else null
+                    android.util.Log.i("gnubg-analysis",
+                        if (det.size == 7)
+                            "win=${"%.4f".format(det[0])} wg=${"%.4f".format(det[1])} " +
+                            "lg=${"%.4f".format(det[3])} eqCubeful=${"%.4f".format(det[5])} " +
+                            "eqCubeless=${"%.4f".format(det[6])}"
+                        else "no detail (size=${det.size})")
+                    // Refresh the panel with the new verdict + detail. Unguarded,
+                    // single targeted update -- no race (we never cleared to null).
+                    _gameState.value = _gameState.value.copy(
+                        tutorAnalysis = lastTutorAnalysis,
+                        analysisDetail = lastAnalysisDetail
+                    )
                 } else {
                     android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")
                 }

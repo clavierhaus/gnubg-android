@@ -83,6 +83,7 @@ int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
  * Returns 1 ok, 0 no record, -1 error. */
 int gnubg_mobile_skill(float equity_delta);
 int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]);
+int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]);
 
 /* gnubg own position-feature inputs (CalculateHalfInputs), both sides.
  * out holds 2*MORE_INPUTS floats (MORE_INPUTS from eval.h). Raw normalised. */

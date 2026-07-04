@@ -9,6 +9,19 @@ data class TutorAnalysis(
     val playedEquity: Float
 )
 
+/** Analysis-mode probability breakdown for the played move, straight from
+ *  gnubg's Hint-window vector (mover's frame). Win includes gammon+bg; winGammon
+ *  includes bg -- cumulative exactly as gnubg reports. */
+data class MoveAnalysisDetail(
+    val win: Float,
+    val winGammon: Float,
+    val winBackgammon: Float,
+    val loseGammon: Float,
+    val loseBackgammon: Float,
+    val equityCubeful: Float,
+    val equityCubeless: Float
+)
+
 data class MoveSnapshot(
     val board: IntArray,
     val remainingDice: List<Int>,
@@ -43,6 +56,7 @@ data class BoardState(
     val humanScore: Int = 0,
     val engineScore: Int = 0,
     val tutorAnalysis: TutorAnalysis? = null,
+    val analysisDetail: MoveAnalysisDetail? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -61,7 +75,8 @@ data class BoardState(
                pipCountEngine == other.pipCountEngine &&
                phase == other.phase &&
                winner == other.winner &&
-               tutorAnalysis == other.tutorAnalysis
+               tutorAnalysis == other.tutorAnalysis &&
+               analysisDetail == other.analysisDetail
     }
 
     override fun hashCode(): Int {
@@ -80,6 +95,7 @@ data class BoardState(
         result = 31 * result + phase.hashCode()
         result = 31 * result + winner
         result = 31 * result + (tutorAnalysis?.hashCode() ?: 0)
+        result = 31 * result + (analysisDetail?.hashCode() ?: 0)
         return result
     }
 }

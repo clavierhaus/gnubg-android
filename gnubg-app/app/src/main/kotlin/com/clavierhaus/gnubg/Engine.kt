@@ -82,6 +82,9 @@ object Engine {
      */
     external fun tutorAnalyze(oldBoard: IntArray): IntArray
 
+    /** Analysis-mode detail: [Win, Wg, Wbg, Lg, Lbg, eqCubeful, eqCubeless]. */
+    external fun analyzePlayedMove(oldBoard: IntArray): FloatArray
+
     /** gnubg own move classifier (analysis.c Skill). equityDelta = played - best
      *  (<= 0). Returns gnubg skilltype ordinal: 0=VERYBAD 1=BAD 2=DOUBTFUL 3=NONE. */
     external fun skill(equityDelta: Float): Int

@@ -182,7 +182,7 @@ fun GameLayout(
                         }
 
                         if (tutorMode) {
-                            TutorAnalysisPanel(gameState.tutorAnalysis)
+                            TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
                         } else {
                             PlayLifecyclePanel(
                                 onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
@@ -513,7 +513,10 @@ private fun MatchSetupScreen(
 }
 
 @Composable
-private fun TutorAnalysisPanel(analysis: com.clavierhaus.gnubg.engine.TutorAnalysis?) {
+private fun TutorAnalysisPanel(
+    analysis: com.clavierhaus.gnubg.engine.TutorAnalysis?,
+    detail: com.clavierhaus.gnubg.engine.MoveAnalysisDetail? = null
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -550,7 +553,32 @@ private fun TutorAnalysisPanel(analysis: com.clavierhaus.gnubg.engine.TutorAnaly
                     fontWeight = FontWeight.Bold
                 )
             }
-            Text("Equity lost: ${"%.3f".format(analysis.equityLoss)}", color = Color.White, fontSize = 13.sp)
+            // Analysis-mode probability breakdown (gnubg Hint-window vector),
+            // stacked for phone readability. All values straight from gnubg;
+            // Win includes gammon+bg, winGammon includes bg (cumulative).
+            if (detail != null) {
+                val pct = { f: Float -> "%.1f%%".format(f * 100f) }
+                Text(
+                    "Win  ${pct(detail.win)}",
+                    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Gammon  ${pct(detail.winGammon)} for  ·  ${pct(detail.loseGammon)} against",
+                    color = Color(0xFFDCE6F5), fontSize = 13.sp
+                )
+                Text(
+                    "Backgammon  ${pct(detail.winBackgammon)}  ·  ${pct(detail.loseBackgammon)}",
+                    color = Color(0xFFB3C9F0), fontSize = 12.sp
+                )
+                val mp = (analysis.equityLoss * 1000f).toInt()
+                Text(
+                    "Equity  ${"%+.3f".format(detail.equityCubeless)}" +
+                        if (analysis.equityLoss > 0.0005f) "   (−$mp mP vs best)" else "   (best)",
+                    color = Color.White, fontSize = 13.sp
+                )
+            } else {
+                Text("Equity lost: ${"%.3f".format(analysis.equityLoss)}", color = Color.White, fontSize = 13.sp)
+            }
         }
     }
 }

@@ -528,6 +528,22 @@ Java_com_clavierhaus_gnubg_Engine_setBeavers(JNIEnv *env, jobject thiz, jint n) 
  * Returns IntArray[52]: [0]=played equity bits, [1]=best equity bits,
  * [2..51]=best-move board. Empty array if no analyzable move.
  */
+JNIEXPORT jfloatArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_analyzePlayedMove(JNIEnv *env, jobject thiz,
+                                                    jintArray joldBoard) {
+    (void)thiz;
+    jint oldBuf[50];
+    (*env)->GetIntArrayRegion(env, joldBoard, 0, 50, oldBuf);
+    int oldB[50];
+    for (int i = 0; i < 50; i++) oldB[i] = (int)oldBuf[i];
+    float out[7] = {0};
+    int rc = gnubg_mobile_analyze_played_move(oldB, out);
+    if (rc < 7) return (*env)->NewFloatArray(env, 0);
+    jfloatArray result = (*env)->NewFloatArray(env, 7);
+    (*env)->SetFloatArrayRegion(env, result, 0, 7, out);
+    return result;
+}
+
 JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_tutorAnalyze(JNIEnv *env, jobject thiz,
                                                 jintArray joldBoard) {
