@@ -158,7 +158,8 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
-    viewModel: GameViewModel? = null
+    viewModel: GameViewModel? = null,
+    tutorMode: Boolean = false
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -226,6 +227,7 @@ fun BackgammonBoard(
                     else -> TOT_H / 2f
                 }
                 val cubeHit =
+                    !tutorMode &&
                     x >= MID_X - cubeSzU / 2f && x <= MID_X + cubeSzU / 2f &&
                     y >= cubeCYU - cubeSzU / 2f && y <= cubeCYU + cubeSzU / 2f
 
@@ -488,21 +490,25 @@ fun BackgammonBoard(
             // - centred cube (no owner): middle of the bar, display 64
             // - engine-owned cube: one cube-height above centre
             // - human-owned cube: one cube-height below centre
-            val cubeSzU = BAR_W * 0.75f
-            val cubeGapU = cubeSzU * 0.18f
-            val cubeCXU = MID_X
-            // Must match the hit-test cubeCYU above exactly.
-            val cubeCYU = when (gameState.cubeOwner) {
-                1 -> TOT_H / 2f - cubeSzU - cubeGapU
-                0 -> TOT_H / 2f + cubeSzU + cubeGapU
-                else -> TOT_H / 2f
+            // Cube is not part of tutor / live-analysis mode: no doubling, so
+            // nothing to draw (not even the centred 64).
+            if (!tutorMode) {
+                val cubeSzU = BAR_W * 0.75f
+                val cubeGapU = cubeSzU * 0.18f
+                val cubeCXU = MID_X
+                // Must match the hit-test cubeCYU above exactly.
+                val cubeCYU = when (gameState.cubeOwner) {
+                    1 -> TOT_H / 2f - cubeSzU - cubeGapU
+                    0 -> TOT_H / 2f + cubeSzU + cubeGapU
+                    else -> TOT_H / 2f
+                }
+                val cubeBarCX = ux(cubeCXU)
+                val cubeBarCY = uy(cubeCYU)
+                val cubeSz = ux(cubeSzU)
+                val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
+                drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, cubeDisplayValue,
+                    p.cubeFace, p.cubeDot, p.cubeText)
             }
-            val cubeBarCX = ux(cubeCXU)
-            val cubeBarCY = uy(cubeCYU)
-            val cubeSz = ux(cubeSzU)
-            val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
-            drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, cubeDisplayValue,
-                p.cubeFace, p.cubeDot, p.cubeText)
 
             // 6. Checkers from live board state
             for (n in 1..24) {
