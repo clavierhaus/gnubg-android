@@ -594,31 +594,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
             Engine.applyMoveString(moveStr)
 
-            // --- Tutor analysis: gnubg's own AnalyzeMove on the played move ---
-            // Runs AFTER applyMoveString (the move record must be in plGame).
-            // Wrapped in try/catch: never affects gameplay.
-            try {
-                val raw = Engine.tutorAnalyze(state.oldBoard)
-                if (raw.size == 52) {
-                    val playedEquity = Float.fromBits(raw[0])
-                    val bestEquity   = Float.fromBits(raw[1])
-                    val equityLoss   = (bestEquity - playedEquity).coerceAtLeast(0f)
-                    val level        = com.clavierhaus.gnubg.tutor.BlunderClassifier.classify(equityLoss)
-                    android.util.Log.i("gnubg-tutor",
-                        "level=$level loss=${"%.4f".format(equityLoss)} " +
-                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)}")
-                    lastTutorAnalysis = TutorAnalysis(
-                        level = level,
-                        equityLoss = equityLoss,
-                        bestEquity = bestEquity,
-                        playedEquity = playedEquity
-                    )
-                } else {
-                    android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")
-                }
-            } catch (t: Throwable) {
-                android.util.Log.e("gnubg-tutor", "analysis failed: ${t.message}")
-            }
+            // Tutor 2-ply analysis (~2s) is DECOUPLED: it runs in
+            // analyzeMoveInBackground() after the turn completes, so it never
+            // blocks the return to WAITING_FOR_ROLL. The panel keeps showing the
+            // PREVIOUS move's verdict until the new one lands (no empty flash).
 
             // Game-over detection via score delta (survives the NextTurn
             // auto-advance; see scoreBefore comment above). gnubg computed the
@@ -642,6 +621,42 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
+            analyzeMoveInBackground(state.oldBoard)
+        }
+    }
+
+    /** Decoupled tutor analysis: gnubg's 2-ply AnalyzeMove of the played move,
+     *  run off the turn-completion critical path so the player can roll
+     *  immediately. The previous verdict stays visible until this overwrites it
+     *  (lastTutorAnalysis is never cleared to null). Never affects gameplay. */
+    private fun analyzeMoveInBackground(oldBoard: IntArray) {
+        viewModelScope.launch(engineThread) {
+            try {
+                val raw = Engine.tutorAnalyze(oldBoard)
+                if (raw.size == 52) {
+                    val playedEquity = Float.fromBits(raw[0])
+                    val bestEquity   = Float.fromBits(raw[1])
+                    val equityLoss   = (bestEquity - playedEquity).coerceAtLeast(0f)
+                    val level        = com.clavierhaus.gnubg.tutor.BlunderClassifier.classify(equityLoss)
+                    android.util.Log.i("gnubg-tutor",
+                        "level=$level loss=${"%.4f".format(equityLoss)} " +
+                        "best=${"%.4f".format(bestEquity)} played=${"%.4f".format(playedEquity)}")
+                    lastTutorAnalysis = TutorAnalysis(
+                        level = level,
+                        equityLoss = equityLoss,
+                        bestEquity = bestEquity,
+                        playedEquity = playedEquity
+                    )
+                    // Refresh the panel with the new verdict. Unguarded, single
+                    // targeted update -- no race (we never cleared to null, so the
+                    // worst case is the panel briefly shows the prior verdict).
+                    _gameState.value = _gameState.value.copy(tutorAnalysis = lastTutorAnalysis)
+                } else {
+                    android.util.Log.i("gnubg-tutor", "no analysis (raw.size=${raw.size})")
+                }
+            } catch (t: Throwable) {
+                android.util.Log.e("gnubg-tutor", "analysis failed: ${t.message}")
+            }
         }
     }
 

@@ -60,7 +60,8 @@ data class BoardState(
                pipCountHuman == other.pipCountHuman &&
                pipCountEngine == other.pipCountEngine &&
                phase == other.phase &&
-               winner == other.winner
+               winner == other.winner &&
+               tutorAnalysis == other.tutorAnalysis
     }
 
     override fun hashCode(): Int {
@@ -78,6 +79,7 @@ data class BoardState(
         result = 31 * result + pipCountEngine
         result = 31 * result + phase.hashCode()
         result = 31 * result + winner
+        result = 31 * result + (tutorAnalysis?.hashCode() ?: 0)
         return result
     }
 }
