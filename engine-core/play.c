@@ -119,31 +119,36 @@ statcontext scMatch;
 static int fComputerDecision = FALSE;
 static int fEndGame = FALSE;
 
-/* Mobile port seam: allow the facade to drive CommandTake/CommandDrop/CommandDouble
- * for the engine player (these no-op for a non-human player unless this flag is set).
- * Visibility-only: fComputerDecision stays static; this is the single documented hook. */
-void gnubg_set_computer_decision(int f) { fComputerDecision = f; }
-
 static int fSuppressAutoForfeit = FALSE;
-/* Mobile port seam: when set, CommandRoll skips its built-in no-legal-move
- * auto-pass (the GenerateMoves==0 branch in CommandRoll) so the UI can
- * render dice + a Continue button. The forfeited turn is then completed by
- * the user tapping Continue, which calls CommandMove with empty input.
- * Desktop gnubg has no UI for the no-legal-move moment so it auto-plays;
- * mobile defers. Default FALSE preserves upstream behavior. */
+/* Mobile port seam (DELIBERATE, DOCUMENTED DEVIATION -- see PROVENANCE.md).
+ * gnubg's CommandRoll forfeits a no-legal-move roll ATOMICALLY (records the
+ * dance and calls TurnDone before returning); it has no native pause point.
+ * A touch GUI needs the human to see their danced dice before the turn passes,
+ * which command-line gnubg never needed. When set, CommandRoll defers ONLY the
+ * HUMAN's no-legal-move auto-pass so the UI can show dice + a Continue
+ * affordance; Continue calls CommandMove with empty input to complete the
+ * forfeit. Scope is HUMAN-ONLY: the engine (PLAYER_GNU) always auto-forfeits as
+ * upstream does. Previously this flag was unscoped and suppressed the ENGINE's
+ * auto-forfeit too, stalling the game near bear-off (engine turn left dice 0,0).
+ * The PLAYER_HUMAN test at the guard site is what prevents that. */
 void gnubg_set_suppress_auto_forfeit(int f) { fSuppressAutoForfeit = f; }
 
-/* Mobile port seam: same preconditions as CommandDouble (play.c:2369),
- * minus move_not_last_in_match_ok (a desktop GetInputYN prompt that has no
- * counterpart in the mobile flow). Pure read of ms / ap / fComputerDecision;
- * no side effects. Returns 1 if a double command would succeed at the
- * current matchstate, 0 otherwise. */
+/* Mobile port seam (DELIBERATE, DOCUMENTED DEVIATION -- see PROVENANCE.md).
+ * gnubg has no side-effect-free "may I double?" query: the CLI never needed one
+ * (you type `double' and CommandDouble says no if it can't). A touch GUI must
+ * know whether to render the cube as tappable BEFORE the tap, so this is the
+ * SINGLE SOURCE OF TRUTH for CommandDouble's pure-read rule preconditions --
+ * CommandDouble itself calls this (below), so there is one copy, no drift. It
+ * excludes move_not_last_in_match_ok (an interactive GetInputYN prompt, not a
+ * rule). A pending redouble (ms.fDoubled) is treated as can-double = 1, since
+ * offering a redouble is a valid cube action from the UI's standpoint; the
+ * redouble dispatch in CommandDouble then routes it to CommandRedouble. */
 int gnubg_can_double(void) {
     if (ms.gs != GAME_PLAYING) return 0;
     if (ap[ms.fTurn].pt != PLAYER_HUMAN && !fComputerDecision) return 0;
     if (ms.fCrawford) return 0;
     if (!ms.fCubeUse) return 0;
-    if (ms.fDoubled) return 0;
+    /* ms.fDoubled (pending redouble) intentionally NOT rejected -- see above. */
     if (ms.fTurn != ms.fMove) return 0;
     if (ms.anDice[0]) return 0;
     if (ms.fCubeOwner >= 0 && ms.fCubeOwner != ms.fTurn) return 0;
@@ -2399,26 +2404,16 @@ CommandDouble(char *UNUSED(sz))
 
     moverecord *pmr;
 
-    if (ms.gs != GAME_PLAYING) {
-        outputl(_("No game in progress (type `new game' to start one)."));
-
-        return;
-    }
-
-    if (ap[ms.fTurn].pt != PLAYER_HUMAN && !fComputerDecision) {
-        outputl(_("It is the computer's turn -- type `play' to force it to " "move immediately."));
-        return;
-    }
-
-    if (ms.fCrawford) {
-        outputl(_("Doubling is forbidden by the Crawford rule (see `help set " "crawford')."));
-
-        return;
-    }
-
-    if (!ms.fCubeUse) {
-        outputl(_("The doubling cube has been disabled (see `help set cube " "use')."));
-
+    /* Rule preconditions are the single source of truth in gnubg_can_double()
+     * (mobile port: one copy, shared with the UI cube-tappability pre-check).
+     * gnubg_can_double() treats a pending redouble (ms.fDoubled) as allowed, so
+     * the redouble dispatch below still fires. On the engine's own decision path
+     * (ComputerTurn) the interactive prompt is inert (automaticTask) and
+     * ms.fDoubled is false, so behavior is unchanged there. Desktop CLI note:
+     * the previous per-condition messages are collapsed to one; no code depends
+     * on the specific text. */
+    if (!gnubg_can_double()) {
+        outputl(_("You can't double now."));
         return;
     }
 
@@ -2430,34 +2425,7 @@ CommandDouble(char *UNUSED(sz))
         return;
     }
 
-    if (ms.fTurn != ms.fMove) {
-        outputl(_("You are only allowed to double if you are on roll."));
-
-        return;
-    }
-
-    if (ms.anDice[0]) {
-        outputl(_("You can't double after rolling the dice -- wait until your " "next turn."));
-
-        return;
-    }
-
-    if (ms.fCubeOwner >= 0 && ms.fCubeOwner != ms.fTurn) {
-        outputl(_("You do not own the cube."));
-
-        return;
-    }
-
-    if (ms.nCube >= (ms.nMatchTo ? MAXSCORE : MAX_CUBE)) {
-        outputf(_("The cube is already at its highest supported value ; you can't double any more.\n"));
-        return;
-    }
-
-    if (ms.nMatchTo && ms.nCube >= (ms.nMatchTo - ms.anScore[ms.fTurn])) {
-        outputf(_("The cube is dead; you can't double any more.\n"));
-        return;
-    }
-
+    {
     playSound(SOUND_DOUBLE);
 
     pmr = NewMoveRecord();
@@ -2483,6 +2451,7 @@ CommandDouble(char *UNUSED(sz))
     AddMoveRecord(pmr);
 
     TurnDone();
+    }
 }
 
 static skilltype
@@ -4145,7 +4114,7 @@ CommandRoll(char *UNUSED(sz))
 
     if (!GenerateMoves(&ml, msBoard(), ms.anDice[0], ms.anDice[1], FALSE)) {
 
-        if (fSuppressAutoForfeit) return;
+        if (fSuppressAutoForfeit && ap[ms.fTurn].pt == PLAYER_HUMAN) return;
 
         playSound(ap[ms.fTurn].pt == PLAYER_HUMAN ? SOUND_HUMAN_DANCE : SOUND_BOT_DANCE);
 

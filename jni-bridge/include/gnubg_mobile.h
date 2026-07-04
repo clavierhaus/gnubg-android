@@ -110,7 +110,6 @@ int gnubg_mobile_rollout(const int board[50], int trials,
 int gnubg_mobile_initialise(const char *weights_path);
 
 /* Engine responds to a human double already on the table (take!=0 -> take). */
-int gnubg_mobile_engine_cube_response(int take);
 
 #ifdef __cplusplus
 }

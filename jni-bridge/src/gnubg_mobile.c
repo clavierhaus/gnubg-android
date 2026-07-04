@@ -47,7 +47,6 @@ extern void InitMatchEquity(const char *szFileName);
 extern int  gnubg_legal_sub_move(const TanBoard anBoard, int iSrc, int nPips);  /* seam in engine-core/eval.c -- bear-off + opponent-block rule */   /* seam in engine-core/play.c -- see PROVENANCE */
 extern void CommandTake(char *);
 extern void CommandDrop(char *);
-extern void gnubg_set_computer_decision(int f);  /* play.c seam: lets CommandTake/Drop run for the engine player */
 extern void CommandRoll(char *);
 extern void CommandMove(char *);
 extern int NextTurn(int fPlayNext);
@@ -223,12 +222,14 @@ int gnubg_mobile_command_redouble(void) {
 
 int gnubg_mobile_command_double(void) {
     pthread_mutex_lock(&gnubg_lock);
-    /* Do NOT drain here. CommandDouble offers the cube and hands the turn
-     * to the responder, leaving fDoubled and fNextTurn set. Draining would
-     * run NextTurn immediately and auto-resolve the pending double before
-     * the caller decides take or drop, destroying the two-step offer/respond
-     * flow. The response verb, via CommandTake/CommandDrop, is what drains. */
+    /* Human offers the cube, then we drive gnubg's own turn loop. gnubg's
+     * ComputerTurn (the `else if (ms.fDoubled)` branch) evaluates the cube and
+     * decides take/drop/beaver ITSELF -- that decision is gnubg's, not the
+     * port's. Draining here is what lets gnubg make it. (Previously the port
+     * stopped after CommandDouble and had Kotlin decide take/drop via a forced
+     * CommandTake/CommandDrop, overriding gnubg's cube judgment.) */
     CommandDouble(NULL);
+    gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 
     return 1;
@@ -287,28 +288,6 @@ int gnubg_mobile_command_drop(void) {
     return 1;
 }
 
-/*
- * Engine cube response to a double already on the table.
- * Precondition: a human double has been registered (ms.fDoubled == TRUE) and it
- * is now the engine player's turn. gnubg's CommandTake/CommandDrop refuse to act
- * for a non-human player unless fComputerDecision is set, so we raise that flag
- * around the call (mirroring play.c's ComputerTurn cube block), then drain.
- *   take != 0 -> CommandTake (engine accepts; play continues)
- *   take == 0 -> CommandDrop (engine passes; game ends, doubler awarded points)
- */
-int gnubg_mobile_engine_cube_response(int take) {
-    pthread_mutex_lock(&gnubg_lock);
-    gnubg_set_computer_decision(1);
-    if (take)
-        CommandTake(NULL);
-    else
-        CommandDrop(NULL);
-    gnubg_set_computer_decision(0);
-    gnubg_mobile_drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
-
-    return 1;
-}
 
 int gnubg_mobile_start_match(int match_length) {
     char szMatch[16];

@@ -66,7 +66,6 @@ object Engine {
     external fun commandDouble()
     external fun commandTake()
     external fun commandDrop()
-    external fun engineCubeResponse(take: Boolean)
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
 
