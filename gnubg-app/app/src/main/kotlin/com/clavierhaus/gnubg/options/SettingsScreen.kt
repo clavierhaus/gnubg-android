@@ -8,8 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonColors
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,7 +35,7 @@ enum class SettingsTab { GAME, BOARD, ENGINE, ANALYSIS, EXPERT }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
-private val switchColors
+private val switchColors: SwitchColors
     @Composable get() {
         val pal = LocalBoardPalette.current
         return SwitchDefaults.colors(
@@ -44,7 +46,7 @@ private val switchColors
         )
     }
 
-private val radioColors
+private val radioColors: RadioButtonColors
     @Composable get() {
         val pal = LocalBoardPalette.current
         return RadioButtonDefaults.colors(
