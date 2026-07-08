@@ -450,6 +450,14 @@ Java_com_clavierhaus_gnubg_Engine_setCubeUse(JNIEnv *env, jobject thiz, jboolean
 }
 
 JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setMet(JNIEnv *env, jobject thiz, jstring jpath) {
+    (void)thiz;
+    const char *path = (*env)->GetStringUTFChars(env, jpath, NULL);
+    gnubg_mobile_set_met(path);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+}
+
+JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_setAutoDoubles(JNIEnv *env, jobject thiz, jint n) {
     (void)env; (void)thiz;
     gnubg_mobile_set_auto_doubles((int)n);

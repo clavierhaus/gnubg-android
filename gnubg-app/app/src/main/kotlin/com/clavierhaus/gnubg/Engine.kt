@@ -33,6 +33,8 @@ object Engine {
     external fun setAutoCrawford(on: Boolean)
     external fun setJacoby(on: Boolean)
     external fun setCubeUse(on: Boolean)
+    /** Load a match equity table by file path (empty = built-in Zadeh default). */
+    external fun setMet(path: String)
     external fun setAutoDoubles(n: Int)
     external fun setBeavers(n: Int)
 

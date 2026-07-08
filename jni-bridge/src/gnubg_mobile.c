@@ -145,6 +145,20 @@ int gnubg_mobile_set_cube_use(int on) {
     return 1;
 }
 
+/* Load a match equity table by file path. Mirrors CommandSetMET (set.c:3133):
+ * InitMatchEquity loads the XML (or falls back to the built-in Zadeh default if
+ * the path is empty/unreadable), then the eval cache must be flushed because
+ * cubeful evaluations cached under the previous table would be stale. Safe: it
+ * touches only the MET tables and cache, not live match state. */
+extern void EvalCacheFlush(void);
+int gnubg_mobile_set_met(const char *path) {
+    pthread_mutex_lock(&gnubg_lock);
+    InitMatchEquity(path ? path : "");
+    EvalCacheFlush();
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 
 int gnubg_mobile_command_new_session(int games) {
     char sz_games[16];

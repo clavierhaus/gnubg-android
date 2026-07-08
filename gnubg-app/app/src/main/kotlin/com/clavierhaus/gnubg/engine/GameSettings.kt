@@ -11,9 +11,24 @@ enum class Difficulty(val label: String, val subtitle: String, val settingIndex:
     ADVANCED("Advanced", "Noise 0.015 (0-ply)", 3)
 }
 
+enum class MatchEquityTable(val displayName: String, val fileName: String) {
+    // Bundled canonical gnubg MET files (assets/met/*.xml). Kazaross-XG2 is the
+    // modern standard (equivalent to XG2's table); Zadeh is gnubg's built-in
+    // default. fileName is resolved against the extracted met/ directory.
+    KAZAROSS_XG2("Kazaross XG2", "Kazaross-XG2.xml"),
+    ROCKWELL_KAZAROSS("Rockwell / Kazaross", "Rockwell-Kazaross.xml"),
+    WOOLSEY("Kit Woolsey", "woolsey.xml"),
+    JACOBS_TRICE("Jacobs & Trice", "jacobs.xml"),
+    SNOWIE("Snowie 2.1", "snowie.xml"),
+    GNUBG_11("GNUbg 11-point", "g11.xml"),
+    MEC26("MEC 26", "mec26.xml"),
+    ZADEH("Zadeh (default)", "zadeh.xml")
+}
+
 data class GameSettings(
     val matchLength: Int = 3,
     val cubeUse: Boolean = true,
+    val metTable: MatchEquityTable = MatchEquityTable.KAZAROSS_XG2,
     val crawford: Boolean = true,
     val jacoby: Boolean = false,
     val automaticDoubles: Int = 0,

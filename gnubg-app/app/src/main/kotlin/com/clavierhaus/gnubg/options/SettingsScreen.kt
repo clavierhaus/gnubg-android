@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.engine.BoardTheme
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GameSettings
+import com.clavierhaus.gnubg.engine.MatchEquityTable
 import com.clavierhaus.gnubg.engine.GameViewModel
 
 enum class SettingsTab { GAME, BOARD, ENGINE, ANALYSIS, EXPERT }
@@ -216,6 +217,19 @@ private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
     SettingsSection("Cube rules") {
         SettingsRow("Cube enabled", "Use the doubling cube (off = single-game play)") {
             Switch(settings.cubeUse, { vm.setCubeUse(it) }, colors = switchColors)
+        }
+    }
+
+    SettingsSection("Match equity table") {
+        MatchEquityTable.values().forEachIndexed { i, met ->
+            SettingsRow(met.displayName, if (i == 0) "Used for match-play cube decisions" else "") {
+                RadioButton(
+                    selected = settings.metTable == met,
+                    onClick = { vm.setMet(met) },
+                    colors = radioColors
+                )
+            }
+            if (i < MatchEquityTable.values().size - 1) SettingsDivider()
         }
     }
 }

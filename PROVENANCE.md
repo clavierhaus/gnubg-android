@@ -56,6 +56,28 @@ into `engine-core/` and `engine-core/lib/`:
 | `SFMT.c`, `SFMT.h`, `SFMT-params.h` | `gnubg/lib/SFMT.c`, etc. |
 | `simd.h` | `gnubg/lib/simd.h` |
 
+### gnubg-app/app/src/main/assets/met/ (data files)
+
+Bundled match-equity-table XML files, copied verbatim from upstream gnubg's
+`met/` directory (GPL, same license as gnubg). These let the app offer alternative
+METs for match-play cube decisions; without them only the code-generated Zadeh
+default is available.
+
+| File | Upstream path | Table |
+|---|---|---|
+| `Kazaross-XG2.xml` | `gnubg/met/Kazaross-XG2.xml` | Kazaross XG2 (modern standard; Neil Kazaross released it under gnubg's license) |
+| `Rockwell-Kazaross.xml` | `gnubg/met/Rockwell-Kazaross.xml` | Rockwell/Kazaross |
+| `woolsey.xml` | `gnubg/met/woolsey.xml` | Kit Woolsey |
+| `jacobs.xml` | `gnubg/met/jacobs.xml` | Jacobs & Trice |
+| `snowie.xml` | `gnubg/met/snowie.xml` | Snowie 2.1 |
+| `g11.xml` | `gnubg/met/g11.xml` | GNUbg 11-point |
+| `mec26.xml` | `gnubg/met/mec26.xml` | MEC 26 |
+| `zadeh.xml` | `gnubg/met/zadeh.xml` | Zadeh (also gnubg's built-in default) |
+| `met.dtd` | `gnubg/met/met.dtd` | DTD referenced by the XML headers |
+
+No modification; the files are loaded by gnubg's own `InitMatchEquity`/`readMET`
+(the upstream GMarkup XML parser) via the new `gnubg_mobile_set_met` facade verb.
+
 ## What was modified
 
 The following files were modified from their upstream originals for Android

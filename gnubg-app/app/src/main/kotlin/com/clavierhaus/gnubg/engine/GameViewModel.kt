@@ -53,6 +53,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             Engine.setJacoby(s.jacoby)
             Engine.setAutoDoubles(s.automaticDoubles)
             Engine.setBeavers(if (s.beavers) 3 else 0)
+            // Extract the bundled match-equity tables and load the saved choice
+            // (overriding the built-in Zadeh default set during initialise()).
+            val metDir = AssetExtractor.extractMets(application)
+            Engine.setMet("$metDir/${s.metTable.fileName}")
             _engineReady.value = true
         }
     }
@@ -993,6 +997,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // as Jacoby. Applies immediately at the engine level.
         _settings.value = _settings.value.copy(cubeUse = on)
         viewModelScope.launch(engineThread) { Engine.setCubeUse(on) }
+    }
+    fun setMet(t: MatchEquityTable) {
+        // Load the chosen match equity table. InitMatchEquity + eval-cache flush
+        // (safe: touches only MET tables, not live match state).
+        _settings.value = _settings.value.copy(metTable = t)
+        viewModelScope.launch(engineThread) {
+            val metDir = AssetExtractor.extractMets(getApplication())
+            Engine.setMet("$metDir/${t.fileName}")
+        }
     }
 
     fun setAutomaticDoubles(n: Int) {
