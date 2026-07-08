@@ -19,12 +19,31 @@ which remains design intent (see SETTINGS-UX-BLUEPRINT.md), not built.
 
 build versionName: 0.9.1 · last engine milestone: Phase 13 (tutor analysis)
 
+## Recent additions (post-0.9.1, July 2026)
+
+Work toward a first public release. All landed on the working branch:
+
+- **Match Equity Table selection.** Eight canonical gnubg METs (Kazaross-XG2
+  default, Rockwell-Kazaross, Woolsey, Jacobs & Trice, Snowie, GNUbg-11, MEC26,
+  Zadeh) bundled as assets and loaded via a new `gnubg_mobile_set_met` verb
+  wrapping gnubg's own `InitMatchEquity`. Selectable in the Tournament tab.
+- **Full UI theming.** The whole interface (rails, panels, buttons, tabs, text,
+  match-setup, settings) now follows the selected theme via a `LocalBoardPalette`
+  CompositionLocal, not just the board. Ocean / Classic / Forest.
+- **Settings persistence.** All settings survive an app restart (previously only
+  board theme did), via a single settings-object DataStore round-trip.
+- **Tournament settings tab.** Renamed from "Game"; cube on/off wired through the
+  safe `CommandSetCubeUse`; dead placeholder rows removed; honest subtitles.
+  Settings now opens on this tab, not the license/Expert tab.
+- **Crash fix.** Restored a `getLegalMoves` JNI binding accidentally removed by a
+  July-4 refactor; surfaced on the first clean rebuild since. See PROVENANCE.
+
 ## What works now
 
 - **Live play** against the gnubg engine: full move/dice/undo/confirm,
   gnubg authoritative for all legality and match state.
 - **Home Hub** start screen routing to Play / Learn / Analyse / Options / Profile.
-- **Settings**: five grouped tabs (Game, Board, Engine, Analysis, Expert).
+- **Settings**: five grouped tabs (Tournament, Board, Engine, Analysis, Expert).
 - **Cube (V0.9.x audit ongoing)**: human cube decisions route through
   gnubg's `GetMatchStateCubeInfo` against the live `ms`, and the Kotlin
   `cubedecision` enum mapping mirrors `engine-core/eval.h` (21 values).
@@ -35,7 +54,7 @@ build versionName: 0.9.1 · last engine milestone: Phase 13 (tutor analysis)
   directly in only two intentional places (board-changed callback, runCommand).
 - **Tutor analysis** (Phase 13): after each human move, gnubg's own routines
   score the move and report blunder level, equity loss, and feature deltas.
-  **Currently log-only** -- emitted to logcat, not yet surfaced in any UI.
+  Surfaced in the live-analysis panel (TutorAnalysisPanel) when tutor mode is on.
 
 ## Scaffolded but not feature-complete
 
