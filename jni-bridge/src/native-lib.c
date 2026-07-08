@@ -51,7 +51,6 @@ Java_com_clavierhaus_gnubg_Engine_getCubeDebugState(JNIEnv *env, jobject thiz) {
 }
 
 
-
 /*
  * Engine.commandDouble(): void -- human offers cube
  */
@@ -409,6 +408,13 @@ Java_com_clavierhaus_gnubg_Engine_setJacoby(JNIEnv *env, jobject thiz, jboolean 
     (void)env; (void)thiz;
     gnubg_mobile_set_jacoby(on ? 1 : 0);
 }
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_setCubeUse(JNIEnv *env, jobject thiz, jboolean on) {
+    (void)env; (void)thiz;
+    gnubg_mobile_set_cube_use(on ? 1 : 0);
+}
+
 
 JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_setAutoDoubles(JNIEnv *env, jobject thiz, jint n) {

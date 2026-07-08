@@ -988,6 +988,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _settings.value = _settings.value.copy(jacoby = on)
         viewModelScope.launch(engineThread) { Engine.setJacoby(on) }
     }
+    fun setCubeUse(on: Boolean) {
+        // gnubg CommandSetCubeUse -- safe global toggle (fCubeUse), same class
+        // as Jacoby. Applies immediately at the engine level.
+        _settings.value = _settings.value.copy(cubeUse = on)
+        viewModelScope.launch(engineThread) { Engine.setCubeUse(on) }
+    }
+
     fun setAutomaticDoubles(n: Int) {
         _settings.value = _settings.value.copy(automaticDoubles = n)
         viewModelScope.launch(engineThread) { Engine.setAutoDoubles(n) }

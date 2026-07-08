@@ -139,7 +139,7 @@ private fun SettingsTabs(
     ) {
         SettingsTab.values().forEach { tab ->
             val label = when (tab) {
-                SettingsTab.GAME -> "Game"
+                SettingsTab.GAME -> "Tournament"
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.ENGINE -> "Engine"
                 SettingsTab.ANALYSIS -> "Analysis"
@@ -183,13 +183,13 @@ private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
             }
         )
         SettingsDivider()
-        SettingsRow("Crawford rule", "Stored locally until GNUbg timing is safe") {
+        SettingsRow("Crawford rule", "Auto-applied at the Crawford score in match play") {
             Switch(settings.crawford, { vm.setCrawford(it) }, colors = switchColors)
         }
     }
 
     SettingsSection("Money / session rules") {
-        SettingsRow("Jacoby rule", "Stored locally until GNUbg timing is safe") {
+        SettingsRow("Jacoby rule", "Gammons/backgammons count only after a double (money play)") {
             Switch(settings.jacoby, { vm.setJacoby(it) }, colors = switchColors)
         }
         SettingsDivider()
@@ -205,23 +205,15 @@ private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
             }
         )
         SettingsDivider()
-        SettingsRow("Beavers", "Stored locally until GNUbg timing is safe") {
+        SettingsRow("Beavers", "Allow immediate redouble on a take (money play)") {
             Switch(settings.beavers, { vm.setBeavers(it) }, colors = switchColors)
         }
     }
 
     SettingsSection("Cube rules") {
-        DisabledSettingsRow("Cube enabled", "GNUbg pendant: set cube use on/off")
-        SettingsDivider()
-        DisabledSettingsRow("Maximum cube", "GNUbg pendant to be audited")
-        SettingsDivider()
-        DisabledSettingsRow("Crawford handling", "Will be bound through lifecycle-safe match setup")
-    }
-
-    SettingsSection("Opening / session defaults") {
-        DisabledSettingsRow("Starting side", "Future GNUbg-backed session option")
-        SettingsDivider()
-        DisabledSettingsRow("Dice / roll policy", "Future automatic roll / manual dice options")
+        SettingsRow("Cube enabled", "Use the doubling cube (off = single-game play)") {
+            Switch(settings.cubeUse, { vm.setCubeUse(it) }, colors = switchColors)
+        }
     }
 }
 

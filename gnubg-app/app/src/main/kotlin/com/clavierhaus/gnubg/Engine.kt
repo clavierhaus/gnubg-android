@@ -32,6 +32,7 @@ object Engine {
     external fun setEngineStrength(idx: Int)
     external fun setAutoCrawford(on: Boolean)
     external fun setJacoby(on: Boolean)
+    external fun setCubeUse(on: Boolean)
     external fun setAutoDoubles(n: Int)
     external fun setBeavers(n: Int)
 

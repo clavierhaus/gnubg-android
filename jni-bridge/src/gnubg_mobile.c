@@ -41,6 +41,7 @@ extern void CommandSetAutoCrawford(char *);  /* set.c -- safe global toggle (fAu
 extern void CommandSetJacoby(char *);        /* set.c -- safe global toggle (fJacoby/ms.fJacoby) */
 extern void CommandSetAutoDoubles(char *);   /* set.c -- safe global (cAutoDoubles) */
 extern void CommandSetBeavers(char *);       /* set.c -- safe global (nBeavers) */
+extern void CommandSetCubeUse(char *);       /* set.c -- safe global toggle (fCubeUse) */
 extern int  gnubg_can_double(void);
 extern void gnubg_set_suppress_auto_forfeit(int);
 extern void InitMatchEquity(const char *szFileName);
@@ -134,6 +135,16 @@ int gnubg_mobile_set_beavers(int n) {
     pthread_mutex_unlock(&gnubg_lock);
     return 1;
 }
+
+/* Cube use on/off. CommandSetCubeUse is a safe global SetToggle (set.c:893),
+ * same class as Jacoby/Beavers -- pure fCubeUse flag, no match-state assertion. */
+int gnubg_mobile_set_cube_use(int on) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSetCubeUse(on ? (char *) "on" : (char *) "off");
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 
 int gnubg_mobile_command_new_session(int games) {
     char sz_games[16];

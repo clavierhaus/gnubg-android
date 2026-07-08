@@ -13,6 +13,7 @@ enum class Difficulty(val label: String, val subtitle: String, val settingIndex:
 
 data class GameSettings(
     val matchLength: Int = 3,
+    val cubeUse: Boolean = true,
     val crawford: Boolean = true,
     val jacoby: Boolean = false,
     val automaticDoubles: Int = 0,
