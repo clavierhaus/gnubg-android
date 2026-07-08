@@ -151,6 +151,35 @@ Java_com_clavierhaus_gnubg_Engine_getLastEngineDice(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+/* getLegalMoves: wraps gnubg_mobile_get_legal_moves. Returns a flat int array of
+ * n*8 ints (each move is 8 ints: 4 (src,dst) sub-move pairs, per gnubg anMove).
+ * A position can have a few hundred legal moves at most; MAX_LEGAL_MOVES*8
+ * bounds the buffer. */
+#define JNI_MAX_MOVES 3600   /* 450 moves * 8 ints, ample for any position */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
+                                                jintArray jboard,
+                                                jint die0, jint die1,
+                                                jint fPartial) {
+    (void)thiz;
+    jint boardBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, boardBuf);
+    int board[50];
+    for (int i = 0; i < 50; i++) board[i] = (int)boardBuf[i];
+
+    int out_moves[JNI_MAX_MOVES];
+    int n = gnubg_mobile_get_legal_moves(board, (int)die0, (int)die1,
+                                         (int)fPartial, out_moves, JNI_MAX_MOVES);
+    int count = n * 8;
+    if (count < 0) count = 0;
+    if (count > JNI_MAX_MOVES) count = JNI_MAX_MOVES;
+
+    jintArray result = (*env)->NewIntArray(env, count);
+    if (count > 0)
+        (*env)->SetIntArrayRegion(env, result, 0, count, out_moves);
+    return result;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
                                               jstring jWeightsPath) {
