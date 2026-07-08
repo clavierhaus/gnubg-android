@@ -649,7 +649,7 @@ fun BackgammonBoard(
                     quadraticTo(btnX, btnY, btnX + corner, btnY)
                     close()
                 }
-                drawPath(rollPath, Color(0xFF1976D2))
+                drawPath(rollPath, p.uiActionRoll)
                 drawIntoCanvas { canvas ->
                     val paint = android.graphics.Paint().apply {
                         color = android.graphics.Color.WHITE
@@ -691,7 +691,7 @@ fun BackgammonBoard(
                     quadraticTo(undoLeft, btnY, undoLeft + corner, btnY)
                     close()
                 }
-                drawPath(undoPath, Color(0xFF8B1A1A))
+                drawPath(undoPath, p.uiActionNegative)
                 // Commit
                 val cx = gapCX + diceGap * 0.5f  // button2 left edge
                 val commitPath = Path().apply {
@@ -706,7 +706,7 @@ fun BackgammonBoard(
                     quadraticTo(cx, btnY, cx + corner, btnY)
                     close()
                 }
-                drawPath(commitPath, Color(0xFF2E7D32))
+                drawPath(commitPath, p.uiActionPositive)
                 drawIntoCanvas { canvas ->
                     val btnPaint = android.graphics.Paint().apply {
                         color = android.graphics.Color.WHITE
@@ -742,7 +742,7 @@ fun BackgammonBoard(
                     quadraticTo(contLeft, btnY, contLeft + corner, btnY)
                     close()
                 }
-                drawPath(contPath, Color(0xFF2E7D32))
+                drawPath(contPath, p.uiActionPositive)
                 drawIntoCanvas { canvas ->
                     val btnPaint = android.graphics.Paint().apply {
                         color = android.graphics.Color.WHITE
@@ -780,7 +780,7 @@ fun BackgammonBoard(
                     isAntiAlias = true
                 }
                 val hintNumPaint = android.graphics.Paint(numPaint).apply {
-                    color = Color(0xFF3EE26B).toArgb()
+                    color = p.uiActionPositive.toArgb()
                     isFakeBoldText = true
                 }
                 if (settings.showPointNumbers || highlightedLandingPoints.isNotEmpty()) {
