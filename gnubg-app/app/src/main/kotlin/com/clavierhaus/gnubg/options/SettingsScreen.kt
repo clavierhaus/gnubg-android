@@ -61,7 +61,7 @@ fun SettingsScreen(
     viewModel: GameViewModel,
     onDismiss: () -> Unit
 ) {
-    var activeTab by remember { mutableStateOf(SettingsTab.EXPERT) }
+    var activeTab by remember { mutableStateOf(SettingsTab.GAME) }
 
     Box(
         modifier = Modifier
