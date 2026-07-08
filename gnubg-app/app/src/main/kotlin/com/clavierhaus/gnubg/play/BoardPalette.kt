@@ -141,8 +141,8 @@ object BoardPalettes {
         uiTextSecondary  = Color(0xFFB9F6CA),
         uiTextDisabled   = Color(0xFF7FA886),
         uiButtonNeutral  = Color(0xFF24421F),
-        uiActionRoll     = Color(0xFF2E7D32),
-        uiActionPositive = Color(0xFF43A047),
+        uiActionRoll     = Color(0xFF66BB6A),
+        uiActionPositive = Color(0xFF81C784),
         uiActionNegative = Color(0xFF8B1A1A),
     )
 
