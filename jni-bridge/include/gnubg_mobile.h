@@ -22,6 +22,7 @@ int gnubg_mobile_command_new_game(void);
 int gnubg_mobile_command_new_match(int match_length);
 int gnubg_mobile_set_auto_crawford(int on);
 int gnubg_mobile_set_jacoby(int on);
+int gnubg_mobile_set_cube_use(int on);
 int gnubg_mobile_set_auto_doubles(int n);
 int gnubg_mobile_set_beavers(int n);
 int gnubg_mobile_command_new_session(int games);
