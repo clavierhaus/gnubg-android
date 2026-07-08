@@ -25,6 +25,18 @@ data class BoardPalette(
     val pipText:          Color,
     val trayOutline:      Color,
     val trayDarkBorder:   Color,
+    // --- UI chrome (surrounding layout: rails, panels, buttons, text) ---
+    val uiPanel:          Color,  // rails, score panel, setup background
+    val uiPanelDeep:      Color,  // deeper panel / settings background
+    val uiChipOn:         Color,  // selected chip / tab
+    val uiChipOff:        Color,  // unselected chip / tab
+    val uiTextPrimary:    Color,  // primary label text
+    val uiTextSecondary:  Color,  // secondary / subtitle text
+    val uiTextDisabled:   Color,  // disabled text
+    val uiButtonNeutral:  Color,  // neutral / secondary button
+    val uiActionRoll:     Color,  // roll / primary action (blue family)
+    val uiActionPositive: Color,  // confirm / accept / new (green family)
+    val uiActionNegative: Color,  // resign / drop / undo (red family)
 )
 
 object BoardPalettes {
@@ -51,6 +63,17 @@ object BoardPalettes {
         pipText          = Color(0xFFB3C9F0),
         trayOutline      = Color(0x8CFFFFFF),
         trayDarkBorder   = Color(0xFF051A3E),
+        uiPanel          = Color(0xFF2E5A9E),
+        uiPanelDeep      = Color(0xFF082D6B),
+        uiChipOn         = Color(0xFF1976D2),
+        uiChipOff        = Color(0xFF0D47A1),
+        uiTextPrimary    = Color(0xFFFFFFFF),
+        uiTextSecondary  = Color(0xFFB3C9F0),
+        uiTextDisabled   = Color(0xFF8FA8D0),
+        uiButtonNeutral  = Color(0xFF243B68),
+        uiActionRoll     = Color(0xFF1565C0),
+        uiActionPositive = Color(0xFF2E7D32),
+        uiActionNegative = Color(0xFF8B1A1A),
     )
 
     val CLASSIC = BoardPalette(
@@ -75,6 +98,17 @@ object BoardPalettes {
         pipText          = Color(0xFFAAAAAA),
         trayOutline      = Color(0x8CFFFFFF),
         trayDarkBorder   = Color(0xFF000000),
+        uiPanel          = Color(0xFF2C2C2C),
+        uiPanelDeep      = Color(0xFF141414),
+        uiChipOn         = Color(0xFF555555),
+        uiChipOff        = Color(0xFF262626),
+        uiTextPrimary    = Color(0xFFF0F0F0),
+        uiTextSecondary  = Color(0xFFAAAAAA),
+        uiTextDisabled   = Color(0xFF6E6E6E),
+        uiButtonNeutral  = Color(0xFF333333),
+        uiActionRoll     = Color(0xFF5A5A5A),
+        uiActionPositive = Color(0xFF3E7D42),
+        uiActionNegative = Color(0xFF9A3232),
     )
 
     val FOREST = BoardPalette(
@@ -99,6 +133,17 @@ object BoardPalettes {
         pipText          = Color(0xFFB9F6CA),
         trayOutline      = Color(0x8CFFFFFF),
         trayDarkBorder   = Color(0xFF0A150B),
+        uiPanel          = Color(0xFF2E7D32),
+        uiPanelDeep      = Color(0xFF1B3A1F),
+        uiChipOn         = Color(0xFF388E3C),
+        uiChipOff        = Color(0xFF1B5E20),
+        uiTextPrimary    = Color(0xFFFFFFFF),
+        uiTextSecondary  = Color(0xFFB9F6CA),
+        uiTextDisabled   = Color(0xFF7FA886),
+        uiButtonNeutral  = Color(0xFF24421F),
+        uiActionRoll     = Color(0xFF2E7D32),
+        uiActionPositive = Color(0xFF43A047),
+        uiActionNegative = Color(0xFF8B1A1A),
     )
 
     fun from(theme: BoardTheme): BoardPalette = when (theme) {
@@ -108,3 +153,10 @@ object BoardPalettes {
         BoardTheme.SYSTEM  -> OCEAN  // resolved dynamically in Board.kt
     }
 }
+
+/**
+ * The active board palette, provided once at the play/settings root from the
+ * selected theme so any composable can read chrome colors (LocalBoardPalette.current)
+ * without threading the palette through every signature. Defaults to OCEAN.
+ */
+val LocalBoardPalette = androidx.compose.runtime.staticCompositionLocalOf { BoardPalettes.OCEAN }

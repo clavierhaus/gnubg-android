@@ -37,6 +37,9 @@ fun GameLayout(
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
     val showMatchSetup by viewModel.showMatchSetup.collectAsStateWithLifecycle()
 
+    val palette = BoardPalettes.from(settings.boardTheme)
+    val pal = palette
+    androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
     if (showSettings) {
         SettingsScreen(
             settings = settings,
@@ -91,7 +94,7 @@ fun GameLayout(
                             Box(
                                 modifier = Modifier
                                     .size(avatarSize)
-                                    .background(Color(0xFF1565C0), RoundedCornerShape(avatarSize / 2)),
+                                    .background(pal.uiActionRoll, RoundedCornerShape(avatarSize / 2)),
                                 contentAlignment = Alignment.Center
                             ) { Text("GNU", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                             Text("${gameState.engineScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -99,7 +102,7 @@ fun GameLayout(
                             Box(
                                 modifier = Modifier
                                     .size(avatarSize)
-                                    .background(Color(0xFF2E7D32), RoundedCornerShape(avatarSize / 2)),
+                                    .background(pal.uiActionPositive, RoundedCornerShape(avatarSize / 2)),
                                 contentAlignment = Alignment.Center
                             ) { Text("You", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                             Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -111,7 +114,7 @@ fun GameLayout(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(1.dp)
-                                .background(Color(0xFF2E5A9E))
+                                .background(pal.uiPanel)
                         )
 
                         when {
@@ -157,10 +160,10 @@ fun GameLayout(
                                         fontWeight = FontWeight.Bold,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    GameButton("New Match", Color(0xFF1565C0)) { viewModel.newGame() }
+                                    GameButton("New Match", pal.uiActionRoll) { viewModel.newGame() }
                                     if (onReturnToHub != null) {
                                         Spacer(modifier = Modifier.height(6.dp))
-                                        GameButton("Exit", Color(0xFF243B68)) { onReturnToHub() }
+                                        GameButton("Exit", pal.uiButtonNeutral) { onReturnToHub() }
                                     }
                                 }
                             }
@@ -168,12 +171,12 @@ fun GameLayout(
                                 Text("Cube offered!", color = Color.White, fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                GameButton("Accept", Color(0xFF2E7D32)) { viewModel.acceptDouble() }
+                                GameButton("Accept", pal.uiActionPositive) { viewModel.acceptDouble() }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                GameButton("Drop", Color(0xFF8B1A1A)) { viewModel.dropDouble() }
+                                GameButton("Drop", pal.uiActionNegative) { viewModel.dropDouble() }
                             }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
-                                Text("Thinking...", color = Color(0xFFB3C9F0), fontSize = 18.sp)
+                                Text("Thinking...", color = pal.uiTextSecondary, fontSize = 18.sp)
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
                                 // The roll action is shown directly on the board surface.
@@ -207,7 +210,7 @@ fun GameLayout(
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Settings",
-                tint = Color(0xFFB3C9F0),
+                tint = pal.uiTextSecondary,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp, top = 12.dp)
@@ -241,6 +244,7 @@ fun GameLayout(
             )
         }
     }
+    }
 }
 
 
@@ -257,6 +261,7 @@ private fun PlayLifecyclePanel(
     onNewMatch: () -> Unit,
     onReturnHome: (() -> Unit)?
 ) {
+    val pal = LocalBoardPalette.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -265,19 +270,19 @@ private fun PlayLifecyclePanel(
             modifier = Modifier
                 .width(144.dp)
                 .height(1.dp)
-                .background(Color(0xFF315A9A))
+                .background(pal.uiPanel)
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LifecycleButton("Resign", Color(0xFF8B1A1A), onResign)
-            LifecycleButton("New game", Color(0xFF1565C0), onNewGame)
+            LifecycleButton("Resign", pal.uiActionNegative, onResign)
+            LifecycleButton("New game", pal.uiActionRoll, onNewGame)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LifecycleButton("New match", Color(0xFF0D47A1), onNewMatch)
+            LifecycleButton("New match", pal.uiChipOff, onNewMatch)
             LifecycleButton(
                 label = "Home",
-                color = Color(0xFF243B68),
+                color = pal.uiButtonNeutral,
                 onClick = { onReturnHome?.invoke() },
                 enabled = onReturnHome != null
             )
@@ -292,11 +297,12 @@ private fun LifecycleButton(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
+    val pal = LocalBoardPalette.current
     Box(
         modifier = Modifier
             .width(68.dp)
             .background(
-                if (enabled) color else Color(0xFF243B68),
+                if (enabled) color else pal.uiButtonNeutral,
                 RoundedCornerShape(7.dp)
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -305,7 +311,7 @@ private fun LifecycleButton(
     ) {
         Text(
             text = label,
-            color = if (enabled) Color.White else Color(0xFF8FA8D0),
+            color = if (enabled) Color.White else pal.uiTextDisabled,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
@@ -397,6 +403,7 @@ fun GameButton(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     Box(
         modifier = Modifier
             .background(color, RoundedCornerShape(8.dp))
@@ -406,7 +413,7 @@ fun GameButton(
     ) {
         Text(
             label,
-            color = if (enabled) Color.White else Color(0xFF888888),
+            color = if (enabled) Color.White else pal.uiTextDisabled,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
@@ -425,10 +432,11 @@ private fun MatchSetupScreen(
     onStart: () -> Unit,
     onSettings: () -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF082D6B)),
+            .background(pal.uiPanelDeep),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -446,7 +454,7 @@ private fun MatchSetupScreen(
 
             Text(
                 "Opponent strength",
-                color = Color(0xFFB3C9F0),
+                color = pal.uiTextSecondary,
                 fontSize = 18.sp
             )
 
@@ -460,7 +468,7 @@ private fun MatchSetupScreen(
                     val selected = selectedDifficulty == difficulty
                     GameButton(
                         label = label,
-                        color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
+                        color = if (selected) pal.uiChipOn else pal.uiChipOff,
                         enabled = engineReady
                     ) {
                         onSelectDifficulty(difficulty)
@@ -473,7 +481,7 @@ private fun MatchSetupScreen(
             if (!tutorMode) {
                 Text(
                     "Match length",
-                    color = Color(0xFFB3C9F0),
+                    color = pal.uiTextSecondary,
                     fontSize = 18.sp
                 )
 
@@ -482,7 +490,7 @@ private fun MatchSetupScreen(
                         val selected = selectedLength == n
                         GameButton(
                             label = "$n",
-                            color = if (selected) Color(0xFF1976D2) else Color(0xFF0D47A1),
+                            color = if (selected) pal.uiChipOn else pal.uiChipOff,
                             enabled = engineReady
                         ) {
                             onSelectLength(n)
@@ -495,7 +503,7 @@ private fun MatchSetupScreen(
 
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
-                color = Color(0xFF2E7D32),
+                color = pal.uiActionPositive,
                 enabled = engineReady
             ) {
                 onStart()
@@ -503,7 +511,7 @@ private fun MatchSetupScreen(
 
             GameButton(
                 label = "Settings",
-                color = Color(0xFF1565C0),
+                color = pal.uiActionRoll,
                 enabled = true
             ) {
                 onSettings()
@@ -517,6 +525,7 @@ private fun TutorAnalysisPanel(
     analysis: com.clavierhaus.gnubg.engine.TutorAnalysis?,
     detail: com.clavierhaus.gnubg.engine.MoveAnalysisDetail? = null
 ) {
+    val pal = LocalBoardPalette.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -526,12 +535,12 @@ private fun TutorAnalysisPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0xFF2E5A9E))
+                .background(pal.uiPanel)
         )
         if (analysis == null) {
             Text(
                 "Play a move to see analysis",
-                color = Color(0xFFB3C9F0),
+                color = pal.uiTextSecondary,
                 fontSize = 13.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
@@ -564,11 +573,11 @@ private fun TutorAnalysisPanel(
                 )
                 Text(
                     "Gammon  ${pct(detail.winGammon)} for  ·  ${pct(detail.loseGammon)} against",
-                    color = Color(0xFFDCE6F5), fontSize = 13.sp
+                    color = pal.uiTextPrimary, fontSize = 13.sp
                 )
                 Text(
                     "Backgammon  ${pct(detail.winBackgammon)}  ·  ${pct(detail.loseBackgammon)}",
-                    color = Color(0xFFB3C9F0), fontSize = 12.sp
+                    color = pal.uiTextSecondary, fontSize = 12.sp
                 )
                 val mp = (analysis.equityLoss * 1000f).toInt()
                 Text(

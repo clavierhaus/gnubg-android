@@ -1,5 +1,6 @@
 package com.clavierhaus.gnubg.options
 
+import com.clavierhaus.gnubg.play.LocalBoardPalette
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,30 +31,27 @@ import com.clavierhaus.gnubg.engine.GameViewModel
 
 enum class SettingsTab { GAME, BOARD, ENGINE, ANALYSIS, EXPERT }
 
-private val ColorSettingsBg     = Color(0xFF082D6B)
-private val ColorPanelBg        = Color(0xFF0A3880)
-private val ColorTabActive      = Color(0xFF1976D2)
-private val ColorTabInactive    = Color(0xFF0D47A1)
-private val ColorTabText        = Color(0xFFB3C9F0)
-private val ColorTabTextActive  = Color(0xFFFFFFFF)
-private val ColorDivider        = Color(0xFF1565C0)
-private val ColorSettingText    = Color(0xFFE8F0FF)
-private val ColorSettingSubtext = Color(0xFF7B9CC8)
-private val ColorDisabledText   = Color(0xFF5D7EA8)
+// Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
 private val switchColors
-    @Composable get() = SwitchDefaults.colors(
-        checkedThumbColor = ColorTabTextActive,
-        checkedTrackColor = ColorTabActive,
-        uncheckedThumbColor = ColorTabText,
-        uncheckedTrackColor = ColorTabInactive
-    )
+    @Composable get() {
+        val pal = LocalBoardPalette.current
+        return SwitchDefaults.colors(
+            checkedThumbColor = pal.uiTextPrimary,
+            checkedTrackColor = pal.uiChipOn,
+            uncheckedThumbColor = pal.uiTextSecondary,
+            uncheckedTrackColor = pal.uiChipOff
+        )
+    }
 
 private val radioColors
-    @Composable get() = RadioButtonDefaults.colors(
-        selectedColor = ColorTabTextActive,
-        unselectedColor = ColorTabText
-    )
+    @Composable get() {
+        val pal = LocalBoardPalette.current
+        return RadioButtonDefaults.colors(
+            selectedColor = pal.uiTextPrimary,
+            unselectedColor = pal.uiTextSecondary
+        )
+    }
 
 @Composable
 fun SettingsScreen(
@@ -61,12 +59,13 @@ fun SettingsScreen(
     viewModel: GameViewModel,
     onDismiss: () -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     var activeTab by remember { mutableStateOf(SettingsTab.GAME) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ColorSettingsBg)
+            .background(pal.uiPanelDeep)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             SettingsHeader(onDismiss = onDismiss)
@@ -96,6 +95,7 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsHeader(onDismiss: () -> Unit) {
+    val pal = LocalBoardPalette.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -104,7 +104,7 @@ private fun SettingsHeader(onDismiss: () -> Unit) {
     ) {
         Text(
             text = "<-",
-            color = ColorTabTextActive,
+            color = pal.uiTextPrimary,
             fontSize = 22.sp,
             modifier = Modifier
                 .clickable { onDismiss() }
@@ -113,13 +113,13 @@ private fun SettingsHeader(onDismiss: () -> Unit) {
         Column {
             Text(
                 text = "Settings",
-                color = ColorTabTextActive,
+                color = pal.uiTextPrimary,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "Configuration only. Game actions stay on the Play surface.",
-                color = ColorSettingSubtext,
+                color = pal.uiTextSecondary,
                 fontSize = 12.sp
             )
         }
@@ -131,6 +131,7 @@ private fun SettingsTabs(
     activeTab: SettingsTab,
     onTab: (SettingsTab) -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -150,7 +151,7 @@ private fun SettingsTabs(
                 modifier = Modifier
                     .weight(1f)
                     .background(
-                        if (activeTab == tab) ColorTabActive else ColorTabInactive,
+                        if (activeTab == tab) pal.uiChipOn else pal.uiChipOff,
                         RoundedCornerShape(9.dp)
                     )
                     .clickable { onTab(tab) }
@@ -159,7 +160,7 @@ private fun SettingsTabs(
             ) {
                 Text(
                     text = label,
-                    color = if (activeTab == tab) ColorTabTextActive else ColorTabText,
+                    color = if (activeTab == tab) pal.uiTextPrimary else pal.uiTextSecondary,
                     fontSize = 13.sp,
                     fontWeight = if (activeTab == tab) FontWeight.Bold else FontWeight.Normal
                 )
@@ -355,21 +356,22 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
 
 @Composable
 private fun AboutLicenseSection() {
+    val pal = LocalBoardPalette.current
     SettingsSection("About & License") {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
-            Text("GNU Backgammon for Android", color = ColorTabTextActive, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text("A modified derivative of GNU Backgammon.", color = ColorTabText, fontSize = 13.sp)
+            Text("GNU Backgammon for Android", color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text("A modified derivative of GNU Backgammon.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("This program is free software, licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).", color = ColorTabText, fontSize = 13.sp)
+            Text("This program is free software, licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("It comes with ABSOLUTELY NO WARRANTY. You may redistribute it under the conditions of the GPL. You have the right to the complete corresponding source code.", color = ColorTabText, fontSize = 13.sp)
+            Text("It comes with ABSOLUTELY NO WARRANTY. You may redistribute it under the conditions of the GPL. You have the right to the complete corresponding source code.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS. The Android port is Copyright (C) 2025-2026 clavierhaus.", color = ColorTabText, fontSize = 13.sp)
+            Text("GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS. The Android port is Copyright (C) 2025-2026 clavierhaus.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Source, full license (COPYING), attribution (NOTICE), and modifications (PROVENANCE.md):", color = ColorTabText, fontSize = 13.sp)
-            Text("https://github.com/clavierhaus/gnubg-android", color = ColorTabTextActive, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text("Source, full license (COPYING), attribution (NOTICE), and modifications (PROVENANCE.md):", color = pal.uiTextSecondary, fontSize = 13.sp)
+            Text("https://github.com/clavierhaus/gnubg-android", color = pal.uiTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = ColorTabText, fontSize = 12.sp)
+            Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = pal.uiTextSecondary, fontSize = 12.sp)
         }
     }
 }
@@ -422,16 +424,17 @@ private fun SettingsSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 14.dp)
-            .background(ColorPanelBg, RoundedCornerShape(12.dp))
+            .background(pal.uiPanelDeep, RoundedCornerShape(12.dp))
             .padding(vertical = 10.dp)
     ) {
         Text(
             text = title.uppercase(),
-            color = ColorTabText,
+            color = pal.uiTextSecondary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
@@ -446,6 +449,7 @@ private fun SettingsRow(
     subtitle: String? = null,
     trailing: @Composable () -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -453,9 +457,9 @@ private fun SettingsRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = ColorSettingText, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(title, color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
             if (subtitle != null) {
-                Text(subtitle, color = ColorSettingSubtext, fontSize = 12.sp)
+                Text(subtitle, color = pal.uiTextSecondary, fontSize = 12.sp)
             }
         }
         trailing()
@@ -467,6 +471,7 @@ private fun DisabledSettingsRow(
     title: String,
     subtitle: String
 ) {
+    val pal = LocalBoardPalette.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -474,10 +479,10 @@ private fun DisabledSettingsRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = ColorDisabledText, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = ColorDisabledText, fontSize = 12.sp)
+            Text(title, color = pal.uiTextDisabled, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = pal.uiTextDisabled, fontSize = 12.sp)
         }
-        Text("Later", color = ColorDisabledText, fontSize = 12.sp)
+        Text("Later", color = pal.uiTextDisabled, fontSize = 12.sp)
     }
 }
 
@@ -489,14 +494,15 @@ private fun StepperRow(
     onMinus: () -> Unit,
     onPlus: () -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     SettingsRow(title, subtitle) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onMinus) {
-                Text("-", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("-", color = pal.uiTextPrimary, fontSize = 18.sp)
             }
-            Text(value, color = ColorTabTextActive, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(value, color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             TextButton(onClick = onPlus) {
-                Text("+", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("+", color = pal.uiTextPrimary, fontSize = 18.sp)
             }
         }
     }
@@ -509,6 +515,7 @@ private fun FloatStepperRow(
     value: Float,
     onChange: (Float) -> Unit
 ) {
+    val pal = LocalBoardPalette.current
     val rounded = kotlin.math.round(value * 100f) / 100f
 
     SettingsRow(title, subtitle) {
@@ -517,11 +524,11 @@ private fun FloatStepperRow(
                 val next = (rounded - 0.01f).coerceAtLeast(0.00f)
                 onChange(kotlin.math.round(next * 100f) / 100f)
             }) {
-                Text("-", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("-", color = pal.uiTextPrimary, fontSize = 18.sp)
             }
             Text(
                 "%.2f".format(rounded),
-                color = ColorTabTextActive,
+                color = pal.uiTextPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.width(48.dp)
@@ -530,7 +537,7 @@ private fun FloatStepperRow(
                 val next = (rounded + 0.01f).coerceAtMost(9.99f)
                 onChange(kotlin.math.round(next * 100f) / 100f)
             }) {
-                Text("+", color = ColorTabTextActive, fontSize = 18.sp)
+                Text("+", color = pal.uiTextPrimary, fontSize = 18.sp)
             }
         }
     }
@@ -538,11 +545,12 @@ private fun FloatStepperRow(
 
 @Composable
 private fun SettingsDivider() {
+    val pal = LocalBoardPalette.current
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp)
-            .background(ColorDivider)
+            .background(pal.uiActionRoll)
             .padding(top = 1.dp)
     )
 }
