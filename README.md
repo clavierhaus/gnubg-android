@@ -25,13 +25,24 @@ This is what makes the app trustworthy: the strength you play against and the an
 
 ## Building
 
-Requires the Android SDK and a device or emulator running Android 12+.
+Requirements:
+
+- Android SDK with the NDK installed (the native engine is compiled with CMake via the NDK)
+- JDK 17
+- A device or emulator running Android 12+ (arm64-v8a)
+
+A standard debug build compiles the engine and the app together:
 
     cd gnubg-app
     ./gradlew assembleDebug
     adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-The native engine is built via the NDK as part of the Gradle build; no separate engine compilation step is needed.
+The native engine (`engine-core/` + `jni-bridge/`) is built as part of the Gradle build through CMake — there is no separate engine compilation step for a normal build. A full clean of the native artifacts is only needed when engine or bridge code changes; ordinary Kotlin/UI work rebuilds incrementally.
+
+After installing, a clean restart is:
+
+    adb shell am force-stop com.clavierhaus.gnubg
+    adb shell am start -n com.clavierhaus.gnubg/.MainActivity
 
 ## Repository layout
 

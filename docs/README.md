@@ -40,11 +40,11 @@ Under `history/`:
   mapping draft.
 - `KNOWN-LIMITATIONS.md` -- superseded by the "Known gaps" section of STATUS.md.
 
-## Build status (also in BUILD.md)
+## Build
 
-- `BUILD.md` -- build notes. NOTE: the single build/deploy entry point is
-  `./build_and_deploy.sh` at the repository root; older hand-rolled recipes are
-  superseded.
+- Build instructions are in the top-level [`README.md`](../README.md#building).
+  For local development, `./build_and_deploy.sh` at the repository root is a
+  convenience wrapper around the Gradle build + install + launch.
 
 ## Documentation rule
 
