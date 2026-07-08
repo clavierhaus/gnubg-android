@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,7 +64,7 @@ fun GameLayout(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(0.18f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(pal.uiPanel),
                     contentAlignment = Alignment.Center
                 ) {
                     // Avatar diameter scales with panel width so it adapts across
