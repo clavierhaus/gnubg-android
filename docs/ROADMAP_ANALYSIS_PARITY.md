@@ -102,6 +102,72 @@ Turn it into a study tool, not just a game reviewer.
 - **D underpins C2/D2:** depth and rollouts are only usable once analysis is
   parallelised; until then, fixed 2-ply is the right default.
 
+## UI parity and differentiation
+
+Engine parity is necessary but not sufficient: XG Mobile is the analysis
+standard, yet its **interface is its weakest dimension** -- and that is our
+opening. Reviews consistently praise XG's engine and tutor while criticising its
+UI. We should match what XG does well and beat what it does badly, and our
+existing `ARCHITECTURE.md` settings-vs-actions principle already points the way.
+
+### What XG does well (match these)
+
+- **Forgiving, natural checker movement.** Reviewers single out that XG moves
+  checkers smoothly "without penalizing you for a typo" and offers multiple
+  intuitive ways to move/roll/double -- valuable on small screens. Our tap/drag
+  handling (with fPartial=0 landing guidance) is already heading here; keep the
+  input forgiving and never punish a mis-tap.
+- **Fast position checking.** Quick start-up and instant position evaluation is
+  why players carry XG to tournaments. Our analysis must feel instant for the
+  common case (decoupled analysis already helps; multi-core will finish it).
+- **The move-list "eye" / arrow visualization.** XG's most-liked analysis touch:
+  select a move in the list and it draws the move on the board with arrows. This
+  is Phase A3 (tap-to-preview); do it cleanly.
+- **Full outcome probabilities per move.** Praised explicitly ("how does every
+  move change my chances to win, gammon, backgammon, and same for opponent").
+  This is Phase A1/A2.
+
+### What XG does badly (beat these)
+
+- **The "infuriating toolbar."** XG's single most-criticised UI element -- ugly,
+  and with auto-hide "infuriatingly hard to open." A reviewer's direct plea:
+  "can we get rid of the toolbar -- other games let you do the config away from
+  the game screen." **Our answer already exists as policy:** board interactions
+  stay on the board surface; configuration lives in dedicated settings screens,
+  never a board-overlay toolbar. We are positioned to win here by design.
+- **Config on the game screen.** Directly disliked; our settings-vs-actions
+  boundary (config screens are configuration-only, actions live on the board or
+  hub) is exactly what XG's users are asking for. This is a differentiator we
+  get "for free" if we hold the line.
+- **Painful position setup.** XG's "Setup a Position" requires dragging checkers
+  off and back -- ugly enough that reviewers say it needs its own tutorial.
+  Phase C1 (Position ID paste/entry via `PositionFromID`) sidesteps XG's worst
+  workflow entirely: paste an ID, done.
+- **Dated, bordered, glitchy rendering.** XG has rendering glitches, large
+  borders, and recent "invisible dice"/lag bugs. A clean Compose-native board
+  with our theme system is a straightforward win on polish.
+
+### The settings surface as an asset
+
+Our settings approach is not just neutral here -- it is a competitive advantage.
+XG bolts configuration onto the board via a hated toolbar; we keep the board
+clean and put configuration in proper screens. The same discipline that keeps us
+faithful to gnubg (clear layer boundaries) keeps the UI uncluttered. As analysis
+features land (candidate list, PR, position entry), each gets a proper surface --
+an analysis pane, a PR readout, a position-entry screen -- rather than being
+crammed into a board overlay. Holding the settings-vs-actions line as the feature
+set grows is how we reach XG's analysis depth without inheriting XG's UI
+problems.
+
+### UI sequencing
+
+UI work rides with the feature phases, not as a separate track:
+- Phase A ships the analysis pane (list + details + tap-to-preview) as a clean
+  surface off the board.
+- Phase B ships the PR readout and post-game summary as their own panels.
+- Phase C ships position entry as a dedicated screen (ID paste first, visual
+  editing later if wanted) -- deliberately not XG's drag-off-and-back model.
+
 ## Explicitly deferred (post-parity differentiators)
 
 - **Cube/match analysis, MWC, Market Window, MET, Temperature Map** -- the
