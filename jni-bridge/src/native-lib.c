@@ -151,6 +151,40 @@ Java_com_clavierhaus_gnubg_Engine_getLastEngineDice(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+/* getLegalMoves: wraps gnubg_mobile_get_legal_moves. Returns a flat int array of
+ * n*8 ints (each move is 8 ints: 4 (src,dst) sub-move pairs, per gnubg anMove).
+ * Restored verbatim from pre-b1d6ee0 (a get_candidates deletion had removed this
+ * adjacent function by mistake). The gnubg_initialised guard returns an empty
+ * array if called before the engine is ready. */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getLegalMoves(JNIEnv *env, jobject thiz,
+                                                  jintArray jboard,
+                                                  jint die0, jint die1,
+                                                  jint fPartial) {
+    (void)thiz;
+    if (!gnubg_initialised) return (*env)->NewIntArray(env, 0);
+    jint inBuf[50];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    int in[50]; for (int i = 0; i < 50; i++) in[i] = (int)inBuf[i];
+    /* generous cap: gnubg never exceeds a few thousand sub-moves */
+    enum { CAP = 8 * 4096 };
+    int *moves = (int *)malloc(CAP * sizeof(int));
+    if (!moves) return (*env)->NewIntArray(env, 0);
+    int nMoves = gnubg_mobile_get_legal_moves(in, (int)die0, (int)die1,
+                                              (int)fPartial, moves, CAP);
+    if (nMoves < 0) nMoves = 0;
+    int nInts = nMoves * 8;
+    jintArray result = (*env)->NewIntArray(env, nInts);
+    if (nInts > 0) {
+        jint *buf = (jint *)malloc(nInts * sizeof(jint));
+        for (int i = 0; i < nInts; i++) buf[i] = (jint)moves[i];
+        (*env)->SetIntArrayRegion(env, result, 0, nInts, buf);
+        free(buf);
+    }
+    free(moves);
+    return result;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_clavierhaus_gnubg_Engine_initialise(JNIEnv *env, jobject thiz,
                                               jstring jWeightsPath) {
