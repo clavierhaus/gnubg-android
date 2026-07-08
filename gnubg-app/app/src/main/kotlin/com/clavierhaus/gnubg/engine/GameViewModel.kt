@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.clavierhaus.gnubg.Engine
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -34,30 +36,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val actionInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
 
     init {
-        viewModelScope.launch {
-            PreferencesManager.boardThemeFlow(application).collect { theme ->
-                _settings.value = _settings.value.copy(boardTheme = theme)
-            }
-        }
         viewModelScope.launch(engineThread) {
+            // 1. Load persisted settings BEFORE the engine reads them, so the
+            //    first match honors the user's saved rules/strength/MET.
+            val saved = PreferencesManager.settingsFlow(application).first()
+            _settings.value = saved
+
             val weightsPath = AssetExtractor.extractWeights(application)
             Engine.initialise(weightsPath)
-            // Apply the default engine strength (gnubg preset) before any game,
+            // Apply the saved engine strength (gnubg preset) before any game,
             // so the first move uses it rather than the hardcoded 2-ply setup.
-            Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
+            Engine.setEngineStrength(saved.difficulty.settingIndex)
             // Push saved tournament rule preferences into the engine globals so
             // the first match honors them. These are safe global toggles
             // (set.c); the engine decides applicability per game/match.
-            val s = _settings.value
-            Engine.setAutoCrawford(s.crawford)
-            Engine.setJacoby(s.jacoby)
-            Engine.setAutoDoubles(s.automaticDoubles)
-            Engine.setBeavers(if (s.beavers) 3 else 0)
+            Engine.setAutoCrawford(saved.crawford)
+            Engine.setJacoby(saved.jacoby)
+            Engine.setAutoDoubles(saved.automaticDoubles)
+            Engine.setBeavers(if (saved.beavers) 3 else 0)
+            Engine.setCubeUse(saved.cubeUse)
             // Extract the bundled match-equity tables and load the saved choice
             // (overriding the built-in Zadeh default set during initialise()).
             val metDir = AssetExtractor.extractMets(application)
-            Engine.setMet("$metDir/${s.metTable.fileName}")
+            Engine.setMet("$metDir/${saved.metTable.fileName}")
             _engineReady.value = true
+
+            // 2. Persist every subsequent settings change. One observer on the
+            //    whole settings object means no per-setter save calls -- any
+            //    mutation via copy(...) is caught and written. drop(1) skips the
+            //    value we just loaded.
+            _settings.drop(1).collect { s ->
+                PreferencesManager.saveSettings(application, s)
+            }
         }
     }
 
@@ -1020,7 +1030,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun setBoardTheme(t: BoardTheme)    {
         _settings.value = _settings.value.copy(boardTheme = t)
-        viewModelScope.launch { PreferencesManager.saveBoardTheme(getApplication(), t) }
     }
     fun setShowPointNumbers(on: Boolean) { _settings.value = _settings.value.copy(showPointNumbers = on) }
     fun setShowPipCount(on: Boolean)     { _settings.value = _settings.value.copy(showPipCount = on) }
