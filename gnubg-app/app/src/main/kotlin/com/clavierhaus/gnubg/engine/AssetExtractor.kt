@@ -18,8 +18,8 @@ object AssetExtractor {
     }
 
     /**
-     * Extract the bundled match-equity-table files (assets/met/*) into
-     * filesDir/met and return that directory's path. gnubg's InitMatchEquity
+     * Extract the bundled match-equity-table files (the assets/met directory)
+     * into filesDir/met and return that directory's path. gnubg's InitMatchEquity
      * loads a table by file path; these are the canonical upstream MET XMLs.
      */
     fun extractMets(context: Context): String {
