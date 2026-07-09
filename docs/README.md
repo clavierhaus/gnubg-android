@@ -27,6 +27,10 @@ and defers to it.
 - `ROADMAP_ANALYSIS_PARITY.md` -- detailed analysis roadmap: how upcoming
   analysis features map to gnubg functions (candidate list, Performance
   Rating, position entry, rollouts), benchmarked against XG Mobile.
+- `ARCHITECTURE_ANALYSE_MODE.md` -- design proposal for the Analyse
+  destination: position entry, match save, and match review, and the hub
+  restructure they require. Engine backing verified against the vendored
+  sources.
 
 ## Forward-looking / design
 
