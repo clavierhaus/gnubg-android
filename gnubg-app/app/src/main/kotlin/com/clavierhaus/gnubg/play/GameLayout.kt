@@ -1,6 +1,8 @@
 package com.clavierhaus.gnubg.play
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -449,7 +451,13 @@ private fun MatchSetupScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp),
-            modifier = Modifier.padding(24.dp)
+            // Scroll rather than clip. A centred Column silently truncates when
+            // its content exceeds the screen -- which is how the Start button
+            // vanished on a landscape phone once this screen gained a row. The
+            // app must not assume any particular screen height.
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
         ) {
             Text(
                 if (tutorMode) "GNU Backgammon Chequer-Play Tutor"
@@ -485,59 +493,87 @@ private fun MatchSetupScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                "Chequer-play tutor",
-                color = pal.uiTextSecondary,
-                fontSize = 18.sp
-            )
+            // Tutor and match length sit side by side: this screen is
+            // landscape-only and has horizontal room to spare but no vertical
+            // slack -- stacking them overflowed the column and clipped the
+            // Start button off-screen.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GameButton(
-                    label = "Off",
-                    color = if (!tutorMode) pal.uiChipOn else pal.uiChipOff,
-                    enabled = engineReady
-                ) {
-                    onToggleTutor(false)
-                }
-                GameButton(
-                    label = "On",
-                    color = if (tutorMode) pal.uiChipOn else pal.uiChipOff,
-                    enabled = engineReady
-                ) {
-                    onToggleTutor(true)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                "Match length",
-                color = pal.uiTextSecondary,
-                fontSize = 18.sp
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf(1, 3, 5, 7).forEach { n ->
-                    val selected = selectedLength == n
-                    GameButton(
-                        label = "$n",
-                        color = if (selected) pal.uiChipOn else pal.uiChipOff,
-                        // The tutor game is a single game: at 1 point the cube is
-                        // out of play (you cannot double past the match), so the
-                        // tutor only ever has chequer decisions to comment on.
-                        enabled = engineReady && !tutorMode
-                    ) {
-                        onSelectLength(n)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Chequer-play tutor",
+                        color = pal.uiTextSecondary,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        GameButton(
+                            label = "Off",
+                            color = if (!tutorMode) pal.uiChipOn else pal.uiChipOff,
+                            enabled = engineReady
+                        ) {
+                            onToggleTutor(false)
+                        }
+                        GameButton(
+                            label = "On",
+                            color = if (tutorMode) pal.uiChipOn else pal.uiChipOff,
+                            enabled = engineReady
+                        ) {
+                            onToggleTutor(true)
+                        }
                     }
                 }
-            }
 
-            if (tutorMode) {
-                Text(
-                    "Single game -- the cube is not in play, so the tutor comments on chequer play only.",
-                    color = pal.uiTextDisabled,
-                    fontSize = 14.sp
-                )
+                // Blind space: a weighted spacer, so the separation is whatever
+                // the screen has left over rather than a fixed distance that
+                // only looks right on one device.
+                Spacer(modifier = Modifier.weight(1f))
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Match length",
+                        color = pal.uiTextSecondary,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (tutorMode) {
+                        // The tutored game is a single game: at 1 point the cube
+                        // is out of play (you cannot double past the match), so
+                        // the tutor only ever has chequer decisions to comment
+                        // on. Say so, rather than showing four dead chips.
+                        Text(
+                            "Single game",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "The cube is not in play,\nso the tutor comments on\nchequer play only.",
+                            color = pal.uiTextDisabled,
+                            fontSize = 13.sp
+                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            listOf(1, 3, 5, 7).forEach { n ->
+                                val selected = selectedLength == n
+                                GameButton(
+                                    label = "$n",
+                                    color = if (selected) pal.uiChipOn else pal.uiChipOff,
+                                    enabled = engineReady
+                                ) {
+                                    onSelectLength(n)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(4.dp))
