@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -409,6 +410,8 @@ fun GameButton(
     label: String,
     color: Color,
     enabled: Boolean = true,
+    horizontalPadding: Dp = 24.dp,
+    verticalPadding: Dp = 12.dp,
     onClick: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
@@ -416,7 +419,7 @@ fun GameButton(
         modifier = Modifier
             .background(color, RoundedCornerShape(8.dp))
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -569,7 +572,11 @@ private fun MatchSetupScreen(
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            // Top-align so + sits level with the top of the
+                            // chips; the +/- stack is taller than one chip and
+                            // centring it pushed the chips down out of line with
+                            // the tutor buttons opposite.
+                            verticalAlignment = Alignment.Top
                         ) {
                             shortcuts.forEach { n ->
                                 GameButton(
@@ -596,19 +603,28 @@ private fun MatchSetupScreen(
                             // to 7, which is nonsense.)
                             val onFlexible = selectedLength == flexible
 
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // Compact steppers: two of these plus the gap match
+                            // one chip's height, so the length group is no taller
+                            // than the tutor group opposite it.
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
                                 GameButton(
                                     label = "+",
                                     color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible < 25
+                                    enabled = engineReady && onFlexible && flexible < 25,
+                                    horizontalPadding = 14.dp,
+                                    verticalPadding = 1.dp
                                 ) {
                                     onSelectLength((flexible + 1).coerceAtMost(25))
                                 }
-                                Spacer(modifier = Modifier.height(6.dp))
                                 GameButton(
                                     label = "-",
                                     color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible > 1
+                                    enabled = engineReady && onFlexible && flexible > 1,
+                                    horizontalPadding = 14.dp,
+                                    verticalPadding = 1.dp
                                 ) {
                                     onSelectLength((flexible - 1).coerceAtLeast(1))
                                 }
