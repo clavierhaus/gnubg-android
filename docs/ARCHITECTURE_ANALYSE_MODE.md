@@ -52,33 +52,98 @@ Giving them one changes what the app declares itself to be: not just an
 opponent, but a **tool** -- play, and also study positions and matches. That
 second identity is precisely the one XG Mobile vacated.
 
-## Proposed structure
+## Decided structure
 
-    Play      -- a match against gnubg. Tutor becomes a toggle here,
-                 where it already technically lives.
-    Analyse   -- the new destination.
-                   Position : enter a position, gnubg evaluates it.   [1]
-                   Match    : open a saved match, step through it,
-                              gnubg's verdict on each move.           [3]
+    Play Tournament Match   -- a match against gnubg. Tutor is a match-setup
+                               option here, not a separate destination.
+    Analyse Position        -- enter a position, gnubg evaluates it.      [1]
+    Review Match            -- open a saved match, step through it,
+                               gnubg's verdict on each move.              [3]
     Options
     Profile
 
+Position entry takes the **second** slot, directly after Play. The menu is a
+positioning statement: two peers, play and analyse -- not a game with an
+analysis afterthought. Feedback was unambiguous that position entry is the
+reason people still open XG Mobile, and that a competitor's developer has
+declined to build it. It does not belong behind a submenu.
+
 **Saving a match [2] is not a menu point.** It is an *action* -- offered at the
 end of a game and from within match review -- that produces the artifacts
-`Analyse > Match` consumes.
+`Review Match` consumes.
 
-This is what makes the three features one coherent story rather than three
-bolted-on additions:
+This makes the three features one coherent story rather than three bolted-on
+additions:
 
-> Play a match -> save it -> open it in Analyse -> step through gnubg's verdict
-> on every move. And, independently: paste any position -> get gnubg's verdict.
+> Play a match -> save it -> open it in Review Match -> step through gnubg's
+> verdict on every move. And, independently: paste any position -> get gnubg's
+> verdict.
+
+`Analyse Position` and `Review Match` are kept as **separate modes** rather than
+one Analyse destination with sub-entries. They share a look (a board plus
+gnubg's verdict) but not an interaction model: position entry is stateless
+(paste, evaluate, done); match review is sequential (load, step, step). A
+hub-within-a-hub would also bury the feature that most justifies the app,
+one tap deeper than it deserves.
+
+### What happens to "Live Game Analysis"
+
+It is removed as a hub entry. Two findings justify this, and the second is a bug.
+
+**It is not a destination.** `AppMode.LIVE_ANALYSIS` is `GameLayout` with
+`tutorMode = true`. It is a way of playing occupying a slot in a menu of places.
+
+**`tutorMode` is doing four jobs, only one of which is the tutor:**
+
+| Line (`GameLayout.kt`) | Effect |
+|---|---|
+| 56 | forces a **1-point match** (`startMatch(if (tutorMode) 1 else settings.matchLength)`) |
+| 186 | shows `TutorAnalysisPanel` -- *the actual tutor* |
+| 447 | changes the screen title |
+| 480 | hides the match-length selector (because length is forced) |
+
+So the entry really means **"play one tutored game."** Three of its four effects
+exist to support that single-game framing, not the tutor.
+
+**The bug: `settings.tutorMode` does nothing.** There is a persisted Tutor mode
+switch in Settings > Analysis (`SettingsScreen.kt:320`), with a ViewModel setter
+and DataStore round-trip (`PreferencesManager.kt:66,89`). **No screen reads it.**
+`GameLayout` reads only the `tutorMode` *parameter*, hard-coded `false` for
+`AppMode.PLAY` and `true` for `AppMode.LIVE_ANALYSIS`. A user can enable Tutor
+mode, have it survive a restart, and see no effect. Its subtitle -- "Stored
+locally until GNUbg timing is safe" -- is accidentally accurate.
+
+Consequently, "demote the tutor to a toggle" is not a demotion. It is **making
+the existing toggle work**, and choosing where the tutored-game path lives.
+
+**Resolution:**
+
+- The tutor becomes a real option at **match setup**, alongside match length and
+  difficulty -- where a user would look for it, and where the other match
+  parameters already are. It reads and writes `settings.tutorMode`, so the
+  Settings switch finally means something.
+- The **quick tutored single game** affordance is preserved: match setup can
+  start with the tutor pre-enabled. What is lost is only the hub slot, not the
+  capability. (Match length is no longer *forced* to 1 -- a tutored match of any
+  length becomes possible, which the old mode disallowed for no engine reason.)
+- The stale subtitle is corrected.
+
+This frees the second slot without growing the hub, and is more honest about what
+the feature is.
 
 ### Cost of the change
 
-Promoting `ANALYSE` to the hub and demoting "Live Game Analysis" to a toggle is
-a visible UX change, not a free one. It is still correct: the slot is worth more
-as a destination than as a duplicate of Play. `LEARN` stays unreachable for now;
-it is a separate question.
+Removing a visible hub entry after a public preview is a real change, not a
+free one. It should be stated in the next release notes rather than disappearing
+silently -- "tutor moved from its own menu entry to a match-setup option; the
+analysis features moved to the new Analyse Position and Review Match modes"
+reads as intent. The audience is small and the release is a preview, so the cost
+is low and the architectural gain is permanent.
+
+`LEARN` remains unreachable; it is a separate question. Note that `LEARN` and
+`ANALYSE` sitting wired-but-unreachable is exactly the failure this document
+exists to avoid repeating: **a slot is not reserved for a feature that does not
+exist yet.** `Review Match` enters the hub when it is built, not before.
 
 ## Engine backing (verified, not assumed)
 
