@@ -1043,8 +1043,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun setTutorMode(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(tutorMode = on)
+        // The chequer-play tutor is a single game, and that is a game fact, not
+        // an app convention: at a 1-point match gnubg_can_double (play.c:156)
+        // already refuses -- nCube >= nMatchTo - score -- because you cannot
+        // double past the match. So the tutored game has no cube decisions to
+        // comment on, which is exactly the intent (cube tutoring needs a
+        // different interaction and does not exist yet).
+        //
+        // Pin the length in the same copy() so the state can never be tutor-on
+        // with a 7-point length. The setup screen shows the pinned value and
+        // says why, rather than the old behaviour of silently substituting 1
+        // at startMatch time.
+        _settings.value =
+            if (on) _settings.value.copy(tutorMode = true, matchLength = 1)
+            else _settings.value.copy(tutorMode = false)
     }
     fun setHint(on: Boolean) {
         // Local-only until GNUbg Settings command timing is made lifecycle-safe.

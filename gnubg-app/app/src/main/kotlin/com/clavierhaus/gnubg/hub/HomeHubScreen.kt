@@ -28,7 +28,6 @@ import com.clavierhaus.gnubg.R
 @Composable
 fun HomeHubScreen(
     onPlay: () -> Unit,
-    onLiveAnalysis: () -> Unit,
     onOptions: () -> Unit,
     onProfile: () -> Unit
 ) {
@@ -56,8 +55,6 @@ fun HomeHubScreen(
                 .offset(x = 64.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
-            Spacer(modifier = Modifier.height(22.dp))
-            HomeHubEntry("Live Game Analysis", onLiveAnalysis)
             Spacer(modifier = Modifier.height(22.dp))
             HomeHubEntry("Options", onOptions)
         }

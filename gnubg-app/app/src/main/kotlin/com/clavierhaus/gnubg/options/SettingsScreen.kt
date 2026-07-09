@@ -317,7 +317,7 @@ private fun EngineSettingsTab(settings: GameSettings, vm: GameViewModel) {
 @Composable
 private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) {
     SettingsSection("Tutor") {
-        SettingsRow("Tutor mode", "Stored locally until GNUbg timing is safe") {
+        SettingsRow("Tutor mode", "Comments on your chequer play. Implies a single game (no cube).") {
             Switch(settings.tutorMode, { vm.setTutorMode(it) }, colors = switchColors)
         }
         SettingsDivider()

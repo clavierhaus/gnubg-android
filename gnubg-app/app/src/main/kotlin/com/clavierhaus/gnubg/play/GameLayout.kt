@@ -26,8 +26,7 @@ import androidx.compose.material3.TextButton
 @Composable
 fun GameLayout(
     viewModel: GameViewModel,
-    onReturnToHub: (() -> Unit)? = null,
-    tutorMode: Boolean = false
+    onReturnToHub: (() -> Unit)? = null
 ) {
     var showSettings by remember { mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
@@ -36,6 +35,10 @@ fun GameLayout(
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
     val showMatchSetup by viewModel.showMatchSetup.collectAsStateWithLifecycle()
 
+    // The chequer-play tutor is a persisted setting, chosen at match setup.
+    // (It used to be a hard-coded parameter per hub entry, while this setting
+    // was written, persisted, and never read by anything.)
+    val tutorMode = settings.tutorMode
     val palette = BoardPalettes.from(settings.boardTheme)
     val pal = palette
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
@@ -53,7 +56,11 @@ fun GameLayout(
             engineReady = engineReady,
             onSelectLength = { viewModel.setMatchLength(it) },
             onSelectDifficulty = { viewModel.setDifficulty(it) },
-            onStart = { viewModel.startMatch(if (tutorMode) 1 else settings.matchLength) },
+            onToggleTutor = { viewModel.setTutorMode(it) },
+            // Length is not forced behind the user's back: enabling the tutor
+            // pins it to 1 visibly (see setTutorMode), and the setup screen
+            // says why. startMatch simply honours what is shown.
+            onStart = { viewModel.startMatch(settings.matchLength) },
             onSettings = { showSettings = true }
         )
     } else {
@@ -428,6 +435,7 @@ private fun MatchSetupScreen(
     engineReady: Boolean,
     onSelectLength: (Int) -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
+    onToggleTutor: (Boolean) -> Unit,
     onStart: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -444,7 +452,7 @@ private fun MatchSetupScreen(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                if (tutorMode) "GNU Backgammon Live Game Analysis"
+                if (tutorMode) "GNU Backgammon Chequer-Play Tutor"
                 else "GNU Backgammon Tournament Match",
                 color = Color.White,
                 fontSize = 30.sp,
@@ -477,25 +485,59 @@ private fun MatchSetupScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            if (!tutorMode) {
-                Text(
-                    "Match length",
-                    color = pal.uiTextSecondary,
-                    fontSize = 18.sp
-                )
+            Text(
+                "Chequer-play tutor",
+                color = pal.uiTextSecondary,
+                fontSize = 18.sp
+            )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(1, 3, 5, 7).forEach { n ->
-                        val selected = selectedLength == n
-                        GameButton(
-                            label = "$n",
-                            color = if (selected) pal.uiChipOn else pal.uiChipOff,
-                            enabled = engineReady
-                        ) {
-                            onSelectLength(n)
-                        }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GameButton(
+                    label = "Off",
+                    color = if (!tutorMode) pal.uiChipOn else pal.uiChipOff,
+                    enabled = engineReady
+                ) {
+                    onToggleTutor(false)
+                }
+                GameButton(
+                    label = "On",
+                    color = if (tutorMode) pal.uiChipOn else pal.uiChipOff,
+                    enabled = engineReady
+                ) {
+                    onToggleTutor(true)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                "Match length",
+                color = pal.uiTextSecondary,
+                fontSize = 18.sp
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf(1, 3, 5, 7).forEach { n ->
+                    val selected = selectedLength == n
+                    GameButton(
+                        label = "$n",
+                        color = if (selected) pal.uiChipOn else pal.uiChipOff,
+                        // The tutor game is a single game: at 1 point the cube is
+                        // out of play (you cannot double past the match), so the
+                        // tutor only ever has chequer decisions to comment on.
+                        enabled = engineReady && !tutorMode
+                    ) {
+                        onSelectLength(n)
                     }
                 }
+            }
+
+            if (tutorMode) {
+                Text(
+                    "Single game -- the cube is not in play, so the tutor comments on chequer play only.",
+                    color = pal.uiTextDisabled,
+                    fontSize = 14.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
