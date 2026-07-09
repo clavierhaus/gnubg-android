@@ -972,3 +972,23 @@ Java_com_clavierhaus_gnubg_Engine_hintMoves(JNIEnv *env, jobject thiz, jint maxN
     free(mv);
     return (jint) n;
 }
+
+/* Engine.getMatchState(): IntArray(13) -- one consistent snapshot under one
+ * lock, rather than four separate getters that can tear. Marshalling only.
+ * Layout is the facade's: [0] gs, [1] fTurn, [2] fMove, [3] dice0, [4] dice1,
+ * [5] fDoubled, [6] fCubeOwner, [7] nCube, [8] fCrawford, [9] fCubeUse,
+ * [10] score0, [11] score1, [12] nMatchTo. */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMatchState(JNIEnv *env, jobject thiz) {
+    (void) thiz;
+    int st[13];
+    jint buf[13];
+    int i;
+    jintArray result;
+    gnubg_mobile_get_match_state(st);
+    for (i = 0; i < 13; i++) buf[i] = (jint) st[i];
+    result = (*env)->NewIntArray(env, 13);
+    if (!result) return NULL;
+    (*env)->SetIntArrayRegion(env, result, 0, 13, buf);
+    return result;
+}

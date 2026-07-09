@@ -113,6 +113,12 @@ object Engine {
     // gnubg's renderings of the current state: [0] Position ID, [1] Match ID.
     external fun currentIds(): Array<String>?
 
+    // One consistent snapshot of gnubg's matchstate, taken under a single lock:
+    // [0] gs, [1] fTurn, [2] fMove, [3] dice0, [4] dice1, [5] fDoubled,
+    // [6] fCubeOwner, [7] nCube, [8] fCrawford, [9] fCubeUse, [10] score0,
+    // [11] score1, [12] nMatchTo.
+    external fun getMatchState(): IntArray
+
     // Ranked chequer-play candidates for the position currently loaded, best
     // first, as gnubg orders them. outEquity holds maxN floats, outMoves maxN*8
     // ints (gnubg anMove: four src/dst pairs). Returns the count written, 0 when

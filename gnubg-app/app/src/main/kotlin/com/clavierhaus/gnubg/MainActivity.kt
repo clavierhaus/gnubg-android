@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
+                        onAnalysePosition = { mode = AppMode.ANALYSE },
                         onOptions = { mode = AppMode.OPTIONS },
                         onProfile = { mode = AppMode.PROFILE }
                     )
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     )
 
                     AppMode.ANALYSE -> AnalyseScreen(
+                        settings = settings,
                         onBackToHub = { mode = AppMode.HUB }
                     )
 
