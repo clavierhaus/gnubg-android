@@ -113,6 +113,12 @@ object Engine {
     // gnubg's renderings of the current state: [0] Position ID, [1] Match ID.
     external fun currentIds(): Array<String>?
 
+    // Ranked chequer-play candidates for the position currently loaded, best
+    // first, as gnubg orders them. outEquity holds maxN floats, outMoves maxN*8
+    // ints (gnubg anMove: four src/dst pairs). Returns the count written, 0 when
+    // the position has no dice, -1 on error.
+    external fun hintMoves(maxN: Int, outEquity: FloatArray, outMoves: IntArray): Int
+
     // Restricted GNUbg command bridge for translated Android settings.
     external fun runCommand(command: String): Boolean
 }

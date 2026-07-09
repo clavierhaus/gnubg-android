@@ -932,3 +932,43 @@ Java_com_clavierhaus_gnubg_Engine_currentIds(JNIEnv *env, jobject thiz) {
     (*env)->SetObjectArrayElement(env, arr, 1, (*env)->NewStringUTF(env, match));
     return arr;
 }
+
+/* Engine.hintMoves(maxN, outEquity, outMoves): Int
+ * Marshalling only. outEquity must hold maxN floats, outMoves maxN*8 ints.
+ * Returns the number of candidates written, 0 when the position has no dice,
+ * or -1 on error. gnubg ranks them; the order is its own. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_hintMoves(JNIEnv *env, jobject thiz, jint maxN,
+                                           jfloatArray jEquity, jintArray jMoves) {
+    (void) thiz;
+    float *eq;
+    int *mv;
+    jint *jbuf;
+    int n, i;
+
+    if (maxN < 1 || !jEquity || !jMoves) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jEquity) < maxN) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jMoves) < maxN * 8) return (jint) -1;
+
+    eq = (float *) malloc(sizeof(float) * (size_t) maxN);
+    mv = (int *) malloc(sizeof(int) * (size_t) maxN * 8);
+    if (!eq || !mv) { free(eq); free(mv); return (jint) -1; }
+
+    n = gnubg_mobile_hint_moves((int) maxN, eq, mv);
+
+    if (n > 0) {
+        (*env)->SetFloatArrayRegion(env, jEquity, 0, n, (const jfloat *) eq);
+        jbuf = (jint *) malloc(sizeof(jint) * (size_t) n * 8);
+        if (jbuf) {
+            for (i = 0; i < n * 8; i++) jbuf[i] = (jint) mv[i];
+            (*env)->SetIntArrayRegion(env, jMoves, 0, n * 8, jbuf);
+            free(jbuf);
+        } else {
+            n = -1;
+        }
+    }
+
+    free(eq);
+    free(mv);
+    return (jint) n;
+}

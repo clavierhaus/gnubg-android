@@ -126,6 +126,12 @@ int gnubg_mobile_swap_players(void);
 int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
                              char *out_match, int match_cap);
 
+/* Ranked chequer-play candidates for the position currently loaded in ms.
+ * PORT: FindnSaveBestMoves with esAnalysisChequer.ec and aamfAnalysis, the same
+ * named instances the tutor uses. Fills out_equity[n] and out_moves[n*8].
+ * Returns n, 0 when the position has no dice, or -1 on error. */
+int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]);
+
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 
 #ifdef __cplusplus

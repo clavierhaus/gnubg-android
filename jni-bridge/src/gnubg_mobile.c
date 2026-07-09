@@ -1028,3 +1028,69 @@ int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
 
     return 1;
 }
+
+/* Ranked chequer-play candidates for the CURRENT state.
+ *
+ * PORT: FindnSaveBestMoves (eval.h:367), called exactly as analyze_replay calls
+ * it -- fAnalyse TRUE at the doubtful-skill threshold, the named 2-ply analysis
+ * context esAnalysisChequer.ec, and the named filters aamfAnalysis. The cubeinfo
+ * is derived by gnubg from the matchstate via GetMatchStateCubeInfo; no private
+ * cubeinfo, evalcontext or movefilter is constructed here.
+ *
+ * The difference from analyze_replay is the question, not the machinery: that
+ * verb asks "how good was the move just played", and needs plGame. This one asks
+ * "what are the candidates in the position now loaded", which is what ms holds
+ * after gnubg_mobile_set_gnubg_id. keyMove is NULL because no move has been
+ * played -- gnubg guards it with `if (keyMove)` and its own callers pass NULL
+ * (analysis.c:124, eval.c:5558).
+ *
+ * gnubg returns the list already sorted best-first. out_equity[i] is
+ * amMoves[i].rScore and out_moves[i*8 .. i*8+7] is amMoves[i].anMove, both
+ * verbatim.
+ *
+ * Returns the number of candidates written (0 if the position has no dice, so
+ * there is no chequer play to rank), or -1 on error. */
+int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
+    movelist ml;
+    cubeinfo ci;
+    unsigned int i, n;
+
+    if (max_n < 1 || !out_equity || !out_moves) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (ms.gs != GAME_PLAYING || !ms.anDice[0] || !ms.anDice[1]) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    GetMatchStateCubeInfo(&ci, &ms);
+    memset(&ml, 0, sizeof(ml));
+
+    if (FindnSaveBestMoves(&ml, (int) ms.anDice[0], (int) ms.anDice[1],
+                           (ConstTanBoard) ms.anBoard, NULL, TRUE,
+                           arSkillLevel[SKILL_DOUBTFUL], &ci,
+                           &esAnalysisChequer.ec, aamfAnalysis) < 0) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return -1;
+    }
+
+    if (ml.cMoves == 0 || !ml.amMoves) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    n = ml.cMoves;
+    if (n > (unsigned int) max_n) n = (unsigned int) max_n;
+
+    for (i = 0; i < n; i++) {
+        out_equity[i] = ml.amMoves[i].rScore;
+        memcpy(out_moves + i * 8, ml.amMoves[i].anMove, 8 * sizeof(int));
+    }
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return (int) n;
+}
