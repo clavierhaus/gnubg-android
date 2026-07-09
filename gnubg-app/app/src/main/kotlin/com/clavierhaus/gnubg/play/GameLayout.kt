@@ -26,7 +26,8 @@ import androidx.compose.material3.TextButton
 @Composable
 fun GameLayout(
     viewModel: GameViewModel,
-    onReturnToHub: (() -> Unit)? = null
+    onReturnToHub: (() -> Unit)? = null,
+    onSaveMatch: (() -> Unit)? = null
 ) {
     var showSettings by remember { mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
@@ -196,7 +197,8 @@ fun GameLayout(
                                 onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
                                 onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
                                 onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
-                                onReturnHome = onReturnToHub
+                                onReturnHome = onReturnToHub,
+                                onSaveMatch = onSaveMatch
                             )
                         }
                     }
@@ -264,7 +266,8 @@ private fun PlayLifecyclePanel(
     onResign: () -> Unit,
     onNewGame: () -> Unit,
     onNewMatch: () -> Unit,
-    onReturnHome: (() -> Unit)?
+    onReturnHome: (() -> Unit)?,
+    onSaveMatch: (() -> Unit)?
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -290,6 +293,19 @@ private fun PlayLifecyclePanel(
                 color = pal.uiButtonNeutral,
                 onClick = { onReturnHome?.invoke() },
                 enabled = onReturnHome != null
+            )
+        }
+
+        // Saving is an action, not a menu point. gnubg writes the whole match so
+        // far -- every game, not only this one -- so it is useful at any point,
+        // and the .sgf opens in gnubg desktop and Backgammon Studio, which is the
+        // workflow that was asked for.
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            LifecycleButton(
+                label = "Save match",
+                color = pal.uiActionRoll,
+                onClick = { onSaveMatch?.invoke() },
+                enabled = onSaveMatch != null
             )
         }
     }

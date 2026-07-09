@@ -28,7 +28,9 @@ three things missing from every Android backgammon app:
    reason people still use XG Mobile. A competitor's developer has stated he
    will not build it. -- **BUILT** (Analyse Position).
 2. **Save the match file afterwards**, to review on a larger screen or catalogue.
-   -- **NOT BUILT.** Engine side already wired; needs Android file plumbing.
+   -- **BUILT.** "Save match" in the in-game panel writes gnubg's native `.sgf`
+   through `CommandSaveMatch` and hands it to the Storage Access Framework, so
+   the user chooses the destination (Downloads, Drive, anywhere).
 3. **Step through a match afterwards, or during play.** -- **NOT BUILT.**
 
 The design is settled in `ARCHITECTURE_ANALYSE_MODE.md`. Nothing outside these
@@ -78,6 +80,11 @@ Work toward a first public release. All landed on the working branch:
   (32a7c91). It is honestly a **chequer-play** tutor: the tutored game is a
   single game, where the cube is out of play by gnubg's own rule
   (`gnubg_can_double`, play.c:156), so there are no cube decisions to comment on.
+- **Save match**: writes the whole match so far as gnubg's native `.sgf` via
+  `CommandSaveMatch`, then copies it to a user-chosen destination through the
+  Storage Access Framework. Opens in gnubg desktop and Backgammon Studio. This
+  is feature [2]. Success is verified (the file exists and is non-empty), because
+  `FACADE_FILE_OP` reports success unconditionally.
 - **Analyse Position**: paste a GNU BG ID or an XGID; gnubg installs it via its
   own `SetGNUbgID` and ranks the chequer plays with `FindnSaveBestMoves`. The
   match context (length, score, cube and owner, Crawford, who is on roll) is
@@ -98,10 +105,12 @@ Work toward a first public release. All landed on the working branch:
 - Cube pass/drop after a human double, and beaver handling, are incomplete.
 - The full tutor vision (CoachCard, arrows, Try-Again loop) is not built.
   TutorAnalysisPanel is the current, minimal surface.
-- **Save match [2] and Review Match [3] are not built.** These are the second and
-  third of the three features requested by users. The engine side of save is
-  already wired -- `CommandSaveMatch` via `FACADE_FILE_OP`, exposed as
-  `Engine.saveMatch` -- so only Android file plumbing remains. Do not rebuild it.
+- **Review Match [3] is not built.** It is the last of the three requested
+  features, and the largest.
+- In tutor mode the whole `PlayLifecyclePanel` is replaced by
+  `TutorAnalysisPanel`, so Resign, New game, New match, Home and Save match are
+  all unreachable while the tutor is on. Pre-existing; not addressed by the save
+  work.
 - Release signing, Play Store readiness, broad device QA not done.
 
 ### Corrections to earlier editions of this document

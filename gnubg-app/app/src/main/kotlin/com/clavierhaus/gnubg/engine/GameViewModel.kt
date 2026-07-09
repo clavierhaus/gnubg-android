@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,6 +35,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         Thread(r, "gnubg-engine-thread")
     }.asCoroutineDispatcher()
     private val actionInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Write the match gnubg currently holds to [file], as gnubg's native SGF.
+     * Returns true only if a non-empty file resulted.
+     *
+     * PORT: CommandSaveMatch (sgf.c:2365), reached via gnubg_mobile_save_match.
+     * Three of its properties dictate how it must be called, all recorded in
+     * docs/TECHNICAL-NOTES.md:
+     *
+     *  - It begins with NextToken(&sz), which splits the path on whitespace, so a
+     *    path containing a space is silently truncated. The caller must pass a
+     *    space-free path; this method refuses one that is not.
+     *  - It returns void, and FACADE_FILE_OP returns 1 unconditionally, so
+     *    Engine.saveMatch()'s Boolean says only that the call was made. Success is
+     *    established here, by the file existing and being non-empty.
+     *  - It refuses when plGame is NULL ("No game in progress"), printing to the
+     *    log. That surfaces here as a false return, not an exception.
+     *
+     * gnubg writes the whole match -- every game so far -- not just the current
+     * game, so this is meaningful at any point once a game has started.
+     */
+    suspend fun saveMatchToFile(file: java.io.File): Boolean = withContext(engineThread) {
+        if (file.absolutePath.any { it.isWhitespace() }) return@withContext false
+        if (file.exists() && !file.delete()) return@withContext false
+        Engine.saveMatch(file.absolutePath)
+        file.exists() && file.length() > 0L
+    }
 
     init {
         viewModelScope.launch(engineThread) {
