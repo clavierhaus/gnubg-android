@@ -62,8 +62,7 @@ fun GameLayout(
             // Length is not forced behind the user's back: enabling the tutor
             // pins it to 1 visibly (see setTutorMode), and the setup screen
             // says why. startMatch simply honours what is shown.
-            onStart = { viewModel.startMatch(settings.matchLength) },
-            onSettings = { showSettings = true }
+            onStart = { viewModel.startMatch(settings.matchLength) }
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -438,8 +437,7 @@ private fun MatchSetupScreen(
     onSelectLength: (Int) -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
     onToggleTutor: (Boolean) -> Unit,
-    onStart: () -> Unit,
-    onSettings: () -> Unit
+    onStart: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
     Box(
@@ -592,20 +590,6 @@ private fun MatchSetupScreen(
                             // to 7, which is nonsense.)
                             val onFlexible = selectedLength == flexible
 
-                            // Steppers sit in the row, not stacked above it.
-                            // Full-size, so the tap targets are honest, and no
-                            // taller than a chip -- a stacked pair was one button
-                            // taller than the chip row and pushed everything
-                            // below it down. Nothing is offset after layout: what
-                            // is drawn is what is tappable.
-                            GameButton(
-                                label = "-",
-                                color = pal.uiButtonNeutral,
-                                enabled = engineReady && onFlexible && flexible > 1
-                            ) {
-                                onSelectLength((flexible - 1).coerceAtLeast(1))
-                            }
-
                             GameButton(
                                 label = "$flexible",
                                 color = if (selectedLength == flexible) pal.uiChipOn else pal.uiChipOff,
@@ -614,12 +598,30 @@ private fun MatchSetupScreen(
                                 onSelectLength(flexible)
                             }
 
-                            GameButton(
-                                label = "+",
-                                color = pal.uiButtonNeutral,
-                                enabled = engineReady && onFlexible && flexible < 25
+                            // Steppers stack to the right of the flexible chip.
+                            // The enclosing Row is Alignment.Top, so "+" sits
+                            // level with the top of the chip and "-" hangs below
+                            // it. Both keep full-size tap targets: nothing here
+                            // is offset after layout, so what is drawn is what is
+                            // tappable.
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                onSelectLength((flexible + 1).coerceAtMost(25))
+                                GameButton(
+                                    label = "+",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible < 25
+                                ) {
+                                    onSelectLength((flexible + 1).coerceAtMost(25))
+                                }
+                                GameButton(
+                                    label = "-",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible > 1
+                                ) {
+                                    onSelectLength((flexible - 1).coerceAtLeast(1))
+                                }
                             }
                         }
                     }
@@ -628,20 +630,18 @@ private fun MatchSetupScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
+            // Start Match floats free of the settings block above it: a
+            // deliberate gap, and the only green control on the screen. Settings
+            // is not repeated here -- it is one tap from the hub (Options) and
+            // from the board itself.
+            Spacer(modifier = Modifier.height(28.dp))
+
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
                 color = pal.uiActionPositive,
                 enabled = engineReady
             ) {
                 onStart()
-            }
-
-            GameButton(
-                label = "Settings",
-                color = pal.uiActionRoll,
-                enabled = true
-            ) {
-                onSettings()
             }
         }
     }
