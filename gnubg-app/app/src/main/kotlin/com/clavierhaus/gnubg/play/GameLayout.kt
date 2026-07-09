@@ -450,7 +450,7 @@ private fun MatchSetupScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             // Scroll rather than clip. A centred Column silently truncates when
             // its content exceeds the screen -- which is how the Start button
             // vanished on a landscape phone once this screen gained a row. The
@@ -631,8 +631,6 @@ private fun MatchSetupScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
 
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
