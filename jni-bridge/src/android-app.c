@@ -691,7 +691,26 @@ int RunAsyncProcess(AsyncFun pf, void *p, const char *UNUSED(sz)) {
 }
 
 /* -- EVALSETUP_2PLY -- copied from gnubg.c:348 -------------------------------
- * Defined locally in gnubg.c, not in any header. Copied here verbatim.
+ * Defined locally in gnubg.c, not in any header.
+ *
+ * NOT verbatim: the rolloutcontext tail was transcribed positionally and lost
+ * eight bit-fields (see the note on the macro below). It is now written by
+ * field name, which is both faithful and drift-proof.
+ */
+/* The rolloutcontext tail below is initialised BY NAME. It used to be
+ * positional, and it supplied only three of the ELEVEN bit-fields that lead
+ * that part of the struct (fCubeful, fVarRedn, fInitial, fRotate,
+ * fTruncBearoff2, fTruncBearoffOS, fLateEvals, fDoTruncate, fStopOnSTD,
+ * fStopOnJsd, fStopMoveOnJsd -- eval.h). Every value after fInitial therefore
+ * slid eight positions: 1296 landed in fTruncBearoff2:1, RNG_MERSENNE in
+ * fLateEvals:1, 2.33f in nTruncate, and nTrials came out as ZERO. That was
+ * latent rather than live -- these evalsetups carry et = EVAL_EVAL, and
+ * analysis.c consults .rc only when et == EVAL_ROLLOUT -- but it was wrong, and
+ * it produced 24 of the build's warnings.
+ *
+ * The values are exactly the ones the macro always meant to set; the eight
+ * unnamed bit-fields zero-initialise precisely as they did before. Naming them
+ * makes the order impossible to drift against eval.h again.
  */
 #define EVALSETUP_2PLY { \
   EVAL_EVAL, \
@@ -717,8 +736,11 @@ int RunAsyncProcess(AsyncFun pf, void *p, const char *UNUSED(sz)) {
     { .fCubeful = FALSE, .nPlies = 2, .fUsePrune = TRUE, .fDeterministic = TRUE, .rNoise = 0.0f }, \
     { MOVEFILTER_NORMAL, MOVEFILTER_NORMAL }, \
     { MOVEFILTER_NORMAL, MOVEFILTER_NORMAL }, \
-    FALSE, TRUE, FALSE, \
-    0, 1296, 0, RNG_MERSENNE, 0, 144, 0.01f, 144, 2.33f, 0, 0.0f, 0 \
+    .fCubeful = FALSE, .fVarRedn = TRUE, .fInitial = FALSE, \
+    .nTruncate = 0, .nTrials = 1296, .nLate = 0, .rngRollout = RNG_MERSENNE, \
+    .nSeed = 0, .nMinimumGames = 144, .rStdLimit = 0.01f, \
+    .nMinimumJsdGames = 144, .rJsdLimit = 2.33f, .nGamesDone = 0, \
+    .rStoppedOnJSD = 0.0f, .nSkip = 0 \
   } \
 }
 
@@ -913,7 +935,12 @@ evalsetup *GetEvalCube(void) {
 }
 
 TmoveFilter *GetEvalMoveFilter(void) {
-    return fEvalSameAsAnalysis ? aamfAnalysis : aamfEval;
+    /* TmoveFilter is movefilter[4][4], so TmoveFilter* is movefilter(*)[4][4].
+     * A bare aamfAnalysis decays to movefilter(*)[4] -- one level short. The
+     * address happens to be identical, which is why the sole caller
+     * (external.c:522, *GetEvalMoveFilter()) has always worked; the types were
+     * still wrong. Take the address of the array. */
+    return fEvalSameAsAnalysis ? &aamfAnalysis : &aamfEval;
 }
 
 /* Apply a gnubg preset (aecSettings[idx]) to the full set of evalcontexts
