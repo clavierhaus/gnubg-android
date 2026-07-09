@@ -104,6 +104,28 @@ int gnubg_mobile_rollout(const int board[50], int trials,
  * configures the Human-vs-GNU players. Returns 1 on success. */
 int gnubg_mobile_initialise(const char *weights_path);
 
+/* ---------------------------------------------------------------------------
+ * Position entry (Analyse Position). Thin wrappers over gnubg's own routines.
+ * ------------------------------------------------------------------------- */
+
+/* Install a position from a GNU BG ID ("PositionID:MatchID") or an XGID.
+ * PORT: SetGNUbgID (backgammon.h:519). Returns gnubg's code unchanged:
+ *   0 installed, 1 no valid IDs found, 2 installed but player on roll is on
+ *   top (the UI must offer a swap), -1 bad argument.
+ * The Command wrapper is deliberately not used: it answers the swap question
+ * through GetInputYN, which always returns TRUE in this port. */
+int gnubg_mobile_set_gnubg_id(const char *id);
+
+/* The user's yes to the swap offered after a return of 2.
+ * PORT: CommandSwapPlayers (backgammon.h:1024). */
+int gnubg_mobile_swap_players(void);
+
+/* gnubg's own renderings of the current state, copied out separately.
+ * PORT: PositionID (positionid.h:27), MatchIDFromMatchState (matchid.h:51).
+ * Returns 1, or -1 on bad argument. */
+int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
+                             char *out_match, int match_cap);
+
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 
 #ifdef __cplusplus

@@ -8,6 +8,7 @@
 #include "config.h"
 #include "eval.h"
 #include "positionid.h"
+#include "matchid.h"
 #include "backgammon.h"
 
 /* Tier 1/2 engine entry points (declared in the engine headers above; listed
@@ -930,5 +931,93 @@ int gnubg_mobile_initialise(const char *weights_path) {
                             * gnubg_mobile_set_auto_crawford. */
 
     pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+
+/* ===========================================================================
+ * Tier 5 -- position entry (Analyse Position)
+ *
+ * PORT: gnubg's own entry point is SetGNUbgID (backgammon.h:519, set.c).
+ * It accepts a GNU BG ID ("PositionID:MatchID") or an XGID and discriminates
+ * the dialects itself: SetXGID first, otherwise base64 tokens keyed on their
+ * known lengths (L_MATCHID / L_POSITIONID). It then installs the match context
+ * BEFORE the board --
+ *
+ *     if (matchid) SetMatchID(matchid);
+ *     if (posid)   SetBoard(posid);
+ *
+ * -- which is precisely why SetBoard's "there must be a game in progress"
+ * requirement is satisfied: SetMatchID has already set ms.gs from the Match
+ * ID's gamestate field. The ordering is gnubg's, and it is deliberate.
+ *
+ * We call SetGNUbgID and NOT CommandSetGNUbgID. The Command wrapper answers
+ * the "player on roll appears on top -- swap?" question by calling GetInputYN,
+ * and this port's GetInputYN (android-app.c:854) always returns TRUE. Routing
+ * through it would swap the players silently, every time. gnubg hands that
+ * decision back to the caller as return code 2, and the UI must ask.
+ *
+ * Return value is SetGNUbgID's own, unchanged:
+ *    0  IDs accepted; board and match context installed
+ *    1  no valid IDs found in the string
+ *    2  installed, but the player on roll appears on top (offer a swap)
+ *   -1  bad argument (facade level only; gnubg never returns this)
+ * =========================================================================== */
+int gnubg_mobile_set_gnubg_id(const char *id) {
+    char *buf;
+    int rc;
+
+    if (!id || !*id) return -1;
+
+    /* SetGNUbgID walks its argument (get_base64(sz, &sz)), so it needs a
+     * mutable, owned copy. */
+    buf = g_strdup(id);
+    if (!buf) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    rc = SetGNUbgID(buf);
+    /* PORT: CommandSetGNUbgID calls ShowBoard() on success. In this port
+     * ShowBoard (android-app.c:543) raises the gnubg_on_board_changed()
+     * callback. rc == 2 also means the board was installed. */
+    if (rc == 0 || rc == 2)
+        ShowBoard();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    g_free(buf);
+    return rc;
+}
+
+/* Answer to gnubg_mobile_set_gnubg_id() returning 2. The UI asks the user;
+ * only the user's yes reaches here. PORT: CommandSwapPlayers (backgammon.h:1024)
+ * is the same routine gnubg's own callers invoke for this. */
+int gnubg_mobile_swap_players(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSwapPlayers(NULL);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+/* The reverse: gnubg's own renderings of the current state.
+ * PositionID (positionid.h:27) and MatchIDFromMatchState (matchid.h:51) both
+ * return pointers to static storage, so copy at once under the lock.
+ * gnubg prints the pair as "%s:%s" (set.c:4874); the two halves are returned
+ * separately here rather than joined, so no format is invented in C.
+ * Returns 1 on success, -1 on bad argument. */
+int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
+                             char *out_match, int match_cap) {
+    const char *pos;
+    const char *match;
+
+    if (!out_pos || pos_cap < 1 || !out_match || match_cap < 1) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    pos = PositionID((ConstTanBoard) ms.anBoard);
+    match = MatchIDFromMatchState(&ms);
+    if (pos)   snprintf(out_pos, (size_t) pos_cap, "%s", pos);
+    else       out_pos[0] = '\0';
+    if (match) snprintf(out_match, (size_t) match_cap, "%s", match);
+    else       out_match[0] = '\0';
+    pthread_mutex_unlock(&gnubg_lock);
+
     return 1;
 }
