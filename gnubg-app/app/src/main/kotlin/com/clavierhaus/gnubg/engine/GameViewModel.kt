@@ -359,22 +359,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.board[24 + point] > 0) return null
 
         val dest = point - 1
-        val results = mutableListOf<Pair<IntArray, List<Int>>>()
+
+        // Both sub-moves must be steps gnubg offers, at their respective depths.
+        // Without this the shortcut can make a point by a combination that is not
+        // part of any legal move, and Commit would then silently refuse.
+        val od = state.originalDice ?: return null
+        val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
+
+        // (board, remaining, played pairs)
+        val results = mutableListOf<Triple<IntArray, List<Int>, List<Int>>>()
 
         state.remainingDice.forEachIndexed { i, dieA ->
             val srcA = dest + dieA
-            if (srcA in 0..23) {
+            if (srcA in 0..23 &&
+                nextSubMoves(turnMoves, state.played).any { it.first == srcA && it.second == dest }) {
                 val b1 = Engine.applySubMove(state.board, srcA, dieA)
                 if (b1.isNotEmpty()) {
+                    val afterA = state.played + listOf(srcA, dest)
                     val rem1 = state.remainingDice.toMutableList().also { it.removeAt(i) }
 
                     rem1.forEachIndexed { j, dieB ->
                         val srcB = dest + dieB
-                        if (srcB in 0..23) {
+                        if (srcB in 0..23 &&
+                            nextSubMoves(turnMoves, afterA).any { it.first == srcB && it.second == dest }) {
                             val b2 = Engine.applySubMove(b1, srcB, dieB)
                             if (b2.isNotEmpty()) {
                                 val rem2 = rem1.toMutableList().also { it.removeAt(j) }
-                                results.add(Pair(b2, rem2))
+                                results.add(Triple(b2, rem2, listOf(srcA, dest, srcB, dest)))
                             }
                         }
                     }
@@ -384,7 +395,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         if (results.isEmpty()) return null
 
-        val unique = results.distinctBy { (board, remaining) ->
+        val unique = results.distinctBy { (board, remaining, _) ->
             board.joinToString(",") + "|" + remaining.joinToString(",")
         }
 
@@ -398,6 +409,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val newBoard = unique[0].first
         val rawRemaining = unique[0].second
+        val stackPairs = unique[0].third
 
         val rawNextMoves = if (rawRemaining.isNotEmpty()) {
             val r0 = rawRemaining[0]
@@ -417,7 +429,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             remainingDice = state.remainingDice,
             legalMoves = state.legalMoves.copyOf(),
             pipCountHuman = state.pipCountHuman,
-            pipCountEngine = state.pipCountEngine
+            pipCountEngine = state.pipCountEngine,
+            played = state.played
         )
 
         android.util.Log.i(
@@ -432,6 +445,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pipCountHuman  = pips[0],
             pipCountEngine = pips[1],
             dice           = state.dice,
+            played         = state.played + stackPairs,
             moveHistory    = state.moveHistory + snapshot
         )
     }
@@ -446,29 +460,42 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // from gnubg point 24. Entry for die d lands on board point 25 - d, i.e.
             // gnubg 0-based 24 - d, so the same src - d == to - 1 test below applies.
             val src = if (from == 0) 24 else from - 1
+
+            // Same rule as tapSource: only steps continuing one of gnubg's complete
+            // legal moves. A drag covers one sub-move or two chained ones, and each
+            // must be a step gnubg offers at that depth.
+            val od = state.originalDice ?: return@launch
+            val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
+            val hits = { dest: Int -> dest == to - 1 || (to == 0 && dest < 0) }
+
             var newBoard = IntArray(0)
             val usedDice = ArrayList<Int>()
-            for (d in state.remainingDice.distinct()) {
-                if (src - d == to - 1 || (to == 0 && src - d < 0)) {
-                    val b = Engine.applySubMove(state.board, src, d)
-                    if (b.isNotEmpty()) { newBoard = b; usedDice.add(d); break }
+            val playedPairs = ArrayList<Int>()
+
+            for ((s1, e1) in nextSubMoves(turnMoves, state.played)) {
+                if (s1 != src || !hits(e1)) continue
+                val b = Engine.applySubMove(state.board, src, src - e1)
+                if (b.isNotEmpty()) {
+                    newBoard = b
+                    usedDice.add(src - e1)
+                    playedPairs.add(src); playedPairs.add(e1)
+                    break
                 }
             }
-            if (newBoard.isEmpty() && state.remainingDice.size >= 2) {
-                val dice = state.remainingDice
-                outer@ for (i in dice.indices) {
-                    for (j in dice.indices) {
-                        if (i == j) continue
-                        val dA = dice[i]; val dB = dice[j]
-                        val b1 = Engine.applySubMove(state.board, src, dA)
-                        if (b1.isEmpty()) continue
-                        val mid = src - dA
-                        if (mid < 0) continue
-                        if (mid - dB == to - 1 || (to == 0 && mid - dB < 0)) {
-                            val b2 = Engine.applySubMove(b1, mid, dB)
-                            if (b2.isNotEmpty()) {
-                                newBoard = b2; usedDice.add(dA); usedDice.add(dB); break@outer
-                            }
+
+            if (newBoard.isEmpty()) {
+                outer@ for ((s1, e1) in nextSubMoves(turnMoves, state.played)) {
+                    if (s1 != src || e1 < 0) continue
+                    val b1 = Engine.applySubMove(state.board, src, src - e1)
+                    if (b1.isEmpty()) continue
+                    for ((s2, e2) in nextSubMoves(turnMoves, state.played + listOf(s1, e1))) {
+                        if (s2 != e1 || !hits(e2)) continue
+                        val b2 = Engine.applySubMove(b1, s2, s2 - e2)
+                        if (b2.isNotEmpty()) {
+                            newBoard = b2
+                            usedDice.add(src - e1); usedDice.add(s2 - e2)
+                            playedPairs.addAll(listOf(s1, e1, s2, e2))
+                            break@outer
                         }
                     }
                 }
@@ -502,7 +529,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
-                played         = state.played + listOf(src, usedDest),
+                played         = state.played + playedPairs,
                 moveHistory    = state.moveHistory + snapshot
             )
         }
@@ -591,7 +618,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 remainingDice = state.remainingDice,
                 legalMoves = state.legalMoves.copyOf(),
                 pipCountHuman = state.pipCountHuman,
-                pipCountEngine = state.pipCountEngine
+                pipCountEngine = state.pipCountEngine,
+                played = state.played
             )
 
             _gameState.value = state.copy(
@@ -601,6 +629,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
+                played         = state.played + listOf(src, usedDest),
                 moveHistory    = state.moveHistory + snapshot
             )
         }
