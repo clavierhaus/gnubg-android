@@ -280,7 +280,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun acceptResignation() {
         viewModelScope.launch(engineThread) {
-            Engine.agreeResignation()
+            Engine.commandAgree()
             if (Engine.getMatchStatus() >= 2) {
                 val gr = Engine.getGameResult()
                 readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
@@ -296,7 +296,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun declineResignation() {
         viewModelScope.launch(engineThread) {
-            Engine.declineResignation()
+            Engine.commandDecline()
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
         }
     }
@@ -979,19 +979,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun commandDecline() {
-        viewModelScope.launch(engineThread) {
-            Engine.commandDecline()
-            refreshFromEngineAfterControl()
-        }
-    }
-
-    fun commandAgree() {
-        viewModelScope.launch(engineThread) {
-            Engine.commandAgree()
-            refreshFromEngineAfterControl()
-        }
-    }
+    // commandAgree() / commandDecline() wrappers were removed here. They had no
+    // caller, and they routed through refreshFromEngineAfterControl(), which has
+    // no GAME_OVER branch -- so accepting a resignation through them would have
+    // left the phase at WAITING_FOR_ROLL after gnubg ended the game. Use
+    // acceptResignation() / declineResignation(), which read gnubg's match status.
 
     fun commandRedouble() {
         viewModelScope.launch(engineThread) {

@@ -346,25 +346,6 @@ int gnubg_mobile_get_resignation(void) {
     return r;
 }
 
-/* Accept the resignation: the game ends. PORT: CommandAgree (play.c). */
-int gnubg_mobile_command_agree(void) {
-    pthread_mutex_lock(&gnubg_lock);
-    CommandAgree(NULL);
-    gnubg_mobile_drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
-    return 1;
-}
-
-/* Refuse it: play continues. gnubg records ms.fResignationDeclined so GNU will
- * not re-offer the same level. PORT: CommandDecline (play.c). */
-int gnubg_mobile_command_decline(void) {
-    pthread_mutex_lock(&gnubg_lock);
-    CommandDecline(NULL);
-    gnubg_mobile_drain_next_turns();
-    pthread_mutex_unlock(&gnubg_lock);
-    return 1;
-}
-
 int gnubg_mobile_command_move(const char *move) {
     pthread_mutex_lock(&gnubg_lock);
     CommandMove((char *)(move ? move : ""));

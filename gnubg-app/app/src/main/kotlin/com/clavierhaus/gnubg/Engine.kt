@@ -62,9 +62,8 @@ object Engine {
     // Resignation offered BY GNU: 0 none, 1 normal, 2 gammon, 3 backgammon.
     // GNU offers it itself when the position is lost (play.c:1335). gnubg then
     // refuses every roll until the human answers.
+    // Answered with the EXISTING commandAgree() / commandDecline() above.
     external fun getResignation(): Int
-    external fun agreeResignation()    // accept: the game ends
-    external fun declineResignation()  // refuse: play continues
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
 

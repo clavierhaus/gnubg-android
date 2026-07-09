@@ -49,9 +49,6 @@ int gnubg_mobile_command_roll(void);
  * PORT: ms.fResigned. GNU offers it itself (play.c:1335); CommandRoll refuses
  * until the human answers with agree or decline. */
 int gnubg_mobile_get_resignation(void);
-int gnubg_mobile_command_agree(void);    /* PORT: CommandAgree   -- game ends */
-int gnubg_mobile_command_decline(void);  /* PORT: CommandDecline -- play goes on */
-
 int gnubg_mobile_command_move(const char *move);
 int gnubg_mobile_start_match(int match_length);
 int gnubg_mobile_next_game(void);

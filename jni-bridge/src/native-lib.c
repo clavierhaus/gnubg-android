@@ -999,15 +999,3 @@ Java_com_clavierhaus_gnubg_Engine_getResignation(JNIEnv *env, jobject thiz) {
     (void) env; (void) thiz;
     return (jint) gnubg_mobile_get_resignation();
 }
-
-JNIEXPORT void JNICALL
-Java_com_clavierhaus_gnubg_Engine_agreeResignation(JNIEnv *env, jobject thiz) {
-    (void) env; (void) thiz;
-    (void) gnubg_mobile_command_agree();
-}
-
-JNIEXPORT void JNICALL
-Java_com_clavierhaus_gnubg_Engine_declineResignation(JNIEnv *env, jobject thiz) {
-    (void) env; (void) thiz;
-    (void) gnubg_mobile_command_decline();
-}
