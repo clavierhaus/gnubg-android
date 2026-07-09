@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -410,8 +409,6 @@ fun GameButton(
     label: String,
     color: Color,
     enabled: Boolean = true,
-    horizontalPadding: Dp = 24.dp,
-    verticalPadding: Dp = 12.dp,
     onClick: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
@@ -419,7 +416,7 @@ fun GameButton(
         modifier = Modifier
             .background(color, RoundedCornerShape(8.dp))
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -603,28 +600,27 @@ private fun MatchSetupScreen(
                             // to 7, which is nonsense.)
                             val onFlexible = selectedLength == flexible
 
-                            // Compact steppers: two of these plus the gap match
-                            // one chip's height, so the length group is no taller
-                            // than the tutor group opposite it.
+                            // Full-size steppers. They are the one control here
+                            // pressed repeatedly, so they keep a comfortable tap
+                            // target rather than being shrunk to match the chip
+                            // row's height. The stack is taller than a chip, but
+                            // it sits in an otherwise empty column and costs no
+                            // usable screen space.
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 GameButton(
                                     label = "+",
                                     color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible < 25,
-                                    horizontalPadding = 14.dp,
-                                    verticalPadding = 1.dp
+                                    enabled = engineReady && onFlexible && flexible < 25
                                 ) {
                                     onSelectLength((flexible + 1).coerceAtMost(25))
                                 }
                                 GameButton(
                                     label = "-",
                                     color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible > 1,
-                                    horizontalPadding = 14.dp,
-                                    verticalPadding = 1.dp
+                                    enabled = engineReady && onFlexible && flexible > 1
                                 ) {
                                     onSelectLength((flexible - 1).coerceAtLeast(1))
                                 }
