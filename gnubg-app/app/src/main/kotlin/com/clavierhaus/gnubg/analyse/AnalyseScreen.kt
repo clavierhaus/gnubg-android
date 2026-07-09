@@ -67,6 +67,22 @@ private class AnalyseResult(
 
 private const val MAX_CANDIDATES = 8
 
+/* gamestate, in gnubg's declared order (lib/gnubg-types.h):
+ * GAME_NONE, GAME_PLAYING, GAME_OVER, GAME_RESIGNED, GAME_DROP */
+private const val GAME_NONE = 0
+private const val GAME_PLAYING = 1
+private const val GAME_OVER = 2
+private const val GAME_RESIGNED = 3
+private const val GAME_DROP = 4
+
+private fun gameStateSuffix(gs: Int): String = when (gs) {
+    GAME_NONE -> " (no game started)"
+    GAME_OVER -> " (the game is over)"
+    GAME_RESIGNED -> " (the game was resigned)"
+    GAME_DROP -> " (the cube was dropped)"
+    else -> ""
+}
+
 @Composable
 fun AnalyseScreen(
     settings: GameSettings,
@@ -120,26 +136,50 @@ fun AnalyseScreen(
         busy = true
         scope.launch {
             val rc = withContext(Dispatchers.Default) { Engine.setGnubgId(idText.trim()) }
-            when (rc) {
-                0 -> {
-                    askSwap = false
-                    status = null
-                    result = readBack()
-                }
-                2 -> {
-                    askSwap = true
-                    status = null
-                    result = readBack()
-                }
-                1 -> {
+
+            // SetGNUbgID discards SetBoard's return value (set.c:4873), so a 0 or 2
+            // does NOT prove the position was installed. SetBoard refuses unless
+            // ms.gs == GAME_PLAYING (set.c), and SetMatchID has already reset the
+            // board to the opening position and set gs from the Match ID by then
+            // (play.c:4205 -- FreeMatch, InitBoard, ms.gs = gs). So an ID carrying
+            // a finished game silently yields the STARTING position with the final
+            // score, and a bare Position ID with no game in progress silently
+            // changes nothing. gnubg's own precondition is the test: if gs is not
+            // GAME_PLAYING afterwards, no position was set.
+            val gs = if (rc == 0 || rc == 2) {
+                withContext(Dispatchers.Default) { Engine.getMatchState()[0] }
+            } else {
+                GAME_PLAYING
+            }
+
+            when {
+                rc == 1 -> {
                     askSwap = false
                     result = null
                     status = "No valid ID found. Paste a GNU BG ID or an XGID."
                 }
-                else -> {
+                rc != 0 && rc != 2 -> {
                     askSwap = false
                     result = null
                     status = "Could not read that ID."
+                }
+                gs != GAME_PLAYING -> {
+                    askSwap = false
+                    result = null
+                    status = "gnubg did not set this position: it describes a game " +
+                        "that is not in progress" + gameStateSuffix(gs) + ". A position " +
+                        "can only be set while a game is under way, so an ID captured " +
+                        "after a game ended will not load."
+                }
+                rc == 2 -> {
+                    askSwap = true
+                    status = null
+                    result = readBack()
+                }
+                else -> {
+                    askSwap = false
+                    status = null
+                    result = readBack()
                 }
             }
             busy = false
