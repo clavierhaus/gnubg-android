@@ -585,6 +585,27 @@ private fun MatchSetupScreen(
                                 }
                             }
 
+                            // +/- belong to the flexible chip and only act when
+                            // it is the selected length. Tap the chip to enter
+                            // the flexible range; then step it. (Letting +/- act
+                            // from a shortcut meant "-" on 3 raised the length
+                            // to 7, which is nonsense.)
+                            val onFlexible = selectedLength == flexible
+
+                            // Steppers sit in the row, not stacked above it.
+                            // Full-size, so the tap targets are honest, and no
+                            // taller than a chip -- a stacked pair was one button
+                            // taller than the chip row and pushed everything
+                            // below it down. Nothing is offset after layout: what
+                            // is drawn is what is tappable.
+                            GameButton(
+                                label = "-",
+                                color = pal.uiButtonNeutral,
+                                enabled = engineReady && onFlexible && flexible > 1
+                            ) {
+                                onSelectLength((flexible - 1).coerceAtLeast(1))
+                            }
+
                             GameButton(
                                 label = "$flexible",
                                 color = if (selectedLength == flexible) pal.uiChipOn else pal.uiChipOff,
@@ -593,37 +614,12 @@ private fun MatchSetupScreen(
                                 onSelectLength(flexible)
                             }
 
-                            // +/- belong to the flexible chip and only act when
-                            // it is the selected length. Tap the chip to enter
-                            // the flexible range; then step it. (Letting +/- act
-                            // from a shortcut meant "-" on 3 raised the length
-                            // to 7, which is nonsense.)
-                            val onFlexible = selectedLength == flexible
-
-                            // Full-size steppers. They are the one control here
-                            // pressed repeatedly, so they keep a comfortable tap
-                            // target rather than being shrunk to match the chip
-                            // row's height. The stack is taller than a chip, but
-                            // it sits in an otherwise empty column and costs no
-                            // usable screen space.
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            GameButton(
+                                label = "+",
+                                color = pal.uiButtonNeutral,
+                                enabled = engineReady && onFlexible && flexible < 25
                             ) {
-                                GameButton(
-                                    label = "+",
-                                    color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible < 25
-                                ) {
-                                    onSelectLength((flexible + 1).coerceAtMost(25))
-                                }
-                                GameButton(
-                                    label = "-",
-                                    color = pal.uiButtonNeutral,
-                                    enabled = engineReady && onFlexible && flexible > 1
-                                ) {
-                                    onSelectLength((flexible - 1).coerceAtLeast(1))
-                                }
+                                onSelectLength((flexible + 1).coerceAtMost(25))
                             }
                         }
                     }
