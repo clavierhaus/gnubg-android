@@ -181,6 +181,30 @@ fun GameLayout(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 GameButton("Drop", pal.uiActionNegative) { viewModel.dropDouble() }
                             }
+                            // GNU resigns by itself when the position is lost
+                            // (play.c:1335). gnubg refuses every roll until this is
+                            // answered, so it must be asked, not assumed.
+                            gameState.phase == GamePhase.RESIGNATION_OFFERED -> {
+                                Text(
+                                    when (gameState.resignation) {
+                                        3 -> "GNU resigns a backgammon"
+                                        2 -> "GNU resigns a gammon"
+                                        else -> "GNU resigns"
+                                    },
+                                    color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Worth " + (gameState.resignation * gameState.cubeValue) +
+                                        (if (gameState.resignation * gameState.cubeValue == 1) " point" else " points"),
+                                    color = pal.uiTextSecondary, fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                GameButton("Accept", pal.uiActionPositive) { viewModel.acceptResignation() }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                GameButton("Play on", pal.uiButtonNeutral) { viewModel.declineResignation() }
+                            }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
                                 Text("Thinking...", color = pal.uiTextSecondary, fontSize = 18.sp)
                             }

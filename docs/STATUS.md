@@ -103,6 +103,9 @@ Work toward a first public release. All landed on the working branch:
 ## Known gaps
 
 - Cube pass/drop after a human double, and beaver handling, are incomplete.
+- Resignations offered BY GNU are now handled (accept / play on). GNU offers them
+  itself once the position is lost; before this, gnubg refused every subsequent
+  roll and the game could not finish.
 - The full tutor vision (CoachCard, arrows, Try-Again loop) is not built.
   TutorAnalysisPanel is the current, minimal surface.
 - **Review Match [3] is not built.** It is the last of the three requested

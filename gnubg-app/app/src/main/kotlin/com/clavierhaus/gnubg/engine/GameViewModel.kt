@@ -229,6 +229,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             fDoubled       = fDoubled,
             canDouble      = canDouble,
             unplayableDice = unplayableDice,
+            resignation    = Engine.getResignation(),
             tutorAnalysis  = lastTutorAnalysis,
             analysisDetail = lastAnalysisDetail
         )
@@ -273,9 +274,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Accept GNU's resignation. PORT: CommandAgree. The game ends; gnubg builds
+     * the MOVE_RESIGN record and awards the points.
+     */
+    fun acceptResignation() {
+        viewModelScope.launch(engineThread) {
+            Engine.agreeResignation()
+            if (Engine.getMatchStatus() >= 2) {
+                val gr = Engine.getGameResult()
+                readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
+            } else {
+                readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+            }
+        }
+    }
+
+    /**
+     * Refuse it and play on. PORT: CommandDecline. gnubg records
+     * ms.fResignationDeclined so GNU will not offer the same level again.
+     */
+    fun declineResignation() {
+        viewModelScope.launch(engineThread) {
+            Engine.declineResignation()
+            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+        }
+    }
+
     fun rollDice() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
         viewModelScope.launch(engineThread) {
+            // gnubg refuses to roll while a resignation is unanswered. Surface it
+            // rather than calling CommandRoll and re-entering WAITING_FOR_ROLL,
+            // which looks exactly like a stuck game.
+            if (Engine.getResignation() > 0 && Engine.getMatchTurn() == 0) {
+                readMatchState(phase = GamePhase.RESIGNATION_OFFERED)
+                return@launch
+            }
             Engine.rollDice()
             val cubeAfter = Engine.getMatchCubeInfo()
             if (cubeAfter[0] == 1 && Engine.getMatchTurn() == 0) {
@@ -855,6 +890,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val turn = Engine.getMatchTurn()
 
         val phase = when {
+            // gnubg refuses CommandRoll while a resignation is on the table
+            // ("Please resolve the resignation first", play.c:4048), so nothing
+            // else can be offered until this is answered.
+            Engine.getResignation() > 0 && turn == 0 -> GamePhase.RESIGNATION_OFFERED
             cubeInfo[0] == 1 && turn == 0 -> GamePhase.CUBE_OFFERED
             dice[0] > 0 && turn == 0 -> GamePhase.HUMAN_MOVING
             else -> GamePhase.WAITING_FOR_ROLL

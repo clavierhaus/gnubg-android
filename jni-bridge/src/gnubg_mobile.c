@@ -330,6 +330,41 @@ int gnubg_mobile_command_roll(void) {
     return reason == 0;
 }
 
+/* The resignation currently on the table: 0 none, 1 normal, 2 gammon,
+ * 3 backgammon. This is gnubg's own ms.fResigned.
+ *
+ * GNU resigns by itself. ComputerTurn calls getResignation() and, when the
+ * position is lost badly enough, CommandResign("n"|"g"|"b") (play.c:1327-1335),
+ * which sets ms.fResigned. gnubg then waits for the human to answer, and
+ * CommandRoll refuses with "Please resolve the resignation first" until they do.
+ * A port that never asks leaves the game unable to proceed. */
+int gnubg_mobile_get_resignation(void) {
+    int r;
+    pthread_mutex_lock(&gnubg_lock);
+    r = ms.fResigned;
+    pthread_mutex_unlock(&gnubg_lock);
+    return r;
+}
+
+/* Accept the resignation: the game ends. PORT: CommandAgree (play.c). */
+int gnubg_mobile_command_agree(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandAgree(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+/* Refuse it: play continues. gnubg records ms.fResignationDeclined so GNU will
+ * not re-offer the same level. PORT: CommandDecline (play.c). */
+int gnubg_mobile_command_decline(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandDecline(NULL);
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 int gnubg_mobile_command_move(const char *move) {
     pthread_mutex_lock(&gnubg_lock);
     CommandMove((char *)(move ? move : ""));

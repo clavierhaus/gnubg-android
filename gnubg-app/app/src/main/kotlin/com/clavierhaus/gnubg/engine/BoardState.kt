@@ -48,6 +48,7 @@ data class BoardState(
     val fDoubled: Boolean = false,
     val canDouble: Boolean = false,  // engine authority (gnubg_can_double); UI cube tappability
     val unplayableDice: Set<Int> = emptySet(),  // die faces gnubg lists no move for; greyed in UI
+    val resignation: Int = 0,                   // gnubg's ms.fResigned: 1 normal, 2 gammon, 3 backgammon
     val pipCountHuman: Int = 167,
     val pipCountEngine: Int = 167,
     val phase: GamePhase = GamePhase.WAITING_FOR_ROLL,
@@ -105,6 +106,7 @@ enum class GamePhase {
     HUMAN_MOVING,
     ENGINE_THINKING,
     CUBE_OFFERED,
+    RESIGNATION_OFFERED,  // GNU has resigned; gnubg refuses every roll until answered
     HUMAN_CAN_DOUBLE,
     GAME_OVER
 }

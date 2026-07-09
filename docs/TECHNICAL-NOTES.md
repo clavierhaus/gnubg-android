@@ -102,6 +102,20 @@ Call `SetGNUbgID`, never `CommandSetGNUbgID`: the wrapper answers the
 port (android-app.c:854) always returns TRUE, so it would swap silently. gnubg
 returns 2 to hand that decision back; the UI must ask.
 
+### GNU resigns, and gnubg then refuses every roll
+
+`ComputerTurn` calls `getResignation()` and, when the position is lost badly
+enough, `CommandResign("n"|"g"|"b")` (play.c:1327-1335), setting `ms.fResigned`
+to 1, 2 or 3. gnubg then waits for the human to answer with `CommandAgree` or
+`CommandDecline`, and `CommandRoll` refuses in the meantime ("Please resolve the
+resignation first", play.c:4048).
+
+A port that never asks leaves the game unable to proceed: every Roll is refused,
+silently, and the UI loops back to WAITING_FOR_ROLL. This looked exactly like a
+stuck game near the end of a won position, which is precisely when GNU resigns.
+
+Do not assume the engine never resigns. It does.
+
 ### CommandSaveMatch tokenizes its path
 
 `CommandSaveMatch` (sgf.c:2365) begins with `NextToken(&sz)`, which splits on
