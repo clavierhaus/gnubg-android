@@ -180,6 +180,110 @@ Descending order of (validated demand x cheapness), and each step feeds the next
 
 If only one ships, it is [1]: the demand is validated and explicitly unserved.
 
+## Risk analysis for [1], verified against the code
+
+Three risks were identified before design. All three were traced to their source.
+
+### Risk 1: does the evaluation path mutate the global `ms`? -- NO
+
+`analyze_replay` (`gnubg_mobile.c:652`) is the existing analysis chain. It
+operates entirely on a **caller-supplied** `matchstate *pmsAnalyse` and never
+reads or writes the global `ms`. Its evaluation call is:
+
+    GetMatchStateCubeInfo(&ci, pmsAnalyse);   /* gnubg derives ci from a LOCAL ms */
+    FindnSaveBestMoves(pml, d0, d1, pmsAnalyse->anBoard, &key, TRUE,
+                       arSkillLevel[SKILL_DOUBTFUL], &ci,
+                       &esAnalysisChequer.ec, aamfAnalysis);
+
+Every context object is either a local (`pmsAnalyse`, `ci`) or a gnubg **named
+instance** (`esAnalysisChequer`, `aamfAnalysis`, `arSkillLevel`). Nothing is
+invented or reparameterised. This is already the Q2-compliant pattern, and it is
+the pattern position analysis must copy.
+
+**Consequence:** analysing a pasted position cannot corrupt a game in progress,
+provided the new verb likewise confines itself to a local matchstate.
+
+### Risk 2: can position entry reuse `analyze_replay`? -- NO, and it should not
+
+`analyze_replay` depends on the global **game history**, not on global `ms`:
+
+    if (!plGame || plGame->plNext == plGame) return 0;   /* needs a live game */
+    ... scan plGame backwards for the last human MOVE_NORMAL ...
+    AnalyzeMove(pmr, pmsAnalyse, plGame, psc, ...)       /* replays plGame */
+
+It is, by construction, *"analyse the last played move of the current game."* A
+pasted position has no played move and no `plGame`. **Position entry therefore
+needs its own facade verb.** This is the correct conclusion; `analyze_replay` is
+not broken and must not be refactored to accommodate a different question.
+
+Note also that `CommandSetBoard` is doubly unusable, as recorded above: it
+requires `GAME_PLAYING`, and it calls `ParsePosition`, which is declared
+(`backgammon.h:482`) but defined in no vendored file. Neither the command path
+nor the replay path serves position entry. The ID decoders do.
+
+### Risk 3: the silent money-play trap -- REAL, and the main hazard
+
+`GetMatchStateCubeInfo(&ci, pms)` derives the cube context from the matchstate's
+`nMatchTo`, `anScore`, `nCube`, `fCubeOwner`, `fCrawford`, `fJacoby`. If a bare
+Position ID is pasted and those fields are left zeroed, gnubg will evaluate
+happily -- **as money play, cube centred, score 0-0** -- and return numbers that
+look authoritative while answering a different question than the user asked.
+
+This is the single most dangerous failure mode of the feature, because it fails
+*silently* and *plausibly*. It is precisely the class of error `CLAUDE.md`
+exists to prevent, arriving through data rather than through invented code.
+
+**Mitigation is a UI requirement, not a nicety:** the match context (match
+length, score, cube value and owner, Crawford, Jacoby) must be either supplied
+(via a Match ID) or *explicitly chosen and shown* by the user. The screen must
+never quietly default. "Money play" is a legitimate answer; an unstated
+assumption of it is not.
+
+## The clean design for [1]
+
+The `matchstate` struct (`lib/gnubg-types.h:41`) and `MatchFromID`'s out-params
+line up field for field -- unsurprisingly, since a Match ID *is* a serialised
+matchstate. That correspondence is the whole design.
+
+**Two decoders, one evaluator, no invention:**
+
+1. `PositionFromID(anBoard, posId)` -- gnubg decodes the board.
+2. `MatchFromID(anDice, &fTurn, &fResigned, &fDoubled, &fMove, &fCubeOwner,
+   &fCrawford, &nMatchTo, anScore, &nCube, &fJacoby, &gs, matchId)` -- gnubg
+   decodes the surrounding state.
+3. Copy those gnubg-produced values into a **local** `matchstate`. This is
+   assembly of gnubg's own outputs into gnubg's own struct -- not invention.
+   The facade must not compute, infer, or default any of these fields itself.
+4. `GetMatchStateCubeInfo(&ci, &msLocal)` -- gnubg derives the cubeinfo.
+   **Never** hand-build a `cubeinfo` via `SetCubeInfo`; per Q2 a private
+   cubeinfo in the facade is by default a bug.
+5. `FindnSaveBestMoves(..., &ci, &esAnalysisChequer.ec, aamfAnalysis)` -- the
+   same named analysis instances the tutor already uses.
+
+Proposed verbs (names indicative):
+
+- `gnubg_mobile_position_from_ids(posId, matchId, out_board[50], out_state[])`
+  -- decode and validate; return a clean error for a malformed ID rather than
+  evaluating something wrong.
+- `gnubg_mobile_analyze_position(...)` -- local matchstate ->
+  `GetMatchStateCubeInfo` -> `FindnSaveBestMoves`, returning the ranked list in
+  the shape the tutor panel already renders.
+- `gnubg_mobile_current_position_ids(out_posId, out_matchId)` -- the reverse,
+  via `PositionID()` and `MatchIDFromMatchState()`. Cheap, and immediately
+  useful: "copy this position" out of a live game.
+
+**Validation belongs to gnubg too.** `anChequers[]` (`eval.h:157`) exists for
+chequer-count checking, as `SetBoard` used it via `CorrectNumberOfChequers`.
+`SwapSides` is declared (`eval.h:390`) and available for frame correction.
+Open item: `CorrectNumberOfChequers` is **not** declared in any vendored header
+-- confirm it links before relying on it, and if it does not, use gnubg's
+exposed equivalent (or `anChequers[ms.bgv]` with gnubg's own check) rather than
+writing a chequer count in Kotlin or in the facade.
+
+**Frame convention:** reuse the existing `facade_unpack_board` /
+`facade_pack_board` (`gnubg_mobile.c:348`) so the pasted position enters the
+same player-on-roll frame the rest of the port already speaks.
+
 ## The rule still governs
 
 Nothing here relaxes `CLAUDE.md`. Position entry decodes an ID with gnubg's
@@ -187,3 +291,10 @@ decoder. Evaluation calls gnubg. Review replays gnubg's own move records through
 gnubg's own routines and displays what gnubg returns. Kotlin draws boards, holds
 transient UI state, and calls JNI. If a verdict about a position appears on
 screen, a named gnubg routine produced it.
+
+The Risk 3 finding sharpens this. The rule is usually stated as *do not compute
+what gnubg computes*. Position entry adds a second edge: **do not silently supply
+what the user did not state.** An unstated score or cube position is an invented
+input, and an invented input produces an invented answer no less surely than
+invented code does. Where the context is unknown, the screen asks -- it does not
+assume.
