@@ -61,7 +61,7 @@ engine-core/gnubgmodule.*
 engine-core/gnubgstock.*
 engine-core/render*.c
 engine-core/render*.h
-engine-core/sound.*
+engine-core/sound.c
 engine-core/html*.c
 engine-core/latex.c
 engine-core/text.c
