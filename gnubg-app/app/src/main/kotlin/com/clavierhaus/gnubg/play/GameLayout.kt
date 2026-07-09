@@ -558,15 +558,59 @@ private fun MatchSetupScreen(
                             fontSize = 13.sp
                         )
                     } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            listOf(1, 3, 5, 7).forEach { n ->
-                                val selected = selectedLength == n
+                        // 1, 3 and 5 are fixed shortcuts. The fourth slot is
+                        // flexible: it shows whatever length is actually set when
+                        // that length is not one of the shortcuts, so an 11-point
+                        // match chosen in Settings is visible here rather than
+                        // leaving every chip unselected. +/- adjust it in place,
+                        // over the same 1..25 range as the Settings stepper.
+                        val shortcuts = listOf(1, 3, 5)
+                        val flexible = if (selectedLength in shortcuts) 7 else selectedLength
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            shortcuts.forEach { n ->
                                 GameButton(
                                     label = "$n",
-                                    color = if (selected) pal.uiChipOn else pal.uiChipOff,
+                                    color = if (selectedLength == n) pal.uiChipOn else pal.uiChipOff,
                                     enabled = engineReady
                                 ) {
                                     onSelectLength(n)
+                                }
+                            }
+
+                            GameButton(
+                                label = "$flexible",
+                                color = if (selectedLength == flexible) pal.uiChipOn else pal.uiChipOff,
+                                enabled = engineReady
+                            ) {
+                                onSelectLength(flexible)
+                            }
+
+                            // +/- belong to the flexible chip and only act when
+                            // it is the selected length. Tap the chip to enter
+                            // the flexible range; then step it. (Letting +/- act
+                            // from a shortcut meant "-" on 3 raised the length
+                            // to 7, which is nonsense.)
+                            val onFlexible = selectedLength == flexible
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                GameButton(
+                                    label = "+",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible < 25
+                                ) {
+                                    onSelectLength((flexible + 1).coerceAtMost(25))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                GameButton(
+                                    label = "-",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible > 1
+                                ) {
+                                    onSelectLength((flexible - 1).coerceAtLeast(1))
                                 }
                             }
                         }
