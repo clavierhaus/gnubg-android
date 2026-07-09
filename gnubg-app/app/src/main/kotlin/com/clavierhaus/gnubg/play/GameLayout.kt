@@ -1,8 +1,6 @@
 package com.clavierhaus.gnubg.play
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -446,15 +444,17 @@ private fun MatchSetupScreen(
             .background(pal.uiPanelDeep),
         contentAlignment = Alignment.Center
     ) {
+        // The Column owns the full height, so weighted spacers can distribute
+        // what is left over after the controls have measured themselves. It must
+        // NOT scroll: a scrollable Column measures with unbounded height, which
+        // makes weight() meaningless and simply stacks children top-to-bottom --
+        // which is exactly why Start Match was landing against the bottom edge
+        // with free space sitting unusable above it.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            // Scroll rather than clip. A centred Column silently truncates when
-            // its content exceeds the screen -- which is how the Start button
-            // vanished on a landscape phone once this screen gained a row. The
-            // app must not assume any particular screen height.
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
                 .padding(24.dp)
         ) {
             Text(
@@ -630,11 +630,13 @@ private fun MatchSetupScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Start Match floats free of the settings block above it: a
-            // deliberate gap, and the only green control on the screen. Settings
-            // is not repeated here -- it is one tap from the hub (Options) and
-            // from the board itself.
-            Spacer(modifier = Modifier.height(28.dp))
+            // Start Match floats in whatever space the controls leave: weighted
+            // spacers above and below, so it sits in the free area rather than
+            // flush against the last control or the screen edge. It is the only
+            // green control here, so it is set apart by colour and by position.
+            // Settings is not repeated on this screen -- it is one tap from the
+            // hub (Options) and from the board itself.
+            Spacer(modifier = Modifier.weight(1f))
 
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
@@ -643,6 +645,8 @@ private fun MatchSetupScreen(
             ) {
                 onStart()
             }
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
