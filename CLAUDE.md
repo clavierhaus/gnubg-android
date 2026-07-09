@@ -107,6 +107,38 @@ For every change, answer these IN WRITING, in chat, before code:
       the board" is a FAILING answer. If gnubg does not expose it,
       the answer is to NOT SHOW IT -- not to compute it myself.
 
+## Q0 -- DOES IT ALREADY EXIST?
+
+Before writing any new function, verb, external or ViewModel method, search for
+it. Not "check carefully": run the search and paste the result.
+
+  - facade verb  -> grep -rn "CommandFoo" jni-bridge/    (the gnubg routine it wraps)
+  - JNI symbol   -> grep -rn "Engine_fooBar" jni-bridge/src/native-lib.c
+  - Kotlin       -> grep -rn "fun fooBar" gnubg-app/
+
+This question is Q0 because it precedes the rest. The checkpoint used to begin by
+asking WHICH gnubg function is being wrapped, and never asked whether someone had
+already wrapped it. That omission shipped a duplicate definition of
+gnubg_mobile_command_agree next to the one that had been there for months --
+along with duplicate header declarations, duplicate JNI wrappers and duplicate
+externals. The whole answering chain for resignations already existed and was
+dead; only the reader for ms.fResigned was missing.
+
+The same omission nearly rebuilt SetGNUbgID, and nearly rebuilt match saving.
+Neither was caught by a compiler. Both were caught by a person, late.
+
+## RUN ./tools/syntax_check.sh BEFORE EVERY COMMIT THAT TOUCHES C
+
+There is no excuse for shipping a C file that does not compile. gcc, the glib
+headers and a JDK are enough -- the only NDK-specific header the facade needs is
+<android/log.h>, stubbed in tools/shim. The full NDK is needed to LINK for the
+device, not to find a redefinition, a bad type, or a missing declaration.
+
+The duplicate above was found by the user's device build after a full native
+compile. It would have been found in one second by:
+
+    ./tools/syntax_check.sh
+
 ## A GNUBG GLOBAL DEFINED BY THE PORT IS ENGINE CODE
 
 The de-GTK'd build omits gnubg.c, so android-app.c re-provides globals that
