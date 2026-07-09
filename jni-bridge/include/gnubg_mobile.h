@@ -39,6 +39,11 @@ int gnubg_mobile_command_double(void);
 int gnubg_mobile_can_double(void);   /* 1 if a double would succeed; 0 otherwise */
 int gnubg_mobile_command_take(void);
 int gnubg_mobile_command_drop(void);
+/* Roll for the human. Returns 1 if every one of CommandRoll's preconditions held
+ * (play.c:4048), 0 if gnubg was always going to refuse -- in which case the
+ * reason is logged under the gnubg-roll tag. CommandRoll itself returns void and
+ * refuses silently, so without this a refused roll looks like a successful one
+ * and the UI loops back to WAITING_FOR_ROLL, which presents as a stuck game. */
 int gnubg_mobile_command_roll(void);
 int gnubg_mobile_command_move(const char *move);
 int gnubg_mobile_start_match(int match_length);

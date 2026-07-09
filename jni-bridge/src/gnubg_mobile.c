@@ -279,13 +279,55 @@ int gnubg_mobile_can_double(void) {
     return r;
 }
 
+/* Why CommandRoll is about to refuse, if it is.
+ *
+ * CommandRoll (play.c:4048) returns void and reports its five refusals through
+ * outputl(), which on Android goes to the log and nowhere the UI can see. The
+ * facade then returned 1 unconditionally, so a refused roll was indistinguishable
+ * from a successful one and the UI simply re-entered WAITING_FOR_ROLL -- a silent
+ * loop that looks like a stuck game.
+ *
+ * These are gnubg's own guards, read in gnubg's own order. Nothing is decided
+ * here and no behaviour is duplicated: CommandRoll still makes every decision.
+ * This only reports which of its conditions currently holds.
+ *
+ * The state must be read BEFORE the call: drain_next_turns() afterwards runs the
+ * computer's turn, so ms.anDice no longer describes the human's roll.
+ *
+ * 0 = no refusal expected. 1..5 map to CommandRoll's guards in order.
+ */
+static int roll_refusal_reason(void) {
+    if (ms.gs != GAME_PLAYING)              return 1;  /* no game in progress */
+    if (ap[ms.fTurn].pt != PLAYER_HUMAN)    return 2;  /* it is the computer's turn */
+    if (ms.fDoubled)                        return 3;  /* cube must be answered */
+    if (ms.fResigned)                       return 4;  /* resignation must be resolved */
+    if (ms.anDice[0])                       return 5;  /* already rolled */
+    return 0;
+}
+
+/* Returns 1 when the roll was attempted with every precondition met, 0 when
+ * gnubg was always going to refuse. The reason is logged under gnubg-roll. */
 int gnubg_mobile_command_roll(void) {
+    int reason;
+
     pthread_mutex_lock(&gnubg_lock);
+
+    reason = roll_refusal_reason();
+    if (reason) {
+        __android_log_print(ANDROID_LOG_WARN, "gnubg-roll",
+            "CommandRoll refused: reason=%d gs=%d fTurn=%d pt=%d fDoubled=%d "
+            "fResigned=%d dice=%u,%u",
+            reason, (int) ms.gs, ms.fTurn, (int) ap[ms.fTurn].pt,
+            ms.fDoubled, ms.fResigned,
+            ms.anDice[0], ms.anDice[1]);
+    }
+
     CommandRoll(NULL);
     gnubg_mobile_drain_next_turns();
+
     pthread_mutex_unlock(&gnubg_lock);
 
-    return 1;
+    return reason == 0;
 }
 
 int gnubg_mobile_command_move(const char *move) {
