@@ -492,7 +492,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 remainingDice = state.remainingDice,
                 legalMoves = state.legalMoves.copyOf(),
                 pipCountHuman = state.pipCountHuman,
-                pipCountEngine = state.pipCountEngine
+                pipCountEngine = state.pipCountEngine,
+                played         = state.played
             )
             _gameState.value = state.copy(
                 board          = newBoard,
@@ -501,6 +502,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
+                played         = state.played + listOf(src, usedDest),
                 moveHistory    = state.moveHistory + snapshot
             )
         }
@@ -537,11 +539,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // cMaxMoves/cMaxPips match). A tap sequence that cannot complete to a
             // maximal legal move is rejected at confirm() and the player undoes --
             // exactly as gnubgs own board UI behaves. It is NOT reimplemented here.
+            // Only sub-moves that continue one of gnubg's complete legal moves.
+            //
+            // Asking Engine.applySubMove per die answers "is this step legal in
+            // isolation", which is not the question. gnubg enforces maximisation
+            // across the whole turn, so individually legal steps can build a
+            // position it will refuse at confirm() -- silently, since findMove
+            // simply returns empty. That was the stuck Commit.
+            val od = state.originalDice ?: return@launch
+            val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
+            val allowed = nextSubMoves(turnMoves, state.played).filter { it.first == src }
+            if (allowed.isEmpty()) return@launch
+
+            // Respect the die order the player sees, so swapping the dice still
+            // changes which is tried first.
             var newBoard = IntArray(0)
             var usedDie  = -1
+            var usedDest = 0
             for (d in state.remainingDice.distinct()) {
+                val step = allowed.firstOrNull { src - it.second == d } ?: continue
                 val b = Engine.applySubMove(state.board, src, d)
-                if (b.isNotEmpty()) { newBoard = b; usedDie = d; break }
+                if (b.isNotEmpty()) { newBoard = b; usedDie = d; usedDest = step.second; break }
             }
             if (newBoard.isEmpty()) return@launch
 
@@ -600,6 +618,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pipCountHuman  = snapshot.pipCountHuman,
             pipCountEngine = snapshot.pipCountEngine,
             dice           = state.dice,
+            played         = snapshot.played,
             moveHistory    = state.moveHistory.dropLast(1)
         )
 
@@ -658,7 +677,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.board.contentEquals(state.oldBoard)) return@launch
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
-            if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
+            if (moveStr.isEmpty()) {
+                // gnubg does not recognise the resulting position as one of its
+                // legal moves. With tapSource restricted to gnubg's own move list
+                // this should be unreachable; if it happens, say so rather than
+                // leaving a dead Commit button.
+                android.util.Log.e("gnubg-vm", "confirm: findMove empty -- not a legal move")
+                return@launch
+            }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             // Capture the match score before the move. A game-ending move triggers
             // gnubgs NextTurn(TRUE) inside command_move, which scores the game AND

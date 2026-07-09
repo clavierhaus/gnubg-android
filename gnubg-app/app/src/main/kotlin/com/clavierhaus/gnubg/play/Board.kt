@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import com.clavierhaus.gnubg.engine.BoardState
+import com.clavierhaus.gnubg.engine.nextSubMoves
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -93,51 +94,25 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
     if (sourcePoint !in 1..24) return emptySet()
     if (gameState.board[24 + sourcePoint] <= 0) return emptySet()
 
+    val od = gameState.originalDice ?: return emptySet()
     val origin = sourcePoint - 1
-    val dice = gameState.remainingDice
-    if (dice.isEmpty()) return emptySet()
-    val d0 = dice[0]
-    val d1 = if (dice.size > 1) dice[1] else dice[0]
 
-    // Ask GNUbg for ALL legal sub-moves (fPartial = 1) for the current dice.
-    // Partial generation returns every intermediate step, so a combined move
-    // 24->18->13 appears as the chained pairs (24,18) and (18,13). We trace
-    // from the held checker through reachable points to every final landing,
-    // covering direct, double, and combined-move destinations. GNUbg remains
-    // the sole authority for legality; we only collect what it reports.
-    val partial = Engine.getLegalMoves(gameState.oldBoard, d0, d1, 1)
-    if (partial.isEmpty()) return emptySet()
-
-    // Collect all directed sub-move edges (src -> dst), GNUbg 0-based coords.
-    val edges = ArrayList<Pair<Int, Int>>()
-    var m = 0
-    while (m + 1 < partial.size) {
-        var j = 0
-        while (j < 8) {
-            val src = partial.getOrNull(m + j) ?: -1
-            val dst = partial.getOrNull(m + j + 1) ?: -1
-            if (src in 0..24 && dst in 0..24) edges.add(src to dst)
-            j += 2
-        }
-        m += 8
+    // gnubg's complete legal moves for this turn, filtered to those continuing
+    // what has already been played. The next sub-move of each is exactly where
+    // this checker may legally go now.
+    //
+    // The previous version pooled every (src,dst) pair from every move into one
+    // edge list and ran a breadth-first search from the checker. That splices
+    // fragments of unrelated moves together -- an 8->6 step from one move and a
+    // 6->1 step from another let it walk 8->6->1, a play gnubg never offered --
+    // so it lit up points that could not be reached with the dice in hand, and
+    // omitted bear-offs, whose destination gnubg encodes as negative.
+    val turnMoves = Engine.getLegalMoves(gameState.oldBoard, od.first, od.second)
+    val dests = linkedSetOf<Int>()
+    for ((src, dst) in nextSubMoves(turnMoves, gameState.played)) {
+        if (src == origin && dst in 0..23) dests.add(dst + 1)
     }
-
-    // Breadth-first reachability from the held checker's origin through edges.
-    val reachable = linkedSetOf<Int>()
-    val frontier = ArrayDeque<Int>()
-    frontier.add(origin)
-    val seen = hashSetOf(origin)
-    while (frontier.isNotEmpty()) {
-        val cur = frontier.removeFirst()
-        for ((src, dst) in edges) {
-            if (src == cur && dst !in seen) {
-                seen.add(dst)
-                frontier.add(dst)
-                if (dst in 0..23) reachable.add(dst + 1)  // board point 1..24
-            }
-        }
-    }
-    return reachable
+    return dests
 }
 
 // Legal bar-entry target points for a human on the bar. gnubg is the authority:
