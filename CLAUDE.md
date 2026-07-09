@@ -107,6 +107,28 @@ For every change, answer these IN WRITING, in chat, before code:
       the board" is a FAILING answer. If gnubg does not expose it,
       the answer is to NOT SHOW IT -- not to compute it myself.
 
+## A GNUBG GLOBAL DEFINED BY THE PORT IS ENGINE CODE
+
+The de-GTK'd build omits gnubg.c, so android-app.c re-provides globals that
+backgammon.h declares extern: esAnalysisChequer, esEvalChequer, aamfAnalysis,
+arSkillLevel, and others. Using a gnubg *named instance* is not sufficient if
+the port hand-initialises it.
+
+Two bugs found this way, both labelled "copied verbatim" and neither verbatim:
+
+- EVALSETUP_2PLY transcribed the rolloutcontext tail positionally and supplied
+  three of its eleven leading bit-fields. Everything slid eight positions;
+  nTrials came out ZERO in all four evalsetups. Latent only because et was
+  EVAL_EVAL. Fixed by naming every field (5bf9cd1).
+- arSkillLevel[] was set to 0.75x gnubg's canonical thresholds, making the
+  tutor harsher than gnubg. Realigned (see PROVENANCE.md).
+
+So: **a definition of a gnubg global inside this port is engine code.** It must
+be checked against upstream gnubg.c, not trusted because a comment says it was
+copied. A "copied verbatim" comment is a claim to verify, not evidence. The
+compiler was reporting the EVALSETUP_2PLY bug 24 times per build, and it was
+read as noise for months. Warnings in android-app.c are load-bearing.
+
 ## THE NEW-FILE TRIPWIRE (this is where the invention accumulated)
 
 Before creating ANY new file that is not purely a Composable (i.e. anything
@@ -220,23 +242,34 @@ Compose UI (Kotlin)
 - Version: 0.9.1 consolidation. Authoritative status doc: docs/STATUS.md.
   Deep reference: docs/MASTER_V0.9.md. Tutor internals:
   docs/PHASE3_TUTOR_ANALYSIS.md.
-- Tutor analysis (Phase 13) is implemented and LOG-ONLY: after each human
-  move it logs blunder level and equity loss (gnubg equity + Engine.skill only;
-  the invented feature-delta analysis was removed) to tag gnubg-tutor.
-  It has no UI surface yet. It evaluates at 1-ply (fac_ec_default); the
-  2-ply/prune path returns inf in this build.
+- Tutor analysis (Phase 13) is implemented and HAS a UI surface
+  (TutorAnalysisPanel). After each human move gnubg scores the move and the
+  panel reports blunder level and equity loss. It evaluates at fixed 2-ply via
+  the named instance esAnalysisChequer.ec, independent of the opponent-strength
+  selector (commit 32a7c91). fac_ec_default no longer exists; any doc still
+  claiming 1-ply is stale.
 - Engine strength is wired to gnubg's four named presets
   (Beginner/Casual play/Intermediate/Advanced = aecSettings 0..3) via
   gnubg_mobile_set_engine_strength. There is NO Expert/Master in gnubg.
-- Home Hub shell + Play (full) + Learn/Analyse/Profile (scaffolds) +
-  5-tab Settings (Game/Board/Engine/Analysis/Expert) all exist.
+- Home Hub reads: Play Tournament Match -> Analyse Position -> Options, with
+  Profile in the corner. "Live Game Analysis" was removed as a hub entry; the
+  tutor is a match-setup option that reads the persisted settings.tutorMode.
+- Analyse Position is BUILT (analyse/AnalyseScreen.kt): paste a GNU BG ID or an
+  XGID, gnubg installs and evaluates it. Review Match is NOT built and has no
+  hub slot -- a slot is not reserved for a feature that does not exist.
+- AppMode still contains LEARN, which remains unreachable. Learn and Profile
+  are scaffolds.
+- 5-tab Settings (Tournament/Board/Engine/Analysis/Expert) exists.
 
 ## KNOWN-INCOMPLETE (do not assume these work; do not "fix" by reinventing)
 
 - Cube pass/drop after a human double, and beaver handling, are incomplete.
 - blockedDiceFor computes s0/s1 but returns an always-empty set (latent bug).
-- Tutor has no UI; cube/resign toast and bar-dance Continue button are
-  deferred, not done.
+- Cube/resign toast and bar-dance Continue button are deferred, not done.
+- Save match [2] and Review Match [3] (the two remaining requested features)
+  are NOT built. The engine side of save is already wired -- CommandSaveMatch
+  via FACADE_FILE_OP, Engine.saveMatch -- so only Android file plumbing is
+  missing. Do not rebuild the engine side.
 
 ## HOW TO WORK HERE
 

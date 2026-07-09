@@ -19,6 +19,21 @@ which remains design intent (see SETTINGS-UX-BLUEPRINT.md), not built.
 
 build versionName: 0.9.1 · last engine milestone: Phase 13 (tutor analysis)
 
+## The three features that define current work
+
+All current feature work traces to one piece of user feedback, which named the
+three things missing from every Android backgammon app:
+
+1. **Set up an arbitrary position and have gnubg evaluate it.** Reported as the
+   reason people still use XG Mobile. A competitor's developer has stated he
+   will not build it. -- **BUILT** (Analyse Position).
+2. **Save the match file afterwards**, to review on a larger screen or catalogue.
+   -- **NOT BUILT.** Engine side already wired; needs Android file plumbing.
+3. **Step through a match afterwards, or during play.** -- **NOT BUILT.**
+
+The design is settled in `ARCHITECTURE_ANALYSE_MODE.md`. Nothing outside these
+three should be started before they are done.
+
 ## Recent additions (post-0.9.1, July 2026)
 
 Work toward a first public release. All landed on the working branch:
@@ -42,7 +57,11 @@ Work toward a first public release. All landed on the working branch:
 
 - **Live play** against the gnubg engine: full move/dice/undo/confirm,
   gnubg authoritative for all legality and match state.
-- **Home Hub** start screen routing to Play / Learn / Analyse / Options / Profile.
+- **Home Hub**: Play Tournament Match -> Analyse Position -> Options, with
+  Profile in the corner. "Live Game Analysis" is gone as a hub entry: it was a
+  way of playing occupying a slot in a menu of places. The tutor is now a
+  match-setup option backed by the persisted `settings.tutorMode`, which until
+  July 2026 was a switch no screen read.
 - **Settings**: five grouped tabs (Tournament, Board, Engine, Analysis, Expert).
 - **Cube (V0.9.x audit ongoing)**: human cube decisions route through
   gnubg's `GetMatchStateCubeInfo` against the live `ms`, and the Kotlin
@@ -53,25 +72,47 @@ Work toward a first public release. All landed on the working branch:
 - **Engine port**: platform-neutral facade; native-lib reaches the engine
   directly in only two intentional places (board-changed callback, runCommand).
 - **Tutor analysis** (Phase 13): after each human move, gnubg's own routines
-  score the move and report blunder level, equity loss, and feature deltas.
-  Surfaced in the live-analysis panel (TutorAnalysisPanel) when tutor mode is on.
+  score the move and report blunder level and equity loss. Surfaced in
+  TutorAnalysisPanel when tutor mode is on. It runs at fixed 2-ply through the
+  named instance `esAnalysisChequer.ec`, independent of opponent strength
+  (32a7c91). It is honestly a **chequer-play** tutor: the tutored game is a
+  single game, where the cube is out of play by gnubg's own rule
+  (`gnubg_can_double`, play.c:156), so there are no cube decisions to comment on.
+- **Analyse Position**: paste a GNU BG ID or an XGID; gnubg installs it via its
+  own `SetGNUbgID` and ranks the chequer plays with `FindnSaveBestMoves`. The
+  match context (length, score, cube and owner, Crawford, who is on roll) is
+  displayed every time, because a bare Position ID inherits whatever context the
+  matchstate already held. This is feature [1] of the three requested.
 
 ## Scaffolded but not feature-complete
 
-- Learn, Analyse, Profile mode screens exist as scaffolds, not finished modes.
+- Learn and Profile exist as scaffolds. `AppMode.LEARN` is not reachable from
+  the hub. Analyse Position is no longer a scaffold; it is built.
+- Review Match is not built and deliberately has **no hub slot**. A slot is not
+  reserved for a feature that does not exist.
 - Settings tabs render and bind, but several rows are local-only pending a
   lifecycle-safe gnubg command path (see ARCHITECTURE.md, command bridge).
 
 ## Known gaps
 
 - Cube pass/drop after a human double, and beaver handling, are incomplete.
-- Tutor output has no UI surface (CoachCard, arrows, Try-Again loop) -- the
-  mission-statement vision is not yet built.
-- Tutor evaluates at 1-ply (the 2-ply/prune path returns inf in this build;
-  see PHASE3_TUTOR_ANALYSIS.md).
-- SGF/Library import-export UI not present.
-- Opponent-strength selector is UI/state plumbing, not wired to gnubg eval settings.
+- The full tutor vision (CoachCard, arrows, Try-Again loop) is not built.
+  TutorAnalysisPanel is the current, minimal surface.
+- **Save match [2] and Review Match [3] are not built.** These are the second and
+  third of the three features requested by users. The engine side of save is
+  already wired -- `CommandSaveMatch` via `FACADE_FILE_OP`, exposed as
+  `Engine.saveMatch` -- so only Android file plumbing remains. Do not rebuild it.
 - Release signing, Play Store readiness, broad device QA not done.
+
+### Corrections to earlier editions of this document
+
+- It claimed the tutor evaluates at 1-ply via `fac_ec_default`. That symbol no
+  longer exists; the tutor has run at 2-ply since 32a7c91.
+- It claimed the tutor has no UI surface, two paragraphs after stating that it is
+  surfaced in TutorAnalysisPanel. The panel exists.
+- It claimed the opponent-strength selector is "not wired to gnubg eval
+  settings". It is: `Engine.setEngineStrength` is applied at engine init and on
+  every change (GameViewModel.kt:49, 1042).
 
 ## Authority invariant (unchanged, load-bearing)
 
@@ -85,6 +126,8 @@ presentation only. It must never reimplement game logic.
 - MASTER_V0.9.md -- deep engineering reference and build history.
 - ARCHITECTURE.md / TECHNICAL-NOTES.md -- ownership boundaries and invariants.
 - PHASE3_TUTOR_ANALYSIS.md -- tutor analysis internals (canonical).
+- ARCHITECTURE_ANALYSE_MODE.md -- design for the three requested features, and
+  the verified risk analysis behind Analyse Position. Records its own corrections.
 - ROADMAP.md -- forward plan.
 - SETTINGS-UX-BLUEPRINT.md -- aspirational Settings design (partially realised).
 - gnubg_mobile_tutor_mission_statement.{tex,pdf} -- product philosophy/vision.

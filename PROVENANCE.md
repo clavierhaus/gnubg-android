@@ -402,6 +402,36 @@ Note arLuckLevel[] immediately above was already correct
 deviation, not a systematic port choice. Source of truth:
 https://github.com/mormegil-cz/gnubg/blob/master/gnubg.c
 
+**Finding (EVALSETUP_2PLY, 2026-07-09).** The macro in android-app.c carried the
+comment "copied here verbatim" from gnubg.c:348. It was not. Its `rolloutcontext`
+tail was transcribed positionally and supplied only three of the eleven bit-fields
+that lead that part of the struct (`fCubeful, fVarRedn, fInitial, fRotate,
+fTruncBearoff2, fTruncBearoffOS, fLateEvals, fDoTruncate, fStopOnSTD, fStopOnJsd,
+fStopMoveOnJsd` -- eval.h). Every value after `fInitial` slid eight positions:
+1296 landed in `fTruncBearoff2:1`, `RNG_MERSENNE` in `fLateEvals:1`, 2.33f in
+`nTruncate`, and `nTrials` came out as ZERO -- in all four evalsetups
+(`esAnalysisChequer`, `esAnalysisCube`, `esEvalChequer`, `esEvalCube`).
+
+The bug was latent, not live: these carry `et = EVAL_EVAL`, and analysis.c reads
+`.rc` only when `et == EVAL_ROLLOUT`, while `gnubg_mobile_rollout` copies the
+separate `rcRollout` global. The `.ec` member was always correct because it used
+designated initializers -- which is why tutor and `FindnSaveBestMoves` numbers
+were trustworthy throughout. The tail is now written by field name. No value
+changed: the twelve numerics always mapped onto `nTruncate..nSkip`; they were
+simply landing eight fields early. The compiler emitted 24 warnings per build for
+this and they were treated as noise.
+
+**Finding (GetEvalMoveFilter, 2026-07-09).** `TmoveFilter` is
+`movefilter[4][4]`, so `TmoveFilter *` is `movefilter(*)[4][4]`. The port returned
+a bare `aamfAnalysis`, which decays to `movefilter(*)[4]` -- one level short. The
+address is identical, so the sole caller (external.c:522, `*GetEvalMoveFilter()`)
+worked by arithmetic accident. Corrected to `&aamfAnalysis` / `&aamfEval`.
+
+**Rule established.** A definition of a gnubg global inside this port is engine
+code. It must be checked against upstream gnubg.c, not trusted because a comment
+claims it was copied. See CLAUDE.md, "A GNUBG GLOBAL DEFINED BY THE PORT IS
+ENGINE CODE".
+
 ## Files added (not from upstream)
 
 The following files in `engine-core/` have no upstream counterpart and were

@@ -65,6 +65,63 @@ Current pass/drop and beaver paths are intentionally not presented as complete.
 
 Board drawing and hitboxes should be expressed in board-relative units. Avoid hard-coded screen fractions or magic vertical offsets. The same layout must survive different aspect ratios, including phones and tablets.
 
+## Traps in this port (each cost a real bug; verified against the source)
+
+### jni-bridge headers shadow engine-core headers
+
+`target_include_directories` lists `jni-bridge/` **before** `engine-core/`, and
+`jni-bridge/` contains deliberately empty stubs for seven engine headers:
+`analysis.h`, `config.h`, `drawboard.h`, `format.h`, `matchid.h`, `render.h`,
+`renderprefs.h`. They exist so GTK-dependent translation units compile.
+
+Consequence: a plain `#include "matchid.h"` from facade code resolves to the
+**stub**, defines the guard, declares nothing, and the call falls through to an
+implicit declaration. Reach the real header explicitly:
+
+    #include "../../engine-core/matchid.h"
+
+Do NOT reorder the include path to "fix" this; it would unshadow the other six.
+`positionid.h` is not shadowed, which is why it appears to work.
+
+### SetGNUbgID's 0 does not mean the position was set
+
+`SetGNUbgID` (set.c) discards `SetBoard`'s return value at both call sites
+(set.c:4781, set.c:4873). `SetBoard` refuses unless `ms.gs == GAME_PLAYING`, and
+by then `SetMatchID` (play.c:4205) has already run `FreeMatch()`,
+`InitBoard(ms.anBoard, ...)` -- resetting the board to the opening position --
+and set `ms.gs` from the Match ID.
+
+So an ID captured after a game ended silently yields the STARTING position with
+the final score, reported as success; and a bare Position ID with no game in
+progress silently changes nothing. The correct test is gnubg's own precondition:
+after the call, if `ms.gs != GAME_PLAYING`, no position was installed. This is
+why a GNU BG ID is the wrong artifact to save at the end of a game.
+
+Call `SetGNUbgID`, never `CommandSetGNUbgID`: the wrapper answers the
+"player on roll is on top -- swap?" question through `GetInputYN`, which in this
+port (android-app.c:854) always returns TRUE, so it would swap silently. gnubg
+returns 2 to hand that decision back; the UI must ask.
+
+### CommandSaveMatch tokenizes its path
+
+`CommandSaveMatch` (sgf.c:2365) begins with `NextToken(&sz)`, which splits on
+whitespace. **A path containing a space is silently truncated.** It also refuses
+when `plGame` is NULL.
+
+### FACADE_FILE_OP always reports success
+
+`FACADE_FILE_OP` returns 1 unconditionally, and the `Command*` functions it wraps
+return `void`. So `Engine.saveMatch()`'s Boolean means "the call was made", not
+"the file was written". Verify by checking the file exists and is non-empty.
+
+### PositionFromXG inverts PositionFromID's convention
+
+`PositionFromID` returns 1 for a valid position (it ends with `CheckPosition`).
+`PositionFromXG` returns **0 on success** and 1 on error, and does not validate.
+Do not write a decoder that tries one and falls back to the other: `PositionFromID`
+base64-decodes anything handed to it, so an XG string can decode to a legal-looking
+but wrong board. `SetGNUbgID` already discriminates the dialects properly.
+
 ## JNI bridge role
 
 The bridge should expose a narrow, auditable set of GNUbg operations to Kotlin:

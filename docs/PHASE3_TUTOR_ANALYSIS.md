@@ -1,5 +1,15 @@
 # Phase 3 Tutor Analysis -- IMPLEMENTED
 
+> **CORRECTION (2026-07-09).** This document describes the tutor as running at
+> 1-ply via `fac_ec_default`, because the 2-ply/prune path returned `inf`.
+> Both statements are now false. Commit `32a7c91` moved chequer-play analysis
+> to a fixed 2-ply through the named instance `esAnalysisChequer.ec`,
+> independent of the opponent-strength selector, and dropped the stale `inf`
+> comment. `fac_ec_default` no longer exists anywhere in the tree. The rest of
+> this document -- the analysis chain, `FindnSaveBestMoves`, `move_skill()` --
+> remains accurate. Sections below that discuss evaluation depth are retained
+> as history, not as current fact.
+
 ## Principle
 gnubg is the sole authority for game logic, including move analysis. The tutor
 uses gnubg's own routines (FixMatchState, ApplyMoveRecord, FindnSaveBestMoves)
