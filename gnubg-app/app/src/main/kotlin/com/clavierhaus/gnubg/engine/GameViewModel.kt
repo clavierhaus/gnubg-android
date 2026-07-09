@@ -120,7 +120,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * resolve it via the engine -- the remaining die that applySubMove accepts
      * from that source (facade LegalMove gate). No die is invented here.
      */
-    private fun unplayableDiceFor(board: IntArray, moves: IntArray, remaining: List<Int>): Set<Int> {
+    /**
+     * Die faces for which gnubg lists no legal play, read out of gnubg's own
+     * move list. Nothing is computed here; the list is decoded.
+     *
+     * gnubg stores each sub-move as a (src, dest) pair with dest = src - die
+     * (eval.c:2661-2662, and the bar case at 2643-2644). A bear-off simply makes
+     * dest negative -- -1 from point 1 with a 1, -2 from point 4 with a 5 -- and
+     * gnubg's own reader relies on that:
+     *
+     *     for (i = 0; i < 8 && anMove[i] >= 0; i += 2)                 // eval.c:2523
+     *         ApplySubMove(anBoard, anMove[i], anMove[i] - anMove[i + 1], ...);
+     *
+     * So `src - dest` IS the die, for every sub-move including bear-offs, and a
+     * negative *source* is the terminator (SaveMoves, eval.c:2571).
+     *
+     * An earlier version of this function believed dest was "clamped to -1" for
+     * bear-offs and therefore could not recover the die from it. It guessed
+     * instead: probing Engine.applySubMove with each remaining die and preferring
+     * a not-yet-seen one. That is Kotlin reconstructing gnubg's move semantics
+     * from a false premise, and in a bear-off position it attributes dice to the
+     * wrong sub-moves and greys a face that has legal plays.
+     */
+    private fun unplayableDiceFor(moves: IntArray, remaining: List<Int>): Set<Int> {
         if (remaining.isEmpty()) return emptySet()
         val distinct = remaining.distinct()
         if (moves.isEmpty()) return distinct.toSet()  // no legal move: all unplayable
@@ -128,35 +150,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val playable = mutableSetOf<Int>()
         val nMoves = moves.size / 8
         for (i in 0 until nMoves) {
-            // Replay this move sub-moves on a working board so a bear-off die
-            // can be resolved against the board state at that sub-move.
-            var work = board
             for (j in 0..3) {
-                val src  = moves[i * 8 + j * 2]
-                val dest = moves[i * 8 + j * 2 + 1]
-                if (src < 0) break            // -1 source = move terminator
-                if (dest >= 0) {
-                    playable.add(src - dest)  // in-board: die is exact
-                    val nb = Engine.applySubMove(work, src, src - dest)
-                    if (nb.isNotEmpty()) work = nb
-                } else {
-                    // bear-off (dest clamped to -1): the die is whichever remaining
-                    // value the engine accepts from this source on the working board.
-                    // Prefer a not-yet-seen die so each bear-off widens coverage; fall
-                    // back to any accepted die to keep the working board advancing.
-                    var chosen = -1
-                    for (d in distinct) {
-                        if (Engine.applySubMove(work, src, d).isNotEmpty()) {
-                            if (d !in playable) { chosen = d; break }
-                            if (chosen < 0) chosen = d
-                        }
-                    }
-                    if (chosen >= 0) {
-                        playable.add(chosen)
-                        val nb = Engine.applySubMove(work, src, chosen)
-                        if (nb.isNotEmpty()) work = nb
-                    }
-                }
+                val src = moves[i * 8 + j * 2]
+                if (src < 0) break                       // gnubg's terminator
+                val dest = moves[i * 8 + j * 2 + 1]      // may be negative: bear-off
+                playable.add(src - dest)                 // the die, per ApplyMove
                 if (playable.containsAll(distinct)) return emptySet()
             }
         }
@@ -206,7 +204,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // only when it is the human turn with dice in play.
         val unplayableDice =
             if (turn == 0 && remainingDice.isNotEmpty())
-                unplayableDiceFor(oldBoard, legalMoves, remainingDice)
+                unplayableDiceFor(legalMoves, remainingDice)
             else emptySet()
         _gameState.value = BoardState(
             matchScore     = score,
