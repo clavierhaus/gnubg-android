@@ -8,7 +8,14 @@
 #include "config.h"
 #include "eval.h"
 #include "positionid.h"
-#include "matchid.h"
+/* NOTE: jni-bridge/matchid.h is an empty stub (it exists so rollout.c can
+ * include matchid.h without pulling in symbols), and jni-bridge/ precedes
+ * engine-core/ on the include path -- so a plain #include "matchid.h" here
+ * silently resolves to the stub and MatchIDFromMatchState goes undeclared.
+ * Reach the real header explicitly. Do NOT reorder the include path: six
+ * other headers in jni-bridge/ shadow GTK-dependent engine headers on
+ * purpose. */
+#include "../../engine-core/matchid.h"
 #include "backgammon.h"
 
 /* Tier 1/2 engine entry points (declared in the engine headers above; listed
