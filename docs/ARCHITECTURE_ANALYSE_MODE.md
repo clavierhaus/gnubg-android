@@ -212,8 +212,21 @@ verified:
   but **not defined in any vendored file** (it lives in upstream `backgammon.c`,
   which was not vendored). Wiring it as-is would fail to link.
 
-`PositionFromID` avoids both. It also has the free validation we want nearby:
-`CorrectNumberOfChequers` exists for rejecting illegal boards.
+`PositionFromID` avoids both. **It also validates, by itself, using gnubg's own
+checker.** Its final statement is:
+
+    return CheckPosition((ConstTanBoard) anBoard);
+
+`CheckPosition` (`positionid.c:286`, compiled) rejects more than fifteen chequers
+for either player, both players occupying the same point, and both players on the
+bar against closed boards. It returns 1 for a legal position and 0 with
+`errno = EINVAL` otherwise. A malformed or illegal ID therefore fails at the
+decoder, and no chequer count is ever written by this port.
+
+**Bonus: gnubg also decodes XG position IDs.** `PositionFromXG(TanBoard, const
+char *pos)` (`positionid.c:247`, declared `positionid.h:30`) is vendored and
+compiled. Given that this feature exists to serve people leaving XG Mobile, the
+screen should accept an XG ID as readily as a gnubg one.
 
 ### [2] Save match -- mostly supported, one honest gap
 
@@ -275,14 +288,20 @@ Two constraints follow, and they are binding:
 
 Descending order of (validated demand x cheapness), and each step feeds the next:
 
-1. **Build the `Analyse` destination shell** and reach it from the hub.
-2. **[1] Position entry + evaluate.** Cheapest, uses analysis that already
-   exists, and fills the one gap a competitor has publicly refused to fill.
-3. **[2] Save match as `.sgf`.** Near-free; produces the artifacts step 4 needs.
-   `.mat` deferred pending its own scoping.
-4. **[3] Match review.** The largest build. By then serialization exists, and
+1. **[1] Analyse Position: facade verbs, then screen, then hub entry.** The hub
+   entry lands in the same change as a working screen -- never before it. A
+   reachable placeholder is the same error as an unreachable feature, facing the
+   other way. Cheapest of the three, uses analysis that already exists, and fills
+   the one gap a competitor has publicly refused to fill.
+2. **[2] Save match as `.sgf`.** Near-free; produces the artifacts step 3 needs.
+   `.mat` deferred pending its own scoping. Not a menu point -- an action.
+3. **[3] Review Match.** The largest build. By then serialisation exists, and
    (per `ROADMAP_ANALYSIS_PARITY.md`) so does the ranked candidate-move list it
-   wants to display.
+   wants to display. It takes the third hub slot when it works, not before.
+
+(An earlier draft of this list began "build the Analyse destination shell" -- a
+leftover from the rejected single-destination design. Analyse Position and Review
+Match are separate modes; there is no shared shell to build.)
 
 If only one ships, it is [1]: the demand is validated and explicitly unserved.
 
@@ -378,13 +397,17 @@ Proposed verbs (names indicative):
   via `PositionID()` and `MatchIDFromMatchState()`. Cheap, and immediately
   useful: "copy this position" out of a live game.
 
-**Validation belongs to gnubg too.** `anChequers[]` (`eval.h:157`) exists for
-chequer-count checking, as `SetBoard` used it via `CorrectNumberOfChequers`.
+The decode verb should try `PositionFromID` and, failing that, `PositionFromXG`,
+so a pasted XG ID works without the user having to know which dialect they hold.
+Both are gnubg's decoders; choosing between them on failure is dispatch, not
+interpretation.
+
+**Validation belongs to gnubg too, and the open item is closed.**
+`CorrectNumberOfChequers` is indeed not declared in any vendored header -- and it
+is not needed. `PositionFromID` returns `CheckPosition(...)` (`positionid.c:286`),
+gnubg's own legality check, so a bad ID is rejected by the decoder itself. The
+facade must propagate that return value, never substitute a count of its own.
 `SwapSides` is declared (`eval.h:390`) and available for frame correction.
-Open item: `CorrectNumberOfChequers` is **not** declared in any vendored header
--- confirm it links before relying on it, and if it does not, use gnubg's
-exposed equivalent (or `anChequers[ms.bgv]` with gnubg's own check) rather than
-writing a chequer count in Kotlin or in the facade.
 
 **Frame convention:** reuse the existing `facade_unpack_board` /
 `facade_pack_board` (`gnubg_mobile.c:348`) so the pasted position enters the
