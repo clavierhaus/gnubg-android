@@ -103,6 +103,16 @@ object Engine {
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
 
+    // Position entry (Analyse Position). Wraps gnubg's SetGNUbgID: accepts a
+    // GNU BG ID ("PositionID:MatchID") or an XGID. Returns gnubg's own code:
+    // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is
+    // on top -- ask the user, then call swapPlayers() only if they agree.
+    external fun setGnubgId(id: String): Int
+    external fun swapPlayers(): Int
+
+    // gnubg's renderings of the current state: [0] Position ID, [1] Match ID.
+    external fun currentIds(): Array<String>?
+
     // Restricted GNUbg command bridge for translated Android settings.
     external fun runCommand(command: String): Boolean
 }

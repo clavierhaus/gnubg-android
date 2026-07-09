@@ -880,3 +880,55 @@ Java_com_clavierhaus_gnubg_Engine_runCommand(JNIEnv *env, jobject thiz, jstring 
     return JNI_TRUE;
 }
 
+/* ---------------------------------------------------------------------------
+ * Position entry (Analyse Position). Marshalling only; all behaviour lives in
+ * the facade, which wraps gnubg's SetGNUbgID / CommandSwapPlayers / PositionID
+ * / MatchIDFromMatchState.
+ * ------------------------------------------------------------------------- */
+
+/* Engine.setGnubgId(id): Int -- gnubg's own return code, passed through.
+ * 0 installed, 1 no valid IDs found, 2 installed but the player on roll is on
+ * top (the UI must offer a swap), -1 bad argument. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_setGnubgId(JNIEnv *env, jobject thiz, jstring jid) {
+    (void) thiz;
+    const char *id;
+    jint rc;
+    if (!jid) return (jint) -1;
+    id = (*env)->GetStringUTFChars(env, jid, NULL);
+    if (!id) return (jint) -1;
+    rc = (jint) gnubg_mobile_set_gnubg_id(id);
+    (*env)->ReleaseStringUTFChars(env, jid, id);
+    return rc;
+}
+
+/* Engine.swapPlayers(): Int -- the user's yes to the swap offered on rc == 2. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_swapPlayers(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_swap_players();
+}
+
+/* Engine.currentIds(): Array<String>? -- [0] = Position ID, [1] = Match ID.
+ * Both are gnubg's own renderings of the current state. L_POSITIONID is 14 and
+ * L_MATCHID is 12; the buffers are generous. Returns null on failure. */
+JNIEXPORT jobjectArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_currentIds(JNIEnv *env, jobject thiz) {
+    (void) thiz;
+    char pos[64] = {0};
+    char match[64] = {0};
+    jclass strCls;
+    jobjectArray arr;
+
+    if (gnubg_mobile_current_ids(pos, (int) sizeof(pos),
+                                 match, (int) sizeof(match)) < 0)
+        return NULL;
+
+    strCls = (*env)->FindClass(env, "java/lang/String");
+    if (!strCls) return NULL;
+    arr = (*env)->NewObjectArray(env, 2, strCls, NULL);
+    if (!arr) return NULL;
+    (*env)->SetObjectArrayElement(env, arr, 0, (*env)->NewStringUTF(env, pos));
+    (*env)->SetObjectArrayElement(env, arr, 1, (*env)->NewStringUTF(env, match));
+    return arr;
+}
