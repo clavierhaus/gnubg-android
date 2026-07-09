@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -405,6 +406,12 @@ private fun PlayLifecycleConfirmationDialog(
 
 
 @Composable
+/** Vertical padding (x2) plus the 16.sp bold label: one GameButton's height. */
+val GameButtonHeight: Dp = 45.dp
+
+/** Gap between the stacked +/- steppers on the match-setup screen. */
+val StepperGap: Dp = 6.dp
+
 fun GameButton(
     label: String,
     color: Color,
@@ -608,7 +615,7 @@ private fun MatchSetupScreen(
                             // usable screen space.
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                verticalArrangement = Arrangement.spacedBy(StepperGap)
                             ) {
                                 GameButton(
                                     label = "+",
@@ -632,20 +639,36 @@ private fun MatchSetupScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            GameButton(
-                label = if (engineReady) "Start Match" else "Loading engine...",
-                color = pal.uiActionPositive,
-                enabled = engineReady
-            ) {
-                onStart()
-            }
+            // The stepper stack is one GameButton taller than the chip row it
+            // sits beside, so the groups Row carries that much dead space under
+            // the tutor buttons opposite. Lift the actions back into it.
+            //
+            // This offset is INTRINSIC -- it is the height of one GameButton
+            // plus the stack's gap, both fixed by the button's own geometry, not
+            // by the screen. Distributive spacing (the gap between the two
+            // groups) stays weighted; see the Row above.
+            val stepperSurplus = GameButtonHeight + StepperGap
 
-            GameButton(
-                label = "Settings",
-                color = pal.uiActionRoll,
-                enabled = true
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.offset(y = -stepperSurplus)
             ) {
-                onSettings()
+                GameButton(
+                    label = if (engineReady) "Start Match" else "Loading engine...",
+                    color = pal.uiActionPositive,
+                    enabled = engineReady
+                ) {
+                    onStart()
+                }
+
+                GameButton(
+                    label = "Settings",
+                    color = pal.uiActionRoll,
+                    enabled = true
+                ) {
+                    onSettings()
+                }
             }
         }
     }
