@@ -93,17 +93,20 @@ It is removed as a hub entry. Two findings justify this, and the second is a bug
 **It is not a destination.** `AppMode.LIVE_ANALYSIS` is `GameLayout` with
 `tutorMode = true`. It is a way of playing occupying a slot in a menu of places.
 
-**`tutorMode` is doing four jobs, only one of which is the tutor:**
+**`tutorMode` currently does four things at once:**
 
 | Line (`GameLayout.kt`) | Effect |
 |---|---|
 | 56 | forces a **1-point match** (`startMatch(if (tutorMode) 1 else settings.matchLength)`) |
-| 186 | shows `TutorAnalysisPanel` -- *the actual tutor* |
+| 186 | shows `TutorAnalysisPanel` -- the tutor itself |
 | 447 | changes the screen title |
 | 480 | hides the match-length selector (because length is forced) |
 
-So the entry really means **"play one tutored game."** Three of its four effects
-exist to support that single-game framing, not the tutor.
+Line 186 is the tutor. Line 56 is a **deliberate design decision** -- the tutored
+game is cubeless, and the single game is the only cubeless format (see below).
+Lines 447 and 480 follow from 56. The problem is not what these lines do; it is
+that a single boolean parameter, hard-coded per hub entry, performs all of it
+invisibly -- while the persisted setting that ought to control it is ignored.
 
 **The bug: `settings.tutorMode` does nothing.** There is a persisted Tutor mode
 switch in Settings > Analysis (`SettingsScreen.kt:320`), with a ViewModel setter
@@ -122,14 +125,52 @@ the existing toggle work**, and choosing where the tutored-game path lives.
   difficulty -- where a user would look for it, and where the other match
   parameters already are. It reads and writes `settings.tutorMode`, so the
   Settings switch finally means something.
-- The **quick tutored single game** affordance is preserved: match setup can
-  start with the tutor pre-enabled. What is lost is only the hub slot, not the
-  capability. (Match length is no longer *forced* to 1 -- a tutored match of any
-  length becomes possible, which the old mode disallowed for no engine reason.)
+- The **single tutored game** remains exactly that. See "Why the tutor implies a
+  single game" below: this is not incidental scaffolding to be generalised away.
+  What changes is only that the implication is **stated** rather than performed
+  silently at `GameLayout.kt:56`. Choosing the chequer-play tutor should say, on
+  screen, that it is a single game and that the cube is not in play.
 - The stale subtitle is corrected.
 
 This frees the second slot without growing the hub, and is more honest about what
 the feature is.
+
+### Why the tutor implies a single game
+
+The original design excluded cube decisions from the tutor deliberately. Cube
+tutoring needs a different interaction model -- a verdict at *decision points*
+(double? take? drop?), not after each chequer move -- so rather than half-build
+it, the tutored game was made cubeless.
+
+The lever chosen was a 1-point match, and that is the correct lever, not a blunt
+proxy for one. **The single game is the only coherent cubeless format.** A
+cubeless 7-point match is not a 7-point match; it is seven single games with a
+scoreboard. The cube is what makes match play *match play* -- what makes
+score-dependent equity mean anything, what distinguishes 4-away/2-away from
+2-away/4-away, what turns a sequence of games into a strategic arc. Remove it and
+the match length is an arbitrary repetition count, not a structure.
+
+gnubg agrees, structurally. `gnubg_can_double` (`play.c:156`) gates on:
+
+    if (ms.nMatchTo && ms.nCube >= (ms.nMatchTo - ms.anScore[ms.fTurn])) return 0;
+
+At `nMatchTo = 1`, score 0-0: `nCube` (1) `>=` `1 - 0` -- the cube is already
+unavailable. You cannot double past the match. The single game is cubeless by the
+rules, not by app convention.
+
+**Correction to an earlier draft of this document**, recorded rather than quietly
+deleted: it claimed the forced 1-point match had "no engine reason" and proposed
+`fCubeUse = off` at any length as a more precise expression of the same intent.
+That was wrong twice. It had a *game* reason, which is stronger than an engine
+reason. And cube-off-at-any-length expresses a superset of the intent, most of
+which is meaningless -- being more general is not the same as being more correct.
+gnubg *can* run a cubeless 7-pointer; that does not make it a thing. The error
+was substituting "can the engine do it?" for "does it mean anything?"
+
+When cube tutoring is eventually built, it attaches to real matches, where it
+belongs. Until then the tutor is honestly a **chequer-play** tutor and should be
+labelled as one -- per the rule, do not imply an analysis that is not being
+provided.
 
 ### Cost of the change
 
