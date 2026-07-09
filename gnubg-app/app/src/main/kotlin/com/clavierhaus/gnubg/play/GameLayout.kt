@@ -152,18 +152,20 @@ fun GameLayout(
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 } else {
+                                    // One line. The pane does not scroll, so the result
+                                    // must not push the panel below it off the screen.
                                     val resultText = when {
-                                        humanWonMatch -> "You win\nthe match!"
-                                        engineWonMatch -> "Engine wins\nthe match"
-                                        gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
-                                        gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
+                                        humanWonMatch -> "You win the match!"
+                                        engineWonMatch -> "Engine wins the match"
+                                        gameState.winner == 0 && gameState.nPoints >= 3 -> "You win Backgammon!"
+                                        gameState.winner == 0 && gameState.nPoints >= 2 -> "You win Gammon!"
                                         gameState.winner == 0 -> "You win"
-                                        gameState.nPoints >= 3 -> "Engine wins\nBackgammon"
-                                        gameState.nPoints >= 2 -> "Engine wins\nGammon"
+                                        gameState.nPoints >= 3 -> "Engine wins Backgammon"
+                                        gameState.nPoints >= 2 -> "Engine wins Gammon"
                                         else -> "Engine wins"
                                     }
-                                    Text(resultText, color = Color.White, fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
+                                    Text(resultText, color = Color.White, fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold, maxLines = 1,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     GameButton("New Match", pal.uiActionRoll) { viewModel.newGame() }
@@ -214,16 +216,37 @@ fun GameLayout(
                         }
                         }
 
-                        if (tutorMode) {
-                            TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
-                        } else {
-                            PlayLifecyclePanel(
-                                onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
-                                onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
-                                onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
-                                onReturnHome = onReturnToHub,
-                                onSaveMatch = onSaveMatch
-                            )
+                        // The game view is static: it never scrolls. Anything that does
+                        // not fit must be made to fit.
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (tutorMode) {
+                                TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
+                            } else {
+                                PlayLifecyclePanel(
+                                    onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
+                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
+                                    onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
+                                    onReturnHome = onReturnToHub
+                                )
+                            }
+
+                            // Save match sits outside every phase branch. It used to live
+                            // inside PlayLifecyclePanel, which the tutor panel and the
+                            // game-over panel each replace wholesale -- so it vanished in
+                            // tutor mode, and at the end of a game, which is exactly when
+                            // the match is worth saving. gnubg writes the whole match so
+                            // far, at any point, so it is always meaningful.
+                            if (onSaveMatch != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                LifecycleButton(
+                                    label = "Save match",
+                                    color = pal.uiActionRoll,
+                                    onClick = { onSaveMatch() }
+                                )
+                            }
                         }
                     }
                 }
@@ -290,8 +313,7 @@ private fun PlayLifecyclePanel(
     onResign: () -> Unit,
     onNewGame: () -> Unit,
     onNewMatch: () -> Unit,
-    onReturnHome: (() -> Unit)?,
-    onSaveMatch: (() -> Unit)?
+    onReturnHome: (() -> Unit)?
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -320,18 +342,6 @@ private fun PlayLifecyclePanel(
             )
         }
 
-        // Saving is an action, not a menu point. gnubg writes the whole match so
-        // far -- every game, not only this one -- so it is useful at any point,
-        // and the .sgf opens in gnubg desktop and Backgammon Studio, which is the
-        // workflow that was asked for.
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LifecycleButton(
-                label = "Save match",
-                color = pal.uiActionRoll,
-                onClick = { onSaveMatch?.invoke() },
-                enabled = onSaveMatch != null
-            )
-        }
     }
 }
 
