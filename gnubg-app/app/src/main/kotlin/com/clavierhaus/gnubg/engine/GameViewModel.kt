@@ -576,7 +576,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val od = state.originalDice ?: return@launch
             val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
             val allowed = nextSubMoves(turnMoves, state.played).filter { it.first == src }
-            if (allowed.isEmpty()) return@launch
+            if (allowed.isEmpty()) {
+                android.util.Log.w("gnubg-vm",
+                    "tapSource refused: src=$src played=${state.played} " +
+                    "remaining=${state.remainingDice} moves=${turnMoves.size / 8} " +
+                    "next=${nextSubMoves(turnMoves, state.played)}")
+                return@launch
+            }
 
             // Respect the die order the player sees, so swapping the dice still
             // changes which is tried first.
@@ -588,7 +594,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val b = Engine.applySubMove(state.board, src, d)
                 if (b.isNotEmpty()) { newBoard = b; usedDie = d; usedDest = step.second; break }
             }
-            if (newBoard.isEmpty()) return@launch
+            if (newBoard.isEmpty()) {
+                android.util.Log.w("gnubg-vm",
+                    "tapSource: no die matched. src=$src allowed=$allowed " +
+                    "remaining=${state.remainingDice} played=${state.played}")
+                return@launch
+            }
 
             val rawRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
             val pips = Engine.pipCount(newBoard)
