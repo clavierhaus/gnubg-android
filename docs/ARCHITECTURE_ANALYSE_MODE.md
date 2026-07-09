@@ -203,14 +203,20 @@ Together, `PositionFromID` + `MatchFromID` reconstruct exactly what a serious
 player copies around: the board *and* the surrounding match context. This is the
 right primitive, and it is already in the build.
 
-**Do not route position entry through `CommandSetBoard`.** Two blockers, both
-verified:
+**CORRECTION.** An earlier draft of this document said "do not route position
+entry through `CommandSetBoard`", on the grounds that `SetBoard` calls
+`ParsePosition`, which was "defined in no vendored file" and "would fail to
+link". **That was false, and it was the load-bearing premise for a parallel
+design that should never have been drawn up.**
 
-- `SetBoard` (`set.c:601`) refuses unless `ms.gs == GAME_PLAYING`
-  ("There must be a game in progress to set the board").
-- `SetBoard` calls `ParsePosition`, which is **declared** in `backgammon.h:482`
-  but **not defined in any vendored file** (it lives in upstream `backgammon.c`,
-  which was not vendored). Wiring it as-is would fail to link.
+- `ParsePosition` **is** defined: `jni-bridge/src/android-app.c:1061`, a verbatim
+  port of `gnubg.c:885`, part of the GTK-shell replacement.
+- `CorrectNumberOfChequers` **is** defined: `set.c:584`, used internally by
+  `SetBoard`. It was never the port's concern.
+- `set.c` is compiled. `SetBoard` links and works today.
+
+The `GAME_PLAYING` requirement is real but is **not** a blocker, and gnubg
+already answers it -- see `SetGNUbgID` below.
 
 `PositionFromID` avoids both. **It also validates, by itself, using gnubg's own
 checker.** Its final statement is:
@@ -325,8 +331,16 @@ instance** (`esAnalysisChequer`, `aamfAnalysis`, `arSkillLevel`). Nothing is
 invented or reparameterised. This is already the Q2-compliant pattern, and it is
 the pattern position analysis must copy.
 
-**Consequence:** analysing a pasted position cannot corrupt a game in progress,
-provided the new verb likewise confines itself to a local matchstate.
+**Consequence:** the tutor's chain is safe and correct as written, and must not be
+disturbed.
+
+**But this risk was mis-framed.** It was posed as "must position entry avoid the
+global `ms`?", and answered by designing a private matchstate. gnubg's model is
+that `ms` *is* the position under analysis -- you set it, then you analyse it.
+`SetGNUbgID` sets it. The real question was never "how do I avoid the global",
+but "what does the user expect to happen to a game in progress when they paste a
+position?" That is a UI question -- warn, or discard, or keep a game aside -- and
+it is answered on the screen, not by cloning gnubg's state model.
 
 ### Risk 2: can position entry reuse `analyze_replay`? -- NO, and it should not
 
@@ -358,49 +372,89 @@ This is the single most dangerous failure mode of the feature, because it fails
 *silently* and *plausibly*. It is precisely the class of error `CLAUDE.md`
 exists to prevent, arriving through data rather than through invented code.
 
-**Mitigation is a UI requirement, not a nicety:** the match context (match
-length, score, cube value and owner, Crawford, Jacoby) must be either supplied
-(via a Match ID) or *explicitly chosen and shown* by the user. The screen must
-never quietly default. "Money play" is a legitimate answer; an unstated
-assumption of it is not.
+**Restated for the `SetGNUbgID` design.** The hazard is not in the facade -- it
+is in the feature. `SetGNUbgID` sets the match context only when the pasted ID
+carries one:
 
-## The clean design for [1]
+    if (matchid) SetMatchID(matchid);
+    if (posid)   SetBoard(posid);
 
-The `matchstate` struct (`lib/gnubg-types.h:41`) and `MatchFromID`'s out-params
-line up field for field -- unsurprisingly, since a Match ID *is* a serialised
-matchstate. That correspondence is the whole design.
+Paste a bare Position ID and the board changes while `ms` keeps whatever score,
+cube, match length and Crawford flag it already held. gnubg will then evaluate
+correctly -- for a context the user never stated.
 
-**Two decoders, one evaluator, no invention:**
+**The mitigation is gnubg's own, and the port should copy it.**
+`CommandSetGNUbgID` ends with `ShowBoard()`, which prints the position *together
+with* the score and cube. The desktop shows you the context you have just
+inherited. So must this screen: after setting an ID, read the resulting match
+context back out and display it. Match length, score, cube value and owner,
+Crawford, Jacoby, and who is on roll -- visible, every time, not on request.
 
-1. `PositionFromID(anBoard, posId)` -- gnubg decodes the board.
-2. `MatchFromID(anDice, &fTurn, &fResigned, &fDoubled, &fMove, &fCubeOwner,
-   &fCrawford, &nMatchTo, anScore, &nCube, &fJacoby, &gs, matchId)` -- gnubg
-   decodes the surrounding state.
-3. Copy those gnubg-produced values into a **local** `matchstate`. This is
-   assembly of gnubg's own outputs into gnubg's own struct -- not invention.
-   The facade must not compute, infer, or default any of these fields itself.
-4. `GetMatchStateCubeInfo(&ci, &msLocal)` -- gnubg derives the cubeinfo.
-   **Never** hand-build a `cubeinfo` via `SetCubeInfo`; per Q2 a private
-   cubeinfo in the facade is by default a bug.
-5. `FindnSaveBestMoves(..., &ci, &esAnalysisChequer.ec, aamfAnalysis)` -- the
-   same named analysis instances the tutor already uses.
+The screen must never quietly default. "Money play" is a legitimate answer; an
+unstated assumption of it is not. Note also that `SetGNUbgID` returns `2` when
+the position has the player on roll on top; gnubg's callers offer a swap. The
+port must surface that choice rather than silently swapping or silently not.
 
-Proposed verbs (names indicative):
+## The design for [1]: use gnubg's own entry point
 
-- `gnubg_mobile_position_from_ids(posId, matchId, out_board[50], out_state[])`
-  -- decode and validate; return a clean error for a malformed ID rather than
-  evaluating something wrong.
-- `gnubg_mobile_analyze_position(...)` -- local matchstate ->
-  `GetMatchStateCubeInfo` -> `FindnSaveBestMoves`, returning the ranked list in
-  the shape the tutor panel already renders.
-- `gnubg_mobile_current_position_ids(out_posId, out_matchId)` -- the reverse,
-  via `PositionID()` and `MatchIDFromMatchState()`. Cheap, and immediately
-  useful: "copy this position" out of a live game.
+**`SetGNUbgID(char *sz)`** -- declared `backgammon.h:519`, defined in `set.c`,
+compiled. This *is* the feature, already written:
 
-The decode verb should try `PositionFromID` and, failing that, `PositionFromXG`,
-so a pasted XG ID works without the user having to know which dialect they hold.
-Both are gnubg's decoders; choosing between them on failure is dispatch, not
-interpretation.
+    switch (SetXGID(sz)) { case 0: return 0; case 2: return 2; default: ; }
+    /* otherwise: split base64 tokens, discriminate by LENGTH */
+    ...  strlen(out) == L_MATCHID   -> matchid
+    ...  strlen(out) == L_POSITIONID -> posid
+    if (matchid) SetMatchID(matchid);
+    if (posid)   SetBoard(posid);
+
+Read what it gives us:
+
+- It accepts an **XGID** (via `SetXGID`) *or* a **GNU BG ID**. The dialects are
+  discriminated properly -- XGID first, then base64 tokens keyed on their known
+  lengths. Not by trial-decoding and hoping.
+- It sets the **match context before the board**, which is exactly why the
+  `GAME_PLAYING` requirement in `SetBoard` is not a blocker: `SetMatchID` sets
+  `ms.gs` from the Match ID's gamestate field, and `SetBoard` then passes its own
+  check. The ordering is deliberate and it is gnubg's.
+- Return codes: `0` set, `1` no valid IDs found, `2` the position has the player
+  on roll on top (gnubg's own callers respond by offering `CommandSwapPlayers`).
+
+Call `SetGNUbgID`, not `CommandSetGNUbgID` / `CommandSetXGID`: the Command
+wrappers call `GetInputYN` and `ShowBoard`, which are terminal affordances. The
+non-Command function is the seam gnubg deliberately exposes, and it hands the
+swap decision back to the caller as return code `2`.
+
+**The state is the position.** gnubg's model is that the global `ms` holds the
+position under analysis; you set it, then you analyse it. That is how the desktop
+works: set the board, then `hint`. The port does not need -- and must not build --
+a private matchstate universe alongside it.
+
+Verbs, thin:
+
+- `gnubg_mobile_set_gnubg_id(const char *id)` -- lock, `SetGNUbgID` on a mutable
+  copy, unlock. Return gnubg's code unchanged.
+- Reading the result back uses the existing `gnubg_mobile_get_board` and the
+  existing match-state readers. Evaluation uses the existing evaluation verbs.
+  Nothing new is required for either.
+- `gnubg_mobile_current_gnubg_id(...)` -- the reverse, via `PositionID()` and
+  `MatchIDFromMatchState()`, for "copy this position" out of a live game.
+
+**Correction, recorded.** An earlier draft of this section proposed decoding with
+`PositionFromID` + `MatchFromID`, hand-assembling a **local** `matchstate` from
+the loose out-params, deriving a cubeinfo from it, and evaluating against that --
+explicitly to avoid touching the global `ms`. Every step of that is a
+reimplementation of `SetGNUbgID` plus gnubg's own state model, and it was drawn
+up to route around a link failure that does not exist. It also invented a
+bespoke return-code taxonomy and a field ordering for a struct gnubg already
+defines. The rule is not "avoid globals"; the rule is *port, never reinvent*.
+
+**Struck.** An earlier draft proposed trying `PositionFromID` and, on failure,
+`PositionFromXG` -- and defended it as "dispatch, not interpretation". That was a
+rationalisation, and the code would have been dangerous: `PositionFromID`
+base64-decodes whatever it is handed, so an XG string can decode into a board
+that passes `CheckPosition` and looks entirely legal while being the wrong
+position. A silently wrong answer produced by invented code. gnubg discriminates
+the dialects properly and already does it -- see `SetGNUbgID`.
 
 **Validation belongs to gnubg too, and the open item is closed.**
 `CorrectNumberOfChequers` is indeed not declared in any vendored header -- and it
