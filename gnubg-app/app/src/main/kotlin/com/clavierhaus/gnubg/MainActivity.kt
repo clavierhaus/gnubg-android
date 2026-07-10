@@ -27,6 +27,7 @@ import com.clavierhaus.gnubg.options.OptionsModeScreen
 import com.clavierhaus.gnubg.play.GameLayout
 import com.clavierhaus.gnubg.profile.ProfileScreen
 import com.clavierhaus.gnubg.shared.AppMode
+import com.clavierhaus.gnubg.review.ReviewScreen
 import com.clavierhaus.gnubg.ui.theme.GnubgTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,6 +100,44 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // Feature [3]: open a saved match. gnubg's SGF reader takes a
+                // filesystem path, so the picked document is copied to a private
+                // cache file first -- and that path must be free of whitespace,
+                // since CommandLoadMatch tokenizes it exactly as CommandSaveMatch
+                // does. loadMatch replaces the engine's match, so a game in
+                // progress is discarded: the screen warns before this runs.
+                var reviewPath by remember { mutableStateOf<String?>(null) }
+                val openMatch = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocument()
+                ) { uri ->
+                    if (uri == null) return@rememberLauncherForActivityResult
+                    scope.launch {
+                        // A fresh name each time. Assigning null and then the same path
+                        // in one coroutine can collapse into a single recomposition, and
+                        // ReviewScreen's LaunchedEffect would not re-run for the same
+                        // file chosen twice. The name carries no whitespace.
+                        val tmp = File(context.cacheDir, "review-" + System.currentTimeMillis() + ".sgf")
+                        val ok = withContext(Dispatchers.IO) {
+                            runCatching {
+                                context.contentResolver.openInputStream(uri)?.use { input ->
+                                    tmp.outputStream().use { out -> input.copyTo(out) }
+                                } ?: throw java.io.IOException("no input stream")
+                            }.isSuccess && tmp.length() > 0L
+                        }
+                        if (ok) {
+                            withContext(Dispatchers.IO) {
+                                context.cacheDir.listFiles()
+                                    ?.filter { it.name.startsWith("review-") && it != tmp }
+                                    ?.forEach { it.delete() }
+                            }
+                            reviewPath = tmp.absolutePath
+                        } else {
+                            tmp.delete()
+                            Toast.makeText(context, "Could not read that file.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
                 fun defaultMatchFilename(): String {
                     val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
                     return "gnubg-match-" + stamp + ".sgf"
@@ -108,6 +147,7 @@ class MainActivity : ComponentActivity() {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
                         onAnalysePosition = { mode = AppMode.ANALYSE },
+                        onReviewMatch = { mode = AppMode.REVIEW },
                         onOptions = { mode = AppMode.OPTIONS },
                         onProfile = { mode = AppMode.PROFILE }
                     )
@@ -125,6 +165,13 @@ class MainActivity : ComponentActivity() {
                     AppMode.ANALYSE -> AnalyseScreen(
                         settings = settings,
                         onBackToHub = { mode = AppMode.HUB }
+                    )
+
+                    AppMode.REVIEW -> ReviewScreen(
+                        settings = settings,
+                        onOpenMatch = { openMatch.launch(arrayOf("*/*")) },
+                        matchPath = reviewPath,
+                        onReturnToHub = { mode = AppMode.HUB }
                     )
 
                     AppMode.OPTIONS -> OptionsModeScreen(

@@ -29,6 +29,7 @@ import com.clavierhaus.gnubg.R
 fun HomeHubScreen(
     onPlay: () -> Unit,
     onAnalysePosition: () -> Unit,
+    onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
     onProfile: () -> Unit
 ) {
@@ -57,9 +58,11 @@ fun HomeHubScreen(
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
             Spacer(modifier = Modifier.height(22.dp))
-            // Second slot: the feature people still open XG Mobile for. Review
-            // Match takes the third slot when it exists, not before.
+            // Second slot: the feature people still open XG Mobile for.
             HomeHubEntry("Analyse Position", onAnalysePosition)
+            Spacer(modifier = Modifier.height(22.dp))
+            // Third slot, now that it exists.
+            HomeHubEntry("Review Match", onReviewMatch)
             Spacer(modifier = Modifier.height(22.dp))
             HomeHubEntry("Options", onOptions)
         }

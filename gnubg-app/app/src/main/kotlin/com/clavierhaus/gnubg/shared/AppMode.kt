@@ -5,6 +5,7 @@ enum class AppMode {
     PLAY,
     LEARN,
     ANALYSE,
+    REVIEW,
     OPTIONS,
     PROFILE
 }
