@@ -135,6 +135,25 @@ private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, diceCount: I
     /** Lower half of the bar: where a human checker sits waiting to re-enter. */
     val barBottomRect = Rect(ux(MID_X - BAR_W / 2f), boardCY, ux(MID_X + BAR_W / 2f), uy(TOT_H - BRD_H))
 
+    // Checkers. A piece, but one that must also fit inside a stretched half-board:
+    // the radius is the smaller of what the point width allows and what the half
+    // board height allows, so two opposing stacks of five never collide on a squat
+    // pane. This is the one place it is computed; the stack and the checker that
+    // follows the finger both read it.
+    val boardTop    = uy(BRD_H)
+    val boardBottom = h - uy(BRD_H)
+    private val maxVisibleCheckers = 5f
+    private val stepFactor  = 2.05f
+    private val insetFactor = 0.12f
+    private val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
+    private val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
+    val checkerR = minOf(
+        ux(PT_W) * 0.40f,
+        halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
+    )
+    val checkerInset = checkerR * insetFactor
+    val checkerStep  = checkerR * stepFactor
+
     /** Points stretch with the board, so both axes scale. */
     fun pointRect(n: Int): Rect {
         val left = ux(pointX(n))
@@ -399,22 +418,12 @@ fun BackgammonBoard(
             fun ux(u: Float) = u * sx
             fun uy(u: Float) = u * sy
 
-            // Checker radius: fits within point width with gap to border and between checkers
-            val boardBottom = size.height - uy(BRD_H)
-            val boardTop    = size.height - boardBottom  // mirrors boardBottom exactly
-
-            // Checker metrics are constrained by both point width and available half-board height.
-            // This keeps two opposing visible stacks of five from colliding on short/wide screens.
-            val maxVisibleCheckers = 5f
-            val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
-            val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
-            val stepFactor = 2.05f
-            val insetFactor = 0.12f
-            val maxRByWidth = ux(PT_W) * 0.40f
-            val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
-            val r = minOf(maxRByWidth, maxRByHeight)
-            val inset = r * insetFactor
-            val step = r * stepFactor
+            // Checker metrics: computed once, in BoardGeom.
+            val boardBottom = g.boardBottom
+            val boardTop    = g.boardTop
+            val r     = g.checkerR
+            val inset = g.checkerInset
+            val step  = g.checkerStep
 
             // 1. Frame
             drawRect(p.frame, size = size)
@@ -789,18 +798,9 @@ fun BackgammonBoard(
 
             // Floating checker follows the finger during a drag (prototype).
             dragPosUnits?.let { pos ->
-                val boardBottom = size.height - uy(BRD_H)
-                val boardTop    = size.height - boardBottom
-                val maxVisibleCheckers = 5f
-                val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
-                val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
-                val stepFactor = 2.05f
-                val insetFactor = 0.12f
-                val maxRByWidth = ux(PT_W) * 0.40f
-                val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
-                val fr = minOf(maxRByWidth, maxRByHeight)
-                // pos is already in pixels -- the same space the finger reported.
-                drawChecker(pos.x, pos.y, fr, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+                // Same radius as the stacks, from the same place. pos is already in
+                // pixels -- the space the finger reported in.
+                drawChecker(pos.x, pos.y, g.checkerR, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
             }
         } // end Canvas
         
