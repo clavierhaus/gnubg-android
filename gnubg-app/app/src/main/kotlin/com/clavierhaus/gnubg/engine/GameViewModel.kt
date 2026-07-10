@@ -121,28 +121,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * from that source (facade LegalMove gate). No die is invented here.
      */
     /**
-     * Die faces for which gnubg lists no legal play, read out of gnubg's own
-     * move list. Nothing is computed here; the list is decoded.
+     * Die faces for which gnubg lists no legal play.
      *
-     * gnubg stores each sub-move as a (src, dest) pair with dest = src - die
-     * (eval.c:2661-2662, and the bar case at 2643-2644). A bear-off simply makes
-     * dest negative -- -1 from point 1 with a 1, -2 from point 4 with a 5 -- and
-     * gnubg's own reader relies on that:
+     * The bear-off branch is NOT a heuristic that could be replaced by
+     * `src - dest`. gnubg clamps every negative destination to -1 in SaveMoves
+     * (eval.c: `pm->anMove[i] = anMoves[i] > -1 ? anMoves[i] : -1`), so -1 means
+     * "off" and carries no information about which die was used: bearing off
+     * point 1 with a 1 and point 3 with a 6 both store (src, -1). The die must be
+     * recovered by asking gnubg -- Engine.applySubMove is LegalMove -- against
+     * the board as it stands at that sub-move, which is why the working board is
+     * replayed.
      *
-     *     for (i = 0; i < 8 && anMove[i] >= 0; i += 2)                 // eval.c:2523
-     *         ApplySubMove(anBoard, anMove[i], anMove[i] - anMove[i + 1], ...);
-     *
-     * So `src - dest` IS the die, for every sub-move including bear-offs, and a
-     * negative *source* is the terminator (SaveMoves, eval.c:2571).
-     *
-     * An earlier version of this function believed dest was "clamped to -1" for
-     * bear-offs and therefore could not recover the die from it. It guessed
-     * instead: probing Engine.applySubMove with each remaining die and preferring
-     * a not-yet-seen one. That is Kotlin reconstructing gnubg's move semantics
-     * from a false premise, and in a bear-off position it attributes dice to the
-     * wrong sub-moves and greys a face that has legal plays.
+     * A previous version of this file replaced all of that with
+     * `playable.add(src - dest)`, on the stated grounds that GenerateMovesSub
+     * writes `i - anRoll`. It does; SaveMoves then clamps it. That change made
+     * bear-offs report the wrong die, and the same false premise, carried into
+     * tapSource, made a legal bear-off with a 6 impossible to play.
      */
-    private fun unplayableDiceFor(moves: IntArray, remaining: List<Int>): Set<Int> {
+    private fun unplayableDiceFor(board: IntArray, moves: IntArray, remaining: List<Int>): Set<Int> {
         if (remaining.isEmpty()) return emptySet()
         val distinct = remaining.distinct()
         if (moves.isEmpty()) return distinct.toSet()  // no legal move: all unplayable
@@ -150,11 +146,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val playable = mutableSetOf<Int>()
         val nMoves = moves.size / 8
         for (i in 0 until nMoves) {
+            // Replay this move sub-moves on a working board so a bear-off die
+            // can be resolved against the board state at that sub-move.
+            var work = board
             for (j in 0..3) {
-                val src = moves[i * 8 + j * 2]
-                if (src < 0) break                       // gnubg's terminator
-                val dest = moves[i * 8 + j * 2 + 1]      // may be negative: bear-off
-                playable.add(src - dest)                 // the die, per ApplyMove
+                val src  = moves[i * 8 + j * 2]
+                val dest = moves[i * 8 + j * 2 + 1]
+                if (src < 0) break            // -1 source = move terminator
+                if (dest >= 0) {
+                    playable.add(src - dest)  // in-board: die is exact
+                    val nb = Engine.applySubMove(work, src, src - dest)
+                    if (nb.isNotEmpty()) work = nb
+                } else {
+                    // bear-off (dest clamped to -1): the die is whichever remaining
+                    // value the engine accepts from this source on the working board.
+                    // Prefer a not-yet-seen die so each bear-off widens coverage; fall
+                    // back to any accepted die to keep the working board advancing.
+                    var chosen = -1
+                    for (d in distinct) {
+                        if (Engine.applySubMove(work, src, d).isNotEmpty()) {
+                            if (d !in playable) { chosen = d; break }
+                            if (chosen < 0) chosen = d
+                        }
+                    }
+                    if (chosen >= 0) {
+                        playable.add(chosen)
+                        val nb = Engine.applySubMove(work, src, chosen)
+                        if (nb.isNotEmpty()) work = nb
+                    }
+                }
                 if (playable.containsAll(distinct)) return emptySet()
             }
         }
@@ -204,7 +224,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // only when it is the human turn with dice in play.
         val unplayableDice =
             if (turn == 0 && remainingDice.isNotEmpty())
-                unplayableDiceFor(legalMoves, remainingDice)
+                unplayableDiceFor(oldBoard, legalMoves, remainingDice)
             else emptySet()
         _gameState.value = BoardState(
             matchScore     = score,
@@ -359,33 +379,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.board[24 + point] > 0) return null
 
         val dest = point - 1
-
-        // Both sub-moves must be steps gnubg offers, at their respective depths.
-        // Without this the shortcut can make a point by a combination that is not
-        // part of any legal move, and Commit would then silently refuse.
-        val od = state.originalDice ?: return null
-        val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
-
-        // (board, remaining, played pairs)
-        val results = mutableListOf<Triple<IntArray, List<Int>, List<Int>>>()
+        val results = mutableListOf<Pair<IntArray, List<Int>>>()
 
         state.remainingDice.forEachIndexed { i, dieA ->
             val srcA = dest + dieA
-            if (srcA in 0..23 &&
-                nextSubMoves(turnMoves, state.played).any { it.first == srcA && it.second == dest }) {
+            if (srcA in 0..23) {
                 val b1 = Engine.applySubMove(state.board, srcA, dieA)
                 if (b1.isNotEmpty()) {
-                    val afterA = state.played + listOf(srcA, dest)
                     val rem1 = state.remainingDice.toMutableList().also { it.removeAt(i) }
 
                     rem1.forEachIndexed { j, dieB ->
                         val srcB = dest + dieB
-                        if (srcB in 0..23 &&
-                            nextSubMoves(turnMoves, afterA).any { it.first == srcB && it.second == dest }) {
+                        if (srcB in 0..23) {
                             val b2 = Engine.applySubMove(b1, srcB, dieB)
                             if (b2.isNotEmpty()) {
                                 val rem2 = rem1.toMutableList().also { it.removeAt(j) }
-                                results.add(Triple(b2, rem2, listOf(srcA, dest, srcB, dest)))
+                                results.add(Pair(b2, rem2))
                             }
                         }
                     }
@@ -395,7 +404,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         if (results.isEmpty()) return null
 
-        val unique = results.distinctBy { (board, remaining, _) ->
+        val unique = results.distinctBy { (board, remaining) ->
             board.joinToString(",") + "|" + remaining.joinToString(",")
         }
 
@@ -409,7 +418,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val newBoard = unique[0].first
         val rawRemaining = unique[0].second
-        val stackPairs = unique[0].third
 
         val rawNextMoves = if (rawRemaining.isNotEmpty()) {
             val r0 = rawRemaining[0]
@@ -429,8 +437,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             remainingDice = state.remainingDice,
             legalMoves = state.legalMoves.copyOf(),
             pipCountHuman = state.pipCountHuman,
-            pipCountEngine = state.pipCountEngine,
-            played = state.played
+            pipCountEngine = state.pipCountEngine
         )
 
         android.util.Log.i(
@@ -445,7 +452,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pipCountHuman  = pips[0],
             pipCountEngine = pips[1],
             dice           = state.dice,
-            played         = state.played + stackPairs,
             moveHistory    = state.moveHistory + snapshot
         )
     }
@@ -460,42 +466,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // from gnubg point 24. Entry for die d lands on board point 25 - d, i.e.
             // gnubg 0-based 24 - d, so the same src - d == to - 1 test below applies.
             val src = if (from == 0) 24 else from - 1
-
-            // Same rule as tapSource: only steps continuing one of gnubg's complete
-            // legal moves. A drag covers one sub-move or two chained ones, and each
-            // must be a step gnubg offers at that depth.
-            val od = state.originalDice ?: return@launch
-            val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
-            val hits = { dest: Int -> dest == to - 1 || (to == 0 && dest < 0) }
-
             var newBoard = IntArray(0)
             val usedDice = ArrayList<Int>()
-            val playedPairs = ArrayList<Int>()
-
-            for ((s1, e1) in nextSubMoves(turnMoves, state.played)) {
-                if (s1 != src || !hits(e1)) continue
-                val b = Engine.applySubMove(state.board, src, src - e1)
-                if (b.isNotEmpty()) {
-                    newBoard = b
-                    usedDice.add(src - e1)
-                    playedPairs.add(src); playedPairs.add(e1)
-                    break
+            for (d in state.remainingDice.distinct()) {
+                if (src - d == to - 1 || (to == 0 && src - d < 0)) {
+                    val b = Engine.applySubMove(state.board, src, d)
+                    if (b.isNotEmpty()) { newBoard = b; usedDice.add(d); break }
                 }
             }
-
-            if (newBoard.isEmpty()) {
-                outer@ for ((s1, e1) in nextSubMoves(turnMoves, state.played)) {
-                    if (s1 != src || e1 < 0) continue
-                    val b1 = Engine.applySubMove(state.board, src, src - e1)
-                    if (b1.isEmpty()) continue
-                    for ((s2, e2) in nextSubMoves(turnMoves, state.played + listOf(s1, e1))) {
-                        if (s2 != e1 || !hits(e2)) continue
-                        val b2 = Engine.applySubMove(b1, s2, s2 - e2)
-                        if (b2.isNotEmpty()) {
-                            newBoard = b2
-                            usedDice.add(src - e1); usedDice.add(s2 - e2)
-                            playedPairs.addAll(listOf(s1, e1, s2, e2))
-                            break@outer
+            if (newBoard.isEmpty() && state.remainingDice.size >= 2) {
+                val dice = state.remainingDice
+                outer@ for (i in dice.indices) {
+                    for (j in dice.indices) {
+                        if (i == j) continue
+                        val dA = dice[i]; val dB = dice[j]
+                        val b1 = Engine.applySubMove(state.board, src, dA)
+                        if (b1.isEmpty()) continue
+                        val mid = src - dA
+                        if (mid < 0) continue
+                        if (mid - dB == to - 1 || (to == 0 && mid - dB < 0)) {
+                            val b2 = Engine.applySubMove(b1, mid, dB)
+                            if (b2.isNotEmpty()) {
+                                newBoard = b2; usedDice.add(dA); usedDice.add(dB); break@outer
+                            }
                         }
                     }
                 }
@@ -519,8 +512,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 remainingDice = state.remainingDice,
                 legalMoves = state.legalMoves.copyOf(),
                 pipCountHuman = state.pipCountHuman,
-                pipCountEngine = state.pipCountEngine,
-                played         = state.played
+                pipCountEngine = state.pipCountEngine
             )
             _gameState.value = state.copy(
                 board          = newBoard,
@@ -529,7 +521,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
-                played         = state.played + playedPairs,
                 moveHistory    = state.moveHistory + snapshot
             )
         }
@@ -566,40 +557,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // cMaxMoves/cMaxPips match). A tap sequence that cannot complete to a
             // maximal legal move is rejected at confirm() and the player undoes --
             // exactly as gnubgs own board UI behaves. It is NOT reimplemented here.
-            // Only sub-moves that continue one of gnubg's complete legal moves.
-            //
-            // Asking Engine.applySubMove per die answers "is this step legal in
-            // isolation", which is not the question. gnubg enforces maximisation
-            // across the whole turn, so individually legal steps can build a
-            // position it will refuse at confirm() -- silently, since findMove
-            // simply returns empty. That was the stuck Commit.
-            val od = state.originalDice ?: return@launch
-            val turnMoves = Engine.getLegalMoves(state.oldBoard, od.first, od.second)
-            val allowed = nextSubMoves(turnMoves, state.played).filter { it.first == src }
-            if (allowed.isEmpty()) {
-                android.util.Log.w("gnubg-vm",
-                    "tapSource refused: src=$src played=${state.played} " +
-                    "remaining=${state.remainingDice} moves=${turnMoves.size / 8} " +
-                    "next=${nextSubMoves(turnMoves, state.played)}")
-                return@launch
-            }
-
-            // Respect the die order the player sees, so swapping the dice still
-            // changes which is tried first.
             var newBoard = IntArray(0)
             var usedDie  = -1
-            var usedDest = 0
             for (d in state.remainingDice.distinct()) {
-                val step = allowed.firstOrNull { src - it.second == d } ?: continue
                 val b = Engine.applySubMove(state.board, src, d)
-                if (b.isNotEmpty()) { newBoard = b; usedDie = d; usedDest = step.second; break }
+                if (b.isNotEmpty()) { newBoard = b; usedDie = d; break }
             }
-            if (newBoard.isEmpty()) {
-                android.util.Log.w("gnubg-vm",
-                    "tapSource: no die matched. src=$src allowed=$allowed " +
-                    "remaining=${state.remainingDice} played=${state.played}")
-                return@launch
-            }
+            if (newBoard.isEmpty()) return@launch
 
             val rawRemaining = state.remainingDice.toMutableList().also { it.remove(usedDie) }
             val pips = Engine.pipCount(newBoard)
@@ -629,8 +593,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 remainingDice = state.remainingDice,
                 legalMoves = state.legalMoves.copyOf(),
                 pipCountHuman = state.pipCountHuman,
-                pipCountEngine = state.pipCountEngine,
-                played = state.played
+                pipCountEngine = state.pipCountEngine
             )
 
             _gameState.value = state.copy(
@@ -640,7 +603,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 pipCountHuman  = pips[0],
                 pipCountEngine = pips[1],
                 dice           = state.dice,
-                played         = state.played + listOf(src, usedDest),
                 moveHistory    = state.moveHistory + snapshot
             )
         }
@@ -658,7 +620,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pipCountHuman  = snapshot.pipCountHuman,
             pipCountEngine = snapshot.pipCountEngine,
             dice           = state.dice,
-            played         = snapshot.played,
             moveHistory    = state.moveHistory.dropLast(1)
         )
 
@@ -717,14 +678,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.board.contentEquals(state.oldBoard)) return@launch
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
-            if (moveStr.isEmpty()) {
-                // gnubg does not recognise the resulting position as one of its
-                // legal moves. With tapSource restricted to gnubg's own move list
-                // this should be unreachable; if it happens, say so rather than
-                // leaving a dead Commit button.
-                android.util.Log.e("gnubg-vm", "confirm: findMove empty -- not a legal move")
-                return@launch
-            }
+            if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             // Capture the match score before the move. A game-ending move triggers
             // gnubgs NextTurn(TRUE) inside command_move, which scores the game AND

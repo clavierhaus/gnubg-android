@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import com.clavierhaus.gnubg.engine.BoardState
-import com.clavierhaus.gnubg.engine.nextSubMoves
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -89,28 +88,40 @@ private fun boardPointAt(x: Float, y: Float): Int {
     return -1
 }
 
+/**
+ * Where this checker may legally go now, read out of gnubg's own move list.
+ *
+ * gameState.legalMoves is GenerateMoves() over the CURRENT board with the dice
+ * that remain, so the first sub-move of each generated move is exactly a legal
+ * step from here. Take the ones whose source is this checker.
+ *
+ * A previous version pooled every (src,dst) pair from every move into one edge
+ * list and breadth-first searched it. That splices unrelated moves together --
+ * an 8->6 step from one move and a 6->1 step from another let it walk 8->6->1,
+ * a play gnubg never offered -- so it lit up unreachable points. It also read
+ * the turn-start board while using the current dice.
+ *
+ * A bear-off destination is -1. gnubg clamps every negative destination to -1
+ * in SaveMoves (eval.c), so it is a sentinel for "off" and says nothing about
+ * which die was used. It has no point to highlight, so it is skipped here; the
+ * tap itself is validated by gnubg through Engine.applySubMove.
+ */
 private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set<Int> {
     if (gameState.phase != GamePhase.HUMAN_MOVING) return emptySet()
     if (sourcePoint !in 1..24) return emptySet()
     if (gameState.board[24 + sourcePoint] <= 0) return emptySet()
 
-    val od = gameState.originalDice ?: return emptySet()
-    val origin = sourcePoint - 1
+    val moves = gameState.legalMoves
+    if (moves.isEmpty()) return emptySet()
 
-    // gnubg's complete legal moves for this turn, filtered to those continuing
-    // what has already been played. The next sub-move of each is exactly where
-    // this checker may legally go now.
-    //
-    // The previous version pooled every (src,dst) pair from every move into one
-    // edge list and ran a breadth-first search from the checker. That splices
-    // fragments of unrelated moves together -- an 8->6 step from one move and a
-    // 6->1 step from another let it walk 8->6->1, a play gnubg never offered --
-    // so it lit up points that could not be reached with the dice in hand, and
-    // omitted bear-offs, whose destination gnubg encodes as negative.
-    val turnMoves = Engine.getLegalMoves(gameState.oldBoard, od.first, od.second)
+    val origin = sourcePoint - 1
     val dests = linkedSetOf<Int>()
-    for ((src, dst) in nextSubMoves(turnMoves, gameState.played)) {
+    var m = 0
+    while (m + 1 < moves.size) {
+        val src = moves[m]          // first sub-move of this move
+        val dst = moves[m + 1]
         if (src == origin && dst in 0..23) dests.add(dst + 1)
+        m += 8
     }
     return dests
 }
