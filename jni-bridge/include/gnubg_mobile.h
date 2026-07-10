@@ -124,6 +124,17 @@ int gnubg_mobile_initialise(const char *weights_path);
  *   top (the UI must offer a swap), -1 bad argument.
  * The Command wrapper is deliberately not used: it answers the swap question
  * through GetInputYN, which always returns TRUE in this port. */
+/* Encode an edited position + context as "PositionID:MatchID" with gnubg's own
+ * encoders. Install the result via gnubg_mobile_set_gnubg_id. Dice 0,0 = not
+ * rolled = a cube decision. cube_owner: -1 centred, 0 human, 1 engine.
+ * match_to 0 = money game. */
+int gnubg_mobile_ids_from_state(const int board[50], int d0, int d1, int turn,
+                                int score_h, int score_e, int match_to,
+                                int cube, int cube_owner, int crawford,
+                                char *out, int out_cap);
+/* gnubg's own text for a cubedecision value (GetCubeRecommendation). */
+int gnubg_mobile_cube_recommendation(int cd, char *out, int out_cap);
+
 int gnubg_mobile_set_gnubg_id(const char *id);
 
 /* The user's yes to the swap offered after a return of 2.

@@ -897,6 +897,34 @@ Java_com_clavierhaus_gnubg_Engine_runCommand(JNIEnv *env, jobject thiz, jstring 
 /* Engine.setGnubgId(id): Int -- gnubg's own return code, passed through.
  * 0 installed, 1 no valid IDs found, 2 installed but the player on roll is on
  * top (the UI must offer a swap), -1 bad argument. */
+JNIEXPORT jstring JNICALL
+Java_com_clavierhaus_gnubg_Engine_idsFromState(JNIEnv *env, jobject thiz,
+        jintArray jboard, jint d0, jint d1, jint turn,
+        jint scoreH, jint scoreE, jint matchTo,
+        jint cube, jint cubeOwner, jint crawford) {
+    (void)thiz;
+    jint inBuf[50];
+    int in[50], i;
+    char out[64];
+    (*env)->GetIntArrayRegion(env, jboard, 0, 50, inBuf);
+    for (i = 0; i < 50; i++) in[i] = (int) inBuf[i];
+    if (gnubg_mobile_ids_from_state(in, (int) d0, (int) d1, (int) turn,
+                                    (int) scoreH, (int) scoreE, (int) matchTo,
+                                    (int) cube, (int) cubeOwner, (int) crawford,
+                                    out, (int) sizeof(out)) < 0)
+        return NULL;
+    return (*env)->NewStringUTF(env, out);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_clavierhaus_gnubg_Engine_cubeRecommendation(JNIEnv *env, jobject thiz, jint cd) {
+    (void)thiz;
+    char out[96];
+    if (gnubg_mobile_cube_recommendation((int) cd, out, (int) sizeof(out)) < 0)
+        return NULL;
+    return (*env)->NewStringUTF(env, out);
+}
+
 JNIEXPORT jint JNICALL
 Java_com_clavierhaus_gnubg_Engine_setGnubgId(JNIEnv *env, jobject thiz, jstring jid) {
     (void) thiz;

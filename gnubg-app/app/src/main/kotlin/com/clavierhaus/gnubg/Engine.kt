@@ -119,6 +119,17 @@ object Engine {
     // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is
     // on top -- ask the user, then call swapPlayers() only if they agree.
     external fun setGnubgId(id: String): Int
+
+    // Encode an edited position + context as "PositionID:MatchID", with gnubg's
+    // own encoders. Install the result via setGnubgId -- the same path a pasted
+    // ID takes, with the same validation. Dice 0,0 = not rolled = cube decision.
+    // cubeOwner: -1 centred, 0 human, 1 engine. matchTo 0 = money game.
+    external fun idsFromState(board: IntArray, d0: Int, d1: Int, turn: Int,
+                              scoreH: Int, scoreE: Int, matchTo: Int,
+                              cube: Int, cubeOwner: Int, crawford: Int): String?
+
+    // gnubg's own words for cubeDecision()'s decision value (index 18).
+    external fun cubeRecommendation(cd: Int): String?
     external fun swapPlayers(): Int
 
     // gnubg's renderings of the current state: [0] Position ID, [1] Match ID.

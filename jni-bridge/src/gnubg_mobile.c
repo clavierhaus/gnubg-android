@@ -1051,6 +1051,86 @@ int gnubg_mobile_initialise(const char *weights_path) {
  *    2  installed, but the player on roll appears on top (offer a swap)
  *   -1  bad argument (facade level only; gnubg never returns this)
  * =========================================================================== */
+/* Encode an edited position + match context as "PositionID:MatchID", using
+ * gnubg's OWN encoders -- PositionID (positionid.c) and MatchIDFromMatchState
+ * (matchid.c). Nothing is computed here; a matchstate is filled in and gnubg
+ * writes both tokens. The caller then installs the string through
+ * gnubg_mobile_set_gnubg_id, i.e. gnubg's SetGNUbgID -- the same proven path a
+ * pasted ID takes, with the same validation (CheckPosition inside SetBoard).
+ *
+ * Frames: the int[50] board is the HUMAN frame ([25..49] = human, player 0).
+ * gnubg's ms.anBoard[1] is the player ON ROLL (see get_board_human above, which
+ * swaps when fMove==1). So when the engine is on roll the board is SwapSides'd
+ * before PositionID.
+ *
+ * Dice 0,0 means "not rolled": MatchID encodes it, and a position installed
+ * without dice is exactly gnubg's setup for a CUBE decision rather than a
+ * chequer decision (the desktop edit mode works the same way: setting the turn
+ * removes the dice).
+ *
+ * cube_owner: -1 centred, 0 human, 1 engine -- gnubg's own fCubeOwner values;
+ * MatchID masks with 0x3 and MatchFromKey restores -1.
+ *
+ * match_to 0 = money game. crawford is meaningful only in match play.
+ * fJacoby is taken from the live ms so the encoded ID matches the app's rules.
+ */
+int gnubg_mobile_ids_from_state(const int board[50], int d0, int d1, int turn,
+                                int score_h, int score_e, int match_to,
+                                int cube, int cube_owner, int crawford,
+                                char *out, int out_cap) {
+    TanBoard anBoard;
+    matchstate ms2;
+    char *pos, *mat;
+
+    if (out_cap < 32) return -1;
+    if (turn != 0 && turn != 1) return -1;
+
+    facade_unpack_board(board, anBoard);
+    if (turn == 1)
+        SwapSides(anBoard);         /* anBoard[1] must be the player on roll */
+
+    memset(&ms2, 0, sizeof(ms2));
+    memcpy(ms2.anBoard, anBoard, sizeof(TanBoard));
+    ms2.anDice[0]  = (unsigned int) d0;
+    ms2.anDice[1]  = (unsigned int) d1;
+    ms2.fTurn      = turn;
+    ms2.fMove      = turn;
+    ms2.fCubeOwner = cube_owner;
+    ms2.fCrawford  = crawford ? TRUE : FALSE;
+    ms2.nMatchTo   = match_to;
+    ms2.anScore[0] = score_h;       /* human is player 0 in this port */
+    ms2.anScore[1] = score_e;
+    ms2.nCube      = cube;
+    ms2.fResigned  = 0;
+    ms2.fDoubled   = FALSE;
+    ms2.gs         = GAME_PLAYING;
+
+    pthread_mutex_lock(&gnubg_lock);
+    ms2.fJacoby = ms.fJacoby;
+    ms2.fCubeUse = ms.fCubeUse;
+    pos = PositionID((ConstTanBoard) anBoard);
+    /* PositionID returns a static buffer; copy before the next gnubg call. */
+    snprintf(out, (size_t) out_cap, "%s:", pos);
+    mat = MatchIDFromMatchState(&ms2);
+    strncat(out, mat, (size_t) out_cap - strlen(out) - 1);
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return (int) strlen(out);
+}
+
+/* gnubg's own words for a cube decision -- GetCubeRecommendation (eval.c:2999).
+ * The cubedecision value comes from gnubg_mobile_cube_decision's out_decision.
+ * Mapping the enum to text in Kotlin would duplicate gnubg's classification. */
+int gnubg_mobile_cube_recommendation(int cd, char *out, int out_cap) {
+    const char *sz;
+    if (out_cap < 8) return -1;
+    pthread_mutex_lock(&gnubg_lock);
+    sz = GetCubeRecommendation((cubedecision) cd);
+    snprintf(out, (size_t) out_cap, "%s", sz ? sz : "");
+    pthread_mutex_unlock(&gnubg_lock);
+    return (int) strlen(out);
+}
+
 int gnubg_mobile_set_gnubg_id(const char *id) {
     char *buf;
     int rc;
