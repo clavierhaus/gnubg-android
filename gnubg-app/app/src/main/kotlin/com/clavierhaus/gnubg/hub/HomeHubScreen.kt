@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,8 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -46,27 +49,49 @@ fun HomeHubScreen(
             contentScale = ContentScale.Fit
         )
 
-        // The same gear as in-game (Icons.Filled.Settings), in the corner the eye
-        // already goes to. It replaces the "Options" entry: a settings gear is a
-        // convention, and the entry it displaces was the one item in the menu that
-        // was not a destination.
-        Icon(
-            imageVector = Icons.Filled.Settings,
-            contentDescription = "Options",
-            tint = Color.White,
+        // The same gear as in-game (Icons.Filled.Settings), wearing the hub's own
+        // treatment: white, over the same drop shadow the text carries.
+        //
+        // TextStyle.Shadow is not available to an Icon, so it is reproduced: a black
+        // copy behind, displaced and blurred by the same amounts. Those amounts are
+        // PIXELS in Shadow -- Offset(2f, 2f) and blurRadius = 8f -- so they are
+        // converted through the density rather than guessed at in dp.
+        val density = LocalDensity.current
+        val shadowShift = with(density) { HOME_SHADOW_OFFSET_PX.toDp() }
+        val shadowBlur  = with(density) { HOME_SHADOW_BLUR_PX.toDp() }
+
+        Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 30.dp)
-                .size(36.dp)
-                .clickable(onClick = onOptions)
-        )
+                // Room for the blur to spread without being clipped by the Box.
+                .padding(start = 48.dp - shadowBlur, top = 24.dp - shadowBlur)
+                .padding(shadowBlur)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = null,
+                tint = Color.Black,
+                modifier = Modifier
+                    .offset(x = shadowShift, y = shadowShift)
+                    .blur(shadowBlur)
+                    .size(GEAR_SIZE)
+            )
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Options",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(GEAR_SIZE)
+                    .clickable(onClick = onOptions)
+            )
+        }
 
         BasicText(
             text = "GNU Backgammon",
             style = HomeTitleStyle,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 96.dp)
+                .padding(start = 48.dp, top = 80.dp)
         )
 
         // padding, not offset. An offset composable keeps the layout slot its parent
@@ -113,35 +138,34 @@ private fun HomeHubEntry(
     )
 }
 
+// The hub's drop shadow, in the units Shadow uses: pixels.
+private const val HOME_SHADOW_OFFSET_PX = 2f
+private const val HOME_SHADOW_BLUR_PX = 8f
+private val GEAR_SIZE = 36.dp
+
+private val HomeShadow = Shadow(
+    color = Color.Black,
+    offset = Offset(HOME_SHADOW_OFFSET_PX, HOME_SHADOW_OFFSET_PX),
+    blurRadius = HOME_SHADOW_BLUR_PX
+)
+
 private val HomeTitleStyle = TextStyle(
     color = Color.White,
     fontSize = 34.sp,
     fontWeight = FontWeight.SemiBold,
-    shadow = Shadow(
-        color = Color.Black,
-        offset = Offset(2f, 2f),
-        blurRadius = 8f
-    )
+    shadow = HomeShadow
 )
 
 private val HomeEntryStyle = TextStyle(
     color = Color.White,
     fontSize = 36.sp,
     fontWeight = FontWeight.Medium,
-    shadow = Shadow(
-        color = Color.Black,
-        offset = Offset(2f, 2f),
-        blurRadius = 8f
-    )
+    shadow = HomeShadow
 )
 
 private val HomeSecondaryStyle = TextStyle(
     color = Color.White,
     fontSize = 26.sp,
     fontWeight = FontWeight.Medium,
-    shadow = Shadow(
-        color = Color.Black,
-        offset = Offset(2f, 2f),
-        blurRadius = 8f
-    )
+    shadow = HomeShadow
 )
