@@ -19,7 +19,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
-import com.clavierhaus.gnubg.options.SettingsScreen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 
