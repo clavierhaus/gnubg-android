@@ -534,23 +534,36 @@ private fun MatchSetupScreen(
         // with free space sitting unusable above it.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
+            // The Start button is pinned at the foot (below, outside this weighted
+            // region). Everything else lives in a weight(1f) area that takes only
+            // the space left after the button is placed -- so the button can never
+            // be squeezed to zero height, which is exactly what happened on short
+            // 20:9 phones in landscape: weighted spacers distribute LEFTOVER space,
+            // and when the controls already fill the screen there is none, so the
+            // button got zero pixels and vanished (no "Loading engine..." either).
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
             Text(
                 if (tutorMode) "GNU Backgammon Chequer-Play Tutor"
                 else "GNU Backgammon Tournament Match",
                 color = Color.White,
-                fontSize = 30.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 "Opponent strength",
                 color = pal.uiTextSecondary,
-                fontSize = 18.sp
+                fontSize = 16.sp
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -711,15 +724,13 @@ private fun MatchSetupScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
             }
+            } // end weighted content Column
 
-            // Start Match floats in whatever space the controls leave: weighted
-            // spacers above and below, so it sits in the free area rather than
-            // flush against the last control or the screen edge. It is the only
-            // green control here, so it is set apart by colour and by position.
-            // Settings is not repeated on this screen -- it is one tap from the
-            // hub (Options) and from the board itself.
-            Spacer(modifier = Modifier.weight(1f))
-
+            // Pinned at the foot: a fixed-height row that is laid out BEFORE the
+            // weighted region above, so it always has its natural size. It is the
+            // only green control here, set apart by colour and position. Settings
+            // is not repeated -- it is one tap from the hub and from the board.
+            Spacer(modifier = Modifier.height(8.dp))
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
                 color = pal.uiActionPositive,
@@ -727,8 +738,6 @@ private fun MatchSetupScreen(
             ) {
                 onStart()
             }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
