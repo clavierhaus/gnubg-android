@@ -25,8 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.R
@@ -64,7 +69,7 @@ fun HomeHubScreen(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 // Room for the blur to spread without being clipped by the Box.
-                .padding(start = 48.dp - shadowBlur, top = 24.dp - shadowBlur)
+                .padding(start = 48.dp - shadowBlur, top = 18.dp - shadowBlur)
                 .padding(shadowBlur)
         ) {
             Icon(
@@ -79,19 +84,26 @@ fun HomeHubScreen(
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Options",
-                tint = Color.White,
+                tint = GnuWhite,
                 modifier = Modifier
                     .size(GEAR_SIZE)
                     .clickable(onClick = onOptions)
             )
         }
 
+        // "GNU" orange, "Backgammon" off-white, DejaVu Serif -- the colours and face
+        // of ic_launcher_foreground.png, sampled from it rather than approximated:
+        // #F5A623 and #F5F5F5.
         BasicText(
-            text = "GNU Backgammon",
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = GnuOrange)) { append("GNU") }
+                append(" ")
+                withStyle(SpanStyle(color = GnuWhite)) { append("Backgammon") }
+            },
             style = HomeTitleStyle,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 80.dp)
+                .padding(start = 48.dp, top = 66.dp)
         )
 
         // padding, not offset. An offset composable keeps the layout slot its parent
@@ -99,10 +111,13 @@ fun HomeHubScreen(
         // pointer events, which is how the match-setup screen once grew a button that
         // could be seen but not tapped. padding moves the slot itself, so the question
         // does not arise.
+        // The column is centre-aligned, so top padding p lowers its content by p/2.
+        // 32dp of padding buys 16dp of clearance from the title. The 22dp spacers
+        // between the entries are untouched.
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 64.dp)
+                .padding(start = 64.dp, top = 32.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
             Spacer(modifier = Modifier.height(22.dp))
@@ -138,6 +153,17 @@ private fun HomeHubEntry(
     )
 }
 
+// Sampled from ic_launcher_foreground.png. The icon is the app's signature; the
+// hub should not invent a second one.
+private val GnuOrange = Color(0xFFF5A623)
+private val GnuWhite  = Color(0xFFF5F5F5)
+
+// DejaVu Serif, vendored in res/font. Bitstream Vera derived, free to redistribute.
+private val DejaVuSerif = FontFamily(
+    Font(R.font.dejavu_serif, FontWeight.Normal),
+    Font(R.font.dejavu_serif_bold, FontWeight.Bold)
+)
+
 // The hub's drop shadow, in the units Shadow uses: pixels.
 private const val HOME_SHADOW_OFFSET_PX = 2f
 private const val HOME_SHADOW_BLUR_PX = 8f
@@ -150,22 +176,24 @@ private val HomeShadow = Shadow(
 )
 
 private val HomeTitleStyle = TextStyle(
-    color = Color.White,
+    fontFamily = DejaVuSerif,
     fontSize = 34.sp,
-    fontWeight = FontWeight.SemiBold,
+    fontWeight = FontWeight.Bold,
     shadow = HomeShadow
 )
 
 private val HomeEntryStyle = TextStyle(
-    color = Color.White,
+    fontFamily = DejaVuSerif,
+    color = GnuWhite,
     fontSize = 36.sp,
-    fontWeight = FontWeight.Medium,
+    fontWeight = FontWeight.Normal,
     shadow = HomeShadow
 )
 
 private val HomeSecondaryStyle = TextStyle(
-    color = Color.White,
+    fontFamily = DejaVuSerif,
+    color = GnuWhite,
     fontSize = 26.sp,
-    fontWeight = FontWeight.Medium,
+    fontWeight = FontWeight.Normal,
     shadow = HomeShadow
 )

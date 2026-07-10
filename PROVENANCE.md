@@ -432,6 +432,16 @@ code. It must be checked against upstream gnubg.c, not trusted because a comment
 claims it was copied. See CLAUDE.md, "A GNUBG GLOBAL DEFINED BY THE PORT IS
 ENGINE CODE".
 
+**Vendored fonts (2026-07-10).** `gnubg-app/app/src/main/res/font/dejavu_serif.ttf`
+and `dejavu_serif_bold.ttf` are DejaVu Serif, unmodified. DejaVu derives from
+Bitstream Vera under a permissive licence that allows redistribution, including
+inside a GPL application. They are tracked, not fetched: a font the build needs and
+the repository lacks is the sound.h mistake again.
+
+The hub's palette -- `#F5A623` and `#F5F5F5` -- is sampled from
+`res/drawable/ic_launcher_foreground.png`, not chosen. The launcher icon is the
+app's signature and the hub does not invent a second one.
+
 ## Files added (not from upstream)
 
 The following files in `engine-core/` have no upstream counterpart and were
