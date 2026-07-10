@@ -155,8 +155,12 @@ correction factor that fixes both. The only fix is that there is one rectangle.
   a y coordinate, and the element slides as the pane widens.
 - Never hit-test a pixel-square in unit space, or a unit-rect in pixel space. A
   unit square is not a pixel square when `sx != sy`.
-- Tap target equals drawn button. Never `Modifier.offset` to move a control:
-  offset moves the drawing, the layout slot stays, and taps diverge.
+- Tap target equals drawn button. Do not use `Modifier.offset` to move a control
+  out of the space its parent gave it: offset is a layout modifier, so drawing and
+  pointer input move together, but anything pushed beyond the parent's bounds stops
+  receiving events -- visible, untappable. Fix the layout that produced the dead
+  space instead. Within the parent's bounds offset is harmless; `padding` is
+  clearer, because it moves the slot rather than the content inside it.
 - Distributive space (gaps between groups) is weighted. Intrinsic space (a gap
   between two adjacent chips) is dp. Neither is a hit rectangle.
 

@@ -122,9 +122,8 @@ Work toward a first public release. All landed on the working branch:
   marked moves.
 - **Review Match discards a game in progress.** `Engine.loadMatch` replaces the
   engine's match. The screen warns in a caption; it should be a confirmation.
-- The hub column uses `Modifier.offset(x = 64.dp)`, which CLAUDE.md forbids for
-  interactive elements: the drawing moves, the layout slot does not, so the tap
-  targets sit 64dp left of their labels. Pre-existing.
+- The hub's Options entry is gone; a gear icon in the top-left corner opens
+  Settings, matching the in-game control.
 - In tutor mode the whole `PlayLifecyclePanel` is replaced by
   `TutorAnalysisPanel`, so Resign, New game, New match, Home and Save match are
   all unreachable while the tutor is on. Pre-existing; not addressed by the save

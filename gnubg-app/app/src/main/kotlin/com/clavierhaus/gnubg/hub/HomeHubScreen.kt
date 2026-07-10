@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,28 +46,46 @@ fun HomeHubScreen(
             contentScale = ContentScale.Fit
         )
 
+        // The same gear as in-game (Icons.Filled.Settings), in the corner the eye
+        // already goes to. It replaces the "Options" entry: a settings gear is a
+        // convention, and the entry it displaces was the one item in the menu that
+        // was not a destination.
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = "Options",
+            tint = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 48.dp, top = 30.dp)
+                .size(36.dp)
+                .clickable(onClick = onOptions)
+        )
+
         BasicText(
             text = "GNU Backgammon",
             style = HomeTitleStyle,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 38.dp)
+                .padding(start = 48.dp, top = 96.dp)
         )
 
+        // padding, not offset. An offset composable keeps the layout slot its parent
+        // allocated; if it is pushed outside the parent's bounds it stops receiving
+        // pointer events, which is how the match-setup screen once grew a button that
+        // could be seen but not tapped. padding moves the slot itself, so the question
+        // does not arise.
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .offset(x = 64.dp)
+                .padding(start = 64.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
             Spacer(modifier = Modifier.height(22.dp))
-            // Second slot: the feature people still open XG Mobile for.
+            // Second: the feature people still open XG Mobile for.
             HomeHubEntry("Analyse Position", onAnalysePosition)
             Spacer(modifier = Modifier.height(22.dp))
-            // Third slot, now that it exists.
+            // Third, now that it exists.
             HomeHubEntry("Review Match", onReviewMatch)
-            Spacer(modifier = Modifier.height(22.dp))
-            HomeHubEntry("Options", onOptions)
         }
 
         BasicText(
