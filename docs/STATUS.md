@@ -26,7 +26,12 @@ three things missing from every Android backgammon app:
 
 1. **Set up an arbitrary position and have gnubg evaluate it.** Reported as the
    reason people still use XG Mobile. A competitor's developer has stated he
-   will not build it. -- **BUILT** (Analyse Position).
+   will not build it. -- **BUILT** (Analyse Position): paste an ID *or* set the
+   position up on the board itself ("Set up": place/erase checkers, tray tap
+   clears, score/cube/Crawford/on-roll editable). Dice set = chequer verdict
+   (ranked plays); no dice = CUBE verdict (GetCubeRecommendation's own words,
+   winning chances, no-double/take/pass equities) -- gnubg's desktop edit-mode
+   semantic.
 2. **Save the match file afterwards**, to review on a larger screen or catalogue.
    -- **BUILT.** "Save match" in the in-game panel writes gnubg's native `.sgf`
    through `CommandSaveMatch` and hands it to the Storage Access Framework, so
@@ -93,8 +98,13 @@ Work toward a first public release. All landed on the working branch:
   step through it. Navigation is gnubg's own `CommandNext` / `CommandPrevious`
   over its game record; the board is read-only (`viewModel = null`). This is
   feature [3].
-- **Analyse Position**: paste a GNU BG ID or an XGID; gnubg installs it via its
-  own `SetGNUbgID` and ranks the chequer plays with `FindnSaveBestMoves`. The
+- **Analyse Position**: paste a GNU BG ID or an XGID -- or build the position in
+  the on-board editor -- and gnubg installs it via its own `SetGNUbgID`. Dice
+  present: chequer plays ranked with `FindnSaveBestMoves`. No dice: the cube
+  verdict from `GeneralCubeDecisionE` + `FindCubeDecision`, worded by
+  `GetCubeRecommendation`. The editor encodes through gnubg's own `PositionID` +
+  `MatchIDFromMatchState` and installs through the same validated path as a
+  pasted ID. The
   match context (length, score, cube and owner, Crawford, who is on roll) is
   displayed every time, because a bare Position ID inherits whatever context the
   matchstate already held. This is feature [1] of the three requested.

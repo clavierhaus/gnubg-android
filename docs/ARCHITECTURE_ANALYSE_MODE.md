@@ -199,6 +199,16 @@ Every claim below was checked against the vendored, compiled sources.
 
 ### [1] Position entry -- fully supported
 
+**Outcome (2026-07-10).** Import-by-ID shipped first; the on-board editor closed
+the gap. Design cues and their sources: per-tap placement with an active tool is
+XG Mobile's proven gesture; tray-tap-to-clear is gnubg desktop's own edit-mode
+gesture, and answers the chief published complaint about XG's editor (emptying a
+board checker by checker); dice-absent-means-cube-decision is gnubg's edit-mode
+semantic, and is what finally wired cube_decision + GetCubeRecommendation into a
+screen. The editor computes nothing: gnubg encodes (PositionID,
+MatchIDFromMatchState) and gnubg validates (CheckPosition via the setGnubgId
+path).
+
 | Need | gnubg routine | Vendored? |
 |---|---|---|
 | Board from a Position ID | `PositionFromID(TanBoard, const char*)` (`positionid.c`) | yes, compiled |
