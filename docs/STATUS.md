@@ -134,10 +134,9 @@ Work toward a first public release. All landed on the working branch:
   engine's match. The screen warns in a caption; it should be a confirmation.
 - The hub's Options entry is gone; a gear icon in the top-left corner opens
   Settings, matching the in-game control.
-- In tutor mode the whole `PlayLifecyclePanel` is replaced by
-  `TutorAnalysisPanel`, so Resign, New game, New match, Home and Save match are
-  all unreachable while the tutor is on. Pre-existing; not addressed by the save
-  work.
+- In tutor mode `PlayLifecyclePanel` is replaced by `TutorAnalysisPanel`.
+  Home, New match and Save match are now rendered outside that branch and are
+  always present; Resign and New game remain unreachable while the tutor is on.
 - Release signing, Play Store readiness, broad device QA not done.
 
 ### Corrections to earlier editions of this document

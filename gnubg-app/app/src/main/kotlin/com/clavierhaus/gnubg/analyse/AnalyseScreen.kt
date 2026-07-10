@@ -575,7 +575,7 @@ fun AnalyseScreen(
                     ) { beginEdit() }
 
                     GameButton(
-                        label = "Back",
+                        label = "Home",
                         color = pal.uiButtonNeutral,
                         enabled = !busy
                     ) { onBackToHub() }

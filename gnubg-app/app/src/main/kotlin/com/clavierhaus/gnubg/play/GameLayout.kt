@@ -61,7 +61,8 @@ fun GameLayout(
             // Length is not forced behind the user's back: enabling the tutor
             // pins it to 1 visibly (see setTutorMode), and the setup screen
             // says why. startMatch simply honours what is shown.
-            onStart = { viewModel.startMatch(settings.matchLength) }
+            onStart = { viewModel.startMatch(settings.matchLength) },
+            onReturnToHub = onReturnToHub
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -167,12 +168,10 @@ fun GameLayout(
                                     Text(resultText, color = Color.White, fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold, maxLines = 1,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    GameButton("New Match", pal.uiActionRoll) { viewModel.newGame() }
-                                    if (onReturnToHub != null) {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        GameButton("Exit", pal.uiButtonNeutral) { onReturnToHub() }
-                                    }
+                                    // New match / Home live in the hoisted row below,
+                                    // the same place as in every other phase. "Exit" is
+                                    // gone: the action is Home, and it is called Home
+                                    // everywhere.
                                 }
                             }
                             gameState.phase == GamePhase.CUBE_OFFERED -> {
@@ -227,9 +226,30 @@ fun GameLayout(
                             } else {
                                 PlayLifecyclePanel(
                                     onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
-                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
-                                    onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
-                                    onReturnHome = onReturnToHub
+                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME }
+                                )
+                            }
+
+                            // The consistent pair, present in EVERY phase and both modes:
+                            // "New match" restarts with the same parameters, "Home" leaves
+                            // to the hub. They used to live inside PlayLifecyclePanel,
+                            // which the tutor panel and the game-over panel replace
+                            // wholesale -- so in tutor mode there was no way home at all.
+                            // Mid-game the restart asks first; at game over there is
+                            // nothing left to lose and it just starts.
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                LifecycleButton("New match", pal.uiChipOff, onClick = {
+                                    if (gameState.phase == GamePhase.GAME_OVER)
+                                        viewModel.commandNewMatch(settings.matchLength)
+                                    else
+                                        pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH
+                                })
+                                LifecycleButton(
+                                    label = "Home",
+                                    color = pal.uiButtonNeutral,
+                                    onClick = { onReturnToHub?.invoke() },
+                                    enabled = onReturnToHub != null
                                 )
                             }
 
@@ -311,9 +331,7 @@ private enum class PlayLifecycleAction {
 @Composable
 private fun PlayLifecyclePanel(
     onResign: () -> Unit,
-    onNewGame: () -> Unit,
-    onNewMatch: () -> Unit,
-    onReturnHome: (() -> Unit)?
+    onNewGame: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -330,16 +348,6 @@ private fun PlayLifecyclePanel(
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             LifecycleButton("Resign", pal.uiActionNegative, onResign)
             LifecycleButton("New game", pal.uiActionRoll, onNewGame)
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LifecycleButton("New match", pal.uiChipOff, onNewMatch)
-            LifecycleButton(
-                label = "Home",
-                color = pal.uiButtonNeutral,
-                onClick = { onReturnHome?.invoke() },
-                enabled = onReturnHome != null
-            )
         }
 
     }
@@ -485,7 +493,8 @@ private fun MatchSetupScreen(
     onSelectLength: (Int) -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
     onToggleTutor: (Boolean) -> Unit,
-    onStart: () -> Unit
+    onStart: () -> Unit,
+    onReturnToHub: (() -> Unit)? = null
 ) {
     val pal = LocalBoardPalette.current
     Box(
@@ -494,6 +503,13 @@ private fun MatchSetupScreen(
             .background(pal.uiPanelDeep),
         contentAlignment = Alignment.Center
     ) {
+        // Aligned child: does not touch the weighted setup Column, which was
+        // hard-won (a scroll modifier once broke its weights entirely).
+        if (onReturnToHub != null) {
+            Box(modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
+                GameButton("Home", pal.uiButtonNeutral) { onReturnToHub() }
+            }
+        }
         // The Column owns the full height, so weighted spacers can distribute
         // what is left over after the controls have measured themselves. It must
         // NOT scroll: a scrollable Column measures with unbounded height, which
