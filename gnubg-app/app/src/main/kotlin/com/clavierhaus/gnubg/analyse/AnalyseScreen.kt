@@ -20,6 +20,9 @@ import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.play.BackgammonBoard
+import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_ENGINE
+import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_HUMAN
+import com.clavierhaus.gnubg.play.EDIT_ZONE_TRAY
 import com.clavierhaus.gnubg.play.BoardPalettes
 import com.clavierhaus.gnubg.play.GameButton
 import com.clavierhaus.gnubg.play.LocalBoardPalette
@@ -62,10 +65,19 @@ private class AnalyseResult(
     val crawford: Boolean,
     val onRoll: Int,
     val candidates: List<Candidate>,
-    val noDice: Boolean
+    val noDice: Boolean,
+    // The cube verdict, present when the position has no dice. gnubg's own
+    // semantic, shared with its desktop edit mode: dice set = a chequer
+    // decision, no dice = a cube decision.
+    val cubeText: String? = null,        // GetCubeRecommendation, gnubg's words
+    val cubeWin: FloatArray? = null,     // aarOutput[0][0..6] for the player on roll
+    val cubeEq: FloatArray? = null       // arDouble: optimal, no-double, take, drop
 )
 
 private const val MAX_CANDIDATES = 8
+
+private fun pct(f: Float): String = String.format("%.1f%%", f * 100f)
+private fun eq(f: Float): String = String.format("%+.3f", f)
 
 /* gamestate, in gnubg's declared order (lib/gnubg-types.h):
  * GAME_NONE, GAME_PLAYING, GAME_OVER, GAME_RESIGNED, GAME_DROP */
@@ -117,6 +129,21 @@ fun AnalyseScreen(
             emptyList()
         }
 
+        // No dice = a cube decision. cubeDecision reads cubeinfo from the LIVE
+        // matchstate (GetMatchStateCubeInfo(&ci, &ms)), which is exactly the
+        // state setGnubgId just installed, and takes the on-roll-frame board.
+        var cubeText: String? = null
+        var cubeWin: FloatArray? = null
+        var cubeEq: FloatArray? = null
+        if (d0 == 0) {
+            val cd = Engine.cubeDecision(raw)
+            if (cd != null && cd.size >= 19) {
+                cubeText = Engine.cubeRecommendation(cd[18])
+                cubeWin = FloatArray(7) { i -> Float.fromBits(cd[i]) }
+                cubeEq = FloatArray(4) { i -> Float.fromBits(cd[14 + i]) }
+            }
+        }
+
         AnalyseResult(
             board = display,
             dice = if (d0 > 0 && d1 > 0) Pair(d0, d1) else null,
@@ -127,7 +154,10 @@ fun AnalyseScreen(
             crawford = st[8] != 0,
             onRoll = st[2],
             candidates = cands,
-            noDice = n == 0
+            noDice = n == 0,
+            cubeText = cubeText,
+            cubeWin = cubeWin,
+            cubeEq = cubeEq
         )
     }
 
@@ -197,6 +227,127 @@ fun AnalyseScreen(
         }
     }
 
+    // ------------------------- Position editor -------------------------
+    //
+    // Pure UI bookkeeping. Nothing here decides backgammon: the edited state is
+    // encoded by gnubg (Engine.idsFromState -> PositionID + MatchIDFromMatchState)
+    // and installed through the same setGnubgId path a pasted ID takes, where
+    // gnubg's own CheckPosition validates it. The editor only keeps taps from
+    // producing what gnubg would refuse (a 16th checker, both colours on a point).
+    var editing by remember { mutableStateOf(false) }
+    var editBoard by remember { mutableStateOf(IntArray(50)) }
+    var editTool by remember { mutableStateOf(0) }        // 0 add white, 1 add black, 2 erase
+    var editD0 by remember { mutableStateOf(0) }          // 0 = no dice = cube decision
+    var editD1 by remember { mutableStateOf(0) }
+    var editTurn by remember { mutableStateOf(0) }        // 0 you, 1 GNU
+    var editScoreH by remember { mutableStateOf(0) }
+    var editScoreE by remember { mutableStateOf(0) }
+    var editMatchTo by remember { mutableStateOf(7) }     // 0 = money game
+    var editCube by remember { mutableStateOf(1) }
+    var editCubeOwner by remember { mutableStateOf(-1) }  // -1 centred, 0 you, 1 GNU
+    var editCrawford by remember { mutableStateOf(false) }
+
+    fun beginEdit() {
+        val r = result
+        if (r != null) {
+            // Start from what is on the screen.
+            editBoard = r.board.copyOf()
+            editD0 = r.dice?.first ?: 0
+            editD1 = r.dice?.second ?: 0
+            editTurn = r.onRoll
+            editScoreH = r.score.first
+            editScoreE = r.score.second
+            editMatchTo = r.matchTo
+            editCube = r.cube
+            editCubeOwner = r.cubeOwner
+            editCrawford = r.crawford
+        } else {
+            // The standard opening position, human frame. Editing usually starts
+            // from a real board, not an empty one; one tray tap clears it.
+            // gnubg's TanBoard is per-side, each half indexed from its OWN
+            // direction, so the opening position is the same pattern in both
+            // halves: 5 on the 6-point (index 5), 3 on the 8 (7), 5 on the 13
+            // (12), 2 on the 24 (23).
+            val b = IntArray(50)
+            for ((pt, n) in listOf(5 to 5, 7 to 3, 12 to 5, 23 to 2)) {
+                b[25 + pt] = n   // human half
+                b[pt] = n        // engine half
+            }
+            editBoard = b
+            editD0 = 0; editD1 = 0
+            editTurn = 0
+            editScoreH = 0; editScoreE = 0
+            editMatchTo = 7
+            editCube = 1; editCubeOwner = -1
+            editCrawford = false
+        }
+        status = null
+        askSwap = false
+        editing = true
+    }
+
+    fun editTap(zone: Int) {
+        val b = editBoard.copyOf()
+        val humanTotal = (0..24).sumOf { b[25 + it] }
+        val engineTotal = (0..24).sumOf { b[it] }
+        when (zone) {
+            EDIT_ZONE_TRAY -> {
+                // gnubg's own edit-mode gesture: tapping a tray clears the board.
+                editBoard = IntArray(50)
+                return
+            }
+            EDIT_ZONE_BAR_HUMAN -> when (editTool) {
+                2 -> if (b[49] > 0) b[49]--
+                else -> if (humanTotal < 15) b[49]++
+            }
+            EDIT_ZONE_BAR_ENGINE -> when (editTool) {
+                2 -> if (b[24] > 0) b[24]--
+                else -> if (engineTotal < 15) b[24]++
+            }
+            in 1..24 -> {
+                val h = 25 + (zone - 1)          // human checkers on this point
+                val e = 24 - zone                // engine frame: its point 25-zone
+                when (editTool) {
+                    0 -> {                        // add white (human)
+                        if (b[e] > 0) { b[e] = 0; b[h] = 1 }   // an editor replaces
+                        else if (humanTotal < 15) b[h]++
+                    }
+                    1 -> {                        // add black (engine)
+                        if (b[h] > 0) { b[h] = 0; b[e] = 1 }
+                        else if (engineTotal < 15) b[e]++
+                    }
+                    else -> {                     // erase whichever occupies
+                        if (b[h] > 0) b[h]-- else if (b[e] > 0) b[e]--
+                    }
+                }
+            }
+            else -> return
+        }
+        editBoard = b
+    }
+
+    fun evaluateEdit() {
+        if (busy) return
+        busy = true
+        scope.launch {
+            val ids = withContext(Dispatchers.Default) {
+                Engine.idsFromState(
+                    editBoard, editD0, editD1, editTurn,
+                    editScoreH, editScoreE, editMatchTo,
+                    editCube, editCubeOwner, if (editCrawford) 1 else 0
+                )
+            }
+            busy = false
+            if (ids == null) {
+                status = "gnubg could not encode this position."
+                return@launch
+            }
+            idText = ids       // visible and copyable, like a pasted one
+            editing = false
+            applyId()          // the same install + validation path as pasting
+        }
+    }
+
     CompositionLocalProvider(LocalBoardPalette provides palette) {
         val pal = LocalBoardPalette.current
         Row(
@@ -212,9 +363,25 @@ fun AnalyseScreen(
                 contentAlignment = Alignment.Center
             ) {
                 val r = result
-                if (r == null) {
+                if (editing) {
+                    BackgammonBoard(
+                        settings = settings,
+                        gameState = BoardState(
+                            board = editBoard,
+                            dice = if (editD0 > 0 && editD1 > 0) Pair(editD0, editD1) else null,
+                            matchScore = intArrayOf(editScoreH, editScoreE),
+                            matchLength = editMatchTo,
+                            cubeValue = editCube,
+                            cubeOwner = editCubeOwner,
+                            turn = editTurn
+                        ),
+                        viewModel = null,
+                        tutorMode = false,
+                        onEditTap = { zone -> editTap(zone) }
+                    )
+                } else if (r == null) {
                     Text(
-                        "Paste a position to analyse.",
+                        "Paste a position to analyse, or set one up.",
                         color = pal.uiTextSecondary,
                         fontSize = 16.sp
                     )
@@ -250,6 +417,111 @@ fun AnalyseScreen(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
+                if (editing) {
+                    Text(
+                        "Tap a point to place checkers; the bar works the same way. " +
+                            "Tapping the bear-off tray clears the board.",
+                        color = pal.uiTextSecondary,
+                        fontSize = 13.sp
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GameButton("White", if (editTool == 0) pal.uiChipOn else pal.uiChipOff) { editTool = 0 }
+                        GameButton("Black", if (editTool == 1) pal.uiChipOn else pal.uiChipOff) { editTool = 1 }
+                        GameButton("Erase", if (editTool == 2) pal.uiChipOn else pal.uiChipOff) { editTool = 2 }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("On roll", color = pal.uiTextSecondary, fontSize = 13.sp)
+                        GameButton("You", if (editTurn == 0) pal.uiChipOn else pal.uiChipOff) { editTurn = 0 }
+                        GameButton("GNU", if (editTurn == 1) pal.uiChipOn else pal.uiChipOff) { editTurn = 1 }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Dice", color = pal.uiTextSecondary, fontSize = 13.sp)
+                        // Tap to cycle: -, 1..6. No dice is a CUBE decision -- the
+                        // same rule as gnubg's desktop edit mode.
+                        GameButton(if (editD0 == 0) "-" else "" + editD0, pal.uiChipOff) {
+                            editD0 = (editD0 + 1) % 7
+                            // Dice come in pairs or not at all: (1,0) is not a roll.
+                            editD1 = if (editD0 == 0) 0 else if (editD1 == 0) editD0 else editD1
+                        }
+                        GameButton(if (editD1 == 0) "-" else "" + editD1, pal.uiChipOff) {
+                            if (editD0 > 0) editD1 = if (editD1 >= 6) 1 else editD1 + 1
+                        }
+                        Text(
+                            if (editD0 == 0) "no dice: cube decision" else "chequer decision",
+                            color = pal.uiTextDisabled, fontSize = 12.sp
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Match to", color = pal.uiTextSecondary, fontSize = 13.sp)
+                        GameButton("-", pal.uiButtonNeutral, editMatchTo > 0) {
+                            editMatchTo--
+                            if (editMatchTo == 0) editCrawford = false
+                        }
+                        Text(
+                            if (editMatchTo == 0) "money" else "" + editMatchTo,
+                            color = Color.White, fontSize = 14.sp
+                        )
+                        GameButton("+", pal.uiButtonNeutral, editMatchTo < 25) { editMatchTo++ }
+                        if (editMatchTo > 0) {
+                            GameButton(
+                                "Crawford",
+                                if (editCrawford) pal.uiChipOn else pal.uiChipOff
+                            ) { editCrawford = !editCrawford }
+                        }
+                    }
+
+                    if (editMatchTo > 0) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Score you", color = pal.uiTextSecondary, fontSize = 13.sp)
+                            GameButton("-", pal.uiButtonNeutral, editScoreH > 0) { editScoreH-- }
+                            Text("" + editScoreH, color = Color.White, fontSize = 14.sp)
+                            GameButton("+", pal.uiButtonNeutral, editScoreH < editMatchTo - 1) { editScoreH++ }
+                            Text("GNU", color = pal.uiTextSecondary, fontSize = 13.sp)
+                            GameButton("-", pal.uiButtonNeutral, editScoreE > 0) { editScoreE-- }
+                            Text("" + editScoreE, color = Color.White, fontSize = 14.sp)
+                            GameButton("+", pal.uiButtonNeutral, editScoreE < editMatchTo - 1) { editScoreE++ }
+                        }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Cube", color = pal.uiTextSecondary, fontSize = 13.sp)
+                        GameButton("" + editCube, pal.uiChipOff) {
+                            editCube = if (editCube >= 64) 1 else editCube * 2
+                            if (editCube == 1) editCubeOwner = -1
+                        }
+                        GameButton("Centred", if (editCubeOwner == -1) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = -1 }
+                        GameButton("You", if (editCubeOwner == 0) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = 0 }
+                        GameButton("GNU", if (editCubeOwner == 1) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = 1 }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        GameButton(
+                            label = if (busy) "Working..." else "Evaluate",
+                            color = pal.uiActionPositive,
+                            enabled = !busy
+                        ) { evaluateEdit() }
+                        GameButton("Cancel", pal.uiButtonNeutral, !busy) { editing = false }
+                    }
+                } else {
                 Text(
                     "Paste a GNU BG ID or an XGID. gnubg decides which it is.",
                     color = pal.uiTextSecondary,
@@ -300,6 +572,12 @@ fun AnalyseScreen(
                     }
 
                     GameButton(
+                        label = "Set up",
+                        color = pal.uiChipOff,
+                        enabled = !busy
+                    ) { beginEdit() }
+
+                    GameButton(
                         label = "Back",
                         color = pal.uiButtonNeutral,
                         enabled = !busy
@@ -328,13 +606,40 @@ fun AnalyseScreen(
                     MatchContext(r)
 
                     Text(
-                        "gnubg's candidates",
+                        if (r.cubeText != null) "gnubg's verdict" else "gnubg's candidates",
                         color = pal.uiTextSecondary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
 
-                    if (r.noDice) {
+                    if (r.cubeText != null) {
+                        // No dice = a cube decision, and this is gnubg's verdict on
+                        // it: GetCubeRecommendation's own words, the winning chances
+                        // behind them, and the three equities it compared.
+                        Text(
+                            r.cubeText,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        r.cubeWin?.let { w ->
+                            Text(
+                                "Win " + pct(w[0]) + "  (G " + pct(w[1]) + ", BG " + pct(w[2]) + ")",
+                                color = pal.uiTextSecondary, fontSize = 13.sp
+                            )
+                            Text(
+                                "Lose gammon " + pct(w[3]) + ", backgammon " + pct(w[4]),
+                                color = pal.uiTextSecondary, fontSize = 13.sp
+                            )
+                        }
+                        r.cubeEq?.let { e ->
+                            Text(
+                                "No double " + eq(e[1]) + "   Double/take " + eq(e[2]) +
+                                    "   Double/pass " + eq(e[3]),
+                                color = pal.uiTextSecondary, fontSize = 13.sp
+                            )
+                        }
+                    } else if (r.noDice) {
                         Text(
                             "No dice in this position, so there is no chequer play to rank.",
                             color = pal.uiTextDisabled,
@@ -360,6 +665,7 @@ fun AnalyseScreen(
                         }
                     }
                 }
+                } // end !editing
             }
         }
     }

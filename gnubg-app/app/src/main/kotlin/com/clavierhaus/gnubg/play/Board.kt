@@ -58,6 +58,11 @@ private const val HALF_W  = (RIGHT_X - LEFT_X - BAR_W) / 2f
 private const val PT_W    = HALF_W / 6f
 private const val DIE_W   = PT_W * 0.8f
 
+// Position-editor zones (BackgammonBoard.onEditTap).
+const val EDIT_ZONE_BAR_HUMAN  = 0
+const val EDIT_ZONE_BAR_ENGINE = 25
+const val EDIT_ZONE_TRAY       = -2
+
 /**
  * Every rectangle on the board, computed once from the canvas size, in pixels.
  *
@@ -134,6 +139,13 @@ private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, private val 
 
     /** Lower half of the bar: where a human checker sits waiting to re-enter. */
     val barBottomRect = Rect(ux(MID_X - BAR_W / 2f), boardCY, ux(MID_X + BAR_W / 2f), uy(TOT_H - BRD_H))
+
+    /** Upper half of the bar (the engine's side). Used by the position editor. */
+    val barTopRect = Rect(ux(MID_X - BAR_W / 2f), uy(BRD_H), ux(MID_X + BAR_W / 2f), boardCY)
+
+    /** The bear-off tray column on the right. In edit mode, tapping it clears the
+     *  board -- gnubg's own edit-mode gesture (clicking a tray clears). */
+    val trayRect = Rect(ux(RIGHT_X), uy(BRD_H), ux(TOT_W - BRD_W), uy(TOT_H - BRD_H))
 
     // Checkers. A piece, but one that must also fit inside a stretched half-board:
     // the radius is the smaller of what the point width allows and what the half
@@ -254,7 +266,14 @@ fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
     viewModel: GameViewModel? = null,
-    tutorMode: Boolean = false
+    tutorMode: Boolean = false,
+    /**
+     * Position-editor hook. Non-null puts the board in EDIT: every tap is
+     * reported as a zone and nothing reaches the game. Zones: 1..24 a point,
+     * EDIT_ZONE_BAR_HUMAN / EDIT_ZONE_BAR_ENGINE the bar halves,
+     * EDIT_ZONE_TRAY the bear-off column (gnubg's clear-board gesture).
+     */
+    onEditTap: ((zone: Int) -> Unit)? = null
 ) {
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -269,6 +288,7 @@ fun BackgammonBoard(
         .fillMaxSize()
         .pointerInput(
             viewModel,
+            onEditTap,
             gameState.phase,
             gameState.turn,
             gameState.fDoubled,
@@ -288,12 +308,27 @@ fun BackgammonBoard(
                     }
                 },
                 onLongPress = { offset ->
+                    if (onEditTap != null) return@detectTapGestures
                     val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
                                       gameState.cubeOwner, diceCountOf(gameState))
                     highlightedLandingPoints = landingPointsForSource(gameState, g.pointAt(offset))
                 },
                 onTap = { offset ->
                     highlightedLandingPoints = emptySet()
+
+                // EDIT: the editor owns every tap. Zones only; no game logic.
+                if (onEditTap != null) {
+                    val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                      gameState.cubeOwner, diceCountOf(gameState))
+                    val zone = when {
+                        g.trayRect.contains(offset)      -> EDIT_ZONE_TRAY
+                        g.barBottomRect.contains(offset) -> EDIT_ZONE_BAR_HUMAN
+                        g.barTopRect.contains(offset)    -> EDIT_ZONE_BAR_ENGINE
+                        else -> g.pointAt(offset)
+                    }
+                    if (zone != -1) onEditTap.invoke(zone)
+                    return@detectTapGestures
+                }
                 if (viewModel == null) return@detectTapGestures
 
                 // One geometry. The rectangles below are the rectangles drawn.
@@ -355,6 +390,7 @@ fun BackgammonBoard(
         }
         .pointerInput(
             viewModel,
+            onEditTap,
             gameState.phase,
             gameState.turn,
             gameState.legalMoves,
@@ -362,6 +398,7 @@ fun BackgammonBoard(
         ) {
             detectDragGestures(
                 onDragStart = { offset ->
+                    if (onEditTap != null) return@detectDragGestures
                     if (viewModel == null) return@detectDragGestures
                     if (gameState.phase != GamePhase.HUMAN_MOVING) return@detectDragGestures
                     val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
