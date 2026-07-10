@@ -71,7 +71,7 @@ object BoardPalettes {
         uiTextSecondary  = Color(0xFFB3C9F0),
         uiTextDisabled   = Color(0xFF8FA8D0),
         uiButtonNeutral  = Color(0xFF243B68),
-        uiActionRoll     = Color(0xFF1565C0),
+        uiActionRoll     = Color(0xFF42A5F5),  // Blue 400 -- Forest uses Green 400
         uiActionPositive = Color(0xFF2E7D32),
         uiActionNegative = Color(0xFF8B1A1A),
     )

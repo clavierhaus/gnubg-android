@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,6 +35,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         Thread(r, "gnubg-engine-thread")
     }.asCoroutineDispatcher()
     private val actionInProgress = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Write the match gnubg currently holds to [file], as gnubg's native SGF.
+     * Returns true only if a non-empty file resulted.
+     *
+     * PORT: CommandSaveMatch (sgf.c:2365), reached via gnubg_mobile_save_match.
+     * Three of its properties dictate how it must be called, all recorded in
+     * docs/TECHNICAL-NOTES.md:
+     *
+     *  - It begins with NextToken(&sz), which splits the path on whitespace, so a
+     *    path containing a space is silently truncated. The caller must pass a
+     *    space-free path; this method refuses one that is not.
+     *  - It returns void, and FACADE_FILE_OP returns 1 unconditionally, so
+     *    Engine.saveMatch()'s Boolean says only that the call was made. Success is
+     *    established here, by the file existing and being non-empty.
+     *  - It refuses when plGame is NULL ("No game in progress"), printing to the
+     *    log. That surfaces here as a false return, not an exception.
+     *
+     * gnubg writes the whole match -- every game so far -- not just the current
+     * game, so this is meaningful at any point once a game has started.
+     */
+    suspend fun saveMatchToFile(file: java.io.File): Boolean = withContext(engineThread) {
+        if (file.absolutePath.any { it.isWhitespace() }) return@withContext false
+        if (file.exists() && !file.delete()) return@withContext false
+        Engine.saveMatch(file.absolutePath)
+        file.exists() && file.length() > 0L
+    }
 
     init {
         viewModelScope.launch(engineThread) {
@@ -91,6 +119,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * sub-move clamps dest to -1 (die not recoverable from the list), so we
      * resolve it via the engine -- the remaining die that applySubMove accepts
      * from that source (facade LegalMove gate). No die is invented here.
+     */
+    /**
+     * Die faces for which gnubg lists no legal play.
+     *
+     * The bear-off branch is NOT a heuristic that could be replaced by
+     * `src - dest`. gnubg clamps every negative destination to -1 in SaveMoves
+     * (eval.c: `pm->anMove[i] = anMoves[i] > -1 ? anMoves[i] : -1`), so -1 means
+     * "off" and carries no information about which die was used: bearing off
+     * point 1 with a 1 and point 3 with a 6 both store (src, -1). The die must be
+     * recovered by asking gnubg -- Engine.applySubMove is LegalMove -- against
+     * the board as it stands at that sub-move, which is why the working board is
+     * replayed.
+     *
+     * A previous version of this file replaced all of that with
+     * `playable.add(src - dest)`, on the stated grounds that GenerateMovesSub
+     * writes `i - anRoll`. It does; SaveMoves then clamps it. That change made
+     * bear-offs report the wrong die, and the same false premise, carried into
+     * tapSource, made a legal bear-off with a 6 impossible to play.
      */
     private fun unplayableDiceFor(board: IntArray, moves: IntArray, remaining: List<Int>): Set<Int> {
         if (remaining.isEmpty()) return emptySet()
@@ -203,6 +249,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             fDoubled       = fDoubled,
             canDouble      = canDouble,
             unplayableDice = unplayableDice,
+            resignation    = Engine.getResignation(),
             tutorAnalysis  = lastTutorAnalysis,
             analysisDetail = lastAnalysisDetail
         )
@@ -247,9 +294,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Accept GNU's resignation. PORT: CommandAgree. The game ends; gnubg builds
+     * the MOVE_RESIGN record and awards the points.
+     */
+    fun acceptResignation() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandAgree()
+            if (Engine.getMatchStatus() >= 2) {
+                val gr = Engine.getGameResult()
+                readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
+            } else {
+                readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+            }
+        }
+    }
+
+    /**
+     * Refuse it and play on. PORT: CommandDecline. gnubg records
+     * ms.fResignationDeclined so GNU will not offer the same level again.
+     */
+    fun declineResignation() {
+        viewModelScope.launch(engineThread) {
+            Engine.commandDecline()
+            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+        }
+    }
+
     fun rollDice() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
         viewModelScope.launch(engineThread) {
+            // gnubg refuses to roll while a resignation is unanswered. Surface it
+            // rather than calling CommandRoll and re-entering WAITING_FOR_ROLL,
+            // which looks exactly like a stuck game.
+            if (Engine.getResignation() > 0 && Engine.getMatchTurn() == 0) {
+                readMatchState(phase = GamePhase.RESIGNATION_OFFERED)
+                return@launch
+            }
             Engine.rollDice()
             val cubeAfter = Engine.getMatchCubeInfo()
             if (cubeAfter[0] == 1 && Engine.getMatchTurn() == 0) {
@@ -829,6 +910,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val turn = Engine.getMatchTurn()
 
         val phase = when {
+            // gnubg refuses CommandRoll while a resignation is on the table
+            // ("Please resolve the resignation first", play.c:4048), so nothing
+            // else can be offered until this is answered.
+            Engine.getResignation() > 0 && turn == 0 -> GamePhase.RESIGNATION_OFFERED
             cubeInfo[0] == 1 && turn == 0 -> GamePhase.CUBE_OFFERED
             dice[0] > 0 && turn == 0 -> GamePhase.HUMAN_MOVING
             else -> GamePhase.WAITING_FOR_ROLL
@@ -914,19 +999,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun commandDecline() {
-        viewModelScope.launch(engineThread) {
-            Engine.commandDecline()
-            refreshFromEngineAfterControl()
-        }
-    }
-
-    fun commandAgree() {
-        viewModelScope.launch(engineThread) {
-            Engine.commandAgree()
-            refreshFromEngineAfterControl()
-        }
-    }
+    // commandAgree() / commandDecline() wrappers were removed here. They had no
+    // caller, and they routed through refreshFromEngineAfterControl(), which has
+    // no GAME_OVER branch -- so accepting a resignation through them would have
+    // left the phase at WAITING_FOR_ROLL after gnubg ended the game. Use
+    // acceptResignation() / declineResignation(), which read gnubg's match status.
 
     fun commandRedouble() {
         viewModelScope.launch(engineThread) {
@@ -1043,8 +1120,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun setTutorMode(on: Boolean) {
-        // Local-only until GNUbg Settings command timing is made lifecycle-safe.
-        _settings.value = _settings.value.copy(tutorMode = on)
+        // The chequer-play tutor is a single game, and that is a game fact, not
+        // an app convention: at a 1-point match gnubg_can_double (play.c:156)
+        // already refuses -- nCube >= nMatchTo - score -- because you cannot
+        // double past the match. So the tutored game has no cube decisions to
+        // comment on, which is exactly the intent (cube tutoring needs a
+        // different interaction and does not exist yet).
+        //
+        // Pin the length in the same copy() so the state can never be tutor-on
+        // with a 7-point length. The setup screen shows the pinned value and
+        // says why, rather than the old behaviour of silently substituting 1
+        // at startMatch time.
+        _settings.value =
+            if (on) _settings.value.copy(tutorMode = true, matchLength = 1)
+            else _settings.value.copy(tutorMode = false)
     }
     fun setHint(on: Boolean) {
         // Local-only until GNUbg Settings command timing is made lifecycle-safe.

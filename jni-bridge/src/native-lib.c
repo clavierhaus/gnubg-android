@@ -880,3 +880,122 @@ Java_com_clavierhaus_gnubg_Engine_runCommand(JNIEnv *env, jobject thiz, jstring 
     return JNI_TRUE;
 }
 
+/* ---------------------------------------------------------------------------
+ * Position entry (Analyse Position). Marshalling only; all behaviour lives in
+ * the facade, which wraps gnubg's SetGNUbgID / CommandSwapPlayers / PositionID
+ * / MatchIDFromMatchState.
+ * ------------------------------------------------------------------------- */
+
+/* Engine.setGnubgId(id): Int -- gnubg's own return code, passed through.
+ * 0 installed, 1 no valid IDs found, 2 installed but the player on roll is on
+ * top (the UI must offer a swap), -1 bad argument. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_setGnubgId(JNIEnv *env, jobject thiz, jstring jid) {
+    (void) thiz;
+    const char *id;
+    jint rc;
+    if (!jid) return (jint) -1;
+    id = (*env)->GetStringUTFChars(env, jid, NULL);
+    if (!id) return (jint) -1;
+    rc = (jint) gnubg_mobile_set_gnubg_id(id);
+    (*env)->ReleaseStringUTFChars(env, jid, id);
+    return rc;
+}
+
+/* Engine.swapPlayers(): Int -- the user's yes to the swap offered on rc == 2. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_swapPlayers(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_swap_players();
+}
+
+/* Engine.currentIds(): Array<String>? -- [0] = Position ID, [1] = Match ID.
+ * Both are gnubg's own renderings of the current state. L_POSITIONID is 14 and
+ * L_MATCHID is 12; the buffers are generous. Returns null on failure. */
+JNIEXPORT jobjectArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_currentIds(JNIEnv *env, jobject thiz) {
+    (void) thiz;
+    char pos[64] = {0};
+    char match[64] = {0};
+    jclass strCls;
+    jobjectArray arr;
+
+    if (gnubg_mobile_current_ids(pos, (int) sizeof(pos),
+                                 match, (int) sizeof(match)) < 0)
+        return NULL;
+
+    strCls = (*env)->FindClass(env, "java/lang/String");
+    if (!strCls) return NULL;
+    arr = (*env)->NewObjectArray(env, 2, strCls, NULL);
+    if (!arr) return NULL;
+    (*env)->SetObjectArrayElement(env, arr, 0, (*env)->NewStringUTF(env, pos));
+    (*env)->SetObjectArrayElement(env, arr, 1, (*env)->NewStringUTF(env, match));
+    return arr;
+}
+
+/* Engine.hintMoves(maxN, outEquity, outMoves): Int
+ * Marshalling only. outEquity must hold maxN floats, outMoves maxN*8 ints.
+ * Returns the number of candidates written, 0 when the position has no dice,
+ * or -1 on error. gnubg ranks them; the order is its own. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_hintMoves(JNIEnv *env, jobject thiz, jint maxN,
+                                           jfloatArray jEquity, jintArray jMoves) {
+    (void) thiz;
+    float *eq;
+    int *mv;
+    jint *jbuf;
+    int n, i;
+
+    if (maxN < 1 || !jEquity || !jMoves) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jEquity) < maxN) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jMoves) < maxN * 8) return (jint) -1;
+
+    eq = (float *) malloc(sizeof(float) * (size_t) maxN);
+    mv = (int *) malloc(sizeof(int) * (size_t) maxN * 8);
+    if (!eq || !mv) { free(eq); free(mv); return (jint) -1; }
+
+    n = gnubg_mobile_hint_moves((int) maxN, eq, mv);
+
+    if (n > 0) {
+        (*env)->SetFloatArrayRegion(env, jEquity, 0, n, (const jfloat *) eq);
+        jbuf = (jint *) malloc(sizeof(jint) * (size_t) n * 8);
+        if (jbuf) {
+            for (i = 0; i < n * 8; i++) jbuf[i] = (jint) mv[i];
+            (*env)->SetIntArrayRegion(env, jMoves, 0, n * 8, jbuf);
+            free(jbuf);
+        } else {
+            n = -1;
+        }
+    }
+
+    free(eq);
+    free(mv);
+    return (jint) n;
+}
+
+/* Engine.getMatchState(): IntArray(13) -- one consistent snapshot under one
+ * lock, rather than four separate getters that can tear. Marshalling only.
+ * Layout is the facade's: [0] gs, [1] fTurn, [2] fMove, [3] dice0, [4] dice1,
+ * [5] fDoubled, [6] fCubeOwner, [7] nCube, [8] fCrawford, [9] fCubeUse,
+ * [10] score0, [11] score1, [12] nMatchTo. */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getMatchState(JNIEnv *env, jobject thiz) {
+    (void) thiz;
+    int st[13];
+    jint buf[13];
+    int i;
+    jintArray result;
+    gnubg_mobile_get_match_state(st);
+    for (i = 0; i < 13; i++) buf[i] = (jint) st[i];
+    result = (*env)->NewIntArray(env, 13);
+    if (!result) return NULL;
+    (*env)->SetIntArrayRegion(env, result, 0, 13, buf);
+    return result;
+}
+
+/* Resignation. Marshalling only. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_getResignation(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_get_resignation();
+}

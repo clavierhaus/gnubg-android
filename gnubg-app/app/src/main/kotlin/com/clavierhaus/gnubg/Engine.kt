@@ -58,6 +58,12 @@ object Engine {
     external fun commandDouble()
     external fun commandTake()
     external fun commandDrop()
+
+    // Resignation offered BY GNU: 0 none, 1 normal, 2 gammon, 3 backgammon.
+    // GNU offers it itself when the position is lost (play.c:1335). gnubg then
+    // refuses every roll until the human answers.
+    // Answered with the EXISTING commandAgree() / commandDecline() above.
+    external fun getResignation(): Int
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
 
@@ -102,6 +108,28 @@ object Engine {
 
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
+
+    // Position entry (Analyse Position). Wraps gnubg's SetGNUbgID: accepts a
+    // GNU BG ID ("PositionID:MatchID") or an XGID. Returns gnubg's own code:
+    // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is
+    // on top -- ask the user, then call swapPlayers() only if they agree.
+    external fun setGnubgId(id: String): Int
+    external fun swapPlayers(): Int
+
+    // gnubg's renderings of the current state: [0] Position ID, [1] Match ID.
+    external fun currentIds(): Array<String>?
+
+    // One consistent snapshot of gnubg's matchstate, taken under a single lock:
+    // [0] gs, [1] fTurn, [2] fMove, [3] dice0, [4] dice1, [5] fDoubled,
+    // [6] fCubeOwner, [7] nCube, [8] fCrawford, [9] fCubeUse, [10] score0,
+    // [11] score1, [12] nMatchTo.
+    external fun getMatchState(): IntArray
+
+    // Ranked chequer-play candidates for the position currently loaded, best
+    // first, as gnubg orders them. outEquity holds maxN floats, outMoves maxN*8
+    // ints (gnubg anMove: four src/dst pairs). Returns the count written, 0 when
+    // the position has no dice, -1 on error.
+    external fun hintMoves(maxN: Int, outEquity: FloatArray, outMoves: IntArray): Int
 
     // Restricted GNUbg command bridge for translated Android settings.
     external fun runCommand(command: String): Boolean

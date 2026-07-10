@@ -8,6 +8,14 @@
 #include "config.h"
 #include "eval.h"
 #include "positionid.h"
+/* NOTE: jni-bridge/matchid.h is an empty stub (it exists so rollout.c can
+ * include matchid.h without pulling in symbols), and jni-bridge/ precedes
+ * engine-core/ on the include path -- so a plain #include "matchid.h" here
+ * silently resolves to the stub and MatchIDFromMatchState goes undeclared.
+ * Reach the real header explicitly. Do NOT reorder the include path: six
+ * other headers in jni-bridge/ shadow GTK-dependent engine headers on
+ * purpose. */
+#include "../../engine-core/matchid.h"
 #include "backgammon.h"
 
 /* Tier 1/2 engine entry points (declared in the engine headers above; listed
@@ -271,13 +279,71 @@ int gnubg_mobile_can_double(void) {
     return r;
 }
 
+/* Why CommandRoll is about to refuse, if it is.
+ *
+ * CommandRoll (play.c:4048) returns void and reports its five refusals through
+ * outputl(), which on Android goes to the log and nowhere the UI can see. The
+ * facade then returned 1 unconditionally, so a refused roll was indistinguishable
+ * from a successful one and the UI simply re-entered WAITING_FOR_ROLL -- a silent
+ * loop that looks like a stuck game.
+ *
+ * These are gnubg's own guards, read in gnubg's own order. Nothing is decided
+ * here and no behaviour is duplicated: CommandRoll still makes every decision.
+ * This only reports which of its conditions currently holds.
+ *
+ * The state must be read BEFORE the call: drain_next_turns() afterwards runs the
+ * computer's turn, so ms.anDice no longer describes the human's roll.
+ *
+ * 0 = no refusal expected. 1..5 map to CommandRoll's guards in order.
+ */
+static int roll_refusal_reason(void) {
+    if (ms.gs != GAME_PLAYING)              return 1;  /* no game in progress */
+    if (ap[ms.fTurn].pt != PLAYER_HUMAN)    return 2;  /* it is the computer's turn */
+    if (ms.fDoubled)                        return 3;  /* cube must be answered */
+    if (ms.fResigned)                       return 4;  /* resignation must be resolved */
+    if (ms.anDice[0])                       return 5;  /* already rolled */
+    return 0;
+}
+
+/* Returns 1 when the roll was attempted with every precondition met, 0 when
+ * gnubg was always going to refuse. The reason is logged under gnubg-roll. */
 int gnubg_mobile_command_roll(void) {
+    int reason;
+
     pthread_mutex_lock(&gnubg_lock);
+
+    reason = roll_refusal_reason();
+    if (reason) {
+        __android_log_print(ANDROID_LOG_WARN, "gnubg-roll",
+            "CommandRoll refused: reason=%d gs=%d fTurn=%d pt=%d fDoubled=%d "
+            "fResigned=%d dice=%u,%u",
+            reason, (int) ms.gs, ms.fTurn, (int) ap[ms.fTurn].pt,
+            ms.fDoubled, ms.fResigned,
+            ms.anDice[0], ms.anDice[1]);
+    }
+
     CommandRoll(NULL);
     gnubg_mobile_drain_next_turns();
+
     pthread_mutex_unlock(&gnubg_lock);
 
-    return 1;
+    return reason == 0;
+}
+
+/* The resignation currently on the table: 0 none, 1 normal, 2 gammon,
+ * 3 backgammon. This is gnubg's own ms.fResigned.
+ *
+ * GNU resigns by itself. ComputerTurn calls getResignation() and, when the
+ * position is lost badly enough, CommandResign("n"|"g"|"b") (play.c:1327-1335),
+ * which sets ms.fResigned. gnubg then waits for the human to answer, and
+ * CommandRoll refuses with "Please resolve the resignation first" until they do.
+ * A port that never asks leaves the game unable to proceed. */
+int gnubg_mobile_get_resignation(void) {
+    int r;
+    pthread_mutex_lock(&gnubg_lock);
+    r = ms.fResigned;
+    pthread_mutex_unlock(&gnubg_lock);
+    return r;
 }
 
 int gnubg_mobile_command_move(const char *move) {
@@ -931,4 +997,158 @@ int gnubg_mobile_initialise(const char *weights_path) {
 
     pthread_mutex_unlock(&gnubg_lock);
     return 1;
+}
+
+
+/* ===========================================================================
+ * Tier 5 -- position entry (Analyse Position)
+ *
+ * PORT: gnubg's own entry point is SetGNUbgID (backgammon.h:519, set.c).
+ * It accepts a GNU BG ID ("PositionID:MatchID") or an XGID and discriminates
+ * the dialects itself: SetXGID first, otherwise base64 tokens keyed on their
+ * known lengths (L_MATCHID / L_POSITIONID). It then installs the match context
+ * BEFORE the board --
+ *
+ *     if (matchid) SetMatchID(matchid);
+ *     if (posid)   SetBoard(posid);
+ *
+ * -- which is precisely why SetBoard's "there must be a game in progress"
+ * requirement is satisfied: SetMatchID has already set ms.gs from the Match
+ * ID's gamestate field. The ordering is gnubg's, and it is deliberate.
+ *
+ * We call SetGNUbgID and NOT CommandSetGNUbgID. The Command wrapper answers
+ * the "player on roll appears on top -- swap?" question by calling GetInputYN,
+ * and this port's GetInputYN (android-app.c:854) always returns TRUE. Routing
+ * through it would swap the players silently, every time. gnubg hands that
+ * decision back to the caller as return code 2, and the UI must ask.
+ *
+ * Return value is SetGNUbgID's own, unchanged:
+ *    0  IDs accepted; board and match context installed
+ *    1  no valid IDs found in the string
+ *    2  installed, but the player on roll appears on top (offer a swap)
+ *   -1  bad argument (facade level only; gnubg never returns this)
+ * =========================================================================== */
+int gnubg_mobile_set_gnubg_id(const char *id) {
+    char *buf;
+    int rc;
+
+    if (!id || !*id) return -1;
+
+    /* SetGNUbgID walks its argument (get_base64(sz, &sz)), so it needs a
+     * mutable, owned copy. */
+    buf = g_strdup(id);
+    if (!buf) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    rc = SetGNUbgID(buf);
+    /* PORT: CommandSetGNUbgID calls ShowBoard() on success. In this port
+     * ShowBoard (android-app.c:543) raises the gnubg_on_board_changed()
+     * callback. rc == 2 also means the board was installed. */
+    if (rc == 0 || rc == 2)
+        ShowBoard();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    g_free(buf);
+    return rc;
+}
+
+/* Answer to gnubg_mobile_set_gnubg_id() returning 2. The UI asks the user;
+ * only the user's yes reaches here. PORT: CommandSwapPlayers (backgammon.h:1024)
+ * is the same routine gnubg's own callers invoke for this. */
+int gnubg_mobile_swap_players(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandSwapPlayers(NULL);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+/* The reverse: gnubg's own renderings of the current state.
+ * PositionID (positionid.h:27) and MatchIDFromMatchState (matchid.h:51) both
+ * return pointers to static storage, so copy at once under the lock.
+ * gnubg prints the pair as "%s:%s" (set.c:4874); the two halves are returned
+ * separately here rather than joined, so no format is invented in C.
+ * Returns 1 on success, -1 on bad argument. */
+int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
+                             char *out_match, int match_cap) {
+    const char *pos;
+    const char *match;
+
+    if (!out_pos || pos_cap < 1 || !out_match || match_cap < 1) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    pos = PositionID((ConstTanBoard) ms.anBoard);
+    match = MatchIDFromMatchState(&ms);
+    if (pos)   snprintf(out_pos, (size_t) pos_cap, "%s", pos);
+    else       out_pos[0] = '\0';
+    if (match) snprintf(out_match, (size_t) match_cap, "%s", match);
+    else       out_match[0] = '\0';
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+/* Ranked chequer-play candidates for the CURRENT state.
+ *
+ * PORT: FindnSaveBestMoves (eval.h:367), called exactly as analyze_replay calls
+ * it -- fAnalyse TRUE at the doubtful-skill threshold, the named 2-ply analysis
+ * context esAnalysisChequer.ec, and the named filters aamfAnalysis. The cubeinfo
+ * is derived by gnubg from the matchstate via GetMatchStateCubeInfo; no private
+ * cubeinfo, evalcontext or movefilter is constructed here.
+ *
+ * The difference from analyze_replay is the question, not the machinery: that
+ * verb asks "how good was the move just played", and needs plGame. This one asks
+ * "what are the candidates in the position now loaded", which is what ms holds
+ * after gnubg_mobile_set_gnubg_id. keyMove is NULL because no move has been
+ * played -- gnubg guards it with `if (keyMove)` and its own callers pass NULL
+ * (analysis.c:124, eval.c:5558).
+ *
+ * gnubg returns the list already sorted best-first. out_equity[i] is
+ * amMoves[i].rScore and out_moves[i*8 .. i*8+7] is amMoves[i].anMove, both
+ * verbatim.
+ *
+ * Returns the number of candidates written (0 if the position has no dice, so
+ * there is no chequer play to rank), or -1 on error. */
+int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
+    movelist ml;
+    cubeinfo ci;
+    unsigned int i, n;
+
+    if (max_n < 1 || !out_equity || !out_moves) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (ms.gs != GAME_PLAYING || !ms.anDice[0] || !ms.anDice[1]) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    GetMatchStateCubeInfo(&ci, &ms);
+    memset(&ml, 0, sizeof(ml));
+
+    if (FindnSaveBestMoves(&ml, (int) ms.anDice[0], (int) ms.anDice[1],
+                           (ConstTanBoard) ms.anBoard, NULL, TRUE,
+                           arSkillLevel[SKILL_DOUBTFUL], &ci,
+                           &esAnalysisChequer.ec, aamfAnalysis) < 0) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return -1;
+    }
+
+    if (ml.cMoves == 0 || !ml.amMoves) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    n = ml.cMoves;
+    if (n > (unsigned int) max_n) n = (unsigned int) max_n;
+
+    for (i = 0; i < n; i++) {
+        out_equity[i] = ml.amMoves[i].rScore;
+        memcpy(out_moves + i * 8, ml.amMoves[i].anMove, 8 * sizeof(int));
+    }
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return (int) n;
 }

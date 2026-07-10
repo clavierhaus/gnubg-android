@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onSizeChanged
 
 private const val TOT_W  = 102f
@@ -57,6 +58,115 @@ private const val HALF_W  = (RIGHT_X - LEFT_X - BAR_W) / 2f
 private const val PT_W    = HALF_W / 6f
 private const val DIE_W   = PT_W * 0.8f
 
+/**
+ * Every rectangle on the board, computed once from the canvas size, in pixels.
+ *
+ * CLAUDE.md, "UI GEOMETRY: ONE SOURCE, EVERY DEVICE". The board fills the screen
+ * horizontally and absorbs aspect ratio vertically, so sx != sy is normal --
+ * measured 0.959 at 16:11, 1.172 at 16:9, 1.468 at 20:9. Two consequences:
+ *
+ *  - Board features stretch. Points, bar, frame and trays are anchored with
+ *    ux()/uy(), each axis scaled by its own factor.
+ *  - Pieces do not. Checkers, dice, cube and buttons keep their shape, so their
+ *    SIZES come from pc(), which never follows sy. A cube that is square in
+ *    pixels is not square in board units, which is exactly why hit-testing it in
+ *    board units left 16% of it dead at the top and bottom on a 20:9 phone, and
+ *    made the tap rect overhang it on a 16:11 one.
+ *
+ * The invariant: an element's hit rectangle IS the rectangle it was drawn from.
+ * Both sides read these values. Nothing is computed twice.
+ */
+private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, private val diceCount: Int) {
+    val sx = w / TOT_W
+    val sy = h / TOT_H
+
+    fun ux(u: Float) = u * sx          // board anchor, x
+    fun uy(u: Float) = u * sy          // board anchor, y
+    private fun pc(u: Float) = u * sx  // piece size -- never sy
+
+    val boardCY    = uy(TOT_H / 2f)
+    val rightGapCX = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
+    val leftGapCX  = ux(MID_X - BAR_W / 2f - HALF_W / 2f)
+
+    val dieSize = pc(DIE_W)
+    val diceGap = pc(PT_W * 0.15f)
+
+    private fun diceRow(centreX: Float, top: Float, count: Int): List<Rect> {
+        val totalW = count * dieSize + (count - 1) * diceGap
+        val startX = centreX - totalW / 2f
+        return (0 until count).map { i ->
+            val l = startX + i * (dieSize + diceGap)
+            Rect(l, top, l + dieSize, top + dieSize)
+        }
+    }
+
+    private val diceTop = boardCY - dieSize - diceGap / 2f
+    fun playerDice(count: Int = diceCount) = diceRow(rightGapCX, diceTop, count)
+    fun engineDice(count: Int = diceCount) = diceRow(leftGapCX, diceTop, count)
+    fun engineDiceCentred(count: Int = 2)  = diceRow(leftGapCX, boardCY - dieSize / 2f, count)
+
+    /** The drawn dice, as one rectangle. Tapping them swaps their order. */
+    val swapDiceRect: Rect = playerDice().let { Rect(it.first().left, it.first().top, it.last().right, it.last().bottom) }
+
+    private val btnW   = dieSize * 2f
+    private val btnH   = dieSize
+    private val btnTop = boardCY + diceGap / 2f
+    val undoRect   = Rect(rightGapCX - diceGap / 2f - btnW, btnTop, rightGapCX - diceGap / 2f, btnTop + btnH)
+    val commitRect = Rect(rightGapCX + diceGap / 2f, btnTop, rightGapCX + diceGap / 2f + btnW, btnTop + btnH)
+    /** The no-move "Continue" affordance occupies both button slots. */
+    val passRect   = Rect(undoRect.left, undoRect.top, commitRect.right, commitRect.bottom)
+
+    private val rollW = dieSize * 2f + diceGap
+    private val rollH = dieSize * 1.2f
+    val rollRect = Rect(rightGapCX - rollW / 2f, boardCY - dieSize / 2f,
+                        rightGapCX + rollW / 2f, boardCY - dieSize / 2f + rollH)
+
+    val cubeSize = pc(BAR_W * 0.75f)
+    private val cubeGap = cubeSize * 0.18f
+    // One cube-height clear of centre. A piece offset, so it is a pixel length.
+    val cubeCY = when (cubeOwner) {
+        1    -> boardCY - cubeSize - cubeGap
+        0    -> boardCY + cubeSize + cubeGap
+        else -> boardCY
+    }
+    val cubeRect = Rect(ux(MID_X) - cubeSize / 2f, cubeCY - cubeSize / 2f,
+                        ux(MID_X) + cubeSize / 2f, cubeCY + cubeSize / 2f)
+
+    /** Lower half of the bar: where a human checker sits waiting to re-enter. */
+    val barBottomRect = Rect(ux(MID_X - BAR_W / 2f), boardCY, ux(MID_X + BAR_W / 2f), uy(TOT_H - BRD_H))
+
+    // Checkers. A piece, but one that must also fit inside a stretched half-board:
+    // the radius is the smaller of what the point width allows and what the half
+    // board height allows, so two opposing stacks of five never collide on a squat
+    // pane. This is the one place it is computed; the stack and the checker that
+    // follows the finger both read it.
+    val boardTop    = uy(BRD_H)
+    val boardBottom = h - uy(BRD_H)
+    private val maxVisibleCheckers = 5f
+    private val stepFactor  = 2.05f
+    private val insetFactor = 0.12f
+    private val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
+    private val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
+    val checkerR = minOf(
+        ux(PT_W) * 0.40f,
+        halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
+    )
+    val checkerInset = checkerR * insetFactor
+    val checkerStep  = checkerR * stepFactor
+
+    /** Points stretch with the board, so both axes scale. */
+    fun pointRect(n: Int): Rect {
+        val left = ux(pointX(n))
+        val top  = if (n in 13..24) uy(BRD_H) else uy(TOT_H - BRD_H - PT_H)
+        return Rect(left, top, left + ux(PT_W), top + uy(PT_H))
+    }
+
+    fun pointAt(o: Offset): Int {
+        for (n in 1..24) if (pointRect(n).contains(o)) return n
+        return -1
+    }
+}
+
 private val PIP_POSITIONS = mapOf(
     1 to listOf(Pair(0.5f, 0.5f)),
     2 to listOf(Pair(0.25f, 0.25f), Pair(0.75f, 0.75f)),
@@ -65,6 +175,16 @@ private val PIP_POSITIONS = mapOf(
     5 to listOf(Pair(0.25f, 0.25f), Pair(0.75f, 0.25f), Pair(0.5f, 0.5f), Pair(0.25f, 0.75f), Pair(0.75f, 0.75f)),
     6 to listOf(Pair(0.25f, 0.2f), Pair(0.75f, 0.2f), Pair(0.25f, 0.5f), Pair(0.75f, 0.5f), Pair(0.25f, 0.8f), Pair(0.75f, 0.8f))
 )
+
+/** The number of dice drawn, so the hit rect covers exactly them. */
+private fun diceCountOf(state: BoardState): Int {
+    val d = state.dice ?: return 2
+    return when {
+        d.first == d.second && d.second > 0 -> 4
+        d.second < 0 -> 1
+        else -> 2
+    }
+}
 
 private fun pointX(n: Int): Float = when {
     n in 1..6   -> MID_X + BAR_W / 2f + (6 - n) * PT_W
@@ -76,68 +196,43 @@ private fun pointX(n: Int): Float = when {
 private fun pointCentreX(n: Int): Float = pointX(n) + PT_W / 2f
 
 
-private fun boardPointAt(x: Float, y: Float): Int {
-    for (n in 1..24) {
-        val px = pointX(n)
-        val isTop = n in 13..24
-        val py = if (isTop) BRD_H else TOT_H - BRD_H - PT_H
-        if (x >= px && x <= px + PT_W && y >= py && y <= py + PT_H) {
-            return n
-        }
-    }
-    return -1
-}
 
+/**
+ * Where this checker may legally go now, read out of gnubg's own move list.
+ *
+ * gameState.legalMoves is GenerateMoves() over the CURRENT board with the dice
+ * that remain, so the first sub-move of each generated move is exactly a legal
+ * step from here. Take the ones whose source is this checker.
+ *
+ * A previous version pooled every (src,dst) pair from every move into one edge
+ * list and breadth-first searched it. That splices unrelated moves together --
+ * an 8->6 step from one move and a 6->1 step from another let it walk 8->6->1,
+ * a play gnubg never offered -- so it lit up unreachable points. It also read
+ * the turn-start board while using the current dice.
+ *
+ * A bear-off destination is -1. gnubg clamps every negative destination to -1
+ * in SaveMoves (eval.c), so it is a sentinel for "off" and says nothing about
+ * which die was used. It has no point to highlight, so it is skipped here; the
+ * tap itself is validated by gnubg through Engine.applySubMove.
+ */
 private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set<Int> {
     if (gameState.phase != GamePhase.HUMAN_MOVING) return emptySet()
     if (sourcePoint !in 1..24) return emptySet()
     if (gameState.board[24 + sourcePoint] <= 0) return emptySet()
 
+    val moves = gameState.legalMoves
+    if (moves.isEmpty()) return emptySet()
+
     val origin = sourcePoint - 1
-    val dice = gameState.remainingDice
-    if (dice.isEmpty()) return emptySet()
-    val d0 = dice[0]
-    val d1 = if (dice.size > 1) dice[1] else dice[0]
-
-    // Ask GNUbg for ALL legal sub-moves (fPartial = 1) for the current dice.
-    // Partial generation returns every intermediate step, so a combined move
-    // 24->18->13 appears as the chained pairs (24,18) and (18,13). We trace
-    // from the held checker through reachable points to every final landing,
-    // covering direct, double, and combined-move destinations. GNUbg remains
-    // the sole authority for legality; we only collect what it reports.
-    val partial = Engine.getLegalMoves(gameState.oldBoard, d0, d1, 1)
-    if (partial.isEmpty()) return emptySet()
-
-    // Collect all directed sub-move edges (src -> dst), GNUbg 0-based coords.
-    val edges = ArrayList<Pair<Int, Int>>()
+    val dests = linkedSetOf<Int>()
     var m = 0
-    while (m + 1 < partial.size) {
-        var j = 0
-        while (j < 8) {
-            val src = partial.getOrNull(m + j) ?: -1
-            val dst = partial.getOrNull(m + j + 1) ?: -1
-            if (src in 0..24 && dst in 0..24) edges.add(src to dst)
-            j += 2
-        }
+    while (m + 1 < moves.size) {
+        val src = moves[m]          // first sub-move of this move
+        val dst = moves[m + 1]
+        if (src == origin && dst in 0..23) dests.add(dst + 1)
         m += 8
     }
-
-    // Breadth-first reachability from the held checker's origin through edges.
-    val reachable = linkedSetOf<Int>()
-    val frontier = ArrayDeque<Int>()
-    frontier.add(origin)
-    val seen = hashSetOf(origin)
-    while (frontier.isNotEmpty()) {
-        val cur = frontier.removeFirst()
-        for ((src, dst) in edges) {
-            if (src == cur && dst !in seen) {
-                seen.add(dst)
-                frontier.add(dst)
-                if (dst in 0..23) reachable.add(dst + 1)  // board point 1..24
-            }
-        }
-    }
-    return reachable
+    return dests
 }
 
 // Legal bar-entry target points for a human on the bar. gnubg is the authority:
@@ -164,7 +259,7 @@ fun BackgammonBoard(
     val p = BoardPalettes.from(settings.boardTheme)
     var highlightedLandingPoints by remember { mutableStateOf<Set<Int>>(emptySet()) }
     // Drag-to-move prototype state. draggingFrom is the source point (1..24) the
-    // finger picked up from; dragPosUnits is the current finger position in board
+    // finger picked up from; dragPosUnits is the current finger position in PIXELS
     // units. Both null when no drag is in progress. Drag coexists with tap: this
     // is a separate pointerInput, and detectDragGestures only fires past touch slop.
     var draggingFrom by remember { mutableStateOf<Int?>(null) }
@@ -193,123 +288,67 @@ fun BackgammonBoard(
                     }
                 },
                 onLongPress = { offset ->
-                    val sx = size.width.toFloat() / TOT_W
-                    val sy = size.height.toFloat() / TOT_H
-                    val x = offset.x / sx
-                    val y = offset.y / sy
-                    val point = boardPointAt(x, y)
-                    highlightedLandingPoints = landingPointsForSource(gameState, point)
+                    val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                      gameState.cubeOwner, diceCountOf(gameState))
+                    highlightedLandingPoints = landingPointsForSource(gameState, g.pointAt(offset))
                 },
                 onTap = { offset ->
                     highlightedLandingPoints = emptySet()
                 if (viewModel == null) return@detectTapGestures
-                val sx = size.width.toFloat() / TOT_W
-                val sy = size.height.toFloat() / TOT_H
-                val x = offset.x / sx
-                val y = offset.y / sy
 
-                val boardCY = TOT_H / 2f
-                val diceGap = PT_W * 0.15f
-                val totalDW = DIE_W * 2f + diceGap
-                val undoLeft = MID_X + BAR_W / 2f + HALF_W / 2f - DIE_W - diceGap / 2f
+                // One geometry. The rectangles below are the rectangles drawn.
+                val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                  gameState.cubeOwner, diceCountOf(gameState))
 
-                // Tap cube to double -- must be FIRST to avoid Roll/bar interception.
-                // This uses the same board-relative centre/size as the drawn cube.
-                // Detailed cube legality remains in GameViewModel/GNUbg.
-                val cubeSzU = BAR_W * 0.75f
-                val cubeGapU = cubeSzU * 0.18f
-                // Owned cube sits exactly one cube-height (+gap) from the centred
-                // 64 position, NOT anchored to the pip counters -- that kept it
-                // clear of the bar ends where on-bar checkers stack.
-                val cubeCYU = when (gameState.cubeOwner) {
-                    1 -> TOT_H / 2f - cubeSzU - cubeGapU
-                    0 -> TOT_H / 2f + cubeSzU + cubeGapU
-                    else -> TOT_H / 2f
-                }
-                val cubeHit =
-                    !tutorMode &&
-                    x >= MID_X - cubeSzU / 2f && x <= MID_X + cubeSzU / 2f &&
-                    y >= cubeCYU - cubeSzU / 2f && y <= cubeCYU + cubeSzU / 2f
-
-                if (cubeHit) {
-                    // Engine is the sole authority (gnubg_can_double). The UI no
-                    // longer reimplements any subset of the cube rule; it reads
-                    // the flag computed on the engine thread in readMatchState.
+                // Cube -- first, so it is not intercepted by the bar or Roll.
+                if (!tutorMode && g.cubeRect.contains(offset)) {
+                    // Engine is the sole authority (gnubg_can_double). The UI does not
+                    // reimplement any subset of the cube rule; it reads the flag computed
+                    // on the engine thread in readMatchState.
                     val uiAllowsDouble = gameState.canDouble
-
-                    Log.i(
-                        "gnubg-vm",
-                        "Board cube tap: x=$x y=$y phase=${gameState.phase} turn=${gameState.turn} " +
+                    Log.i("gnubg-vm",
+                        "Board cube tap: phase=${gameState.phase} turn=${gameState.turn} " +
                             "fDoubled=${gameState.fDoubled} cubeOwner=${gameState.cubeOwner} " +
-                            "cubeValue=${gameState.cubeValue} uiAllowsDouble=$uiAllowsDouble"
-                    )
-
-                    if (uiAllowsDouble) {
-                        viewModel.offerDouble()
-                    } else {
-                        Log.i("gnubg-vm", "Board cube tap ignored by UI gate")
-                    }
+                            "cubeValue=${gameState.cubeValue} uiAllowsDouble=$uiAllowsDouble")
+                    if (uiAllowsDouble) viewModel.offerDouble()
+                    else Log.i("gnubg-vm", "Board cube tap ignored by UI gate")
                     return@detectTapGestures
                 }
 
-                // Tap Roll button (right half, lower tray gap) during WAITING_FOR_ROLL
-                val rightHalfCX = MID_X + BAR_W / 2f + HALF_W / 2f
-                val rollBtnW    = DIE_W * 2f + diceGap
                 if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 &&
-                    y >= boardCY - DIE_W && y <= boardCY + DIE_W * 2.5f &&
-                    x >= rightHalfCX - rollBtnW / 2f && x <= rightHalfCX + rollBtnW / 2f) {
+                    g.rollRect.contains(offset)) {
                     viewModel.rollDice()
                     return@detectTapGestures
                 }
-                // Tap dice area: swap dice (board units)
-                if (y >= boardCY - DIE_W * 2 && y <= boardCY &&
-                    x >= undoLeft && x <= RIGHT_X) {
-                    viewModel.swapDice()
-                    return@detectTapGestures
-                }
+
                 val tapCannotMove = gameState.phase == GamePhase.HUMAN_MOVING &&
                     gameState.legalMoves.isEmpty() &&
                     gameState.board.contentEquals(gameState.oldBoard)
-                if (tapCannotMove &&
-                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
-                    x >= undoLeft && x <= RIGHT_X) {
+
+                if (gameState.phase == GamePhase.HUMAN_MOVING && gameState.turn == 0 &&
+                    !tapCannotMove && g.swapDiceRect.contains(offset)) {
+                    viewModel.swapDice()
+                    return@detectTapGestures
+                }
+
+                if (tapCannotMove && g.passRect.contains(offset)) {
                     viewModel.passTurn()
                     return@detectTapGestures
                 }
-                // Tap Undo button (board units) -- lower half of tray gap
-                if (gameState.phase == GamePhase.HUMAN_MOVING && !tapCannotMove &&
-                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
-                    x >= undoLeft && x <= undoLeft + DIE_W) {
-                    viewModel.undo()
-                    return@detectTapGestures
+
+                if (gameState.phase == GamePhase.HUMAN_MOVING && !tapCannotMove) {
+                    if (g.undoRect.contains(offset))   { viewModel.undo();    return@detectTapGestures }
+                    if (g.commitRect.contains(offset)) { viewModel.confirm(); return@detectTapGestures }
                 }
-                // Tap Commit button (board units) -- lower half of tray gap
-                if (gameState.phase == GamePhase.HUMAN_MOVING && !tapCannotMove &&
-                    y >= boardCY && y <= boardCY + DIE_W * 2.5f &&
-                    x >= undoLeft + DIE_W + diceGap && x <= RIGHT_X) {
-                    viewModel.confirm()
+
+                // Human checker on the bar -- point 0 is the bar signal; tapSource
+                // checks whether one is actually there.
+                if (g.barBottomRect.contains(offset)) {
+                    viewModel.tapSource(0)
                     return@detectTapGestures
                 }
 
-                // Tap on human bar checker (bottom half of bar) -- triggers re-entry
-                val barLeft  = MID_X - BAR_W / 2f
-                val barRight = MID_X + BAR_W / 2f
-                if (x >= barLeft && x <= barRight && y >= TOT_H / 2f && y <= TOT_H - BRD_H) {
-                    viewModel.tapSource(0)  // point 0 = bar signal; tapSource checks humanOnBar
-                    return@detectTapGestures
-                }
-
-                // Find tapped point
-                var tapped = -1
-                for (n in 1..24) {
-                    val px = pointX(n)
-                    val isTop = n in 13..24
-                    val py = if (isTop) BRD_H else TOT_H - BRD_H - PT_H
-                    if (x >= px && x <= px + PT_W && y >= py && y <= py + PT_H) {
-                        tapped = n
-                        break
-                    }
-                }
+                val tapped = g.pointAt(offset)
                 if (tapped >= 0) viewModel.tapSource(tapped)
                 }
             )
@@ -325,38 +364,32 @@ fun BackgammonBoard(
                 onDragStart = { offset ->
                     if (viewModel == null) return@detectDragGestures
                     if (gameState.phase != GamePhase.HUMAN_MOVING) return@detectDragGestures
-                    val sx = size.width.toFloat() / TOT_W
-                    val sy = size.height.toFloat() / TOT_H
-                    val ux = offset.x / sx
-                    val uy = offset.y / sy
-                    val barLeft  = MID_X - BAR_W / 2f
-                    val barRight = MID_X + BAR_W / 2f
-                    if (gameState.board[49] > 0 &&
-                        ux >= barLeft && ux <= barRight &&
-                        uy >= TOT_H / 2f && uy <= TOT_H - BRD_H) {
+                    val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                      gameState.cubeOwner, diceCountOf(gameState))
+                    if (gameState.board[49] > 0 && g.barBottomRect.contains(offset)) {
                         draggingFrom = 0
-                        dragPosUnits = Offset(ux, uy)
+                        dragPosUnits = offset
                         highlightedLandingPoints = barEntryPoints(gameState)
                         return@detectDragGestures
                     }
-                    val src = boardPointAt(ux, uy)
+                    val src = g.pointAt(offset)
                     if (src in 1..24 && gameState.board[24 + src] > 0) {
                         draggingFrom = src
-                        dragPosUnits = Offset(ux, uy)
+                        dragPosUnits = offset
                         highlightedLandingPoints = landingPointsForSource(gameState, src)
                     }
                 },
                 onDrag = { change, _ ->
                     if (draggingFrom == null) return@detectDragGestures
-                    val sx = size.width.toFloat() / TOT_W
-                    val sy = size.height.toFloat() / TOT_H
-                    dragPosUnits = Offset(change.position.x / sx, change.position.y / sy)
+                    dragPosUnits = change.position
                 },
                 onDragEnd = {
                     val from = draggingFrom
                     val pos = dragPosUnits
                     if (viewModel != null && from != null && pos != null) {
-                        val target = boardPointAt(pos.x, pos.y)
+                        val g = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                          gameState.cubeOwner, diceCountOf(gameState))
+                        val target = g.pointAt(pos)
                         // Release on a highlighted legal landing -> dispatch through the
                         // existing move path. tapSource(target) routes to the destination
                         // resolver (tryDestinationStackMove) for empty/opponent points;
@@ -378,27 +411,19 @@ fun BackgammonBoard(
         }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
+            // The same rectangles the tap handler uses. Never recompute one here.
+            val g = BoardGeom(size.width, size.height, gameState.cubeOwner, diceCountOf(gameState))
             val sx = size.width  / TOT_W
             val sy = size.height / TOT_H
             fun ux(u: Float) = u * sx
             fun uy(u: Float) = u * sy
 
-            // Checker radius: fits within point width with gap to border and between checkers
-            val boardBottom = size.height - uy(BRD_H)
-            val boardTop    = size.height - boardBottom  // mirrors boardBottom exactly
-
-            // Checker metrics are constrained by both point width and available half-board height.
-            // This keeps two opposing visible stacks of five from colliding on short/wide screens.
-            val maxVisibleCheckers = 5f
-            val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
-            val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
-            val stepFactor = 2.05f
-            val insetFactor = 0.12f
-            val maxRByWidth = ux(PT_W) * 0.40f
-            val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
-            val r = minOf(maxRByWidth, maxRByHeight)
-            val inset = r * insetFactor
-            val step = r * stepFactor
+            // Checker metrics: computed once, in BoardGeom.
+            val boardBottom = g.boardBottom
+            val boardTop    = g.boardTop
+            val r     = g.checkerR
+            val inset = g.checkerInset
+            val step  = g.checkerStep
 
             // 1. Frame
             drawRect(p.frame, size = size)
@@ -493,20 +518,8 @@ fun BackgammonBoard(
             // Cube is not part of tutor / live-analysis mode: no doubling, so
             // nothing to draw (not even the centred 64).
             if (!tutorMode) {
-                val cubeSzU = BAR_W * 0.75f
-                val cubeGapU = cubeSzU * 0.18f
-                val cubeCXU = MID_X
-                // Must match the hit-test cubeCYU above exactly.
-                val cubeCYU = when (gameState.cubeOwner) {
-                    1 -> TOT_H / 2f - cubeSzU - cubeGapU
-                    0 -> TOT_H / 2f + cubeSzU + cubeGapU
-                    else -> TOT_H / 2f
-                }
-                val cubeBarCX = ux(cubeCXU)
-                val cubeBarCY = uy(cubeCYU)
-                val cubeSz = ux(cubeSzU)
                 val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
-                drawCube(cubeBarCX - cubeSz / 2f, cubeBarCY - cubeSz / 2f, cubeSz, cubeDisplayValue,
+                drawCube(g.cubeRect.left, g.cubeRect.top, g.cubeSize, cubeDisplayValue,
                     p.cubeFace, p.cubeDot, p.cubeText)
             }
 
@@ -581,61 +594,45 @@ fun BackgammonBoard(
                         true
                     }
                 }
-                val dw  = ux(DIE_W)
-                val dh  = ux(DIE_W)
-                val gap = ux(PT_W * 0.15f)
-                val boardCentreY = uy(TOT_H / 2f)
-
                 val diceDimmed = gameState.phase == GamePhase.HUMAN_MOVING && gameState.legalMoves.isEmpty() && gameState.board.contentEquals(gameState.oldBoard)
-                if (gameState.turn == 0) {
-                    val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
-                    val startX = ux(MID_X + BAR_W / 2f + HALF_W / 2f) - totalW / 2f
-                    diceToShow.forEachIndexed { i, face ->
-                        val isUsed = usedMask.getOrElse(i) { false }
+                val rects = if (gameState.turn == 0) g.playerDice(diceToShow.size)
+                            else                     g.engineDice(diceToShow.size)
+                diceToShow.forEachIndexed { i, face ->
+                    val r = rects[i]
+                    val isUsed = usedMask.getOrElse(i) { false }
+                    if (gameState.turn == 0) {
                         // Grey a die when gnubg lists no legal play for that face
                         // (unplayableDice, from the legal-move list), or the whole-
                         // turn no-move case. Used dice keep their spent styling.
                         val dimmed = !isUsed && (diceDimmed || face in gameState.unplayableDice)
                         val baseColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
-                        val dieColor = if (dimmed) Color(0xFF888888) else baseColor
-                        val pipColor = if (dimmed) Color(0xFF444444) else p.dicePip
-                        drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
-                            dw, dh, face, dieColor, pipColor, p.frame)
-                    }
-                } else {
-                    val totalW = diceToShow.size * dw + (diceToShow.size - 1) * gap
-                    val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
-                    diceToShow.forEachIndexed { i, face ->
-                        val isUsed = usedMask.getOrElse(i) { false }
-                        val dieColor = if (isUsed) Color(0xFF1F3F6E) else p.diceDark
-                        drawDie(startX + i * (dw + gap), boardCentreY - dh - gap / 2f,
-                            dw, dh, face, dieColor, p.dicePip, p.frame)
+                        drawDie(r.left, r.top, r.width, r.height, face,
+                            if (dimmed) Color(0xFF888888) else baseColor,
+                            if (dimmed) Color(0xFF444444) else p.dicePip, p.frame)
+                    } else {
+                        drawDie(r.left, r.top, r.width, r.height, face,
+                            if (isUsed) Color(0xFF1F3F6E) else p.diceDark, p.dicePip, p.frame)
                     }
                 }
             }
 
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
             if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
-                val dw   = ux(DIE_W)
-                val gap  = ux(PT_W * 0.15f)
-                val cy   = uy(TOT_H / 2f)
-
                 // Engine dice -- left half, grayed
                 gameState.engineDice?.let { (e0, e1) ->
-                    val totalW = dw * 2f + gap
-                    val startX = ux(MID_X - BAR_W / 2f - HALF_W / 2f) - totalW / 2f
+                    val rects = g.engineDiceCentred()
                     listOf(e0, e1).forEachIndexed { i, face ->
-                        drawDie(startX + i * (dw + gap), cy - dw / 2f,
-                            dw, dw, face, p.diceDark, p.dicePip, p.frame)
+                        val r = rects[i]
+                        drawDie(r.left, r.top, r.width, r.height, face, p.diceDark, p.dicePip, p.frame)
                     }
                 }
 
-                // Roll button -- right half, where player dice will appear
-                val gapCX   = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
-                val btnW    = dw * 2f + gap
-                val btnH    = dw * 1.2f
-                val btnX    = gapCX - btnW / 2f
-                val btnY    = cy - dw / 2f
+                // Roll button -- right half, where player dice will appear.
+                // This IS g.rollRect: the tap handler tests the same rectangle.
+                val btnW    = g.rollRect.width
+                val btnH    = g.rollRect.height
+                val btnX    = g.rollRect.left
+                val btnY    = g.rollRect.top
                 val corner  = btnW * 0.08f
                 val rollPath = Path().apply {
                     moveTo(btnX + corner, btnY)
@@ -669,14 +666,15 @@ fun BackgammonBoard(
                 gameState.legalMoves.isEmpty() &&
                 gameState.board.contentEquals(gameState.oldBoard)
             if (gameState.phase == GamePhase.HUMAN_MOVING && !drawCannotMove) {
-                val diceGap  = ux(PT_W * 0.15f)
-                val dw       = ux(DIE_W)
-                val bw       = dw * 2f                              // buttons twice die width
-                val gapCX    = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
-                val undoLeft = gapCX - diceGap * 0.5f - bw         // Undo left edge
-                val btnY     = uy(TOT_H / 2f) + diceGap * 0.5f
-                val btnH     = uy(DIE_W)
-                val btnW     = bw
+                // These ARE g.undoRect and g.commitRect: the tap handler tests the
+                // same rectangles. btnY used to be uy(TOT_H/2) + ux(gap)/2 -- an
+                // x-scaled length added to a y coordinate, so the buttons slid down
+                // as the pane widened.
+                val undoLeft = g.undoRect.left
+                val btnY     = g.undoRect.top
+                val btnH     = g.undoRect.height
+                val btnW     = g.undoRect.width
+                val diceGap  = g.diceGap
                 val corner   = btnW * 0.15f
                 // Undo
                 val undoPath = Path().apply {
@@ -693,7 +691,7 @@ fun BackgammonBoard(
                 }
                 drawPath(undoPath, p.uiActionNegative)
                 // Commit
-                val cx = gapCX + diceGap * 0.5f  // button2 left edge
+                val cx = g.commitRect.left       // IS the Commit hit rect
                 val commitPath = Path().apply {
                     moveTo(cx + corner, btnY)
                     lineTo(cx + btnW - corner, btnY)
@@ -721,15 +719,12 @@ fun BackgammonBoard(
             }
 
             if (drawCannotMove) {
-                val diceGap  = ux(PT_W * 0.15f)
-                val dw       = ux(DIE_W)
-                val bw       = dw * 2f
-                val gapCX    = ux(MID_X + BAR_W / 2f + HALF_W / 2f)
-                val contLeft = gapCX - diceGap * 0.5f - bw
-                val contW    = diceGap + 2f * bw
-                val btnY     = uy(TOT_H / 2f) + diceGap * 0.5f
-                val btnH     = uy(DIE_W)
-                val corner   = bw * 0.15f
+                // IS g.passRect: both button slots plus the gap between them.
+                val contLeft = g.passRect.left
+                val contW    = g.passRect.width
+                val btnY     = g.passRect.top
+                val btnH     = g.passRect.height
+                val corner   = (contW - g.diceGap) / 2f * 0.15f
                 val contPath = Path().apply {
                     moveTo(contLeft + corner, btnY)
                     lineTo(contLeft + contW - corner, btnY)
@@ -803,17 +798,9 @@ fun BackgammonBoard(
 
             // Floating checker follows the finger during a drag (prototype).
             dragPosUnits?.let { pos ->
-                val boardBottom = size.height - uy(BRD_H)
-                val boardTop    = size.height - boardBottom
-                val maxVisibleCheckers = 5f
-                val centreClearance = uy(TOT_H - 2f * BRD_H) * 0.035f
-                val halfStackHeight = (boardBottom - boardTop - centreClearance) / 2f
-                val stepFactor = 2.05f
-                val insetFactor = 0.12f
-                val maxRByWidth = ux(PT_W) * 0.40f
-                val maxRByHeight = halfStackHeight / (2f + (maxVisibleCheckers - 1f) * stepFactor + 2f * insetFactor)
-                val fr = minOf(maxRByWidth, maxRByHeight)
-                drawChecker(ux(pos.x), uy(pos.y), fr, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
+                // Same radius as the stacks, from the same place. pos is already in
+                // pixels -- the space the finger reported in.
+                drawChecker(pos.x, pos.y, g.checkerR, p.checkerLight, p.checkerLightRim, true, p.checkerHighlight)
             }
         } // end Canvas
         

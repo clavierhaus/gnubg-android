@@ -27,7 +27,7 @@ import androidx.compose.material3.TextButton
 fun GameLayout(
     viewModel: GameViewModel,
     onReturnToHub: (() -> Unit)? = null,
-    tutorMode: Boolean = false
+    onSaveMatch: (() -> Unit)? = null
 ) {
     var showSettings by remember { mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
@@ -36,6 +36,10 @@ fun GameLayout(
     val engineReady by viewModel.engineReady.collectAsStateWithLifecycle()
     val showMatchSetup by viewModel.showMatchSetup.collectAsStateWithLifecycle()
 
+    // The chequer-play tutor is a persisted setting, chosen at match setup.
+    // (It used to be a hard-coded parameter per hub entry, while this setting
+    // was written, persisted, and never read by anything.)
+    val tutorMode = settings.tutorMode
     val palette = BoardPalettes.from(settings.boardTheme)
     val pal = palette
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
@@ -53,8 +57,11 @@ fun GameLayout(
             engineReady = engineReady,
             onSelectLength = { viewModel.setMatchLength(it) },
             onSelectDifficulty = { viewModel.setDifficulty(it) },
-            onStart = { viewModel.startMatch(if (tutorMode) 1 else settings.matchLength) },
-            onSettings = { showSettings = true }
+            onToggleTutor = { viewModel.setTutorMode(it) },
+            // Length is not forced behind the user's back: enabling the tutor
+            // pins it to 1 visibly (see setTutorMode), and the setup screen
+            // says why. startMatch simply honours what is shown.
+            onStart = { viewModel.startMatch(settings.matchLength) }
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -145,18 +152,20 @@ fun GameLayout(
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 } else {
+                                    // One line. The pane does not scroll, so the result
+                                    // must not push the panel below it off the screen.
                                     val resultText = when {
-                                        humanWonMatch -> "You win\nthe match!"
-                                        engineWonMatch -> "Engine wins\nthe match"
-                                        gameState.winner == 0 && gameState.nPoints >= 3 -> "You win\nBackgammon!"
-                                        gameState.winner == 0 && gameState.nPoints >= 2 -> "You win\nGammon!"
+                                        humanWonMatch -> "You win the match!"
+                                        engineWonMatch -> "Engine wins the match"
+                                        gameState.winner == 0 && gameState.nPoints >= 3 -> "You win Backgammon!"
+                                        gameState.winner == 0 && gameState.nPoints >= 2 -> "You win Gammon!"
                                         gameState.winner == 0 -> "You win"
-                                        gameState.nPoints >= 3 -> "Engine wins\nBackgammon"
-                                        gameState.nPoints >= 2 -> "Engine wins\nGammon"
+                                        gameState.nPoints >= 3 -> "Engine wins Backgammon"
+                                        gameState.nPoints >= 2 -> "Engine wins Gammon"
                                         else -> "Engine wins"
                                     }
-                                    Text(resultText, color = Color.White, fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
+                                    Text(resultText, color = Color.White, fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold, maxLines = 1,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     GameButton("New Match", pal.uiActionRoll) { viewModel.newGame() }
@@ -174,6 +183,30 @@ fun GameLayout(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 GameButton("Drop", pal.uiActionNegative) { viewModel.dropDouble() }
                             }
+                            // GNU resigns by itself when the position is lost
+                            // (play.c:1335). gnubg refuses every roll until this is
+                            // answered, so it must be asked, not assumed.
+                            gameState.phase == GamePhase.RESIGNATION_OFFERED -> {
+                                Text(
+                                    when (gameState.resignation) {
+                                        3 -> "GNU resigns a backgammon"
+                                        2 -> "GNU resigns a gammon"
+                                        else -> "GNU resigns"
+                                    },
+                                    color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Worth " + (gameState.resignation * gameState.cubeValue) +
+                                        (if (gameState.resignation * gameState.cubeValue == 1) " point" else " points"),
+                                    color = pal.uiTextSecondary, fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                GameButton("Accept", pal.uiActionPositive) { viewModel.acceptResignation() }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                GameButton("Play on", pal.uiButtonNeutral) { viewModel.declineResignation() }
+                            }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
                                 Text("Thinking...", color = pal.uiTextSecondary, fontSize = 18.sp)
                             }
@@ -183,15 +216,37 @@ fun GameLayout(
                         }
                         }
 
-                        if (tutorMode) {
-                            TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
-                        } else {
-                            PlayLifecyclePanel(
-                                onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
-                                onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
-                                onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
-                                onReturnHome = onReturnToHub
-                            )
+                        // The game view is static: it never scrolls. Anything that does
+                        // not fit must be made to fit.
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (tutorMode) {
+                                TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
+                            } else {
+                                PlayLifecyclePanel(
+                                    onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
+                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
+                                    onNewMatch = { pendingLifecycleAction = PlayLifecycleAction.NEW_MATCH },
+                                    onReturnHome = onReturnToHub
+                                )
+                            }
+
+                            // Save match sits outside every phase branch. It used to live
+                            // inside PlayLifecyclePanel, which the tutor panel and the
+                            // game-over panel each replace wholesale -- so it vanished in
+                            // tutor mode, and at the end of a game, which is exactly when
+                            // the match is worth saving. gnubg writes the whole match so
+                            // far, at any point, so it is always meaningful.
+                            if (onSaveMatch != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                LifecycleButton(
+                                    label = "Save match",
+                                    color = pal.uiActionRoll,
+                                    onClick = { onSaveMatch() }
+                                )
+                            }
                         }
                     }
                 }
@@ -286,6 +341,7 @@ private fun PlayLifecyclePanel(
                 enabled = onReturnHome != null
             )
         }
+
     }
 }
 
@@ -428,8 +484,8 @@ private fun MatchSetupScreen(
     engineReady: Boolean,
     onSelectLength: (Int) -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
-    onStart: () -> Unit,
-    onSettings: () -> Unit
+    onToggleTutor: (Boolean) -> Unit,
+    onStart: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
     Box(
@@ -438,13 +494,21 @@ private fun MatchSetupScreen(
             .background(pal.uiPanelDeep),
         contentAlignment = Alignment.Center
     ) {
+        // The Column owns the full height, so weighted spacers can distribute
+        // what is left over after the controls have measured themselves. It must
+        // NOT scroll: a scrollable Column measures with unbounded height, which
+        // makes weight() meaningless and simply stacks children top-to-bottom --
+        // which is exactly why Start Match was landing against the bottom edge
+        // with free space sitting unusable above it.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-            modifier = Modifier.padding(24.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
         ) {
             Text(
-                if (tutorMode) "GNU Backgammon Live Game Analysis"
+                if (tutorMode) "GNU Backgammon Chequer-Play Tutor"
                 else "GNU Backgammon Tournament Match",
                 color = Color.White,
                 fontSize = 30.sp,
@@ -477,28 +541,152 @@ private fun MatchSetupScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            if (!tutorMode) {
-                Text(
-                    "Match length",
-                    color = pal.uiTextSecondary,
-                    fontSize = 18.sp
-                )
+            // Tutor and match length sit side by side: this screen is
+            // landscape-only and has horizontal room to spare but no vertical
+            // slack -- stacking them overflowed the column and clipped the
+            // Start button off-screen.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    listOf(1, 3, 5, 7).forEach { n ->
-                        val selected = selectedLength == n
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Chequer-play tutor",
+                        color = pal.uiTextSecondary,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         GameButton(
-                            label = "$n",
-                            color = if (selected) pal.uiChipOn else pal.uiChipOff,
+                            label = "Off",
+                            color = if (!tutorMode) pal.uiChipOn else pal.uiChipOff,
                             enabled = engineReady
                         ) {
-                            onSelectLength(n)
+                            onToggleTutor(false)
+                        }
+                        GameButton(
+                            label = "On",
+                            color = if (tutorMode) pal.uiChipOn else pal.uiChipOff,
+                            enabled = engineReady
+                        ) {
+                            onToggleTutor(true)
                         }
                     }
                 }
+
+                // Blind space: a weighted spacer, so the separation is whatever
+                // the screen has left over rather than a fixed distance that
+                // only looks right on one device.
+                Spacer(modifier = Modifier.weight(1f))
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Match length",
+                        color = pal.uiTextSecondary,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (tutorMode) {
+                        // The tutored game is a single game: at 1 point the cube
+                        // is out of play (you cannot double past the match), so
+                        // the tutor only ever has chequer decisions to comment
+                        // on. Say so, rather than showing four dead chips.
+                        Text(
+                            "Single game",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "The cube is not in play,\nso the tutor comments on\nchequer play only.",
+                            color = pal.uiTextDisabled,
+                            fontSize = 13.sp
+                        )
+                    } else {
+                        // 1, 3 and 5 are fixed shortcuts. The fourth slot is
+                        // flexible: it shows whatever length is actually set when
+                        // that length is not one of the shortcuts, so an 11-point
+                        // match chosen in Settings is visible here rather than
+                        // leaving every chip unselected. +/- adjust it in place,
+                        // over the same 1..25 range as the Settings stepper.
+                        val shortcuts = listOf(1, 3, 5)
+                        val flexible = if (selectedLength in shortcuts) 7 else selectedLength
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            // Top-align so + sits level with the top of the
+                            // chips; the +/- stack is taller than one chip and
+                            // centring it pushed the chips down out of line with
+                            // the tutor buttons opposite.
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            shortcuts.forEach { n ->
+                                GameButton(
+                                    label = "$n",
+                                    color = if (selectedLength == n) pal.uiChipOn else pal.uiChipOff,
+                                    enabled = engineReady
+                                ) {
+                                    onSelectLength(n)
+                                }
+                            }
+
+                            // +/- belong to the flexible chip and only act when
+                            // it is the selected length. Tap the chip to enter
+                            // the flexible range; then step it. (Letting +/- act
+                            // from a shortcut meant "-" on 3 raised the length
+                            // to 7, which is nonsense.)
+                            val onFlexible = selectedLength == flexible
+
+                            GameButton(
+                                label = "$flexible",
+                                color = if (selectedLength == flexible) pal.uiChipOn else pal.uiChipOff,
+                                enabled = engineReady
+                            ) {
+                                onSelectLength(flexible)
+                            }
+
+                            // Steppers stack to the right of the flexible chip.
+                            // The enclosing Row is Alignment.Top, so "+" sits
+                            // level with the top of the chip and "-" hangs below
+                            // it. Both keep full-size tap targets: nothing here
+                            // is offset after layout, so what is drawn is what is
+                            // tappable.
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                GameButton(
+                                    label = "+",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible < 25
+                                ) {
+                                    onSelectLength((flexible + 1).coerceAtMost(25))
+                                }
+                                GameButton(
+                                    label = "-",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = engineReady && onFlexible && flexible > 1
+                                ) {
+                                    onSelectLength((flexible - 1).coerceAtLeast(1))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // Start Match floats in whatever space the controls leave: weighted
+            // spacers above and below, so it sits in the free area rather than
+            // flush against the last control or the screen edge. It is the only
+            // green control here, so it is set apart by colour and by position.
+            // Settings is not repeated on this screen -- it is one tap from the
+            // hub (Options) and from the board itself.
+            Spacer(modifier = Modifier.weight(1f))
 
             GameButton(
                 label = if (engineReady) "Start Match" else "Loading engine...",
@@ -508,13 +696,7 @@ private fun MatchSetupScreen(
                 onStart()
             }
 
-            GameButton(
-                label = "Settings",
-                color = pal.uiActionRoll,
-                enabled = true
-            ) {
-                onSettings()
-            }
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

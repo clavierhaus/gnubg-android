@@ -107,6 +107,168 @@ For every change, answer these IN WRITING, in chat, before code:
       the board" is a FAILING answer. If gnubg does not expose it,
       the answer is to NOT SHOW IT -- not to compute it myself.
 
+## UI GEOMETRY: ONE SOURCE, EVERY DEVICE
+
+This is a cornerstone, not a style note. The app targets Android 12+, which is a
+long tail of resolutions, densities and aspect ratios. It must look the same on
+all of them, and a tap must land where the eye says it will, on every one.
+
+**The layout law.**
+
+- The board fills the screen horizontally. Always. Nothing is cropped sideways.
+- Aspect ratio is absorbed VERTICALLY, by stretching. A non-uniform scale
+  (`sx != sy`) is therefore normal and expected, not an edge case.
+- Board features that stretch with the board -- points, bar, frame, trays -- are
+  expressed in board units and scaled by `sx` and `sy` respectively.
+- Pieces that must stay square or round -- checkers, dice, cube, buttons -- are
+  drawn from a single dimension, so their pixel size does NOT follow `sy`.
+
+**The invariant.**
+
+    Every interactive element's hit rectangle IS the rectangle it was drawn from.
+    Not a copy of it. Not a formula that agrees with it. The same value.
+
+Compute each rectangle once, from the canvas size, in one place. Draw from it.
+Hit-test against it. A hit rect derived independently is a bug the moment the
+aspect ratio changes, and it will change.
+
+Measured, for the board pane (about 82% of the width; the rest is the side
+column):
+
+    screen 16:11   sx/sy 0.959     hit rect too TALL  by 0.11 u per edge
+    screen 16:10   sx/sy 1.055     hit rect too SHORT by 0.14 u per edge
+    screen 16:9    sx/sy 1.172     hit rect too SHORT by 0.45 u per edge
+    screen 20:9    sx/sy 1.468     hit rect too SHORT by 1.23 u per edge
+                                   (the Pixel 8 Pro test device)
+
+`sx/sy` crosses 1.000 at about 16:10.4, inside the ordinary phone band. So the
+error changes SIGN across devices we ship to: on one the cube's top and bottom
+are dead, on another the tap rect sticks out past the drawn cube. There is no
+correction factor that fixes both. The only fix is that there is one rectangle.
+
+**Corollaries.**
+
+- Never write the same geometry expression twice. If a comment says "must match
+  the hit-test above exactly", the design is already wrong -- a comment is not a
+  mechanism.
+- Never mix scales. `uy(a) + ux(b)` is meaningless: it adds an x-scaled length to
+  a y coordinate, and the element slides as the pane widens.
+- Never hit-test a pixel-square in unit space, or a unit-rect in pixel space. A
+  unit square is not a pixel square when `sx != sy`.
+- Tap target equals drawn button. Never `Modifier.offset` to move a control:
+  offset moves the drawing, the layout slot stays, and taps diverge.
+- Distributive space (gaps between groups) is weighted. Intrinsic space (a gap
+  between two adjacent chips) is dp. Neither is a hit rectangle.
+
+**What this rule already cost.** Board.kt drew the cube as a pixel square and
+hit-tested it as a unit square, so 16% of it was dead at the top and 16% at the
+bottom. `undoLeft` was computed twice, with different formulas and different
+widths, leaving the left HALF of the Undo button inert. The Commit tap band ran
+past the drawn button and over the bear-off tray. The Undo/Commit tap band was
+2.5x the drawn height and started above the buttons, stealing taps from the
+checkers beneath. `btnY` added an x-scaled gap to a y coordinate. Every one of
+these is invisible at one aspect ratio and wrong at another.
+
+## Q-1 -- WHY DOES THE EXISTING CODE DO THAT?
+
+Before deleting, replacing or "simplifying" code that is already here, answer why
+it is the way it is. If it carries a comment explaining itself, that comment is a
+claim made by someone who probably read the engine. Disprove it, in the source,
+before acting -- or leave it alone.
+
+    unplayableDiceFor said: "bear-off (dest clamped to -1)" and probed
+    Engine.applySubMove to recover the die. It was right. It was deleted as
+    "invention based on a false premise". The false premise belonged to the
+    deleter (bba46e2, retracted in 39783b0).
+
+Deleting working code is a change. It gets the same checkpoint as writing new
+code, and the same burden of evidence. "This looks like invention" is a
+hypothesis, not a finding.
+
+## Q-2 -- FIND EVERY WRITER BEFORE CONCLUDING AN ENCODING
+
+Never infer how a field is encoded from the first place you see it written.
+
+    GenerateMovesSub writes  anMoves[k*2+1] = i - anRoll[k];
+    SaveMoves then writes    pm->anMove[i] = anMoves[i] > -1 ? anMoves[i] : -1;
+
+Reading only the first produced the rule "dest == src - die, always". The second
+clamps every negative to -1, so -1 is a sentinel for "off" and encodes no die at
+all. That single unchecked generalisation broke bear-offs, deleted correct code,
+and grew a state machine to defend itself.
+
+    grep -rn "anMove\[" engine-core/
+
+runs in one second and shows both. Do it, every time, before stating what a field
+means. An encoding claim is a search result, not a recollection.
+
+## Q-3 -- FIX THE FUNCTION THE EVIDENCE IMPLICATES, AND NOTHING ELSE
+
+The demonstrated defect was one function: landingPointsForSource pooled the
+sub-moves of unrelated legal moves into one graph and searched it. What followed
+was a rewrite of tapSource, dragMove and tryDestinationStackMove, a `played`
+prefix on BoardState, a nextSubMoves() decoder, and sub-multiset matching --
+none of which gnubg has, none of which any evidence asked for. All reverted.
+
+Scope is not a matter of taste here. Every function touched beyond the implicated
+one is a function whose behaviour cannot be verified by the report that prompted
+the change. If a second function looks wrong, get evidence for it first, and fix
+it in its own commit.
+
+## Q0 -- DOES IT ALREADY EXIST?
+
+Before writing any new function, verb, external or ViewModel method, search for
+it. Not "check carefully": run the search and paste the result.
+
+  - facade verb  -> grep -rn "CommandFoo" jni-bridge/    (the gnubg routine it wraps)
+  - JNI symbol   -> grep -rn "Engine_fooBar" jni-bridge/src/native-lib.c
+  - Kotlin       -> grep -rn "fun fooBar" gnubg-app/
+
+This question is Q0 because it precedes the rest. The checkpoint used to begin by
+asking WHICH gnubg function is being wrapped, and never asked whether someone had
+already wrapped it. That omission shipped a duplicate definition of
+gnubg_mobile_command_agree next to the one that had been there for months --
+along with duplicate header declarations, duplicate JNI wrappers and duplicate
+externals. The whole answering chain for resignations already existed and was
+dead; only the reader for ms.fResigned was missing.
+
+The same omission nearly rebuilt SetGNUbgID, and nearly rebuilt match saving.
+Neither was caught by a compiler. Both were caught by a person, late.
+
+## RUN ./tools/syntax_check.sh BEFORE EVERY COMMIT THAT TOUCHES C
+
+There is no excuse for shipping a C file that does not compile. gcc, the glib
+headers and a JDK are enough -- the only NDK-specific header the facade needs is
+<android/log.h>, stubbed in tools/shim. The full NDK is needed to LINK for the
+device, not to find a redefinition, a bad type, or a missing declaration.
+
+The duplicate above was found by the user's device build after a full native
+compile. It would have been found in one second by:
+
+    ./tools/syntax_check.sh
+
+## A GNUBG GLOBAL DEFINED BY THE PORT IS ENGINE CODE
+
+The de-GTK'd build omits gnubg.c, so android-app.c re-provides globals that
+backgammon.h declares extern: esAnalysisChequer, esEvalChequer, aamfAnalysis,
+arSkillLevel, and others. Using a gnubg *named instance* is not sufficient if
+the port hand-initialises it.
+
+Two bugs found this way, both labelled "copied verbatim" and neither verbatim:
+
+- EVALSETUP_2PLY transcribed the rolloutcontext tail positionally and supplied
+  three of its eleven leading bit-fields. Everything slid eight positions;
+  nTrials came out ZERO in all four evalsetups. Latent only because et was
+  EVAL_EVAL. Fixed by naming every field (5bf9cd1).
+- arSkillLevel[] was set to 0.75x gnubg's canonical thresholds, making the
+  tutor harsher than gnubg. Realigned (see PROVENANCE.md).
+
+So: **a definition of a gnubg global inside this port is engine code.** It must
+be checked against upstream gnubg.c, not trusted because a comment says it was
+copied. A "copied verbatim" comment is a claim to verify, not evidence. The
+compiler was reporting the EVALSETUP_2PLY bug 24 times per build, and it was
+read as noise for months. Warnings in android-app.c are load-bearing.
+
 ## THE NEW-FILE TRIPWIRE (this is where the invention accumulated)
 
 Before creating ANY new file that is not purely a Composable (i.e. anything
@@ -220,23 +382,34 @@ Compose UI (Kotlin)
 - Version: 0.9.1 consolidation. Authoritative status doc: docs/STATUS.md.
   Deep reference: docs/MASTER_V0.9.md. Tutor internals:
   docs/PHASE3_TUTOR_ANALYSIS.md.
-- Tutor analysis (Phase 13) is implemented and LOG-ONLY: after each human
-  move it logs blunder level and equity loss (gnubg equity + Engine.skill only;
-  the invented feature-delta analysis was removed) to tag gnubg-tutor.
-  It has no UI surface yet. It evaluates at 1-ply (fac_ec_default); the
-  2-ply/prune path returns inf in this build.
+- Tutor analysis (Phase 13) is implemented and HAS a UI surface
+  (TutorAnalysisPanel). After each human move gnubg scores the move and the
+  panel reports blunder level and equity loss. It evaluates at fixed 2-ply via
+  the named instance esAnalysisChequer.ec, independent of the opponent-strength
+  selector (commit 32a7c91). fac_ec_default no longer exists; any doc still
+  claiming 1-ply is stale.
 - Engine strength is wired to gnubg's four named presets
   (Beginner/Casual play/Intermediate/Advanced = aecSettings 0..3) via
   gnubg_mobile_set_engine_strength. There is NO Expert/Master in gnubg.
-- Home Hub shell + Play (full) + Learn/Analyse/Profile (scaffolds) +
-  5-tab Settings (Game/Board/Engine/Analysis/Expert) all exist.
+- Home Hub reads: Play Tournament Match -> Analyse Position -> Options, with
+  Profile in the corner. "Live Game Analysis" was removed as a hub entry; the
+  tutor is a match-setup option that reads the persisted settings.tutorMode.
+- Analyse Position is BUILT (analyse/AnalyseScreen.kt): paste a GNU BG ID or an
+  XGID, gnubg installs and evaluates it. Review Match is NOT built and has no
+  hub slot -- a slot is not reserved for a feature that does not exist.
+- AppMode still contains LEARN, which remains unreachable. Learn and Profile
+  are scaffolds.
+- 5-tab Settings (Tournament/Board/Engine/Analysis/Expert) exists.
 
 ## KNOWN-INCOMPLETE (do not assume these work; do not "fix" by reinventing)
 
 - Cube pass/drop after a human double, and beaver handling, are incomplete.
 - blockedDiceFor computes s0/s1 but returns an always-empty set (latent bug).
-- Tutor has no UI; cube/resign toast and bar-dance Continue button are
-  deferred, not done.
+- Cube/resign toast and bar-dance Continue button are deferred, not done.
+- Save match [2] and Review Match [3] (the two remaining requested features)
+  are NOT built. The engine side of save is already wired -- CommandSaveMatch
+  via FACADE_FILE_OP, Engine.saveMatch -- so only Android file plumbing is
+  missing. Do not rebuild the engine side.
 
 ## HOW TO WORK HERE
 

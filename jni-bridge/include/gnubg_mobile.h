@@ -39,7 +39,16 @@ int gnubg_mobile_command_double(void);
 int gnubg_mobile_can_double(void);   /* 1 if a double would succeed; 0 otherwise */
 int gnubg_mobile_command_take(void);
 int gnubg_mobile_command_drop(void);
+/* Roll for the human. Returns 1 if every one of CommandRoll's preconditions held
+ * (play.c:4048), 0 if gnubg was always going to refuse -- in which case the
+ * reason is logged under the gnubg-roll tag. CommandRoll itself returns void and
+ * refuses silently, so without this a refused roll looks like a successful one
+ * and the UI loops back to WAITING_FOR_ROLL, which presents as a stuck game. */
 int gnubg_mobile_command_roll(void);
+/* Resignation offered by GNU: 0 none, 1 normal, 2 gammon, 3 backgammon.
+ * PORT: ms.fResigned. GNU offers it itself (play.c:1335); CommandRoll refuses
+ * until the human answers with agree or decline. */
+int gnubg_mobile_get_resignation(void);
 int gnubg_mobile_command_move(const char *move);
 int gnubg_mobile_start_match(int match_length);
 int gnubg_mobile_next_game(void);
@@ -103,6 +112,34 @@ int gnubg_mobile_rollout(const int board[50], int trials,
  * Runs EvalInitialise/RNG/TLD/rollout setup, creates the match list, and
  * configures the Human-vs-GNU players. Returns 1 on success. */
 int gnubg_mobile_initialise(const char *weights_path);
+
+/* ---------------------------------------------------------------------------
+ * Position entry (Analyse Position). Thin wrappers over gnubg's own routines.
+ * ------------------------------------------------------------------------- */
+
+/* Install a position from a GNU BG ID ("PositionID:MatchID") or an XGID.
+ * PORT: SetGNUbgID (backgammon.h:519). Returns gnubg's code unchanged:
+ *   0 installed, 1 no valid IDs found, 2 installed but player on roll is on
+ *   top (the UI must offer a swap), -1 bad argument.
+ * The Command wrapper is deliberately not used: it answers the swap question
+ * through GetInputYN, which always returns TRUE in this port. */
+int gnubg_mobile_set_gnubg_id(const char *id);
+
+/* The user's yes to the swap offered after a return of 2.
+ * PORT: CommandSwapPlayers (backgammon.h:1024). */
+int gnubg_mobile_swap_players(void);
+
+/* gnubg's own renderings of the current state, copied out separately.
+ * PORT: PositionID (positionid.h:27), MatchIDFromMatchState (matchid.h:51).
+ * Returns 1, or -1 on bad argument. */
+int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
+                             char *out_match, int match_cap);
+
+/* Ranked chequer-play candidates for the position currently loaded in ms.
+ * PORT: FindnSaveBestMoves with esAnalysisChequer.ec and aamfAnalysis, the same
+ * named instances the tutor uses. Fills out_equity[n] and out_moves[n*8].
+ * Returns n, 0 when the position has no dice, or -1 on error. */
+int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]);
 
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 
