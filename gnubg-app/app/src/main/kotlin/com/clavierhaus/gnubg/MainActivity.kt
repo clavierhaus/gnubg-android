@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             GnubgTheme {
                 var mode by remember { mutableStateOf(AppMode.HUB) }
+
+                // ONE settings overlay, owned here, opened by the gear every
+                // screen carries. It renders over the current mode and returns
+                // to it on dismiss -- Settings is an overlay, not a place, so
+                // no screen loses its state by opening it.
+                var showSettings by remember { mutableStateOf(false) }
                 val settings by viewModel.settings.collectAsStateWithLifecycle()
 
                 val context = LocalContext.current
@@ -143,19 +150,23 @@ class MainActivity : ComponentActivity() {
                     return "gnubg-match-" + stamp + ".sgf"
                 }
 
+                androidx.compose.foundation.layout.Box(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize()
+                ) {
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
                         onAnalysePosition = { mode = AppMode.ANALYSE },
                         onReviewMatch = { mode = AppMode.REVIEW },
-                        onOptions = { mode = AppMode.OPTIONS },
+                        onOptions = { showSettings = true },
                         onProfile = { mode = AppMode.PROFILE }
                     )
 
                     AppMode.PLAY -> GameLayout(
                         viewModel = viewModel,
                         onReturnToHub = { mode = AppMode.HUB },
-                        onSaveMatch = { saveMatch.launch(defaultMatchFilename()) }
+                        onSaveMatch = { saveMatch.launch(defaultMatchFilename()) },
+                        onOpenSettings = { showSettings = true }
                     )
 
                     AppMode.LEARN -> LearnScreen(
@@ -164,14 +175,16 @@ class MainActivity : ComponentActivity() {
 
                     AppMode.ANALYSE -> AnalyseScreen(
                         settings = settings,
-                        onBackToHub = { mode = AppMode.HUB }
+                        onBackToHub = { mode = AppMode.HUB },
+                        onOpenSettings = { showSettings = true }
                     )
 
                     AppMode.REVIEW -> ReviewScreen(
                         settings = settings,
                         onOpenMatch = { openMatch.launch(arrayOf("*/*")) },
                         matchPath = reviewPath,
-                        onReturnToHub = { mode = AppMode.HUB }
+                        onReturnToHub = { mode = AppMode.HUB },
+                        onOpenSettings = { showSettings = true }
                     )
 
                     AppMode.OPTIONS -> OptionsModeScreen(
@@ -183,6 +196,20 @@ class MainActivity : ComponentActivity() {
                     AppMode.PROFILE -> ProfileScreen(
                         onBackToHub = { mode = AppMode.HUB }
                     )
+                }
+
+                if (showSettings) {
+                    // OptionsModeScreen provides the themed palette and fills the
+                    // screen; the callback is a dismiss, back to whatever mode is
+                    // underneath. AppMode.OPTIONS is now unreachable -- the hub
+                    // gear opens this overlay instead -- and its route above is
+                    // kept only because the when must stay exhaustive.
+                    OptionsModeScreen(
+                        settings = settings,
+                        viewModel = viewModel,
+                        onBackToHub = { showSettings = false }
+                    )
+                }
                 }
             }
         }

@@ -27,9 +27,9 @@ import androidx.compose.material3.TextButton
 fun GameLayout(
     viewModel: GameViewModel,
     onReturnToHub: (() -> Unit)? = null,
-    onSaveMatch: (() -> Unit)? = null
+    onSaveMatch: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
 ) {
-    var showSettings by remember { mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
@@ -43,13 +43,7 @@ fun GameLayout(
     val palette = BoardPalettes.from(settings.boardTheme)
     val pal = palette
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
-    if (showSettings) {
-        SettingsScreen(
-            settings = settings,
-            viewModel = viewModel,
-            onDismiss = { showSettings = false }
-        )
-    } else if (showMatchSetup) {
+    if (showMatchSetup) {
         MatchSetupScreen(
             tutorMode = tutorMode,
             selectedLength = settings.matchLength,
@@ -62,7 +56,8 @@ fun GameLayout(
             // pins it to 1 visibly (see setTutorMode), and the setup screen
             // says why. startMatch simply honours what is shown.
             onStart = { viewModel.startMatch(settings.matchLength) },
-            onReturnToHub = onReturnToHub
+            onReturnToHub = onReturnToHub,
+            onOpenSettings = onOpenSettings
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -289,7 +284,7 @@ fun GameLayout(
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp, top = 12.dp)
                     .size(24.dp)
-                    .clickable { showSettings = true }
+                    .clickable { onOpenSettings?.invoke() }
             )
 
             PlayLifecycleConfirmationDialog(
@@ -494,7 +489,8 @@ private fun MatchSetupScreen(
     onSelectDifficulty: (Difficulty) -> Unit,
     onToggleTutor: (Boolean) -> Unit,
     onStart: () -> Unit,
-    onReturnToHub: (() -> Unit)? = null
+    onReturnToHub: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val pal = LocalBoardPalette.current
     Box(
@@ -503,10 +499,24 @@ private fun MatchSetupScreen(
             .background(pal.uiPanelDeep),
         contentAlignment = Alignment.Center
     ) {
-        // Aligned child: does not touch the weighted setup Column, which was
-        // hard-won (a scroll modifier once broke its weights entirely).
+        // Aligned children: they do not touch the weighted setup Column, which
+        // was hard-won (a scroll modifier once broke its weights entirely). The
+        // gear keeps the top-left, as on every screen; Home takes the opposite
+        // corner rather than colliding with it.
+        if (onOpenSettings != null) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = pal.uiTextSecondary,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, top = 12.dp)
+                    .size(24.dp)
+                    .clickable { onOpenSettings() }
+            )
+        }
         if (onReturnToHub != null) {
-            Box(modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
+            Box(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
                 GameButton("Home", pal.uiButtonNeutral) { onReturnToHub() }
             }
         }

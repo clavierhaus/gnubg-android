@@ -1,6 +1,7 @@
 package com.clavierhaus.gnubg.analyse
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,9 @@ import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GameSettings
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import com.clavierhaus.gnubg.play.BackgammonBoard
 import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_ENGINE
 import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_HUMAN
@@ -98,7 +102,8 @@ private fun gameStateSuffix(gs: Int): String = when (gs) {
 @Composable
 fun AnalyseScreen(
     settings: GameSettings,
-    onBackToHub: () -> Unit
+    onBackToHub: () -> Unit,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val palette = remember(settings.boardTheme) { BoardPalettes.from(settings.boardTheme) }
     val scope = rememberCoroutineScope()
@@ -347,6 +352,7 @@ fun AnalyseScreen(
 
     CompositionLocalProvider(LocalBoardPalette provides palette) {
         val pal = LocalBoardPalette.current
+        Box(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -512,7 +518,7 @@ fun AnalyseScreen(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         GameButton(
-                            label = if (busy) "Working..." else "Evaluate",
+                            label = if (busy) "Working..." else "Analyse",
                             color = pal.uiActionPositive,
                             enabled = !busy
                         ) { evaluateEdit() }
@@ -665,6 +671,24 @@ fun AnalyseScreen(
                 } // end !editing
             }
         }
+
+        // The gear sits top-RIGHT on this screen: the board occupies the LEFT
+        // pane, and a top-left gear would cover the tip of point 13 -- stealing
+        // taps from the editor, whose tray gesture (clear board) is one mis-tap
+        // away.
+        if (onOpenSettings != null) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = pal.uiTextSecondary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 12.dp)
+                    .size(24.dp)
+                    .clickable { onOpenSettings() }
+            )
+        }
+        } // end root Box
     }
 }
 
@@ -712,5 +736,6 @@ private fun MatchContext(r: AnalyseResult) {
         if (d != null) {
             Text("Dice " + d.first + " " + d.second, color = Color.White, fontSize = 14.sp)
         }
+
     }
 }

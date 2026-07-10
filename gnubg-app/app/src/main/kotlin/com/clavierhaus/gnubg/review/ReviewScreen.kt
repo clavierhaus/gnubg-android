@@ -25,6 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.engine.BoardState
 import com.clavierhaus.gnubg.engine.GamePhase
@@ -70,7 +75,8 @@ fun ReviewScreen(
     settings: GameSettings,
     onOpenMatch: () -> Unit,
     matchPath: String?,
-    onReturnToHub: () -> Unit
+    onReturnToHub: () -> Unit,
+    onOpenSettings: (() -> Unit)? = null
 ) {
     val pal = BoardPalettes.from(settings.boardTheme)
     val scope = rememberCoroutineScope()
@@ -142,6 +148,7 @@ fun ReviewScreen(
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides pal) {
+        Box(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxSize().background(pal.uiPanelDeep)) {
 
             // Left pane: the controls. Static, as the game view is.
@@ -234,6 +241,22 @@ fun ReviewScreen(
                     )
                 }
             }
+        }
+
+        // Controls pane is on the LEFT here, so the gear keeps the top-left
+        // corner it has everywhere else; the title is centred and clears it.
+        if (onOpenSettings != null) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = pal.uiTextSecondary,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, top = 12.dp)
+                    .size(24.dp)
+                    .clickable { onOpenSettings() }
+            )
+        }
         }
     }
 }

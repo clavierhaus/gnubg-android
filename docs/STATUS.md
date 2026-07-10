@@ -112,7 +112,9 @@ Work toward a first public release. All landed on the working branch:
 ## Scaffolded but not feature-complete
 
 - Learn and Profile exist as scaffolds. `AppMode.LEARN` is not reachable from
-  the hub. Analyse Position and Review Match are no longer scaffolds; both are
+  the hub, and `AppMode.OPTIONS` is now unreachable too: Settings is a single
+  overlay owned by MainActivity, opened by the gear every screen carries, and it
+  returns to whatever mode is underneath. Analyse Position and Review Match are no longer scaffolds; both are
   built, and Review Match took the third hub slot when it existed, not before.
 - Settings tabs render and bind, but several rows are local-only pending a
   lifecycle-safe gnubg command path (see ARCHITECTURE.md, command bridge).
