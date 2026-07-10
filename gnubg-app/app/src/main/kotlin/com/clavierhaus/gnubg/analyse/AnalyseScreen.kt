@@ -262,18 +262,15 @@ fun AnalyseScreen(
             editCubeOwner = r.cubeOwner
             editCrawford = r.crawford
         } else {
-            // The standard opening position, human frame. Editing usually starts
-            // from a real board, not an empty one; one tray tap clears it.
-            // gnubg's TanBoard is per-side, each half indexed from its OWN
-            // direction, so the opening position is the same pattern in both
-            // halves: 5 on the 6-point (index 5), 3 on the 8 (7), 5 on the 13
-            // (12), 2 on the 24 (23).
-            val b = IntArray(50)
-            for ((pt, n) in listOf(5 to 5, 7 to 3, 12 to 5, 23 to 2)) {
-                b[25 + pt] = n   // human half
-                b[pt] = n        // engine half
-            }
-            editBoard = b
+            // Empty board. The use case is recreating a position that exists in
+            // front of the user -- a chouette, a book diagram, a screenshot --
+            // and that means PLACING what they see, not first erasing thirty
+            // checkers of opening position. gnubg's own manual says it: setting
+            // up is often easier from an empty board. (An earlier version seeded
+            // the standard opening here, reintroducing the exact chore the XG
+            // Mobile editor is criticised for.) Editing a position already on
+            // screen still starts from that position, above.
+            editBoard = IntArray(50)
             editD0 = 0; editD1 = 0
             editTurn = 0
             editScoreH = 0; editScoreE = 0
