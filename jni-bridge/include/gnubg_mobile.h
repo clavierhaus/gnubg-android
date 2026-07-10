@@ -30,6 +30,7 @@ int gnubg_mobile_command_new_session(int games);
 int gnubg_mobile_command_end_game(void);
 int gnubg_mobile_command_resign(const char *value);
 int gnubg_mobile_command_next(const char *argument);
+int gnubg_mobile_command_previous(const char *argument);  /* PORT: CommandPrevious */
 int gnubg_mobile_command_accept(void);
 int gnubg_mobile_command_reject(void);
 int gnubg_mobile_command_decline(void);

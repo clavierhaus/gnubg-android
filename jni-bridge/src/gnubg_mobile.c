@@ -39,6 +39,7 @@ extern void CommandNewSession(char *);
 extern void CommandEndGame(char *);
 extern void CommandResign(char *);
 extern void CommandNext(char *);
+extern void CommandPrevious(char *);
 extern void CommandAccept(char *);
 extern void CommandReject(char *);
 extern void CommandDecline(char *);
@@ -193,6 +194,28 @@ int gnubg_mobile_command_end_game(void) {
 int gnubg_mobile_command_resign(const char *value) {
     pthread_mutex_lock(&gnubg_lock);
     CommandResign((char *)(value ? value : ""));
+    gnubg_mobile_drain_next_turns();
+    pthread_mutex_unlock(&gnubg_lock);
+
+    return 1;
+}
+
+/* Step backwards through the game record. PORT: CommandPrevious (play.c).
+ *
+ * Takes the same argument grammar as CommandNext: an empty string for one move
+ * record, or "game" / "roll" / "rolled" / "marked", or a count.
+ *
+ * Navigation only walks the record. The sole writer of fNextTurn is TurnDone()
+ * (play.c:1663), so neither CommandNext nor CommandPrevious schedules a turn and
+ * the drain below is a no-op while reviewing. It is kept so every verb leaves the
+ * engine in the same state.
+ *
+ * Both refuse when plGame is NULL, printing to the log and returning void, so a
+ * caller cannot distinguish "moved" from "refused" -- read the match state after.
+ */
+int gnubg_mobile_command_previous(const char *argument) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandPrevious((char *)(argument ? argument : ""));
     gnubg_mobile_drain_next_turns();
     pthread_mutex_unlock(&gnubg_lock);
 

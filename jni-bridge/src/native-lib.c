@@ -293,6 +293,14 @@ Java_com_clavierhaus_gnubg_Engine_commandNext(JNIEnv *env, jobject thiz, jstring
 }
 
 JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_commandPrevious(JNIEnv *env, jobject thiz, jstring argument) {
+    (void)thiz;
+    char *sz = copy_jstring_or_empty(env, argument);
+    (void)gnubg_mobile_command_previous(sz);
+    free(sz);
+}
+
+JNIEXPORT void JNICALL
 Java_com_clavierhaus_gnubg_Engine_commandAccept(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;

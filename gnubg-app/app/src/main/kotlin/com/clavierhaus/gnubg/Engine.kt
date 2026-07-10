@@ -20,6 +20,11 @@ object Engine {
     external fun commandEndGame()
     external fun commandResign(value: String)
     external fun commandNext(argument: String = "")
+
+    // Step backwards through the game record. PORT: CommandPrevious.
+    // Same argument grammar as commandNext: "" for one record, or
+    // "game" / "roll" / "rolled" / "marked", or a count.
+    external fun commandPrevious(argument: String = "")
     external fun commandAccept()
     external fun commandReject()
     external fun commandDecline()
