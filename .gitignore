@@ -161,3 +161,8 @@ CLAUDE.md.generated.bak
 *.bak
 *-backup
 *.pre-*
+
+# Release signing secrets -- never commit
+keystore.properties
+*.keystore
+*.jks

@@ -4,6 +4,19 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Release signing. Secrets live in keystore.properties (gitignored), never in
+// this file and never in git. Create it from keystore.properties.example and
+// point it at your keystore. If it is absent -- a fresh clone, CI without the
+// key -- the release build falls back to the debug signing key so the APK still
+// installs; it simply is not YOUR published signature.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = java.util.Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(java.io.FileInputStream(keystorePropertiesFile))
+    }
+}
+val hasReleaseKey = keystorePropertiesFile.exists()
+
 android {
     namespace = "com.clavierhaus.gnubg"
     compileSdk = 35
@@ -16,9 +29,28 @@ android {
         versionName = "0.10.0"
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            // A signed release APK installs; an unsigned one does not. With a
+            // keystore, sign with it; without, fall back to the debug key so a
+            // clone still produces an installable APK.
+            signingConfig = if (hasReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
