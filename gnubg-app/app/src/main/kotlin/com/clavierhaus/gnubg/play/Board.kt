@@ -76,7 +76,7 @@ private const val DIE_W   = PT_W * 0.8f
  * The invariant: an element's hit rectangle IS the rectangle it was drawn from.
  * Both sides read these values. Nothing is computed twice.
  */
-private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, diceCount: Int) {
+private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, private val diceCount: Int) {
     val sx = w / TOT_W
     val sy = h / TOT_H
 
