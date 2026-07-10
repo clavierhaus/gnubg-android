@@ -107,6 +107,68 @@ For every change, answer these IN WRITING, in chat, before code:
       the board" is a FAILING answer. If gnubg does not expose it,
       the answer is to NOT SHOW IT -- not to compute it myself.
 
+## UI GEOMETRY: ONE SOURCE, EVERY DEVICE
+
+This is a cornerstone, not a style note. The app targets Android 12+, which is a
+long tail of resolutions, densities and aspect ratios. It must look the same on
+all of them, and a tap must land where the eye says it will, on every one.
+
+**The layout law.**
+
+- The board fills the screen horizontally. Always. Nothing is cropped sideways.
+- Aspect ratio is absorbed VERTICALLY, by stretching. A non-uniform scale
+  (`sx != sy`) is therefore normal and expected, not an edge case.
+- Board features that stretch with the board -- points, bar, frame, trays -- are
+  expressed in board units and scaled by `sx` and `sy` respectively.
+- Pieces that must stay square or round -- checkers, dice, cube, buttons -- are
+  drawn from a single dimension, so their pixel size does NOT follow `sy`.
+
+**The invariant.**
+
+    Every interactive element's hit rectangle IS the rectangle it was drawn from.
+    Not a copy of it. Not a formula that agrees with it. The same value.
+
+Compute each rectangle once, from the canvas size, in one place. Draw from it.
+Hit-test against it. A hit rect derived independently is a bug the moment the
+aspect ratio changes, and it will change.
+
+Measured, for the board pane (about 82% of the width; the rest is the side
+column):
+
+    screen 16:11   sx/sy 0.959     hit rect too TALL  by 0.11 u per edge
+    screen 16:10   sx/sy 1.055     hit rect too SHORT by 0.14 u per edge
+    screen 16:9    sx/sy 1.172     hit rect too SHORT by 0.45 u per edge
+    screen 20:9    sx/sy 1.468     hit rect too SHORT by 1.23 u per edge
+                                   (the Pixel 8 Pro test device)
+
+`sx/sy` crosses 1.000 at about 16:10.4, inside the ordinary phone band. So the
+error changes SIGN across devices we ship to: on one the cube's top and bottom
+are dead, on another the tap rect sticks out past the drawn cube. There is no
+correction factor that fixes both. The only fix is that there is one rectangle.
+
+**Corollaries.**
+
+- Never write the same geometry expression twice. If a comment says "must match
+  the hit-test above exactly", the design is already wrong -- a comment is not a
+  mechanism.
+- Never mix scales. `uy(a) + ux(b)` is meaningless: it adds an x-scaled length to
+  a y coordinate, and the element slides as the pane widens.
+- Never hit-test a pixel-square in unit space, or a unit-rect in pixel space. A
+  unit square is not a pixel square when `sx != sy`.
+- Tap target equals drawn button. Never `Modifier.offset` to move a control:
+  offset moves the drawing, the layout slot stays, and taps diverge.
+- Distributive space (gaps between groups) is weighted. Intrinsic space (a gap
+  between two adjacent chips) is dp. Neither is a hit rectangle.
+
+**What this rule already cost.** Board.kt drew the cube as a pixel square and
+hit-tested it as a unit square, so 16% of it was dead at the top and 16% at the
+bottom. `undoLeft` was computed twice, with different formulas and different
+widths, leaving the left HALF of the Undo button inert. The Commit tap band ran
+past the drawn button and over the bear-off tray. The Undo/Commit tap band was
+2.5x the drawn height and started above the buttons, stealing taps from the
+checkers beneath. `btnY` added an x-scaled gap to a y coordinate. Every one of
+these is invisible at one aspect ratio and wrong at another.
+
 ## Q-1 -- WHY DOES THE EXISTING CODE DO THAT?
 
 Before deleting, replacing or "simplifying" code that is already here, answer why
