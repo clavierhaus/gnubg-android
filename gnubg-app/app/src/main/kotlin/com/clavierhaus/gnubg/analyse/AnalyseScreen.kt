@@ -3,10 +3,8 @@ package com.clavierhaus.gnubg.analyse
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -362,7 +360,11 @@ fun AnalyseScreen(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    // Below the gear (which ends at 36dp): the position window is
+                    // centred in the space that remains, and the gear overlaps
+                    // nothing tappable.
+                    .padding(top = 44.dp),
                 contentAlignment = Alignment.Center
             ) {
                 val r = result
@@ -407,12 +409,13 @@ fun AnalyseScreen(
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // This pane does NOT scroll. Nothing in this app scrolls: the game
+            // view law. The editor fits by being 20% smaller, not by moving.
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     "Analyse Position",
@@ -422,40 +425,39 @@ fun AnalyseScreen(
                 )
                 if (editing) {
                     Text(
-                        "Tap a point to place checkers; the bar works the same way. " +
-                            "Tapping the bear-off tray clears the board.",
+                        "Tap a point or the bar to place checkers; tap the bear-off to reset.",
                         color = pal.uiTextSecondary,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GameButton("White", if (editTool == 0) pal.uiChipOn else pal.uiChipOff) { editTool = 0 }
-                        GameButton("Black", if (editTool == 1) pal.uiChipOn else pal.uiChipOff) { editTool = 1 }
-                        GameButton("Erase", if (editTool == 2) pal.uiChipOn else pal.uiChipOff) { editTool = 2 }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        GameButton("White", if (editTool == 0) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 0 }
+                        GameButton("Black", if (editTool == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 1 }
+                        GameButton("Erase", if (editTool == 2) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 2 }
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("On roll", color = pal.uiTextSecondary, fontSize = 13.sp)
-                        GameButton("You", if (editTurn == 0) pal.uiChipOn else pal.uiChipOff) { editTurn = 0 }
-                        GameButton("GNU", if (editTurn == 1) pal.uiChipOn else pal.uiChipOff) { editTurn = 1 }
+                        GameButton("You", if (editTurn == 0) pal.uiChipOn else pal.uiChipOff, compact = true) { editTurn = 0 }
+                        GameButton("GNU", if (editTurn == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editTurn = 1 }
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Dice", color = pal.uiTextSecondary, fontSize = 13.sp)
                         // Tap to cycle: -, 1..6. No dice is a CUBE decision -- the
                         // same rule as gnubg's desktop edit mode.
-                        GameButton(if (editD0 == 0) "-" else "" + editD0, pal.uiChipOff) {
+                        GameButton(if (editD0 == 0) "-" else "" + editD0, pal.uiChipOff, compact = true) {
                             editD0 = (editD0 + 1) % 7
                             // Dice come in pairs or not at all: (1,0) is not a roll.
                             editD1 = if (editD0 == 0) 0 else if (editD1 == 0) editD0 else editD1
                         }
-                        GameButton(if (editD1 == 0) "-" else "" + editD1, pal.uiChipOff) {
+                        GameButton(if (editD1 == 0) "-" else "" + editD1, pal.uiChipOff, compact = true) {
                             if (editD0 > 0) editD1 = if (editD1 >= 6) 1 else editD1 + 1
                         }
                         Text(
@@ -465,11 +467,11 @@ fun AnalyseScreen(
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Match to", color = pal.uiTextSecondary, fontSize = 13.sp)
-                        GameButton("-", pal.uiButtonNeutral, editMatchTo > 0) {
+                        GameButton("-", pal.uiButtonNeutral, editMatchTo > 0, compact = true) {
                             editMatchTo--
                             if (editMatchTo == 0) editCrawford = false
                         }
@@ -477,52 +479,54 @@ fun AnalyseScreen(
                             if (editMatchTo == 0) "money" else "" + editMatchTo,
                             color = Color.White, fontSize = 14.sp
                         )
-                        GameButton("+", pal.uiButtonNeutral, editMatchTo < 25) { editMatchTo++ }
+                        GameButton("+", pal.uiButtonNeutral, editMatchTo < 25, compact = true) { editMatchTo++ }
                         if (editMatchTo > 0) {
                             GameButton(
                                 "Crawford",
-                                if (editCrawford) pal.uiChipOn else pal.uiChipOff
+                                if (editCrawford) pal.uiChipOn else pal.uiChipOff,
+                                compact = true
                             ) { editCrawford = !editCrawford }
                         }
                     }
 
                     if (editMatchTo > 0) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Score you", color = pal.uiTextSecondary, fontSize = 13.sp)
-                            GameButton("-", pal.uiButtonNeutral, editScoreH > 0) { editScoreH-- }
+                            GameButton("-", pal.uiButtonNeutral, editScoreH > 0, compact = true) { editScoreH-- }
                             Text("" + editScoreH, color = Color.White, fontSize = 14.sp)
-                            GameButton("+", pal.uiButtonNeutral, editScoreH < editMatchTo - 1) { editScoreH++ }
+                            GameButton("+", pal.uiButtonNeutral, editScoreH < editMatchTo - 1, compact = true) { editScoreH++ }
                             Text("GNU", color = pal.uiTextSecondary, fontSize = 13.sp)
-                            GameButton("-", pal.uiButtonNeutral, editScoreE > 0) { editScoreE-- }
+                            GameButton("-", pal.uiButtonNeutral, editScoreE > 0, compact = true) { editScoreE-- }
                             Text("" + editScoreE, color = Color.White, fontSize = 14.sp)
-                            GameButton("+", pal.uiButtonNeutral, editScoreE < editMatchTo - 1) { editScoreE++ }
+                            GameButton("+", pal.uiButtonNeutral, editScoreE < editMatchTo - 1, compact = true) { editScoreE++ }
                         }
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Cube", color = pal.uiTextSecondary, fontSize = 13.sp)
-                        GameButton("" + editCube, pal.uiChipOff) {
+                        GameButton("" + editCube, pal.uiChipOff, compact = true) {
                             editCube = if (editCube >= 64) 1 else editCube * 2
                             if (editCube == 1) editCubeOwner = -1
                         }
-                        GameButton("Centred", if (editCubeOwner == -1) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = -1 }
-                        GameButton("You", if (editCubeOwner == 0) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = 0 }
-                        GameButton("GNU", if (editCubeOwner == 1) pal.uiChipOn else pal.uiChipOff) { editCubeOwner = 1 }
+                        GameButton("Centred", if (editCubeOwner == -1) pal.uiChipOn else pal.uiChipOff, compact = true) { editCubeOwner = -1 }
+                        GameButton("You", if (editCubeOwner == 0) pal.uiChipOn else pal.uiChipOff, compact = true) { editCubeOwner = 0 }
+                        GameButton("GNU", if (editCubeOwner == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editCubeOwner = 1 }
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         GameButton(
                             label = if (busy) "Working..." else "Analyse",
                             color = pal.uiActionPositive,
-                            enabled = !busy
+                            enabled = !busy,
+                            compact = true
                         ) { evaluateEdit() }
-                        GameButton("Cancel", pal.uiButtonNeutral, !busy) { editing = false }
+                        GameButton("Cancel", pal.uiButtonNeutral, !busy, compact = true) { editing = false }
                     }
                 } else {
                 Text(
@@ -672,18 +676,18 @@ fun AnalyseScreen(
             }
         }
 
-        // The gear sits top-RIGHT on this screen: the board occupies the LEFT
-        // pane, and a top-left gear would cover the tip of point 13 -- stealing
-        // taps from the editor, whose tray gesture (clear board) is one mis-tap
-        // away.
+        // The gear is top-left on EVERY screen -- no exceptions, by order. The
+        // board pane below is padded down past it, so the gear cannot sit on
+        // point 13 and steal editor taps: the thing in the way moved, not the
+        // gear.
         if (onOpenSettings != null) {
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Settings",
                 tint = pal.uiTextSecondary,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 16.dp, top = 12.dp)
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, top = 12.dp)
                     .size(24.dp)
                     .clickable { onOpenSettings() }
             )

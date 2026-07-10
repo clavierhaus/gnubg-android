@@ -155,6 +155,10 @@ correction factor that fixes both. The only fix is that there is one rectangle.
   a y coordinate, and the element slides as the pane widens.
 - Never hit-test a pixel-square in unit space, or a unit-rect in pixel space. A
   unit square is not a pixel square when `sx != sy`.
+- The settings gear sits TOP-LEFT on every screen. No exceptions. If it would
+  cover something tappable, move the something, not the gear.
+- Nothing scrolls, anywhere. The game view law applies to every pane: what does
+  not fit is made to fit (smaller controls, tighter spacing, fewer words).
 - Tap target equals drawn button. Do not use `Modifier.offset` to move a control
   out of the space its parent gave it: offset is a layout modifier, so drawing and
   pointer input move together, but anything pushed beyond the parent's bounds stops

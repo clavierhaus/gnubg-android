@@ -458,6 +458,10 @@ fun GameButton(
     label: String,
     color: Color,
     enabled: Boolean = true,
+    // 80% metrics, for panes that must hold many controls WITHOUT scrolling.
+    // The game view law applies everywhere: nothing scrolls; what does not
+    // fit is made to fit.
+    compact: Boolean = false,
     onClick: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
@@ -465,13 +469,16 @@ fun GameButton(
         modifier = Modifier
             .background(color, RoundedCornerShape(8.dp))
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(
+                horizontal = if (compact) 19.dp else 24.dp,
+                vertical = if (compact) 9.dp else 12.dp
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
             color = if (enabled) Color.White else pal.uiTextDisabled,
-            fontSize = 16.sp,
+            fontSize = if (compact) 13.sp else 16.sp,
             fontWeight = FontWeight.Bold
         )
     }
