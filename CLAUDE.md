@@ -298,6 +298,8 @@ with a more sophisticated violation.
 ## ARCHITECTURE (the layers, top to bottom)
 
 Compose UI (Kotlin)
+  hub/HomeHubScreen  play/GameLayout  analyse/AnalyseScreen  review/ReviewScreen
+  options/SettingsScreen
   -> GameViewModel / BoardState (engine/)
   -> Engine.kt  (JNI external fun declarations)
   -> JNI boundary
@@ -391,12 +393,17 @@ Compose UI (Kotlin)
 - Engine strength is wired to gnubg's four named presets
   (Beginner/Casual play/Intermediate/Advanced = aecSettings 0..3) via
   gnubg_mobile_set_engine_strength. There is NO Expert/Master in gnubg.
-- Home Hub reads: Play Tournament Match -> Analyse Position -> Options, with
-  Profile in the corner. "Live Game Analysis" was removed as a hub entry; the
-  tutor is a match-setup option that reads the persisted settings.tutorMode.
+- Home Hub reads: Play Tournament Match -> Analyse Position -> Review Match ->
+  Options, with Profile in the corner. "Live Game Analysis" was removed as a hub
+  entry; the tutor is a match-setup option that reads the persisted
+  settings.tutorMode.
 - Analyse Position is BUILT (analyse/AnalyseScreen.kt): paste a GNU BG ID or an
-  XGID, gnubg installs and evaluates it. Review Match is NOT built and has no
-  hub slot -- a slot is not reserved for a feature that does not exist.
+  XGID, gnubg installs and evaluates it.
+- Review Match is BUILT in first form (review/ReviewScreen.kt): open a saved .sgf
+  and step through it. It keeps no cursor -- gnubg's CommandNext and
+  CommandPrevious walk the game record, and the matchstate is read back. The
+  per-move verdict is not wired yet, though hint_moves and analyze_played_move
+  both exist. It took the third hub slot when it existed, not before.
 - AppMode still contains LEARN, which remains unreachable. Learn and Profile
   are scaffolds.
 - 5-tab Settings (Tournament/Board/Engine/Analysis/Expert) exists.

@@ -135,11 +135,26 @@ a replay is needed when walking a multi-step move.
 A negative *source* (`anMove[k*2] < 0`) is the move terminator (`SaveMoves`).
 Do not confuse it with a negative destination.
 
-### CommandSaveMatch tokenizes its path
+### Navigation does not schedule a turn
+
+`CommandNext` and `CommandPrevious` (play.c) walk the game record. The sole writer
+of `fNextTurn` is `TurnDone()` (play.c:1663), so neither schedules a turn, and the
+`drain_next_turns()` that both facade verbs run is a no-op while reviewing. Do not
+write a second, drain-free navigation verb "to be safe": there is nothing to be
+safe from, and the duplicate is the greater risk.
+
+Both refuse when `plGame` is NULL, report it through `outputl`, and return `void`.
+A caller cannot tell "moved" from "refused". Read the matchstate afterwards.
+
+`CommandNext` takes an argument grammar: empty for one move record, or `game`,
+`roll`, `rolled`, `marked`, or a count. `CommandPrevious` takes the same.
+
+### CommandSaveMatch and CommandLoadMatch tokenize their paths
 
 `CommandSaveMatch` (sgf.c:2365) begins with `NextToken(&sz)`, which splits on
 whitespace. **A path containing a space is silently truncated.** It also refuses
-when `plGame` is NULL.
+when `plGame` is NULL. `CommandLoadMatch` (sgf.c) does the same to its own path.
+Every cache file this port hands gnubg is therefore named without whitespace.
 
 ### FACADE_FILE_OP always reports success
 

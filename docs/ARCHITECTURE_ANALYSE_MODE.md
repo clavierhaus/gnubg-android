@@ -1,6 +1,13 @@
 # Design: the Analyse destination (position entry, match save, match review)
 
-Status: proposal. Written before implementation, to fix the architecture before
+> **STATUS (2026-07-10).** All three features named below are now built.
+> [1] Analyse Position and [2] Save match are complete. [3] Review Match exists in
+> a first form: it opens a saved `.sgf` and steps through it, but does not yet show
+> gnubg's per-move verdict. Sections below are the design as decided; where they
+> speak of what "will" be built, read them as the record of a decision, not as a
+> description of missing code. Deviations are recorded at the end.
+
+Status: implemented. Written as a proposal before implementation, to fix the architecture before
 any code. Supersedes nothing; extends `ARCHITECTURE.md`.
 
 ## Why this document exists
@@ -256,6 +263,22 @@ and Backgammon Studio, which is the actual workflow being asked for). Treat
 `.mat` as a follow-on with its own investigation.
 
 ### [3] Match review -- data is present, UI is the whole job
+
+**Outcome (2026-07-10).** Confirmed, and cheaper than this section expected. The
+PORT CHECKPOINT found that `CommandNext` was already wrapped as
+`gnubg_mobile_command_next`, that `load_match` and `save_match` were already
+wired, and that `hint_moves` and `analyze_played_move` -- both already used by the
+tutor -- supply the verdict. Exactly one engine verb was missing, `CommandPrevious`
+(41b00e9). The rest was the UI, as predicted.
+
+Two things this section did not anticipate:
+
+- `Engine.loadMatch` replaces the engine's match, so opening a file discards a
+  game in progress. Reviewing "while playing" therefore cannot be done by loading
+  a file; it would have to navigate the record of the live match in place. The
+  first version does not attempt it.
+- `CommandLoadMatch` tokenizes its path exactly as `CommandSaveMatch` does, so the
+  cache file the SAF document is copied into must carry no whitespace.
 
 The engine holds the entire match in memory while you play:
 

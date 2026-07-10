@@ -31,10 +31,14 @@ three things missing from every Android backgammon app:
    -- **BUILT.** "Save match" in the in-game panel writes gnubg's native `.sgf`
    through `CommandSaveMatch` and hands it to the Storage Access Framework, so
    the user chooses the destination (Downloads, Drive, anywhere).
-3. **Step through a match afterwards, or during play.** -- **NOT BUILT.**
+3. **Step through a match afterwards, or during play.** -- **BUILT, first form**
+   (Review Match). Open a saved `.sgf` and walk it move by move and game by game,
+   on gnubg's own board. gnubg navigates its game record with `CommandNext` and
+   `CommandPrevious`; the screen keeps no cursor of its own. No per-move verdict
+   yet -- see Known gaps.
 
-The design is settled in `ARCHITECTURE_ANALYSE_MODE.md`. Nothing outside these
-three should be started before they are done.
+All three are now built. The design is recorded in `ARCHITECTURE_ANALYSE_MODE.md`.
+Nothing outside these three should be started before they are finished.
 
 ## Recent additions (post-0.9.1, July 2026)
 
@@ -85,6 +89,10 @@ Work toward a first public release. All landed on the working branch:
   Storage Access Framework. Opens in gnubg desktop and Backgammon Studio. This
   is feature [2]. Success is verified (the file exists and is non-empty), because
   `FACADE_FILE_OP` reports success unconditionally.
+- **Review Match**: open a saved `.sgf` through the Storage Access Framework and
+  step through it. Navigation is gnubg's own `CommandNext` / `CommandPrevious`
+  over its game record; the board is read-only (`viewModel = null`). This is
+  feature [3].
 - **Analyse Position**: paste a GNU BG ID or an XGID; gnubg installs it via its
   own `SetGNUbgID` and ranks the chequer plays with `FindnSaveBestMoves`. The
   match context (length, score, cube and owner, Crawford, who is on roll) is
@@ -94,9 +102,8 @@ Work toward a first public release. All landed on the working branch:
 ## Scaffolded but not feature-complete
 
 - Learn and Profile exist as scaffolds. `AppMode.LEARN` is not reachable from
-  the hub. Analyse Position is no longer a scaffold; it is built.
-- Review Match is not built and deliberately has **no hub slot**. A slot is not
-  reserved for a feature that does not exist.
+  the hub. Analyse Position and Review Match are no longer scaffolds; both are
+  built, and Review Match took the third hub slot when it existed, not before.
 - Settings tabs render and bind, but several rows are local-only pending a
   lifecycle-safe gnubg command path (see ARCHITECTURE.md, command bridge).
 
@@ -108,8 +115,16 @@ Work toward a first public release. All landed on the working branch:
   roll and the game could not finish.
 - The full tutor vision (CoachCard, arrows, Try-Again loop) is not built.
   TutorAnalysisPanel is the current, minimal surface.
-- **Review Match [3] is not built.** It is the last of the three requested
-  features, and the largest.
+- **Review Match [3] is a first version.** It navigates and displays; it does not
+  yet show the verdict. `hint_moves` (gnubg's ranking of the alternatives) and
+  `analyze_played_move` (the equity the player gave up) both exist and are used by
+  the tutor; the screen does not call them yet. No move list, no jumping to
+  marked moves.
+- **Review Match discards a game in progress.** `Engine.loadMatch` replaces the
+  engine's match. The screen warns in a caption; it should be a confirmation.
+- The hub column uses `Modifier.offset(x = 64.dp)`, which CLAUDE.md forbids for
+  interactive elements: the drawing moves, the layout slot does not, so the tap
+  targets sit 64dp left of their labels. Pre-existing.
 - In tutor mode the whole `PlayLifecyclePanel` is replaced by
   `TutorAnalysisPanel`, so Resign, New game, New match, Home and Save match are
   all unreachable while the tutor is on. Pre-existing; not addressed by the save
