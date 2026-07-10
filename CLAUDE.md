@@ -107,6 +107,52 @@ For every change, answer these IN WRITING, in chat, before code:
       the board" is a FAILING answer. If gnubg does not expose it,
       the answer is to NOT SHOW IT -- not to compute it myself.
 
+## Q-1 -- WHY DOES THE EXISTING CODE DO THAT?
+
+Before deleting, replacing or "simplifying" code that is already here, answer why
+it is the way it is. If it carries a comment explaining itself, that comment is a
+claim made by someone who probably read the engine. Disprove it, in the source,
+before acting -- or leave it alone.
+
+    unplayableDiceFor said: "bear-off (dest clamped to -1)" and probed
+    Engine.applySubMove to recover the die. It was right. It was deleted as
+    "invention based on a false premise". The false premise belonged to the
+    deleter (bba46e2, retracted in 39783b0).
+
+Deleting working code is a change. It gets the same checkpoint as writing new
+code, and the same burden of evidence. "This looks like invention" is a
+hypothesis, not a finding.
+
+## Q-2 -- FIND EVERY WRITER BEFORE CONCLUDING AN ENCODING
+
+Never infer how a field is encoded from the first place you see it written.
+
+    GenerateMovesSub writes  anMoves[k*2+1] = i - anRoll[k];
+    SaveMoves then writes    pm->anMove[i] = anMoves[i] > -1 ? anMoves[i] : -1;
+
+Reading only the first produced the rule "dest == src - die, always". The second
+clamps every negative to -1, so -1 is a sentinel for "off" and encodes no die at
+all. That single unchecked generalisation broke bear-offs, deleted correct code,
+and grew a state machine to defend itself.
+
+    grep -rn "anMove\[" engine-core/
+
+runs in one second and shows both. Do it, every time, before stating what a field
+means. An encoding claim is a search result, not a recollection.
+
+## Q-3 -- FIX THE FUNCTION THE EVIDENCE IMPLICATES, AND NOTHING ELSE
+
+The demonstrated defect was one function: landingPointsForSource pooled the
+sub-moves of unrelated legal moves into one graph and searched it. What followed
+was a rewrite of tapSource, dragMove and tryDestinationStackMove, a `played`
+prefix on BoardState, a nextSubMoves() decoder, and sub-multiset matching --
+none of which gnubg has, none of which any evidence asked for. All reverted.
+
+Scope is not a matter of taste here. Every function touched beyond the implicated
+one is a function whose behaviour cannot be verified by the report that prompted
+the change. If a second function looks wrong, get evidence for it first, and fix
+it in its own commit.
+
 ## Q0 -- DOES IT ALREADY EXIST?
 
 Before writing any new function, verb, external or ViewModel method, search for

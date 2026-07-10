@@ -116,6 +116,25 @@ stuck game near the end of a won position, which is precisely when GNU resigns.
 
 Do not assume the engine never resigns. It does.
 
+### A bear-off destination in anMove is -1, and encodes no die
+
+`GenerateMovesSub` (eval.c) stores each sub-move as `(i, i - anRoll[k])`, so a
+bear-off destination comes out negative. `SaveMoves` then clamps it:
+
+    pm->anMove[i] = anMoves[i] > -1 ? anMoves[i] : -1;
+
+So every bear-off is stored as `(src, -1)`. Bearing off point 1 with a 1 and
+point 3 with a 6 are indistinguishable in the move list. **`src - dest` is the
+die only when `dest >= 0`.**
+
+To recover the die of a bear-off, ask gnubg: `Engine.applySubMove(board, src, d)`
+is `LegalMove`, and it accepts exactly the dice that legally bear off from that
+point on that board. The board must be the one as it stands at that sub-move, so
+a replay is needed when walking a multi-step move.
+
+A negative *source* (`anMove[k*2] < 0`) is the move terminator (`SaveMoves`).
+Do not confuse it with a negative destination.
+
 ### CommandSaveMatch tokenizes its path
 
 `CommandSaveMatch` (sgf.c:2365) begins with `NextToken(&sz)`, which splits on
