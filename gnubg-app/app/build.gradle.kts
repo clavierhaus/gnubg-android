@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,9 +13,9 @@ plugins {
 // key -- the release build falls back to the debug signing key so the APK still
 // installs; it simply is not YOUR published signature.
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
-        load(java.io.FileInputStream(keystorePropertiesFile))
+        load(FileInputStream(keystorePropertiesFile))
     }
 }
 val hasReleaseKey = keystorePropertiesFile.exists()
