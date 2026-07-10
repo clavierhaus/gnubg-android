@@ -3,6 +3,14 @@
 **Authoritative current-state document.** Everything else defers to this.
 For deep engineering history see MASTER_V0.9.md; for forward plans see ROADMAP.md.
 
+**The three companion features are built and working (July 2026).** Set up any
+position and get gnubg's evaluation (chequer plays with dice; cube decision
+without); save the match to `.sgf`; review a saved match move by move. These
+were the features the app existed to provide, and they run entirely on gnubg's
+own engine. What remains on each is reporting depth, not the feature: a per-move
+verdict inside review, review of the live game in place, a whole-match rating.
+The README leads with these; this document records their gaps in detail below.
+
 ## What V0.9.1 is
 
 A consolidation checkpoint. It reconciles two development streams that the
