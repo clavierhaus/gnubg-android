@@ -78,6 +78,9 @@ After installing, a clean restart is:
 - [`docs/ARCHITECTURE_ANALYSE_MODE.md`](docs/ARCHITECTURE_ANALYSE_MODE.md) — design and outcome of position entry, match save, and review
 - [`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md) — the traps this port hit, each verified against the engine source
 - [`docs/THREADING.md`](docs/THREADING.md) — why the app is single-threaded, and the conditions under which that changes
+- [`docs/COACH.md`](docs/COACH.md) — the fourth mode, "Train with the Coach": identity, decisions, and document map
+- [`docs/TUTOR_VISION.md`](docs/TUTOR_VISION.md) — the coaching north star
+- [`docs/COACH_MODE_PLAN.md`](docs/COACH_MODE_PLAN.md) — the Coach milestones
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — forward plans
 - [`CHANGELOG.md`](CHANGELOG.md) — what changed in each release
 - [`RELEASING.md`](RELEASING.md) — how a release is cut
@@ -86,6 +89,7 @@ After installing, a clean restart is:
 
 The three companion features are built; the core is solid. The frontier now:
 
+- **"Train with the Coach"** — the fourth mode, in progress: play gnubg with the engine looking over your shoulder, gnubg's verdict rendered on the board itself, grounded explanation with no app-side backgammon judgement. Engine groundwork done; see [`docs/COACH.md`](docs/COACH.md).
 - **Analysis reporting** — the per-move verdict inside review is done (gnubg's ranking against the move actually played, shown at every step); still to come: a jump-to-blunder move list and a Performance Rating for a whole match.
 - **Review while playing** — stepping back through the live game record in place, not only from a saved file.
 - **Online play** — a modern client for [FIBS](http://www.fibs.com/), the long-running free backgammon server, with local gnubg analysis alongside.

@@ -13,7 +13,12 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- Groundwork for **"Train with the Coach"**, the fourth mode: the engine now
+  returns gnubg's full verdict on the last human move — rank, equities,
+  severity, both moves, per-move win/gammon/backgammon probabilities, and the
+  top candidates — from a single evaluation. Not yet visible in the app; the
+  mode's screen arrives next. See `docs/COACH.md`.
 
 ## [0.11.4] — 2026-07-11
 

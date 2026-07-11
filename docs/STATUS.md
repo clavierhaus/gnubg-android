@@ -11,6 +11,14 @@ own engine. What remains on each is reporting depth, not the feature: a per-move
 verdict inside review, review of the live game in place, a whole-match rating.
 The README leads with these; this document records their gaps in detail below.
 
+**The fourth mode is underway (July 2026): "Train with the Coach".** The engine
+side of its first milestone is done and build-verified: gnubg_mobile_coach_verdict
+returns gnubg's full verdict on the last human move (rank, equities, severity,
+both moves, pre-move board, per-move probability vectors, top-5 candidates) from
+one evaluation. No UI yet. Identity, decisions and document map: docs/COACH.md;
+milestones: docs/COACH_MODE_PLAN.md; north star: docs/TUTOR_VISION.md. The
+one-point Chequer-Play Tutor stays permanently as the movement-only companion.
+
 ## What V0.9.1 is
 
 A consolidation checkpoint. It reconciles two development streams that the
