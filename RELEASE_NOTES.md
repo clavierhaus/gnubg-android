@@ -1,15 +1,29 @@
-## GNU Backgammon for Android 0.10.0 — the comprehensive-companion release
+## GNU Backgammon for Android 0.10.1
 
-This release completes the three features the app set out to provide, each running on GNU Backgammon's own engine — not an app-side re-implementation:
+A follow-up to 0.10.0 with the fixes from the first field reports. Everything in
+0.10.0 that had not yet reached a device is folded in here.
 
-- **Set up any position and analyse it.** Tap points and the bar to place checkers, tap the bear-off tray to clear the board, then set dice, cube, score, match length, and who is on roll. Dice set → gnubg's ranked chequer plays. No dice → gnubg's cube decision (double / take / drop with equities), exactly as gnubg's desktop edit mode treats a no-dice position. The GNU BG ID is shown and copyable. You can also paste a GNU BG ID or XGID from anywhere.
-- **Save the match to a file.** The whole match written to a standard `.sgf` at any point, via the Android file picker — opens in desktop gnubg.
-- **Review a match move by move.** Open a saved `.sgf` and step through it, game by game and move by move, on gnubg's own board.
+### Added
+- **Three stronger playing levels** — Expert (0-ply, no noise), World class
+  (2-ply), Grandmaster (3-ply) — exposing gnubg's real strength. The four
+  original levels are 0-ply with noise; the strongest of those still let an
+  occasional weak move through.
 
-Also in 0.10.0:
+### Fixed
+- **Saved SGF names were swapped**: the human was written as "gnubg", the engine
+  as "user". The port's player 0 is the human; the names now match.
+- **The strongest level was not strong.** "Advanced" is a 0-ply-with-noise preset
+  and occasionally played a poor move (a 24/16 on an opening 53 was reported).
+  Underneath, the per-player move filter was never initialised, which silently
+  broke multi-ply evaluation; fixing it is what makes the new levels correct.
+- **Start Match could vanish** on short landscape phones, squeezed to zero height
+  by a weighted layout. It is now pinned.
+- **The Analyse screen could hide its own output** — the ranked plays, the
+  editor's Analyse button, and long labels fell off short panes. Regions are now
+  pinned or bounded; labels never wrap.
+- **A fresh clone could not build**: engine headers the Android build compiles
+  (`sound.h`, `export.h`, `movefilters.inc`, `boarddim.h`, `progress.h`,
+  `openurl.h`) were hidden by `.gitignore`. All tracked now, with
+  `tools/check_buildable_clone.sh` as a guard.
+- The release build is signed, so its APK installs.
 
-- One-geometry board: a tap lands exactly where it is drawn, verified across aspect ratios from tablet to tall phone.
-- Settings gear on every screen; consistent Home / New match everywhere.
-- The repository now builds from a clean clone with no submodule setup.
-
-Built for Android 12+ (arm64-v8a). GPL-3.0-or-later.
