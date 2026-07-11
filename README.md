@@ -22,7 +22,7 @@ These are the features players reach for other apps to get. Each runs entirely o
 - **Set up any position and analyse it.** Open the position editor, tap points and the bar to place checkers, tap the bear-off tray to clear the board, then set the dice, cube, score, match length, and who is on roll. With dice set you get gnubg's ranked chequer plays; with **no dice** you get gnubg's cube decision — double / take / drop with the equities behind it, exactly as gnubg's desktop edit mode treats a no-dice position. The encoded GNU BG ID is shown and can be copied out. This is what most people open XG Mobile for; here it is free, and it works on current Android.
 - **Paste a position from anywhere.** Have a GNU BG ID or an XGID from a forum, a book, or another app? Paste it and gnubg installs and evaluates it — the same engine path a hand-built position takes.
 - **Save the match as a file.** Write the whole match to a standard `.sgf` at any point, through the Android file picker — to review later on a bigger screen, to catalogue, or to open in desktop gnubg.
-- **Review a match move by move.** Open a saved `.sgf` and step through it, game by game and move by move, on gnubg's own board. Navigation is gnubg's own game-record walk, not a re-derivation.
+- **Review a match move by move — with gnubg's verdict.** Open a saved `.sgf` and step through it, game by game and move by move, on gnubg's own board. At every move: what was played, what gnubg preferred, the equity cost, and gnubg's own judgement (doubtful / bad / very bad). Navigation is gnubg's own game-record walk, not a re-derivation.
 
 ### Interface
 
@@ -86,7 +86,7 @@ After installing, a clean restart is:
 
 The three companion features are built; the core is solid. The frontier now:
 
-- **Analysis reporting** — a per-move verdict inside match review (gnubg's ranking of the alternatives against the move actually played), a jump-to-blunder move list, and a Performance Rating for a whole match.
+- **Analysis reporting** — the per-move verdict inside review is done (gnubg's ranking against the move actually played, shown at every step); still to come: a jump-to-blunder move list and a Performance Rating for a whole match.
 - **Review while playing** — stepping back through the live game record in place, not only from a saved file.
 - **Online play** — a modern client for [FIBS](http://www.fibs.com/), the long-running free backgammon server, with local gnubg analysis alongside.
 - **Multi-core evaluation** for faster analysis and rollouts.

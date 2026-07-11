@@ -14,7 +14,9 @@ internal steps and never shipped an APK; everything in them is included here.)
 - **Save the match to `.sgf`** at any point, through the Android file picker;
   opens in desktop gnubg.
 - **Review a saved match**, stepping game by game and move by move on gnubg's own
-  board.
+  board — with **gnubg's verdict on every move**: what was played, what gnubg
+  preferred, the equity difference, the rank among all legal plays, and gnubg's
+  own classification (doubtful / bad / very bad) when the move deserves one.
 - **Seven playing levels.** The original four (0-ply with descending noise) plus
   **Expert** (0-ply, no noise), **World class** (2-ply) and **Grandmaster**
   (3-ply), exposing gnubg's real strength.
@@ -52,5 +54,6 @@ internal steps and never shipped an APK; everything in them is included here.)
   NEON SIMD, so any app at this strength on this hardware pays the same. It is not
   a defect. See `docs/THREADING.md` for why the move cannot be threaded (gnubg
   parallelises rollouts and analysis, not a single live search) and the
-  conditions under which multi-core support arrives for those.
+  conditions under which multi-core support arrives for those. The per-move
+  review verdict runs at gnubg's 2-ply analysis setting, so each step is quick.
 
