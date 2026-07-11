@@ -235,21 +235,15 @@ fun CoachScreen(
                             )
                         )
                     } else {
-                        // Live board, the player's own move traced -- only the
-                        // player's move (maintainer design); alternatives live
-                        // behind the numbered toggles. Shown until the next
-                        // roll.
-                        val trace = g?.let {
-                            if (it.rank > 0 && gameState.phase != GamePhase.HUMAN_MOVING)
-                                com.clavierhaus.gnubg.play.CoachTrace(it.playedMove, null)
-                            else null
-                        }
+                        // The live game board carries NO arrows (maintainer
+                        // design): it simply shows the position the player's
+                        // move produced. Arrows exist only inside the numbered
+                        // alternative views.
                         BackgammonBoard(
                             settings = settings,
                             gameState = gameState,
                             viewModel = viewModel,
-                            tutorMode = false,
-                            coachTrace = trace
+                            tutorMode = false
                         )
                     }
                 }

@@ -683,12 +683,13 @@ fun BackgammonBoard(
             // gnubg's destinations. Drawn over the checkers so the difference
             // is what the eye receives.
             if (coachTrace != null) {
-                coachTrace.played?.let {
-                    drawMoveTrace(g, it, p.uiTextDisabled.copy(alpha = 0.55f),
-                        g.checkerR * 0.18f, ghost = false, p)
-                }
+                // Maintainer design: arrows exist ONLY in the alternative
+                // views, in the SAME green as the 1-24 frame-number highlights
+                // (hintNumPaint = uiActionPositive), no source dot, origin at
+                // the first free slot of the source column ON THE DISPLAYED
+                // board.
                 coachTrace.best?.let {
-                    drawMoveTrace(g, it, p.uiActionPositive.copy(alpha = 0.9f),
+                    drawMoveTrace(g, it, gameState.board, p.uiActionPositive,
                         g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
                 }
             }
@@ -941,31 +942,51 @@ private fun DrawScope.drawDie(
     }
 }
 
-/* One anchor per anMove endpoint, human mover frame: internal point i (0..23)
- * is UI point i+1 (pointRect); 24 is the bar (MID_X centre); dst < 0 is
- * bear-off, anchored at the right edge on the source's row. */
-private fun traceAnchor(g: BoardGeom, internalPt: Int, srcY: Float): Offset = when {
-    internalPt == 24 -> Offset(g.pointRect(6).right + (g.pointRect(19).left - g.pointRect(6).right) / 2f, g.boardCY)
-    internalPt < 0   -> Offset(g.w * 0.985f, srcY)
+/* Source anchor: the first NON-checker slot of the column the leg originates
+ * from, on the displayed board (maintainer design) -- the arrow rises from
+ * where the checker left. Same slot formula as the checker stacks (boardTop/
+ * boardBottom + inset + r + i*step), the mover's (human) count at board[24+n],
+ * slot index capped at the 5-checker visual compression. Bar (24) uses the
+ * bar column at its human stack root. */
+private fun traceSourceAnchor(g: BoardGeom, internalPt: Int, board: IntArray): Offset {
+    if (internalPt == 24) {
+        val count = minOf(board[49], 5)
+        return Offset(
+            g.pointRect(6).right + (g.pointRect(19).left - g.pointRect(6).right) / 2f,
+            g.boardCY + g.checkerR * 1.2f + count * g.checkerStep * 0.5f
+        )
+    }
+    val n = internalPt + 1
+    val r = g.pointRect(n)
+    val cx = r.left + r.width / 2f
+    val slot = minOf(board[24 + n], 5)
+    val y = if (n in 13..24)
+        g.boardTop + g.checkerInset + g.checkerR + slot * g.checkerStep
+    else
+        g.boardBottom - g.checkerInset - g.checkerR - slot * g.checkerStep
+    return Offset(cx, y)
+}
+
+/* Destination anchor: the point's stack root (unchanged); bear-off at the
+ * right edge on the source's row. */
+private fun traceDestAnchor(g: BoardGeom, internalPt: Int, srcY: Float): Offset = when {
+    internalPt < 0 -> Offset(g.w * 0.985f, srcY)
     else -> g.pointRect(internalPt + 1).let { r ->
-        // Anchor at the point's stack root: top points root at their top edge,
-        // bottom points at their bottom edge, nudged inward.
         val y = if (internalPt + 1 in 13..24) r.top + r.height * 0.30f else r.bottom - r.height * 0.30f
         Offset(r.left + r.width / 2f, y)
     }
 }
 
 private fun DrawScope.drawMoveTrace(
-    g: BoardGeom, anMove: IntArray, color: Color, stroke: Float, ghost: Boolean, p: BoardPalette
+    g: BoardGeom, anMove: IntArray, board: IntArray, color: Color, stroke: Float, ghost: Boolean, p: BoardPalette
 ) {
     var i = 0
     while (i < 8 && i + 1 < anMove.size && anMove[i] >= 0) {
         val src = anMove[i]; val dst = anMove[i + 1]
-        val a = traceAnchor(g, src, 0f)
-        val b = traceAnchor(g, dst, a.y)
-        // The leg: a line with a source dot and an arrowhead at the target,
-        // so a compound move reads as its hops, not an abstraction.
-        drawCircle(color, stroke * 1.6f, a)
+        val a = traceSourceAnchor(g, src, board)
+        val b = traceDestAnchor(g, dst, a.y)
+        // The leg: a clean line with an arrowhead at the target -- no source
+        // dot (maintainer design) -- so a compound move reads as its hops.
         drawLine(color, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
         val ang = kotlin.math.atan2(b.y - a.y, b.x - a.x)
         val ah = stroke * 4.5f
