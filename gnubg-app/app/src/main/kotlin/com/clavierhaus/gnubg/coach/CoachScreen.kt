@@ -81,7 +81,7 @@ private data class CoachGlance(
 }
 
 private fun decodeGlance(v: IntArray): CoachGlance? {
-    if (v.size < 166) return null
+    if (v.size < 168) return null
     val preBoard = IntArray(50) { v[21 + it] }
     val played = IntArray(8) { v[5 + it] }
     val best = IntArray(8) { v[13 + it] }
@@ -169,15 +169,14 @@ fun CoachScreen(
     // dice in full color (nothing played), only the arrows differing. The
     // board is a constant; the moves are pure deltas.
     var selectedAlt by remember { mutableStateOf(-1) }
-    var glanceDice by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    LaunchedEffect(rawGlance) {
-        selectedAlt = -1
-        // The dice the judged move was rolled with, captured while the game
-        // state still carries them (COACH_REVIEW preserves the move-entry
-        // fields; after GNU's reply they are gone from live state).
-        if (rawGlance != null) glanceDice = gameState.originalDice
-    }
+    LaunchedEffect(rawGlance) { selectedAlt = -1 }
+    // ONE source of truth for the toggled views (maintainer audit): board,
+    // moves AND dice all come from the verdict array gnubg filled -- no
+    // parallel UI-side capture that could desynchronize.
     val preMoveBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
+    val glanceDice = rawGlance?.let { v ->
+        if (v.size >= 168 && v[166] > 0) Pair(v[166], v[167]) else null
+    }
 
     LaunchedEffect(rawGlance) {
         // null now MEANS "cleared for judging" (confirm clears it before the

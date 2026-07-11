@@ -762,7 +762,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val t0 = android.os.SystemClock.elapsedRealtime()
                 val cv = Engine.coachVerdictPre(state.oldBoard, origDice.first, origDice.second, state.board)
                 val cms = android.os.SystemClock.elapsedRealtime() - t0
-                if (cv.size >= 166) {
+                if (cv.size >= 168) {
                     android.util.Log.i("gnubg-coach",
                         "verdict(pre) ${cms}ms rank=${cv[0]} of=${cv[1]} skill=${cv[4]}")
                     _coachGlance.value = cv

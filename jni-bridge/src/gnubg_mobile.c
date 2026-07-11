@@ -980,7 +980,7 @@ int gnubg_mobile_apply_move(const int board[50], const int anMove[8], int out[50
 }
 
 int gnubg_mobile_coach_verdict_pre(const int old_board[50], int d0, int d1,
-                                   const int new_board[50], int out[166]) {
+                                   const int new_board[50], int out[168]) {
     TanBoard oldB, newB;
     movelist ml;
     positionkey newKey;
@@ -1045,6 +1045,13 @@ int gnubg_mobile_coach_verdict_pre(const int old_board[50], int d0, int d1,
             u.f = ml.amMoves[k].arEvalMove[j]; out[base + 9 + j] = (int) u.bits;
         }
     }
+
+    /* The dice of the judged roll, gnubg's own values as passed and used for
+     * FindnSaveBestMoves -- the toggled views render EVERYTHING from this one
+     * array (board, moves, dice): a single source of truth, no parallel
+     * UI-side capture (maintainer audit, 2026-07-12). */
+    out[166] = d0;
+    out[167] = d1;
 
     g_free(ml.amMoves);
     pthread_mutex_unlock(&gnubg_lock);
