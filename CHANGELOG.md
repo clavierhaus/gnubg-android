@@ -39,6 +39,10 @@ internal steps and never shipped an APK; everything in them is included here.)
   (3-ply), exposing gnubg's real strength.
 - A settings gear on every screen, over a single settings overlay; consistent
   "Home" and "New match" throughout.
+- **The engine's roll is visible while it thinks.** gnubg rolls before it
+  searches; the board now shows those dice grayed the moment they land (with
+  "Rolled 5-3. Thinking..." in the panel), so you can start reading the position
+  during the wait -- exactly as desktop gnubg behaves.
 
 ### Fixed
 - **Saved SGF names were swapped** — the human was labelled "gnubg", the engine
