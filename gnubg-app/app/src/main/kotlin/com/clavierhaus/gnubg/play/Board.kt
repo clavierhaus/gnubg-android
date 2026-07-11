@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -261,12 +262,23 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
     return out
 }
 
+/**
+ * Coach visual WHY (vision P1, its most emphasized point): the played and best
+ * moves rendered as per-leg traced motion ON this board's own geometry -- the
+ * same points and proportions the player has stared at all game. anMove[8] in
+ * the human mover frame (gnubg ApplyMove semantics, eval.c: pairs of src,dst;
+ * src 24 = bar, dst < 0 = bear-off, legs end at first negative src). Pure
+ * rendering of gnubg-returned data; nothing is classified.
+ */
+class CoachTrace(val played: IntArray, val best: IntArray)
+
 @Composable
 fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
     viewModel: GameViewModel? = null,
     tutorMode: Boolean = false,
+    coachTrace: CoachTrace? = null,
     /**
      * Position-editor hook. Non-null puts the board in EDIT: every tap is
      * reported as a zone and nothing reaches the game. Zones: 1..24 a point,
@@ -666,6 +678,17 @@ fun BackgammonBoard(
                 }
             }
 
+            // Coach visual WHY: traced per-leg motion for played (muted) vs
+            // best (emphasized, arrowhead), plus translucent ghost checkers at
+            // gnubg's destinations. Drawn over the checkers so the difference
+            // is what the eye receives.
+            if (coachTrace != null) {
+                drawMoveTrace(g, coachTrace.played,
+                    p.uiTextDisabled.copy(alpha = 0.55f), g.checkerR * 0.18f, ghost = false, p)
+                drawMoveTrace(g, coachTrace.best,
+                    p.uiActionPositive.copy(alpha = 0.9f), g.checkerR * 0.30f, ghost = true, p)
+            }
+
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
             if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
                 // Engine dice -- left half, grayed
@@ -911,6 +934,48 @@ private fun DrawScope.drawDie(
     val pipR = w * 0.08f
     PIP_POSITIONS[face]?.forEach { (fx, fy) ->
         drawCircle(pipColor, pipR, Offset(left + fx * w, top + fy * h))
+    }
+}
+
+/* One anchor per anMove endpoint, human mover frame: internal point i (0..23)
+ * is UI point i+1 (pointRect); 24 is the bar (MID_X centre); dst < 0 is
+ * bear-off, anchored at the right edge on the source's row. */
+private fun traceAnchor(g: BoardGeom, internalPt: Int, srcY: Float): Offset = when {
+    internalPt == 24 -> Offset(g.pointRect(6).right + (g.pointRect(19).left - g.pointRect(6).right) / 2f, g.boardCY)
+    internalPt < 0   -> Offset(g.w * 0.985f, srcY)
+    else -> g.pointRect(internalPt + 1).let { r ->
+        // Anchor at the point's stack root: top points root at their top edge,
+        // bottom points at their bottom edge, nudged inward.
+        val y = if (internalPt + 1 in 13..24) r.top + r.height * 0.30f else r.bottom - r.height * 0.30f
+        Offset(r.left + r.width / 2f, y)
+    }
+}
+
+private fun DrawScope.drawMoveTrace(
+    g: BoardGeom, anMove: IntArray, color: Color, stroke: Float, ghost: Boolean, p: BoardPalette
+) {
+    var i = 0
+    while (i < 8 && i + 1 < anMove.size && anMove[i] >= 0) {
+        val src = anMove[i]; val dst = anMove[i + 1]
+        val a = traceAnchor(g, src, 0f)
+        val b = traceAnchor(g, dst, a.y)
+        // The leg: a line with a source dot and an arrowhead at the target,
+        // so a compound move reads as its hops, not an abstraction.
+        drawCircle(color, stroke * 1.6f, a)
+        drawLine(color, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
+        val ang = kotlin.math.atan2(b.y - a.y, b.x - a.x)
+        val ah = stroke * 4.5f
+        val p1 = Offset(b.x - ah * kotlin.math.cos(ang - 0.45f), b.y - ah * kotlin.math.sin(ang - 0.45f))
+        val p2 = Offset(b.x - ah * kotlin.math.cos(ang + 0.45f), b.y - ah * kotlin.math.sin(ang + 0.45f))
+        val head = Path().apply { moveTo(b.x, b.y); lineTo(p1.x, p1.y); lineTo(p2.x, p2.y); close() }
+        drawPath(head, color)
+        // Ghost checker at gnubg's destination (best move only): the
+        // translucent preview of where the checker would stand.
+        if (ghost && dst in 0..23) {
+            drawCircle(p.checkerLight.copy(alpha = 0.30f), g.checkerR, b)
+            drawCircle(color.copy(alpha = 0.55f), g.checkerR, b, style = Stroke(width = stroke * 0.8f))
+        }
+        i += 2
     }
 }
 

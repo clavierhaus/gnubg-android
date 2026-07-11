@@ -63,7 +63,9 @@ private data class CoachGlance(
     val eqBest: Float,
     val skill: Int,              // 0 very bad, 1 bad, 2 doubtful, 3 none
     val playedNotation: String,
-    val bestNotation: String
+    val bestNotation: String,
+    val playedMove: IntArray,    // anMove[8], human mover frame -- for the trace
+    val bestMove: IntArray
 ) {
     val loss: Float get() = eqBest - eqPlayed
     val flagged: Boolean get() = skill != 3
@@ -81,7 +83,9 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
         eqBest = Float.fromBits(v[3]),
         skill = v[4],
         playedNotation = Engine.formatMove(preBoard, played),
-        bestNotation = Engine.formatMove(preBoard, best)
+        bestNotation = Engine.formatMove(preBoard, best),
+        playedMove = played,
+        bestMove = best
     )
 }
 
@@ -162,11 +166,22 @@ fun CoachScreen(
                     .padding(start = 52.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    // The visual WHY shows from the moment the verdict lands
+                    // until the player rolls again (a new position makes the
+                    // old traces confusing) -- and only when there is a
+                    // difference to show (rank > 0; the best move IS the
+                    // played move).
+                    val trace = glance?.let { g ->
+                        if (g.rank > 0 && gameState.phase != GamePhase.HUMAN_MOVING)
+                            com.clavierhaus.gnubg.play.CoachTrace(g.playedMove, g.bestMove)
+                        else null
+                    }
                     BackgammonBoard(
                         settings = settings,
                         gameState = gameState,
                         viewModel = viewModel,
-                        tutorMode = false
+                        tutorMode = false,
+                        coachTrace = trace
                     )
                 }
 
