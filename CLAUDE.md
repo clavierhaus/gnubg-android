@@ -104,6 +104,13 @@ with the concrete check that confirms or kills it, and the checks are then
 EXECUTED. Serial guess-narration -- theory, shrug, next theory -- is the
 failure mode this order exists to end.
 
+## FULL COMMANDS ONLY, ALWAYS (added 2026-07-12, maintainer order)
+
+Every instruction to the maintainer that involves running anything is a
+COMPLETE pastable block -- cd into the repo, the git command, the build script
+with its flags -- never shorthand like "--apk-only after pull". The maintainer
+pastes; the block must be sufficient on its own, every time, without assembly.
+
 ## LOGCAT: PRECISE TAG FILTERING, ALWAYS (added 2026-07-11)
 
 When requesting or reading device logs, filter by the app's own tags with -s --
