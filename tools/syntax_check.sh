@@ -26,7 +26,16 @@ JDK=$(dirname "$(find /usr/lib/jvm -name jni.h 2>/dev/null | head -1)" 2>/dev/nu
 INC="-I tools/shim -I $JDK -I $JDK/linux -I jni-bridge -I jni-bridge/include -I engine-core -I engine-core/lib"
 
 status=0
-for f in jni-bridge/src/gnubg_mobile.c jni-bridge/src/native-lib.c; do
+# android-app.c needs engine-core/export.h and movefilters.inc -- real engine
+# content, not shimmable (exportsetup, MOVEFILTER_* initializers). Until those
+# once-gitignored headers are tracked, say so instead of failing cryptically.
+if [ -f engine-core/export.h ]; then
+    FILES="jni-bridge/src/gnubg_mobile.c jni-bridge/src/native-lib.c jni-bridge/src/android-app.c"
+else
+    printf "  %-34s %s\n" "jni-bridge/src/android-app.c" "SKIPPED: engine-core/export.h absent (pull the tracked headers)"
+    FILES="jni-bridge/src/gnubg_mobile.c jni-bridge/src/native-lib.c"
+fi
+for f in $FILES; do
     printf '  %-34s ' "$f"
     if gcc -fsyntax-only -Wall -DHAVE_CONFIG_H $INC $GLIB "$f" 2>tools/.err; then
         n=$(wc -l < tools/.err)

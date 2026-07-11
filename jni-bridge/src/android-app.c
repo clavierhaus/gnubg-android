@@ -83,7 +83,12 @@ char keyNames[MAX_KEY_NAMES][MAX_NAME_LEN] = { "" };
 int  keyNamesFirstEmpty = 0;
 
 /* Default player names */
-char default_names[2][MAX_NAME_LEN] = { "gnubg", "user" };
+/* PORT: upstream's ordering is { "gnubg", "user" } because upstream's player 0
+ * is the computer. In this port the HUMAN is player 0 (gnubg_mobile_initialise),
+ * and play.c:2902 stamps these names onto ap[] at every new game -- so the
+ * upstream ordering labelled the human "gnubg" and the engine "user" in every
+ * saved SGF. Reported from the field two days after release. */
+char default_names[2][MAX_NAME_LEN] = { "You", "GNU Backgammon" };
 
 /* -- InitBoard ---------------------------------------------------------------
  * Source: gnubg.c:1243 -- copied verbatim.
@@ -979,6 +984,7 @@ TmoveFilter *GetEvalMoveFilter(void) {
  * move filter wiring lands here too.
  */
 void gnubg_mobile_set_engine_strength(int idx) {
+    int iFilter;
     if (idx < 0 || idx >= NUM_SETTINGS) return;
     fEvalSameAsAnalysis = FALSE;
 
@@ -987,6 +993,20 @@ void gnubg_mobile_set_engine_strength(int idx) {
     esEvalChequer.ec = aecSettings[idx];
     esEvalCube.et    = EVAL_EVAL;
     esEvalCube.ec    = aecSettings[idx];
+
+    /* Move filter. ComputerTurn's chequer branch reads the PER-PLAYER filter
+     * (play.c:1475, fd.aamf = ap[ms.fTurn].aamf), and ap[] lives in stubs.c as
+     * BSS-zero -- an all-zero filter accepts zero candidates past ply 0, which
+     * is invisible at 0-ply (no lookahead) and fatal at 2-ply. gnubg's presets
+     * name their filter in aiSettingsMoveFilter (eval.c:200): -1 for the 0-ply
+     * levels, "Normal" (0) for every ply preset. Copy the named one, or Normal
+     * as the baseline where the preset says n/a. */
+    iFilter = aiSettingsMoveFilter[idx];
+    if (iFilter < 0)
+        iFilter = 0;    /* MOVEFILTER_NORMAL: irrelevant at 0-ply, sane always */
+    memcpy(ap[0].aamf, aaamfMoveFilterSettings[iFilter], sizeof(ap[0].aamf));
+    memcpy(ap[1].aamf, aaamfMoveFilterSettings[iFilter], sizeof(ap[1].aamf));
+    memcpy(aamfEval,   aaamfMoveFilterSettings[iFilter], sizeof(aamfEval));
 
     /* Per-player slots consulted by ComputerTurn (play.c:1316 cube branch,
      * play.c:1441 chequer branch). Both players written so the strength

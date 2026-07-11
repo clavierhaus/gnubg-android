@@ -66,11 +66,8 @@ engine-core/html*.c
 engine-core/latex.c
 engine-core/text.c
 engine-core/dbprovider.*
-engine-core/export.*
 engine-core/import.c
 engine-core/make*.c
-engine-core/openurl.*
-engine-core/progress.*
 engine-core/relational.*
 engine-core/show.c
 engine-core/speed.c
@@ -80,7 +77,6 @@ engine-core/mtsupport.c
 engine-core/evallock.c
 engine-core/osr.*
 engine-core/inc3d.h
-engine-core/boarddim.h
 engine-core/pylocdefs.h
 engine-core/bearoffdump.c
 engine-core/board3d/
@@ -112,7 +108,6 @@ engine-core/gnubg.weights
 engine-core/gtk/
 engine-core/m4/
 engine-core/met/
-engine-core/movefilters.inc
 engine-core/non-src/
 engine-core/pixmaps/
 engine-core/po/
@@ -166,3 +161,9 @@ CLAUDE.md.generated.bak
 keystore.properties
 *.keystore
 *.jks
+
+# NOTE: engine-core/export.h, movefilters.inc, boarddim.h, progress.h and
+# openurl.h were once ignored here. They are #included unguarded by sources the
+# Android build compiles (eval.c, format.c, analysis.c, set.c, boardpos.c,
+# android-app.c), so ignoring them made a fresh clone unbuildable -- the sound.h
+# failure, four more times. They must be tracked.

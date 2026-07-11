@@ -1006,8 +1006,16 @@ int gnubg_mobile_initialise(const char *weights_path) {
 
     ap[0].pt = PLAYER_HUMAN;
     ap[1].pt = PLAYER_GNU;
-    strcpy(ap[0].szName, "Human");
-    strcpy(ap[1].szName, "GNU");
+    /* Same ordering as default_names (android-app.c): player 0 is the human.
+     * play.c:2902 re-stamps from default_names at every new game; these two
+     * must agree or saved matches carry swapped names. */
+    strcpy(ap[0].szName, "You");
+    strcpy(ap[1].szName, "GNU Backgammon");
+    /* Seed sane move filters before any strength call: ap[] is BSS-zero and an
+     * all-zero filter breaks any multi-ply evaluation (see
+     * gnubg_mobile_set_engine_strength). */
+    memcpy(ap[0].aamf, aaamfMoveFilterSettings[0], sizeof(ap[0].aamf));
+    memcpy(ap[1].aamf, aaamfMoveFilterSettings[0], sizeof(ap[1].aamf));
 
     ms.nMatchTo = 1;
     ms.fJacoby  = FALSE;
