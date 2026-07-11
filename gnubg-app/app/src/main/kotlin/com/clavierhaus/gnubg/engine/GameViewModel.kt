@@ -42,6 +42,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * consistent with the live board. continueCoachTurn() delivers it. */
     private var pendingCoachMove: String? = null
 
+    companion object {
+        /** Position-SENSITIVE fingerprint (a plain sum is invariant: every
+         *  legal position sums to 30). Weighted by index squared so any
+         *  checker relocation changes the value. */
+        fun fpOf(b: IntArray): Int = b.withIndex().sumOf { (i, x) -> x * (i * i + 1) }
+    }
+
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
@@ -730,7 +737,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.board.contentEquals(state.oldBoard)) return@launch
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
             android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice} " +
-                "fp(old)=${state.oldBoard.sum()} fp(new)=${state.board.sum()}")
+                "fp(old)=${fpOf(state.oldBoard)} fp(new)=${fpOf(state.board)}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             // Capture the match score before the move. A game-ending move triggers

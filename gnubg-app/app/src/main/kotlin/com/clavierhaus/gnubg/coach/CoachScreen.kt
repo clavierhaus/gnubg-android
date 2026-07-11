@@ -190,7 +190,7 @@ fun CoachScreen(
                 val d = decodeGlance(v)
                 android.util.Log.i("gnubg-coach",
                     "screen: decoded rank=${v[0]} of=${v[1]} played='${d?.playedNotation}' alts=${d?.alts?.size} " +
-                    "fp(pre)=${(0 until 50).sumOf { j -> v[21 + j] }}")
+                    "fp(pre)=${com.clavierhaus.gnubg.engine.GameViewModel.fpOf(IntArray(50) { j -> v[21 + j] })}")
                 d
             } catch (t: Throwable) {
                 android.util.Log.e("gnubg-coach", "screen: decode FAILED: $t")
@@ -288,7 +288,9 @@ fun CoachScreen(
                     onSelectAlt = { n ->
                         selectedAlt = if (selectedAlt == n) -1 else n
                         android.util.Log.i("gnubg-coach",
-                            "screen: toggle sel=$selectedAlt fp(pre)=${preMoveBoard?.sum()} dice=$glanceDice")
+                            "screen: toggle sel=$selectedAlt " +
+                            "fp(pre)=${preMoveBoard?.let { com.clavierhaus.gnubg.engine.GameViewModel.fpOf(it) }} " +
+                            "fp(live)=${com.clavierhaus.gnubg.engine.GameViewModel.fpOf(gameState.board)} dice=$glanceDice")
                     },
                     onContinue = { selectedAlt = -1; viewModel.continueCoachTurn() },
                     onNewGame = {
