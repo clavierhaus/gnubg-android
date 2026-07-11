@@ -424,6 +424,16 @@ fun AnalyseScreen(
                     fontWeight = FontWeight.Bold
                 )
                 if (editing) {
+                    // Controls live in a weighted region; the Analyse/Cancel row
+                    // below is a fixed sibling, measured FIRST -- so it can never
+                    // be squeezed off a short screen. Same construction as the
+                    // Start Match fix; field report was "there's no button".
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
                     Text(
                         "Tap a point or the bar to place checkers; tap the bear-off to reset.",
                         color = pal.uiTextSecondary,
@@ -519,6 +529,8 @@ fun AnalyseScreen(
                         GameButton("GNU", if (editCubeOwner == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editCubeOwner = 1 }
                     }
 
+                    } // end weighted editor controls
+
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         GameButton(
                             label = if (busy) "Working..." else "Analyse",
@@ -610,6 +622,18 @@ fun AnalyseScreen(
 
                 val r = result
                 if (r != null) {
+                    // The result takes exactly the space left below the buttons.
+                    // Field report: "the analysis doesn't show up" -- it rendered
+                    // BELOW the pane and was clipped, because nothing scrolls and
+                    // nothing bounded it. Now the verdict and context are always
+                    // visible; on the shortest panes the tail of the candidate
+                    // list is what gives.
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
                     MatchContext(r)
 
                     Text(
@@ -671,6 +695,7 @@ fun AnalyseScreen(
                             }
                         }
                     }
+                    } // end weighted result region
                 }
                 } // end !editing
             }

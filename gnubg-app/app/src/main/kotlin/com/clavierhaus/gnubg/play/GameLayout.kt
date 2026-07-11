@@ -479,7 +479,10 @@ fun GameButton(
             label,
             color = if (enabled) Color.White else pal.uiTextDisabled,
             fontSize = if (compact) 13.sp else 16.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            // A button label that wraps is a malformed button (field report:
+            // the cube chips on narrow panes). One line, always.
+            maxLines = 1
         )
     }
 }
@@ -566,18 +569,17 @@ private fun MatchSetupScreen(
                 fontSize = 16.sp
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf(
-                    Difficulty.BEGINNER to "Beginner",
-                    Difficulty.CASUAL to "Casual play",
-                    Difficulty.INTERMEDIATE to "Intermediate",
-                    Difficulty.ADVANCED to "Advanced"
-                ).forEach { (difficulty, label) ->
+            // Every level the enum knows, so new engine strengths appear here
+            // without a second hardcoded list to forget. Compact: seven chips
+            // must fit one row on a 16:9 phone.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Difficulty.entries.forEach { difficulty ->
                     val selected = selectedDifficulty == difficulty
                     GameButton(
-                        label = label,
+                        label = difficulty.label,
                         color = if (selected) pal.uiChipOn else pal.uiChipOff,
-                        enabled = engineReady
+                        enabled = engineReady,
+                        compact = true
                     ) {
                         onSelectDifficulty(difficulty)
                     }
