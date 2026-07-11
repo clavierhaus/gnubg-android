@@ -738,8 +738,14 @@ int gnubg_mobile_skill(float equity_delta) {
  * played move's index. On success returns 1 and fills *pml (caller MUST g_free
  * pml->amMoves), *piPlayed, and *pmsAnalyse. Returns 0 if no analyzable move,
  * -1 on error. Caller holds gnubg_lock. */
+/* plTarget: NULL = tutor semantics, scan backwards from the record tail for the
+ * last HUMAN chequer move (live play: critique the move just made). Non-NULL =
+ * review semantics: analyse exactly the record at that node -- gnubg's own
+ * navigation cursor, plLastMove -- whichever player made it. The replay from the
+ * game's start and the FindnSaveBestMoves at the end are identical either way;
+ * only the choice of target differs, so it is a parameter, not a second copy. */
 static int analyze_replay(movelist *pml, unsigned int *piPlayed,
-                          matchstate *pmsAnalyse) {
+                          matchstate *pmsAnalyse, listOLD *plTarget) {
     listOLD *pl;
     moverecord *pmr, *pmrLast;
     statcontext *psc;
@@ -747,7 +753,11 @@ static int analyze_replay(movelist *pml, unsigned int *piPlayed,
     if (!plGame || plGame->plNext == plGame) return 0;
 
     pmrLast = NULL;
-    {
+    if (plTarget) {
+        moverecord *pm = (moverecord *) plTarget->p;
+        if (pm && pm->mt == MOVE_NORMAL)
+            pmrLast = pm;
+    } else {
         listOLD *plScan;
         for (plScan = plGame->plPrev; plScan != plGame; plScan = plScan->plPrev) {
             moverecord *pm = (moverecord *) plScan->p;
@@ -827,7 +837,7 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
     if (!out) return -1;
 
     pthread_mutex_lock(&gnubg_lock);
-    rc = analyze_replay(&ml, &iPlayed, &msAnalyse);
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse, NULL);
     if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
 
     u.f = ml.amMoves[iPlayed].rScore; out[0] = (int) u.bits;
@@ -855,6 +865,57 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
  *         [4]=LoseBackgammon [5]=cubeful equity (rScore) [6]=cubeless (rScore2).
  * Win/gammon/bg are cumulative exactly as gnubg reports them (Win includes
  * gammon+bg; WinGammon includes bg). Returns 7 on success, 0/-1 otherwise. */
+/* gnubg's verdict on the move at the navigation cursor. PORT: the record node
+ * is plLastMove (play.c) -- the record most recently applied to ms by
+ * CommandNext/CommandPrevious, i.e. exactly the move whose result the review
+ * board is showing, with the dice it was played with. Ranking is
+ * FindnSaveBestMoves at gnubg's fixed 2-ply analysis context (via
+ * analyze_replay); the skill classification is gnubg's own Skill(), fed
+ * rPlayed - rBest, the negative error gnubg's thresholds expect (analysis.c:288).
+ *
+ * out[71], ints; floats as IEEE bits:
+ *   [0]  iPlayed (0-based rank of the played move)
+ *   [1]  cMoves considered
+ *   [2]  equity of the played move (bits)
+ *   [3]  equity of the best move (bits)
+ *   [4]  skilltype from Skill(): 0 very bad, 1 bad, 2 doubtful, 3 none
+ *   [5..12]   anMove of the played move (gnubg 8-int src/dst pairs)
+ *   [13..20]  anMove of the best move
+ *   [21..70]  the PRE-move board, mover frame, packed -- the frame
+ *             gnubg_mobile_format_move expects.
+ * Returns 1 verdict written, 0 cursor is not a chequer move, -1 error. */
+int gnubg_mobile_review_verdict(int out[71]) {
+    matchstate msAnalyse;
+    movelist ml;
+    unsigned int iPlayed;
+    union { float f; unsigned int bits; } u;
+    int rc, i;
+    float rPlayed, rBest;
+
+    if (!out) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    if (!plLastMove) { pthread_mutex_unlock(&gnubg_lock); return 0; }
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse, plLastMove);
+    if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
+
+    rPlayed = ml.amMoves[iPlayed].rScore;
+    rBest   = ml.amMoves[0].rScore;
+
+    out[0] = (int) iPlayed;
+    out[1] = (int) ml.cMoves;
+    u.f = rPlayed; out[2] = (int) u.bits;
+    u.f = rBest;   out[3] = (int) u.bits;
+    out[4] = (int) Skill(rPlayed - rBest);
+    for (i = 0; i < 8; i++) out[5 + i]  = ml.amMoves[iPlayed].anMove[i];
+    for (i = 0; i < 8; i++) out[13 + i] = ml.amMoves[0].anMove[i];
+    facade_pack_board((ConstTanBoard) msAnalyse.anBoard, out + 21);
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]) {
     matchstate msAnalyse;
     movelist ml;
@@ -865,7 +926,7 @@ int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]) {
     if (!out) return -1;
 
     pthread_mutex_lock(&gnubg_lock);
-    rc = analyze_replay(&ml, &iPlayed, &msAnalyse);
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse, NULL);
     if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
 
     {

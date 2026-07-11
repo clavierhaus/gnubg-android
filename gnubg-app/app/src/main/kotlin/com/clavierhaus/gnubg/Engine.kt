@@ -88,6 +88,14 @@ object Engine {
     /** Analysis-mode detail: [Win, Wg, Wbg, Lg, Lbg, eqCubeful, eqCubeless]. */
     external fun analyzePlayedMove(oldBoard: IntArray): FloatArray
 
+    /** gnubg's verdict on the move at the review cursor (plLastMove).
+     *  Empty array when the cursor is not a chequer move. Layout:
+     *  [0]=rank(0-based) [1]=movesConsidered [2]=playedEq(bits) [3]=bestEq(bits)
+     *  [4]=skill(0 very bad,1 bad,2 doubtful,3 none)
+     *  [5..12]=played anMove  [13..20]=best anMove
+     *  [21..70]=pre-move board (mover frame), for formatMove. */
+    external fun reviewVerdict(): IntArray
+
     /** gnubg own move classifier (analysis.c Skill). equityDelta = played - best
      *  (<= 0). Returns gnubg skilltype ordinal: 0=VERYBAD 1=BAD 2=DOUBTFUL 3=NONE. */
     external fun skill(equityDelta: Float): Int

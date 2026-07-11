@@ -84,6 +84,42 @@ fun ReviewScreen(
     var pos by remember { mutableStateOf<ReviewPos?>(null) }
     var status by remember { mutableStateOf("No match loaded.") }
     var busy by remember { mutableStateOf(false) }
+    // gnubg's verdict on the move at the cursor: preformatted lines plus the
+    // skill class, so the UI colours what gnubg classified without classifying
+    // anything itself.
+    var verdict by remember { mutableStateOf<List<String>?>(null) }
+
+    // The verdict for the move the shown position resulted from. gnubg picked
+    // the target (plLastMove, its own navigation cursor), ranked the
+    // alternatives (FindnSaveBestMoves at its 2-ply analysis context), and
+    // classified the error (Skill()). This function only formats.
+    suspend fun readVerdict(): List<String>? = withContext(Dispatchers.Default) {
+        val v = Engine.reviewVerdict()
+        if (v.size < 71) return@withContext null
+        val rank = v[0]
+        val n = v[1]
+        val eqP = Float.fromBits(v[2])
+        val eqB = Float.fromBits(v[3])
+        val skill = v[4]
+        val preBoard = v.copyOfRange(21, 71)
+        val played = Engine.formatMove(preBoard, v.copyOfRange(5, 13))
+        val lines = mutableListOf<String>()
+        if (rank == 0) {
+            lines += "Played: " + played
+            lines += "gnubg's choice  (" + String.format("%+.3f", eqP) + ")"
+        } else {
+            val best = Engine.formatMove(preBoard, v.copyOfRange(13, 21))
+            lines += "Played: " + played + "  (" + String.format("%+.3f", eqP - eqB) + ")"
+            lines += "Best: " + best
+            lines += "Rank " + (rank + 1) + " of " + n
+        }
+        when (skill) {
+            2 -> lines += "gnubg: doubtful"
+            1 -> lines += "gnubg: bad"
+            0 -> lines += "gnubg: very bad"
+        }
+        lines
+    }
 
     suspend fun readBack(): ReviewPos = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
@@ -119,6 +155,7 @@ fun ReviewScreen(
         } else {
             pos = p
             status = ""
+            verdict = readVerdict()
         }
         busy = false
     }
@@ -131,6 +168,7 @@ fun ReviewScreen(
                 if (backwards) Engine.commandPrevious() else Engine.commandNext()
             }
             pos = readBack()
+            verdict = readVerdict()
             busy = false
         }
     }
@@ -143,6 +181,7 @@ fun ReviewScreen(
                 if (backwards) Engine.commandPrevious("game") else Engine.commandNext("game")
             }
             pos = readBack()
+            verdict = readVerdict()
             busy = false
         }
     }
@@ -185,6 +224,25 @@ fun ReviewScreen(
                     if (status.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Text(status, color = pal.uiTextSecondary, fontSize = 12.sp)
+                    }
+
+                    verdict?.let { lines ->
+                        Spacer(Modifier.height(10.dp))
+                        lines.forEach { line ->
+                            Text(
+                                line,
+                                // gnubg classified; the UI only colours its words.
+                                color = when {
+                                    line.startsWith("gnubg: very") -> pal.uiActionNegative
+                                    line.startsWith("gnubg: bad") -> pal.uiActionNegative
+                                    line.startsWith("gnubg: doubtful") -> pal.uiTextSecondary
+                                    line.startsWith("gnubg's choice") -> pal.uiActionPositive
+                                    else -> Color.White
+                                },
+                                fontSize = 11.sp,
+                                maxLines = 2
+                            )
+                        }
                     }
                 }
 
