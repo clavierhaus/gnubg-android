@@ -168,14 +168,35 @@ fun CoachScreen(
     // after the roll -- the same pre-move board for P and all alternatives,
     // dice in full color (nothing played), only the arrows differing. The
     // board is a constant; the moves are pure deltas.
+    // The toggle is a BEFORE/AFTER flip (maintainer design): first tap on a
+    // chip shows the decision point -- checkers only, full dice, NO arrows --
+    // the common ground identical for every chip; second tap shows the
+    // position AFTER that move (gnubg's ApplyMove), dice used, green arrows
+    // pointing to the destinations now occupied: where the new position came
+    // from. Third tap returns to the live game.
     var selectedAlt by remember { mutableStateOf(-1) }
-    LaunchedEffect(rawGlance) { selectedAlt = -1 }
+    var viewAfter by remember { mutableStateOf(false) }
+    var afterBoard by remember { mutableStateOf<IntArray?>(null) }
+    LaunchedEffect(rawGlance) { selectedAlt = -1; viewAfter = false; afterBoard = null }
     // ONE source of truth for the toggled views (maintainer audit): board,
     // moves AND dice all come from the verdict array gnubg filled -- no
     // parallel UI-side capture that could desynchronize.
     val preMoveBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
     val glanceDice = rawGlance?.let { v ->
         if (v.size >= 168 && v[166] > 0) Pair(v[166], v[167]) else null
+    }
+    val selectedMove = glance?.let { g ->
+        when {
+            selectedAlt == 0 -> g.playedMove
+            selectedAlt in 1..g.alts.size -> g.alts[selectedAlt - 1].anMove
+            else -> null
+        }
+    }
+    LaunchedEffect(selectedAlt, viewAfter) {
+        afterBoard = if (viewAfter && preMoveBoard != null && selectedMove != null) {
+            val b = Engine.applyMoveToBoard(preMoveBoard, selectedMove)
+            if (b.size == 50) b else null
+        } else null
     }
 
     LaunchedEffect(rawGlance) {
@@ -226,18 +247,18 @@ fun CoachScreen(
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     val g = glance
-                    val exploring = selectedAlt >= 0 && preMoveBoard != null && g != null
+                    val showAfter = viewAfter && afterBoard != null
+                    val exploring = selectedAlt >= 0 && preMoveBoard != null && g != null &&
+                        (!viewAfter || afterBoard != null)
                     if (exploring) {
-                        // The toggled view: the PRE-move position -- identical
-                        // for P and every alternative -- with the roll's dice
-                        // in FULL color (remainingDice = the whole roll: no
-                        // die used, nothing moved) and the selected move as
-                        // arrows departing from the very checkers that would
-                        // move. viewModel = null: this board must not accept
-                        // game taps (the Analyse pattern); ENGINE_THINKING
-                        // suppresses all action chrome.
-                        val shownMove = if (selectedAlt == 0) g!!.playedMove
-                                        else g!!.alts[selectedAlt - 1].anMove
+                        // BEFORE (first tap): the decision point, identical
+                        // for every chip -- checkers only, full-color dice,
+                        // NO arrows. AFTER (second tap): the position that
+                        // move produces (gnubg's ApplyMove), dice used, green
+                        // arrows pointing to the destinations now occupied.
+                        // viewModel = null: no game taps on a study board
+                        // (the Analyse pattern); ENGINE_THINKING suppresses
+                        // all action chrome.
                         val d = glanceDice
                         val fullRoll = d?.let { (d0, d1) ->
                             if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
@@ -245,20 +266,21 @@ fun CoachScreen(
                         BackgammonBoard(
                             settings = settings,
                             gameState = com.clavierhaus.gnubg.engine.BoardState(
-                                board = preMoveBoard!!,
+                                board = if (showAfter) afterBoard!! else preMoveBoard!!,
                                 dice = d,
-                                remainingDice = fullRoll,
+                                remainingDice = if (showAfter) emptyList() else fullRoll,
                                 matchScore = gameState.matchScore,
                                 matchLength = gameState.matchLength,
                                 phase = GamePhase.ENGINE_THINKING
                             ),
                             viewModel = null,
                             tutorMode = false,
-                            coachTrace = com.clavierhaus.gnubg.play.CoachTrace(
-                                played = null,
-                                best = shownMove,
-                                ghost = false
-                            )
+                            coachTrace = if (showAfter)
+                                com.clavierhaus.gnubg.play.CoachTrace(
+                                    played = null,
+                                    best = selectedMove,
+                                    ghost = false
+                                ) else null
                         )
                     } else {
                         // The live game board carries NO arrows (maintainer
@@ -282,9 +304,11 @@ fun CoachScreen(
                     winner = gameState.winner,
                     selectedAlt = selectedAlt,
                     onSelectAlt = { n ->
-                        selectedAlt = if (selectedAlt == n) -1 else n
+                        if (selectedAlt != n) { selectedAlt = n; viewAfter = false }
+                        else if (!viewAfter) viewAfter = true
+                        else { selectedAlt = -1; viewAfter = false }
                         android.util.Log.i("gnubg-coach",
-                            "screen: toggle sel=$selectedAlt " +
+                            "screen: toggle sel=$selectedAlt after=$viewAfter " +
                             "fp(pre)=${preMoveBoard?.let { com.clavierhaus.gnubg.engine.GameViewModel.fpOf(it) }} " +
                             "fp(live)=${com.clavierhaus.gnubg.engine.GameViewModel.fpOf(gameState.board)} dice=$glanceDice")
                     },
