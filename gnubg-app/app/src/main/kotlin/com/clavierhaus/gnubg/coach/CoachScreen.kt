@@ -182,8 +182,21 @@ fun CoachScreen(
     LaunchedEffect(rawGlance) {
         // null now MEANS "cleared for judging" (confirm clears it before the
         // pre-apply verdict), so mirror it -- the panel shows the judging
-        // state instead of a stale verdict.
-        glance = rawGlance?.let { decodeGlance(it) }
+        // state instead of a stale verdict. Decode failures must be LOUD and
+        // must not silently keep an old verdict on screen (field report:
+        // stale first-turn verdict shown against a mid-game live board).
+        glance = rawGlance?.let { v ->
+            try {
+                val d = decodeGlance(v)
+                android.util.Log.i("gnubg-coach",
+                    "screen: decoded rank=${v[0]} of=${v[1]} played='${d?.playedNotation}' alts=${d?.alts?.size}")
+                d
+            } catch (t: Throwable) {
+                android.util.Log.e("gnubg-coach", "screen: decode FAILED: $t")
+                null
+            }
+        }
+        if (rawGlance == null) android.util.Log.i("gnubg-coach", "screen: glance cleared")
     }
 
     CompositionLocalProvider(LocalBoardPalette provides pal) {
