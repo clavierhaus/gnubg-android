@@ -85,6 +85,14 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
     )
 }
 
+private fun ordinal(n: Int): String = when {
+    n % 100 in 11..13 -> "${n}th"
+    n % 10 == 1 -> "${n}st"
+    n % 10 == 2 -> "${n}nd"
+    n % 10 == 3 -> "${n}rd"
+    else -> "${n}th"
+}
+
 private fun skillLabel(skill: Int): String = when (skill) {
     0 -> "Very bad"
     1 -> "Bad"
@@ -221,32 +229,47 @@ private fun CoachPanel(
             }
 
             val g = glance
+            // Every verdict is ANCHORED to the move it judges by naming it --
+            // field report: the message lands a beat after GNU's reply, when
+            // the player has mentally moved on, so an unanchored "Good" was
+            // ambiguous. Three honest tiers instead of binary silence (field
+            // report: "way too often Nothing to show"): the BEST move earns
+            // its affirmation; fine-but-not-best shows what was better,
+            // muted; flagged moves speak up. All values gnubg's own.
             when {
                 g == null -> {
                     Text(
-                        "Play your move. The Coach judges every one -- and stays quiet when it was good.",
+                        "Play your move. The Coach judges every one.",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
                 }
+                g.rank == 0 -> {
+                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
+                    Text(
+                        "The best move.",
+                        color = pal.uiActionPositive, fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 !g.flagged -> {
-                    // Vision P2/P3: silence is the signal for good play. One
-                    // quiet line so the player knows the Coach saw it.
-                    Text("Good. Nothing to show.", color = pal.uiTextSecondary, fontSize = 13.sp)
+                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
+                    Text(
+                        "Fine. ${ordinal(g.rank + 1)} of ${g.cMoves} (${"%+.3f".format(-g.loss)}).",
+                        color = pal.uiTextSecondary, fontSize = 13.sp
+                    )
+                    Text("Best was ${g.bestNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
                 }
                 else -> {
-                    // The glance level (vision P2 depth 1): severity, cost,
-                    // played vs best notation. All gnubg's own values.
+                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
                     Text(
                         "${skillLabel(g.skill)}: ${"%+.3f".format(-g.loss)}",
                         color = Color.White, fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("You: ${g.playedNotation}", color = Color.White, fontSize = 13.sp)
-                    Text("Best: ${g.bestNotation}", color = Color.White, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(4.dp))
+                    Text("Best: ${g.bestNotation}", color = Color.White, fontSize = 13.sp)
                     Text(
-                        "Ranked ${g.rank + 1} of ${g.cMoves}",
+                        "${ordinal(g.rank + 1)} of ${g.cMoves} legal moves",
                         color = pal.uiTextSecondary, fontSize = 12.sp
                     )
                 }

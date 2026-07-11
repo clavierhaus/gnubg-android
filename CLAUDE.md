@@ -77,6 +77,19 @@ threading a live move buys nothing and adds concurrency risk. Threading is the
 right tool ONLY for analysis and rollouts, which gnubg already decomposes, and
 only with the safeguards the doc lists. Re-litigate only from a new measurement.
 
+## LOGCAT: PRECISE TAG FILTERING, ALWAYS (added 2026-07-11)
+
+When requesting or reading device logs, filter by the app's own tags with -s --
+never a bare `logcat | grep`. The canonical command:
+
+    adb logcat -d -v time -s gnubg-vm:I gnubg-tutor:I gnubg-cube:I gnubg-coach:I
+
+Tags in use: `gnubg-vm` (game flow: confirm/roll/cube), `gnubg-tutor` (tutor
+analysis), `gnubg-cube` (cube evaluations), `gnubg-coach` (coach verdict, WITH
+timing). Every new subsystem gets its own tag and a duration log for anything
+that can take >200ms, so "slow" vs "stuck" is a number in the log, not a
+diagnosis argued from a screenshot.
+
 ## NEVER ASSERT A FILE, PATH, SYMBOL, OR FACT WITHOUT READING IT FIRST
 
 This rule exists because it was broken. On 2026-07-11, mid-release, I told the

@@ -1042,8 +1042,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      *  the current job -- the player is already back in control when it runs. */
     private fun publishCoachVerdict() {
         viewModelScope.launch(engineThread) {
+            val t0 = android.os.SystemClock.elapsedRealtime()
             val v = Engine.coachVerdict()
-            if (v.size >= 166) _coachGlance.value = v
+            val ms = android.os.SystemClock.elapsedRealtime() - t0
+            if (v.size >= 166) {
+                android.util.Log.i("gnubg-coach",
+                    "verdict ${ms}ms rank=${v[0]} of=${v[1]} skill=${v[4]} " +
+                    "eqPlayed=${"%.4f".format(Float.fromBits(v[2]))} eqBest=${"%.4f".format(Float.fromBits(v[3]))}")
+                _coachGlance.value = v
+            } else {
+                android.util.Log.i("gnubg-coach", "verdict ${ms}ms: none (size=${v.size})")
+            }
         }
     }
 
