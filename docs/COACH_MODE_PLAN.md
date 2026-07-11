@@ -8,9 +8,13 @@ anti-fabrication rule.
 ## What it is
 
 **Coach** is the fourth mode: Play, Analyse, Review -- and Coach, which is
-playing gnubg *with the engine looking over your shoulder*. The existing
-"Chequer-Play Tutor" hub tile evolves into it (no fifth tile; the tutor's
-current panel is Coach's embryo).
+playing gnubg *with the engine looking over your shoulder*. The hub today has
+exactly three entries (verified: HomeHubScreen.kt:122-128); the chequer-play
+tutor exists only as a toggle inside match setup, which is why nothing on the
+front door says "gnubg will teach you." Coach is therefore a NEW fourth hub
+entry, in the hub's own verb+object grammar -- working title **"Train with the
+Coach"** (maintainer may rename) -- not an evolution of a tile that does not
+exist.
 
 The differentiator, confirmed against the 2026 field (Backgammon Coach iOS,
 Guru Pro, XG Mobile, Galaxy AI Hint): every competitor shows *numbers on
@@ -50,7 +54,19 @@ evaluation, cached Kotlin-side, read by every disclosure level (fixes C6).
 
 ### M1 -- Coach V1, the vision's Section 8 loop  (release 0.12.0)
 
-- Hub tile "Chequer-Play Tutor" becomes **Coach**; mode plays a normal match.
+**Shape: a compartmentalized contained mode, not an overlay on Play.** Its own
+AppMode + screen with a pane layout designed against measured budgets from day
+one; ZERO changes to the Play path (the pattern that worked for Analyse and
+Review). Underneath it shares GameViewModel and the engine verbs -- one game
+loop, two front ends -- so no second game logic can drift. It ships to users
+(field reports drive this project), so it is a contained first version, not a
+lab build.
+
+- New hub entry (fourth): a single game against a fixed sensible opponent
+  (Expert, 0-ply clean -- fast replies keep the coaching loop tight), with the
+  coach loop. Deliberately WITHOUT tournament ceremony: no match length
+  selection, no Crawford, no cube pressure in V1 -- a game played to be
+  coached, not to win. The cube arrives with the cube coach (M4).
 - **Non-modal glance line** in the side panel after each committed human move:
   silent when gnubg does not flag it; else severity + equity loss + best-move
   notation (`FormatMove`). Asynchronous on the engine thread after the engine's
@@ -128,8 +144,10 @@ provably cannot assert what gnubg has not.
 
 ## Decision points for the maintainer
 
-- Tile identity: Tutor tile becomes Coach (assumed), or Coach added as a fifth
-  tile with the old tutor retired later?
-- Coach default strength: fixed 2-ply analysis context regardless of opponent
-  level (assumed, matches review verdict), or follow the opponent's level?
+- Naming: "Train with the Coach" (proposed), or another verb+object phrase.
+- Coach analysis strength: fixed 2-ply analysis context (assumed, matches the
+  review verdict), or follow a user-selectable level?
+- Opponent in V1: fixed Expert (assumed -- fast, clean), or selectable?
 - 0.12.0 scope: M0+M1 only (assumed -- one provable loop), or pull M2 in?
+- The in-match tutor toggle: keep during the transition (assumed), retire once
+  Coach covers it.
