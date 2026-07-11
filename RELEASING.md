@@ -44,3 +44,33 @@ install over the old one.
          gnubg-app/app/build/outputs/apk/release/app-release.apk \
          --title "0.10.0 position setup, match save, match review" \
          --notes-file RELEASE_NOTES.md
+
+## Versioning and the changelog (from 0.10.0 on)
+
+Version numbers are `0.MINOR.PATCH` while the app is pre-1.0:
+
+- **MINOR** rises for a release that adds a feature (0.10 → 0.11).
+- **PATCH** rises for a release that only fixes things (0.10.0 → 0.10.1).
+- Tags are `vMAJOR.MINOR.PATCH`, e.g. `v0.10.0`. The GitHub release title is the
+  version plus a short phrase: `0.10.0 — position setup, match save, review`.
+
+`CHANGELOG.md` is the source of truth for what changed, and it is updated in the
+SAME commit as the change, not reconstructed at release time:
+
+- Add every user-visible change under `## [Unreleased]`, in `Added` / `Changed` /
+  `Fixed` / `Removed` groups, phrased for a player, not a developer.
+- At release, rename `[Unreleased]` to the new version with today's date, open a
+  fresh empty `[Unreleased]`, and update the compare links at the foot.
+- The GitHub release body is that version's changelog section, verbatim.
+
+Commit messages stay in the `type(scope): summary` form already in use
+(`feat(analyse): …`, `fix(setup): …`); the changelog is the human-facing digest
+of them, not a duplicate.
+
+## Before every release: the buildable-clone check
+
+    ./tools/check_buildable_clone.sh
+
+It fails if any file the Android build compiles or includes is gitignored -- the
+mistake that made fresh clones unbuildable more than once. A release must not go
+out while it fails.

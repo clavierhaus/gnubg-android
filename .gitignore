@@ -50,9 +50,6 @@ doc/MASTER_V8.tex
 # --- Explicitly track doc/ build system ---------------------------------------
 !doc/Makefile
 
-# --- Explicitly track doc/ build system ---------------------------------------
-!doc/Makefile
-
 # --- engine-core: GTK/UI/desktop files -- not part of Android build ------------
 engine-core/gtk*.c
 engine-core/gtk*.h
@@ -139,7 +136,7 @@ gnubg-app/app/build/
 gnubg-app/tmp/
 gnubg-app/local.properties
 
-# Disposable local audit/build scratch output
+# Repo-root scratch dir used during development (NOT system /tmp)
 /tmp/
 
 # --- build output (generated; never track) ---
@@ -170,3 +167,12 @@ keystore.properties
 
 # Local build artifacts parked in the root
 /*.apk
+
+# --- engine-core: build-required files must NEVER be ignored -----------------
+# The rules above hide GTK/desktop/generated files the Android build does not
+# compile. Several times, a pattern here also swallowed a header or .inc that
+# the build DOES compile (sound.h, export.h, movefilters.inc, boarddim.h,
+# progress.h, openurl.h), making a fresh clone unbuildable. Before adding any
+# engine-core rule, confirm no compiled source (jni-bridge/CMakeLists.txt) reaches
+# the file: `grep -rn '#include "NAME"' engine-core jni-bridge`. If it does, do
+# not ignore it. This is checked mechanically by tools/check_buildable_clone.sh.
