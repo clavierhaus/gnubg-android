@@ -56,8 +56,12 @@ evaluation, cached Kotlin-side, read by every disclosure level (fixes C6).
   notation (`FormatMove`). Asynchronous on the engine thread after the engine's
   own reply (single-threaded engine: coach eval queues behind the engine move --
   acceptable, the player is never blocked; see THREADING.md).
-- **The arrow**: draw played-vs-best from the anMove src/dst pairs the verdict
-  already returns -- pure rendering, the app's legitimate work.
+- **The visual WHY** (the vision's P1 emphasis): played-vs-best rendered as
+  per-leg traced motion ON the existing BoardGeom geometry -- same points,
+  palette, proportions -- from the anMove src/dst pairs the verdict already
+  returns; a translucent ghost of gnubg's destination checkers as the second
+  step. Pure rendering, the app's legitimate work. V1 ships the traced paths;
+  the animated before/after toggle may land in M2 if geometry work demands it.
 - **Try again**: NOT a game rewind. On a flagged error, "Try again" opens the
   pre-move position (returned by the verdict, mover frame) as a sandbox with the
   same dice -- the Analyse install path (`SetGNUbgID` via idsFromState) reused --
