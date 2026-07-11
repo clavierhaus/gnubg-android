@@ -96,6 +96,19 @@ object Engine {
      *  [21..70]=pre-move board (mover frame), for formatMove. */
     external fun reviewVerdict(): IntArray
 
+    /** Coach M0 (docs/COACH_MODE_PLAN.md): gnubg's verdict on the last human
+     *  chequer move of the live game, widened for every disclosure level over
+     *  ONE evaluation. Empty when there is no human move to judge. Layout:
+     *  [0]=rank [1]=movesConsidered [2]=playedEq(bits) [3]=bestEq(bits)
+     *  [4]=skill(0 very bad,1 bad,2 doubtful,3 none)
+     *  [5..12]=played anMove [13..20]=best anMove
+     *  [21..70]=pre-move board (mover frame, for formatMove)
+     *  [71..77]=played arEvalMove (win,winG,winBG,loseG,loseBG,eq,cubefulEq bits)
+     *  [78..84]=best arEvalMove
+     *  [85]=K candidates, then K rows of 16: anMove[8], equity(bits),
+     *  arEvalMove[7](bits), ranked from best. */
+    external fun coachVerdict(): IntArray
+
     /** Lock-free live-dice channel: [seq, die0, die1]. The seq advances the
      *  moment gnubg rolls (play.c DiceRolled -> port hook), which for the
      *  engine is BEFORE its move search -- so the UI can show what the engine

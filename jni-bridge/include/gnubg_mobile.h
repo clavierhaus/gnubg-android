@@ -96,6 +96,7 @@ int gnubg_mobile_find_move(const int old_board[50], const int cur_board[50],
 int gnubg_mobile_skill(float equity_delta);
 int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]);
 int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]);
+int gnubg_mobile_coach_verdict(int out[166]);  /* PORT: Coach M0, last human move + candidates */
 int gnubg_mobile_review_verdict(int out[71]);  /* PORT: verdict at plLastMove */
 void gnubg_mobile_on_dice_rolled(void);        /* PORT: called by play.c DiceRolled */
 int gnubg_mobile_peek_live_dice(int out[3]);   /* PORT: lock-free {seq,d0,d1} */

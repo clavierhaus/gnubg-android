@@ -914,6 +914,80 @@ int gnubg_mobile_peek_live_dice(int out[3]) {
     return 3;
 }
 
+/* M0 of the Coach plan (docs/COACH_MODE_PLAN.md): gnubg's verdict on the LAST
+ * HUMAN chequer move of the live game -- analyze_replay(plTarget=NULL), the same
+ * tutor semantics the live game needs -- widened with the per-move probability
+ * vectors and the top candidates, so every Coach disclosure level (glance,
+ * reason, numbers, full table) reads ONE cached evaluation (vision C6).
+ * Sources, per checkpoint Q1/Q4: FindnSaveBestMoves (ranking, via
+ * analyze_replay), Skill (severity, analysis.c:288), the move list's own
+ * arEvalMove[NUM_ROLLOUT_OUTPUTS] (eval.h:272) for win/gammon/bg probabilities
+ * and equities. This verb marshals; it interprets nothing.
+ *
+ * out[166], ints; floats as IEEE bits. COACH_K = up to 5 candidate rows.
+ *   [0]   iPlayed (0-based rank of the played move)
+ *   [1]   cMoves considered
+ *   [2]   equity of the played move (bits)
+ *   [3]   equity of the best move (bits)
+ *   [4]   skilltype from Skill(): 0 very bad, 1 bad, 2 doubtful, 3 none
+ *   [5..12]    anMove of the played move
+ *   [13..20]   anMove of the best move
+ *   [21..70]   the PRE-move board, mover frame (facade_pack_board), the frame
+ *              gnubg_mobile_format_move expects
+ *   [71..77]   arEvalMove of the played move (7 floats as bits)
+ *   [78..84]   arEvalMove of the best move   (7 floats as bits)
+ *   [85]       K = number of candidate rows that follow (0..5)
+ *   [86..]     K rows, 16 ints each, ranked from best:
+ *              { anMove[8], rScore (bits), arEvalMove[7] (bits) }
+ * Returns 1 verdict written, 0 no human chequer move to judge, -1 error. */
+#define COACH_K 5
+int gnubg_mobile_coach_verdict(int out[166]) {
+    matchstate msAnalyse;
+    movelist ml;
+    unsigned int iPlayed, k, n;
+    union { float f; unsigned int bits; } u;
+    int rc, i, base;
+    float rPlayed, rBest;
+
+    if (!out) return -1;
+
+    pthread_mutex_lock(&gnubg_lock);
+    rc = analyze_replay(&ml, &iPlayed, &msAnalyse, NULL);
+    if (rc < 1) { pthread_mutex_unlock(&gnubg_lock); return rc; }
+
+    rPlayed = ml.amMoves[iPlayed].rScore;
+    rBest   = ml.amMoves[0].rScore;
+
+    out[0] = (int) iPlayed;
+    out[1] = (int) ml.cMoves;
+    u.f = rPlayed; out[2] = (int) u.bits;
+    u.f = rBest;   out[3] = (int) u.bits;
+    out[4] = (int) Skill(rPlayed - rBest);
+    for (i = 0; i < 8; i++) out[5 + i]  = ml.amMoves[iPlayed].anMove[i];
+    for (i = 0; i < 8; i++) out[13 + i] = ml.amMoves[0].anMove[i];
+    facade_pack_board((ConstTanBoard) msAnalyse.anBoard, out + 21);
+
+    for (i = 0; i < NUM_ROLLOUT_OUTPUTS; i++) {
+        u.f = ml.amMoves[iPlayed].arEvalMove[i]; out[71 + i] = (int) u.bits;
+        u.f = ml.amMoves[0].arEvalMove[i];       out[78 + i] = (int) u.bits;
+    }
+
+    n = ml.cMoves < COACH_K ? ml.cMoves : COACH_K;
+    out[85] = (int) n;
+    for (k = 0; k < n; k++) {
+        base = 86 + (int) k * 16;
+        for (i = 0; i < 8; i++) out[base + i] = ml.amMoves[k].anMove[i];
+        u.f = ml.amMoves[k].rScore; out[base + 8] = (int) u.bits;
+        for (i = 0; i < NUM_ROLLOUT_OUTPUTS; i++) {
+            u.f = ml.amMoves[k].arEvalMove[i]; out[base + 9 + i] = (int) u.bits;
+        }
+    }
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 int gnubg_mobile_review_verdict(int out[71]) {
     matchstate msAnalyse;
     movelist ml;

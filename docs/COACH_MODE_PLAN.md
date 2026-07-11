@@ -142,12 +142,17 @@ provably cannot assert what gnubg has not.
    quantity. The declarative trigger format makes Q4 mechanically checkable; a
    phrase without a named gnubg source cannot be merged.
 
-## Decision points for the maintainer
+## Decisions (locked 2026-07-11)
 
-- Naming: "Train with the Coach" (proposed), or another verb+object phrase.
-- Coach analysis strength: fixed 2-ply analysis context (assumed, matches the
-  review verdict), or follow a user-selectable level?
-- Opponent in V1: fixed Expert (assumed -- fast, clean), or selectable?
-- 0.12.0 scope: M0+M1 only (assumed -- one provable loop), or pull M2 in?
-- The in-match tutor toggle: keep during the transition (assumed), retire once
-  Coach covers it.
+- Naming: **"Train with the Coach"**.
+- The existing one-point Chequer-Play Tutor mode **stays permanently** -- it is a
+  movement-only companion, no cube strategy, and its narrowness is a feature.
+  Coach does not replace it; the two sharpen each other's identity (Tutor =
+  quick movement practice, Coach = the full teaching loop).
+- Coach analysis strength: fixed 2-ply analysis context (esAnalysisChequer),
+  matching the review verdict.
+- Opponent in V1: fixed Expert (0-ply clean, instant replies).
+- 0.12.0 scope: M0 + M1.
+
+M0 status: DONE -- gnubg_mobile_coach_verdict (out[166]) + JNI + Engine.coachVerdict,
+syntax-checked. Next: M1 scaffolding (AppMode.COACH, hub entry, CoachScreen).

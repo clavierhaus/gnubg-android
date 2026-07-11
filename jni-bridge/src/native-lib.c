@@ -511,6 +511,19 @@ Java_com_clavierhaus_gnubg_Engine_peekLiveDice(JNIEnv *env, jobject thiz) {
 }
 
 JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_coachVerdict(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    int out[166] = {0};
+    int rc = gnubg_mobile_coach_verdict(out);
+    if (rc < 1) return (*env)->NewIntArray(env, 0);
+    jintArray result = (*env)->NewIntArray(env, 166);
+    jint buf[166];
+    for (int i = 0; i < 166; i++) buf[i] = (jint)out[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 166, buf);
+    return result;
+}
+
+JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_reviewVerdict(JNIEnv *env, jobject thiz) {
     (void)thiz;
     int out[71] = {0};
