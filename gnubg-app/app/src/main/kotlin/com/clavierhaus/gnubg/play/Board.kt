@@ -653,6 +653,19 @@ fun BackgammonBoard(
                 }
             }
 
+            // During ENGINE_THINKING: the engine has already rolled (gnubg rolls
+            // before it searches); show its dice grayed on its half, so the
+            // player sees what it is thinking about -- and starts thinking too.
+            if (gameState.phase == GamePhase.ENGINE_THINKING) {
+                gameState.engineDice?.let { (e0, e1) ->
+                    val rects = g.engineDiceCentred()
+                    listOf(e0, e1).forEachIndexed { i, face ->
+                        val r = rects[i]
+                        drawDie(r.left, r.top, r.width, r.height, face, p.diceDark, p.dicePip, p.frame)
+                    }
+                }
+            }
+
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
             if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
                 // Engine dice -- left half, grayed

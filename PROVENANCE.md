@@ -501,3 +501,11 @@ They were previously excluded by a `.gitignore` rule
 (`engine-core/glib-ext.*`) in the "GTK/UI/desktop files" block, which
 miscategorised them as desktop-only. That rule was removed and both files are
 now tracked, so the native build is reproducible from a clean clone.
+
+## play.c: DiceRolled notifies the Android layer
+
+Upstream `DiceRolled` (play.c:817) plays a sound and refreshes the GTK board --
+the desktop player sees the roll before the engine starts thinking. The port adds
+one call at the top, `gnubg_mobile_on_dice_rolled()`, publishing the roll to the
+app through a lock-free channel so the Android board can show it at the same
+moment. No game logic is touched; the hook is notification only.

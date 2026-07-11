@@ -96,6 +96,13 @@ object Engine {
      *  [21..70]=pre-move board (mover frame), for formatMove. */
     external fun reviewVerdict(): IntArray
 
+    /** Lock-free live-dice channel: [seq, die0, die1]. The seq advances the
+     *  moment gnubg rolls (play.c DiceRolled -> port hook), which for the
+     *  engine is BEFORE its move search -- so the UI can show what the engine
+     *  is thinking about. Snapshot seq before the turn; dice are fresh only
+     *  once seq has moved. */
+    external fun peekLiveDice(): IntArray
+
     /** gnubg own move classifier (analysis.c Skill). equityDelta = played - best
      *  (<= 0). Returns gnubg skilltype ordinal: 0=VERYBAD 1=BAD 2=DOUBTFUL 3=NONE. */
     external fun skill(equityDelta: Float): Int

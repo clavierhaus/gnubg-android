@@ -500,6 +500,17 @@ Java_com_clavierhaus_gnubg_Engine_analyzePlayedMove(JNIEnv *env, jobject thiz,
 }
 
 JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_peekLiveDice(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    int out[3] = {0};
+    gnubg_mobile_peek_live_dice(out);
+    jintArray result = (*env)->NewIntArray(env, 3);
+    jint buf[3] = { (jint)out[0], (jint)out[1], (jint)out[2] };
+    (*env)->SetIntArrayRegion(env, result, 0, 3, buf);
+    return result;
+}
+
+JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_reviewVerdict(JNIEnv *env, jobject thiz) {
     (void)thiz;
     int out[71] = {0};

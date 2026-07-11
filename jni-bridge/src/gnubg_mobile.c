@@ -884,6 +884,36 @@ int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]) {
  *   [21..70]  the PRE-move board, mover frame, packed -- the frame
  *             gnubg_mobile_format_move expects.
  * Returns 1 verdict written, 0 cursor is not a chequer move, -1 error. */
+/* Live-dice side channel. DiceRolled (play.c) calls the hook the moment a roll
+ * lands on the board -- for the engine, that is early inside its turn, BEFORE the
+ * move search. The peek verb is deliberately LOCK-FREE: during the engine's turn
+ * the engine thread holds gnubg_lock for the whole synchronous call, so a locked
+ * read would block until the think finished, which is precisely too late. Two
+ * ints and a sequence counter through relaxed/acquire-release atomics: the
+ * reader accepts dice only after seeing a seq bump, so it never reads a torn
+ * pair. The dice values are read from ms.anDice inside the hook, on the engine
+ * thread that owns them. */
+static volatile int g_liveDiceSeq = 0;
+static volatile int g_liveDice0 = 0;
+static volatile int g_liveDice1 = 0;
+
+void gnubg_mobile_on_dice_rolled(void) {
+    __atomic_store_n(&g_liveDice0, (int) ms.anDice[0], __ATOMIC_RELAXED);
+    __atomic_store_n(&g_liveDice1, (int) ms.anDice[1], __ATOMIC_RELAXED);
+    __atomic_add_fetch(&g_liveDiceSeq, 1, __ATOMIC_RELEASE);
+}
+
+/* out[3] = { seq, die0, die1 }. Callers snapshot seq before starting an engine
+ * turn and treat dice as fresh only once seq has advanced. NO gnubg_lock -- see
+ * above. */
+int gnubg_mobile_peek_live_dice(int out[3]) {
+    if (!out) return -1;
+    out[0] = __atomic_load_n(&g_liveDiceSeq, __ATOMIC_ACQUIRE);
+    out[1] = __atomic_load_n(&g_liveDice0, __ATOMIC_RELAXED);
+    out[2] = __atomic_load_n(&g_liveDice1, __ATOMIC_RELAXED);
+    return 3;
+}
+
 int gnubg_mobile_review_verdict(int out[71]) {
     matchstate msAnalyse;
     movelist ml;

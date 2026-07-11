@@ -201,7 +201,12 @@ fun GameLayout(
                                 GameButton("Play on", pal.uiButtonNeutral) { viewModel.declineResignation() }
                             }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
-                                Text("Thinking...", color = pal.uiTextSecondary, fontSize = 18.sp)
+                                val d = gameState.engineDice
+                                Text(
+                                    if (d != null) "Rolled ${d.first}-${d.second}. Thinking..."
+                                    else "Thinking...",
+                                    color = pal.uiTextSecondary, fontSize = 18.sp
+                                )
                             }
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
                                 // The roll action is shown directly on the board surface.

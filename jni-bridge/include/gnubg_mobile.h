@@ -97,6 +97,8 @@ int gnubg_mobile_skill(float equity_delta);
 int gnubg_mobile_tutor_analyze(const int old_board[50], int out[52]);
 int gnubg_mobile_analyze_played_move(const int old_board[50], float out[7]);
 int gnubg_mobile_review_verdict(int out[71]);  /* PORT: verdict at plLastMove */
+void gnubg_mobile_on_dice_rolled(void);        /* PORT: called by play.c DiceRolled */
+int gnubg_mobile_peek_live_dice(int out[3]);   /* PORT: lock-free {seq,d0,d1} */
 
 /* gnubg own position-feature inputs (CalculateHalfInputs), both sides.
  * out holds 2*MORE_INPUTS floats (MORE_INPUTS from eval.h). Raw normalised. */

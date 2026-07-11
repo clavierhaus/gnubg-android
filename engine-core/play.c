@@ -813,9 +813,18 @@ AddGame(moverecord * pmr)
 #endif
 }
 
+/* PORT: notify the Android layer the moment dice hit the board -- the same
+ * semantic point where desktop gnubg updates its own board (below). The app's
+ * engine turn is one synchronous JNI call, so without this hook the player
+ * cannot see what the engine is thinking about until the think ends. Recorded
+ * in PROVENANCE.md. */
+extern void gnubg_mobile_on_dice_rolled(void);
+
 static void
 DiceRolled(void)
 {
+    gnubg_mobile_on_dice_rolled();
+
     playSound(SOUND_ROLL);
 
 #if defined (USE_GTK)

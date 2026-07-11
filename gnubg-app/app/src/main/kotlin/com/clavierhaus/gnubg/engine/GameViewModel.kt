@@ -646,6 +646,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * auto-pass so the UI can show the dice + a Continue button.
      * Engine.applyMoveString("") then makes CommandMove see
      * GenerateMoves == 0, add a no-move record, and call TurnDone. */
+    /* Poll the lock-free live-dice channel while the engine thinks, so the
+     * player sees WHAT it is thinking about. gnubg rolls early in its turn
+     * (play.c DiceRolled -> port hook) and only then searches; desktop gnubg
+     * shows the dice at that same moment. baseSeq: snapshot from before the
+     * turn -- dice count as fresh only once the seq has advanced, so a stale
+     * previous roll can never be mistaken for this one. Runs off the engine
+     * thread, which is blocked inside the turn; stops the moment dice arrive
+     * or the phase leaves ENGINE_THINKING (e.g. the engine doubled instead). */
+    private fun watchEngineDice(baseSeq: Int) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            while (_gameState.value.phase == GamePhase.ENGINE_THINKING) {
+                val v = Engine.peekLiveDice()
+                if (v.size == 3 && v[0] != baseSeq && v[1] in 1..6 && v[2] in 1..6) {
+                    val cur = _gameState.value
+                    if (cur.phase == GamePhase.ENGINE_THINKING) {
+                        _gameState.value = cur.copy(engineDice = Pair(v[1], v[2]))
+                    }
+                    break
+                }
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
+
     fun passTurn() {
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
@@ -653,7 +677,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.board.contentEquals(state.oldBoard)) return
         viewModelScope.launch(engineThread) {
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
+            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+            watchEngineDice(diceBase)
             Engine.applyMoveString("")
             if (Engine.getMatchStatus() >= 2) {
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
@@ -688,7 +714,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // (play.c:291 updates anScore synchronously before the new game starts),
             // so it is the reliable game-over signal -- same pattern as commandResign.
             val scoreBefore = Engine.getMatchScore()
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING)
+            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+            watchEngineDice(diceBase)
             Engine.applyMoveString(moveStr)
 
             // Tutor 2-ply analysis (~2s) is DECOUPLED: it runs in
@@ -783,7 +811,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        _gameState.value = state.copy(phase = GamePhase.ENGINE_THINKING)
+        _gameState.value = state.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
 
         viewModelScope.launch(engineThread) {
             try {
@@ -875,6 +903,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun acceptDouble() {
         viewModelScope.launch(engineThread) {
+            // The take hands the turn straight to the engine, which rolls and
+            // thinks inside commandTake -- previously the UI sat frozen in
+            // CUBE_OFFERED for the whole think. Enter ENGINE_THINKING and watch
+            // for its roll, same as the chequer paths.
+            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+            watchEngineDice(diceBase)
             Engine.commandTake()
             val ed = Engine.getMoveRecordDice()
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
