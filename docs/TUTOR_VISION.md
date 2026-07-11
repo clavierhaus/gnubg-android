@@ -260,6 +260,39 @@ draws *around and on top of* the board:
   best (both boards are gnubg output);
 - **move notation** for played vs best (`FormatMove`).
 
+**The visual WHY, in this board's own language.** The point deserving the most
+emphasis in this whole document: the tutor's answer to "why was my move worse?"
+must be a *visual representation of moves*, fully adapted from the board layout
+this app already draws -- the single BoardGeom geometry where one rectangle is
+both drawn and tapped. Not a diagram beside the board, not a second stylized
+mini-board, not iconography imported from desktop gnubg: the same points, the
+same checker positions, the same palette and proportions the player has been
+staring at all game. A move rendered as motion *on that geometry* -- source
+point to destination point, in place -- is comprehensible in a way no notation
+or table can be, because it is literally the move the player would have made
+with a finger.
+
+Concretely, the move-visualisation layer renders, all from gnubg data and all
+inside the existing geometry:
+
+- the **played move** and **gnubg's move** as traced paths over the live board
+  (from the anMove src/dst pairs the verdict verbs already return), visually
+  distinguished (e.g. the player's path muted, gnubg's emphasized), each leg of
+  a compound move shown as its own hop so 8/3 6/3 reads as two motions, not an
+  abstraction;
+- an optional **ghost preview**: the destination checkers of gnubg's move drawn
+  translucent at their target points on the current position -- again gnubg's
+  own best-move board, rendered, never inferred;
+- the **before/after toggle** above, animated as movement between the two
+  gnubg boards rather than a cut, so the *difference* is what the eye receives.
+
+This is the strongest honest "why" available: it asserts no classification and
+invents no reason -- it shows, spatially, exactly what gnubg would have done
+where the player can compare it against what they did. Every later verbal layer
+(the reason line, the lexicon) is subordinate to this; a phrase accompanies the
+picture, never substitutes for it. The rendering cost is Kotlin's legitimate
+pixel work; the data is already crossing the facade.
+
 Highlights that assert a *classification* of a point ("this is a blot," "this
 makes a prime") are out of scope unless gnubg hands us that classification.
 Arrows and position toggles assert nothing -- they show gnubg's board -- so they
@@ -373,6 +406,26 @@ never derives a new verdict of its own.
 Rollouts remain advanced and deferred -- clearly labelled deeper analysis,
 bounded, cancelable, never in the primary correction loop. The default coach
 relies on fast evaluation.
+
+### Threading: a compartmentalized concept, never in the move loop
+
+Threading in the tutor context is an explicitly bounded tool, governed by
+`docs/THREADING.md`, and the boundary is stated here so the vision cannot be
+read as licensing it elsewhere: **multithreading is never used for in-game move
+calculation.** A live move -- the engine's or the evaluation of the player's --
+is one serial, pruned, NEON-vectorised search that gnubg does not decompose
+into tasks; threading it would add concurrency risk for zero speedup and is off
+the table (verified in THREADING.md, re-verify before ever revisiting).
+
+Where threading *is* appropriate, and only there: the workloads gnubg itself
+already decomposes into tasks -- batch analysis of a finished match, and
+rollouts. Both live behind a progress bar, off the interactive path, where a
+contended pool degrades a wait indicator rather than a move. When the coach
+eventually gains whole-match statistics or on-demand rollout confidence, that is
+the compartment threading arrives in -- enabled deliberately (USE_MULTITHREAD,
+un-ignoring mtsupport.c/evallock.c, the lock discipline THREADING.md lists),
+never as a side effect of making the tutor "feel faster." The tutor feels fast
+by being asynchronous and non-blocking (P3), not by being parallel.
 
 
 ## 7. Foundation fit -- why this is reachable from where we are
