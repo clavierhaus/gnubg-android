@@ -77,6 +77,7 @@ After installing, a clean restart is:
 - [`docs/ARCHITECTURE_FOR_CONTRIBUTORS.md`](docs/ARCHITECTURE_FOR_CONTRIBUTORS.md) — the four-layer stack, real data-flow, and how to add a feature
 - [`docs/ARCHITECTURE_ANALYSE_MODE.md`](docs/ARCHITECTURE_ANALYSE_MODE.md) — design and outcome of position entry, match save, and review
 - [`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md) — the traps this port hit, each verified against the engine source
+- [`docs/THREADING.md`](docs/THREADING.md) — why the app is single-threaded, and the conditions under which that changes
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — forward plans
 - [`CHANGELOG.md`](CHANGELOG.md) — what changed in each release
 - [`RELEASING.md`](RELEASING.md) — how a release is cut

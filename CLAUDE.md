@@ -66,6 +66,17 @@ If you catch yourself writing or justifying a file that describes a position
 without calling the engine, you are reinventing. The correct move is to call
 gnubg, or to not compute the value at all.
 
+## THREADING QUESTIONS GO THROUGH docs/THREADING.md
+
+Any request to "thread the engine", "use all the cores", or "make the move
+faster with threads" is answered by re-verifying docs/THREADING.md against the
+source, not from first principles. Short version, to be re-checked not recalled:
+the app is single-threaded (USE_MULTITHREAD undefined), a single move is one
+serial pruned NEON-vectorised search that gnubg does NOT decompose into tasks, so
+threading a live move buys nothing and adds concurrency risk. Threading is the
+right tool ONLY for analysis and rollouts, which gnubg already decomposes, and
+only with the safeguards the doc lists. Re-litigate only from a new measurement.
+
 ## NEVER ASSERT A FILE, PATH, SYMBOL, OR FACT WITHOUT READING IT FIRST
 
 This rule exists because it was broken. On 2026-07-11, mid-release, I told the
