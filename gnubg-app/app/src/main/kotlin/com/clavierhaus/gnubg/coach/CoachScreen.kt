@@ -263,14 +263,21 @@ fun CoachScreen(
                         val fullRoll = d?.let { (d0, d1) ->
                             if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
                         } ?: emptyList()
+                        val shownBoard = if (showAfter) afterBoard!! else preMoveBoard!!
+                        // gnubg's pip counts for the DISPLAYED board -- the
+                        // BoardState defaults (167) lied on every study view
+                        // and made mid-game positions masquerade as openings.
+                        val pips = remember(shownBoard) { Engine.pipCount(shownBoard) }
                         BackgammonBoard(
                             settings = settings,
                             gameState = com.clavierhaus.gnubg.engine.BoardState(
-                                board = if (showAfter) afterBoard!! else preMoveBoard!!,
+                                board = shownBoard,
                                 dice = d,
                                 remainingDice = if (showAfter) emptyList() else fullRoll,
                                 matchScore = gameState.matchScore,
                                 matchLength = gameState.matchLength,
+                                pipCountHuman = pips[0],
+                                pipCountEngine = pips[1],
                                 phase = GamePhase.ENGINE_THINKING
                             ),
                             viewModel = null,
@@ -304,9 +311,13 @@ fun CoachScreen(
                     winner = gameState.winner,
                     selectedAlt = selectedAlt,
                     onSelectAlt = { n ->
+                        // A toggle has TWO states (maintainer design): tap a
+                        // chip -> BEFORE; same chip again -> AFTER; again ->
+                        // BEFORE... The live game is not part of the cycle
+                        // (during review it IS the played move's after-state);
+                        // a different chip starts that move at BEFORE.
                         if (selectedAlt != n) { selectedAlt = n; viewAfter = false }
-                        else if (!viewAfter) viewAfter = true
-                        else { selectedAlt = -1; viewAfter = false }
+                        else viewAfter = !viewAfter
                         android.util.Log.i("gnubg-coach",
                             "screen: toggle sel=$selectedAlt after=$viewAfter " +
                             "fp(pre)=${preMoveBoard?.let { com.clavierhaus.gnubg.engine.GameViewModel.fpOf(it) }} " +
