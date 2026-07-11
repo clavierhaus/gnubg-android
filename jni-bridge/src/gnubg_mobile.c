@@ -79,9 +79,16 @@ const char *gnubg_mobile_facade_version(void) {
 }
 
 static void gnubg_mobile_drain_next_turns(void) {
+    int n = 0;
     while (fNextTurn) {
         NextTurn(TRUE);
+        /* Diagnostic (bounded log): a spin here would mean a transition that
+         * re-arms fNextTurn without progressing -- the number tells us. */
+        if (++n <= 8 || n % 100 == 0)
+            __android_log_print(ANDROID_LOG_INFO, "gnubg-vm", "drain: iteration %d", n);
     }
+    if (n > 0)
+        __android_log_print(ANDROID_LOG_INFO, "gnubg-vm", "drain: done after %d", n);
 }
 
 int gnubg_mobile_command_new_game(void) {
@@ -370,8 +377,13 @@ int gnubg_mobile_get_resignation(void) {
 }
 
 int gnubg_mobile_command_move(const char *move) {
+    __android_log_print(ANDROID_LOG_INFO, "gnubg-vm", "cm: enter '%s'", move ? move : "");
     pthread_mutex_lock(&gnubg_lock);
+    __android_log_print(ANDROID_LOG_INFO, "gnubg-vm", "cm: locked");
     CommandMove((char *)(move ? move : ""));
+    __android_log_print(ANDROID_LOG_INFO, "gnubg-vm",
+        "cm: CommandMove done fNextTurn=%d gs=%d turn=%d dice=%d,%d",
+        fNextTurn, (int) ms.gs, (int) ms.fTurn, (int) ms.anDice[0], (int) ms.anDice[1]);
     /* Drain, exactly as every other turn-driving verb does. gnubgs contract is
      * that NextTurn processes ONE transition per call and sets fNextTurn while
      * work remains (play.c uses while (fNextTurn) NextTurn(TRUE)). A single

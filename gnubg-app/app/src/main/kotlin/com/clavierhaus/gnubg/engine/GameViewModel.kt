@@ -1072,7 +1072,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
             watchEngineDice(diceBase)
+            android.util.Log.i("gnubg-coach", "continue: delivering '$mv'")
             Engine.applyMoveString(mv)
+            android.util.Log.i("gnubg-coach",
+                "continue: applied; turn=${Engine.getMatchTurn()} gs=${Engine.getMatchStatus()}")
             val scoreAfter = Engine.getMatchScore()
             val humanDelta  = scoreAfter[0] - scoreBefore[0]
             val engineDelta = scoreAfter[1] - scoreBefore[1]

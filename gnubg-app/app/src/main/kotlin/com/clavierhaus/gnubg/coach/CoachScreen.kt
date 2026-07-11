@@ -383,7 +383,7 @@ private fun CoachPanel(
             when {
                 g == null -> {
                     Text(
-                        "Play your move. The Coach judges every one.",
+                        "Play your move and have it evaluated by the Coach.",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
                 }
