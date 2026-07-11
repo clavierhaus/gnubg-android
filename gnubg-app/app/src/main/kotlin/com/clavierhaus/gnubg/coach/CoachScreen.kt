@@ -135,7 +135,7 @@ fun CoachScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(pal.uiBackground)
+                .background(pal.uiPanelDeep)
         ) {
             // Gear keeps the top-left, as on every screen.
             if (onOpenSettings != null) {
