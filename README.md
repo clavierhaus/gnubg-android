@@ -4,13 +4,13 @@ A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/)
 
 The aim is **the** comprehensive backgammon companion for Android: an app a serious player keeps on their phone because the opponent is world-class, the board is clean and precise on every screen, positions can be set up and analysed on the spot, and matches can be reviewed move by move — all offline, all free, all open source.
 
-> **Status: pre-release (V0.9.x).** The core game is fully playable and stable, and the three companion features below are built and working. Online play and deeper analysis reporting are the active frontier — see [Roadmap](#roadmap).
+> **Status: 0.11.0** — the first full release, successor to the 0.9.1 preview. The core game is stable and the three companion features below (position setup and analysis, match save, match review) are built and working. Online play and deeper analysis reporting are the active frontier — see [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What it does
 
 ### Play
 
-- **Full matches against the gnubg engine.** Match play to any length, four strength levels (Beginner, Casual, Intermediate, Advanced). Every move the engine makes is gnubg's own decision — no app-side heuristics.
+- **Full matches against the gnubg engine.** Match play to any length, seven strength levels from Beginner up to Grandmaster (3-ply). Every move is gnubg's own decision — no app-side heuristics. At the top levels a move takes a few seconds (about 7-9s at 3-ply): the honest cost of a strong pruned, NEON-vectorised search, shared by any app at this strength on the same phone. See [`docs/THREADING.md`](docs/THREADING.md).
 - **The doubling cube, in full.** Offer, take, drop, redouble, and resign, all decided by gnubg. When the engine is losing it resigns; when it is winning it doubles, and it is gnubg that judges your take.
 - **Tournament rules.** Crawford, Jacoby, automatic doubles, beavers, and cube on/off, plus a choice of **match equity table** (Kazaross-XG2, Woolsey, Jacobs & Trice, Snowie, and the other canonical gnubg tables) for match-play cube decisions.
 - **Live tutor.** See gnubg's own equity evaluation of your positions as you play — the same numbers the desktop tutor produces.
