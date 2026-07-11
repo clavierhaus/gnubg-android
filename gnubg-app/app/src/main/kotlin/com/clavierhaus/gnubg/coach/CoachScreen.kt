@@ -222,6 +222,7 @@ fun CoachScreen(
                             settings = settings,
                             gameState = com.clavierhaus.gnubg.engine.BoardState(
                                 board = altBoard!!,
+                                dice = gameState.originalDice,
                                 matchScore = gameState.matchScore,
                                 matchLength = gameState.matchLength,
                                 phase = GamePhase.ENGINE_THINKING
@@ -256,6 +257,7 @@ fun CoachScreen(
                     winner = gameState.winner,
                     selectedAlt = selectedAlt,
                     onSelectAlt = { n -> selectedAlt = if (selectedAlt == n) -1 else n },
+                    onContinue = { selectedAlt = -1; viewModel.continueCoachTurn() },
                     onNewGame = {
                         glance = null
                         viewModel.startCoachGame()
@@ -287,11 +289,15 @@ private fun AltList(
     alts.forEachIndexed { i, alt ->
         Spacer(modifier = Modifier.height(3.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GameButton(
-                label = "${i + 1}",
-                color = if (selectedAlt == i) pal.uiChipOn else pal.uiChipOff,
-                compact = true
-            ) { onSelectAlt(i) }
+            // Fixed-width slot keeps the numbers vertically aligned whatever
+            // the chip's intrinsic width (maintainer design).
+            Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
+                GameButton(
+                    label = "${i + 1}",
+                    color = if (selectedAlt == i) pal.uiChipOn else pal.uiChipOff,
+                    compact = true
+                ) { onSelectAlt(i) }
+            }
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 "${alt.notation}  ${"%+.3f".format(alt.gain)}",
@@ -316,6 +322,7 @@ private fun CoachPanel(
     winner: Int,
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit,
+    onContinue: () -> Unit,
     onNewGame: () -> Unit,
     onHome: () -> Unit
 ) {
@@ -342,6 +349,13 @@ private fun CoachPanel(
                     Text(
                         if (winner == 0) "You win the game." else "GNU wins the game.",
                         color = Color.White, fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                phase == GamePhase.COACH_REVIEW -> {
+                    Text(
+                        "Study the verdict. GNU waits for you.",
+                        color = pal.uiTextSecondary, fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -407,6 +421,12 @@ private fun CoachPanel(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (phase == GamePhase.COACH_REVIEW) {
+                // The player's active continuation: only now does gnubg
+                // receive the move; GNU rolls and replies after this.
+                GameButton("GNU's turn", pal.uiActionRoll, compact = true) { onContinue() }
+                Spacer(modifier = Modifier.height(6.dp))
+            }
             if (phase == GamePhase.GAME_OVER) {
                 GameButton("New game", pal.uiChipOff, compact = true) { onNewGame() }
                 Spacer(modifier = Modifier.height(6.dp))

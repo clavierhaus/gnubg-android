@@ -34,6 +34,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _coachGlance = MutableStateFlow<IntArray?>(null)
     val coachGlance: StateFlow<IntArray?> = _coachGlance.asStateFlow()
 
+    /* Coach: the committed move is HELD here, not yet given to gnubg, while the
+     * player studies the verdict (maintainer design: GNU must not move -- must
+     * not even have ROLLED -- while alternatives are on the table, since its
+     * dice would change the position under discussion). gnubg's state stays
+     * pre-move, which is also exactly what makes the alternative views
+     * consistent with the live board. continueCoachTurn() delivers it. */
+    private var pendingCoachMove: String? = null
+
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
@@ -753,6 +761,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     android.util.Log.i("gnubg-coach", "verdict(pre) ${cms}ms: none")
                 }
+                // HOLD: the move is not yet gnubg's. The board keeps showing
+                // the player's position and dice; the game waits for the
+                // player's active "GNU's turn".
+                pendingCoachMove = moveStr
+                _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
+                return@launch
             }
 
             watchEngineDice(diceBase)
@@ -1044,9 +1058,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      *  player's saved Play settings (strength, match length) are never touched.
      *  In a 1-point match the cube is dead by the rules, so no cube UI can
      *  arise -- V1's "no cube" falls out of match play itself. */
+    /** The player's active continuation (maintainer design: dice rolling is
+     *  actively initiated for both sides in this mode). Delivers the held move
+     *  to gnubg; GNU then rolls -- live dice via the watcher -- and replies.
+     *  Tail mirrors confirm()'s: gnubg-authoritative game-over via score delta,
+     *  then back to the player. */
+    fun continueCoachTurn() {
+        viewModelScope.launch(engineThread) {
+            val mv = pendingCoachMove ?: return@launch
+            if (_gameState.value.phase != GamePhase.COACH_REVIEW) return@launch
+            pendingCoachMove = null
+            val scoreBefore = Engine.getMatchScore()
+            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+            watchEngineDice(diceBase)
+            Engine.applyMoveString(mv)
+            val scoreAfter = Engine.getMatchScore()
+            val humanDelta  = scoreAfter[0] - scoreBefore[0]
+            val engineDelta = scoreAfter[1] - scoreBefore[1]
+            if (humanDelta != 0 || engineDelta != 0) {
+                val winner = if (humanDelta > engineDelta) 0 else 1
+                val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
+                readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
+                return@launch
+            }
+            val mrd = Engine.getMoveRecordDice()
+            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
+            readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
+        }
+    }
+
     fun startCoachGame() {
         coachSession = true
         _coachGlance.value = null
+        pendingCoachMove = null
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(Difficulty.EXPERT.settingIndex)
             Engine.commandNewMatch(1)
@@ -1061,6 +1106,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun endCoachSession() {
         coachSession = false
         _coachGlance.value = null
+        pendingCoachMove = null
         _showMatchSetup.value = true
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(_settings.value.difficulty.settingIndex)

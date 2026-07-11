@@ -105,6 +105,10 @@ enum class GamePhase {
     WAITING_FOR_ROLL,
     HUMAN_MOVING,
     ENGINE_THINKING,
+    COACH_REVIEW,         // Coach only: the player's move is judged but NOT yet
+                          // given to gnubg -- GNU has not rolled. The player
+                          // studies the verdict and alternatives at the exact
+                          // position they arose from, then actively continues.
     CUBE_OFFERED,
     RESIGNATION_OFFERED,  // GNU has resigned; gnubg refuses every roll until answered
     HUMAN_CAN_DOUBLE,
