@@ -167,3 +167,6 @@ keystore.properties
 # Android build compiles (eval.c, format.c, analysis.c, set.c, boardpos.c,
 # android-app.c), so ignoring them made a fresh clone unbuildable -- the sound.h
 # failure, four more times. They must be tracked.
+
+# Local build artifacts parked in the root
+/*.apk
