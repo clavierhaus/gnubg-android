@@ -511,6 +511,31 @@ Java_com_clavierhaus_gnubg_Engine_peekLiveDice(JNIEnv *env, jobject thiz) {
 }
 
 JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_coachVerdictPre(JNIEnv *env, jobject thiz,
+        jintArray oldBoard, jint d0, jint d1, jintArray newBoard) {
+    (void)thiz;
+    int ob[50], nb[50], out[166] = {0};
+    jint tmp[50];
+    int i;
+    if ((*env)->GetArrayLength(env, oldBoard) < 50 ||
+        (*env)->GetArrayLength(env, newBoard) < 50)
+        return (*env)->NewIntArray(env, 0);
+    (*env)->GetIntArrayRegion(env, oldBoard, 0, 50, tmp);
+    for (i = 0; i < 50; i++) ob[i] = (int) tmp[i];
+    (*env)->GetIntArrayRegion(env, newBoard, 0, 50, tmp);
+    for (i = 0; i < 50; i++) nb[i] = (int) tmp[i];
+    if (gnubg_mobile_coach_verdict_pre(ob, (int)d0, (int)d1, nb, out) < 1)
+        return (*env)->NewIntArray(env, 0);
+    {
+        jintArray result = (*env)->NewIntArray(env, 166);
+        jint buf[166];
+        for (i = 0; i < 166; i++) buf[i] = (jint) out[i];
+        (*env)->SetIntArrayRegion(env, result, 0, 166, buf);
+        return result;
+    }
+}
+
+JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_coachVerdict(JNIEnv *env, jobject thiz) {
     (void)thiz;
     int out[166] = {0};

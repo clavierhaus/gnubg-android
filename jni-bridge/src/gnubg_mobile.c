@@ -941,6 +941,90 @@ int gnubg_mobile_peek_live_dice(int out[3]) {
  *              { anMove[8], rScore (bits), arEvalMove[7] (bits) }
  * Returns 1 verdict written, 0 no human chequer move to judge, -1 error. */
 #define COACH_K 5
+/* Coach verdict BEFORE the move is applied (maintainer order: analysis finished
+ * and verdict given before GNU rolls). Board-based -- no record walking, no
+ * replay: at Commit time the pre-move board, the dice, and the chosen board are
+ * all in hand, and ms still holds the pre-move match state, so
+ * GetMatchStateCubeInfo(&ci, &ms) is exactly the right cube context. Same
+ * conventions as gnubg_mobile_find_move (facade_unpack_board mover frame,
+ * PositionKey + EqualKeys with the max-play guards) and the same scoring call
+ * as analyze_replay (FindnSaveBestMoves, 2-ply esAnalysisChequer,
+ * aamfAnalysis; the played key passed so the played move survives filtering).
+ * Output layout identical to gnubg_mobile_coach_verdict; pre-board section is
+ * the caller's old_board verbatim (already the frame formatMove expects).
+ * Returns 1 written, 0 played move not identified, -1 error. */
+int gnubg_mobile_coach_verdict_pre(const int old_board[50], int d0, int d1,
+                                   const int new_board[50], int out[166]) {
+    TanBoard oldB, newB;
+    movelist ml;
+    positionkey newKey;
+    cubeinfo ci;
+    union { float f; unsigned int bits; } u;
+    unsigned int i, k, n, iPlayed;
+    int j, base, found = 0;
+    float rPlayed, rBest;
+
+    if (!out || !old_board || !new_board) return -1;
+    facade_unpack_board(old_board, oldB);
+    facade_unpack_board(new_board, newB);
+
+    pthread_mutex_lock(&gnubg_lock);
+    GetMatchStateCubeInfo(&ci, &ms);
+    PositionKey((ConstTanBoard) newB, &newKey);
+    memset(&ml, 0, sizeof(ml));
+    if (FindnSaveBestMoves(&ml, d0, d1, (ConstTanBoard) oldB, &newKey, TRUE,
+                           arSkillLevel[SKILL_DOUBTFUL], &ci,
+                           &esAnalysisChequer.ec, aamfAnalysis) < 0) {
+        g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return -1;
+    }
+    if (ml.cMoves == 0 || !ml.amMoves) {
+        g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
+    }
+    iPlayed = 0;
+    for (i = 0; i < ml.cMoves; i++) {
+        if (EqualKeys(ml.amMoves[i].key, newKey) &&
+            ml.amMoves[i].cMoves == ml.cMaxMoves &&
+            ml.amMoves[i].cPips  == ml.cMaxPips) {
+            iPlayed = i; found = 1; break;
+        }
+    }
+    if (!found) {
+        g_free(ml.amMoves); pthread_mutex_unlock(&gnubg_lock); return 0;
+    }
+
+    rPlayed = ml.amMoves[iPlayed].rScore;
+    rBest   = ml.amMoves[0].rScore;
+
+    out[0] = (int) iPlayed;
+    out[1] = (int) ml.cMoves;
+    u.f = rPlayed; out[2] = (int) u.bits;
+    u.f = rBest;   out[3] = (int) u.bits;
+    out[4] = (int) Skill(rPlayed - rBest);
+    for (j = 0; j < 8; j++) out[5 + j]  = ml.amMoves[iPlayed].anMove[j];
+    for (j = 0; j < 8; j++) out[13 + j] = ml.amMoves[0].anMove[j];
+    for (j = 0; j < 50; j++) out[21 + j] = old_board[j];
+
+    for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+        u.f = ml.amMoves[iPlayed].arEvalMove[j]; out[71 + j] = (int) u.bits;
+        u.f = ml.amMoves[0].arEvalMove[j];       out[78 + j] = (int) u.bits;
+    }
+
+    n = ml.cMoves < COACH_K ? ml.cMoves : COACH_K;
+    out[85] = (int) n;
+    for (k = 0; k < n; k++) {
+        base = 86 + (int) k * 16;
+        for (j = 0; j < 8; j++) out[base + j] = ml.amMoves[k].anMove[j];
+        u.f = ml.amMoves[k].rScore; out[base + 8] = (int) u.bits;
+        for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+            u.f = ml.amMoves[k].arEvalMove[j]; out[base + 9 + j] = (int) u.bits;
+        }
+    }
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 int gnubg_mobile_coach_verdict(int out[166]) {
     matchstate msAnalyse;
     movelist ml;

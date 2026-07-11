@@ -130,7 +130,10 @@ fun CoachScreen(
     // was saturated for 30+ seconds and GNU looked stuck -- field report.)
     val rawGlance by viewModel.coachGlance.collectAsState()
     LaunchedEffect(rawGlance) {
-        rawGlance?.let { v -> decodeGlance(v)?.let { glance = it } }
+        // null now MEANS "cleared for judging" (confirm clears it before the
+        // pre-apply verdict), so mirror it -- the panel shows the judging
+        // state instead of a stale verdict.
+        glance = rawGlance?.let { decodeGlance(it) }
     }
 
     CompositionLocalProvider(LocalBoardPalette provides pal) {
@@ -222,7 +225,13 @@ private fun CoachPanel(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 phase == GamePhase.ENGINE_THINKING -> {
-                    Text("GNU is replying...", color = pal.uiTextSecondary, fontSize = 13.sp)
+                    // The turn's visible sequence (maintainer order): the
+                    // verdict is computed FIRST -- "Judging your move..." --
+                    // then, verdict on screen, GNU rolls and replies.
+                    Text(
+                        if (glance == null) "Judging your move..." else "GNU is replying...",
+                        color = pal.uiTextSecondary, fontSize = 13.sp
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 else -> {}

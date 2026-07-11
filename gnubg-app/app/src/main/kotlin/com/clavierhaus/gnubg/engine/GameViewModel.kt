@@ -734,6 +734,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val scoreBefore = Engine.getMatchScore()
             val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+
+            // Coach: the verdict is computed and shown BEFORE gnubg's reply
+            // (maintainer order) -- board-based against the live pre-move
+            // state, so no record walking. The panel shows "Judging your
+            // move..." (glance cleared) until the verdict lands, THEN the
+            // engine rolls. The wait the player feels is the judging, and it
+            // is labelled as such.
+            if (coachSession) {
+                _coachGlance.value = null
+                val t0 = android.os.SystemClock.elapsedRealtime()
+                val cv = Engine.coachVerdictPre(state.oldBoard, origDice.first, origDice.second, state.board)
+                val cms = android.os.SystemClock.elapsedRealtime() - t0
+                if (cv.size >= 166) {
+                    android.util.Log.i("gnubg-coach",
+                        "verdict(pre) ${cms}ms rank=${cv[0]} of=${cv[1]} skill=${cv[4]}")
+                    _coachGlance.value = cv
+                } else {
+                    android.util.Log.i("gnubg-coach", "verdict(pre) ${cms}ms: none")
+                }
+            }
+
             watchEngineDice(diceBase)
             Engine.applyMoveString(moveStr)
 
@@ -754,7 +775,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val winner = if (humanDelta > engineDelta) 0 else 1
                 val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
                 readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
-                if (coachSession) publishCoachVerdict()
                 return@launch
             }
             val cubeInfo = Engine.getMatchCubeInfo()
@@ -765,7 +785,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
-            if (coachSession) publishCoachVerdict() else analyzeMoveInBackground(state.oldBoard)
+            if (!coachSession) analyzeMoveInBackground(state.oldBoard)
         }
     }
 
@@ -1032,27 +1052,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             Engine.commandNewMatch(1)
             Engine.commandNewGame()
             refreshFromEngineAfterControl()
-        }
-    }
-
-    /** The ONE per-move analysis of a coach session: gnubg's verdict on the
-     *  move just played, run decoupled after the turn publish (same slot the
-     *  tutor analysis occupies in Play), published as a flow the CoachScreen
-     *  collects. Launched onto the single engine thread, so it queues after
-     *  the current job -- the player is already back in control when it runs. */
-    private fun publishCoachVerdict() {
-        viewModelScope.launch(engineThread) {
-            val t0 = android.os.SystemClock.elapsedRealtime()
-            val v = Engine.coachVerdict()
-            val ms = android.os.SystemClock.elapsedRealtime() - t0
-            if (v.size >= 166) {
-                android.util.Log.i("gnubg-coach",
-                    "verdict ${ms}ms rank=${v[0]} of=${v[1]} skill=${v[4]} " +
-                    "eqPlayed=${"%.4f".format(Float.fromBits(v[2]))} eqBest=${"%.4f".format(Float.fromBits(v[3]))}")
-                _coachGlance.value = v
-            } else {
-                android.util.Log.i("gnubg-coach", "verdict ${ms}ms: none (size=${v.size})")
-            }
         }
     }
 

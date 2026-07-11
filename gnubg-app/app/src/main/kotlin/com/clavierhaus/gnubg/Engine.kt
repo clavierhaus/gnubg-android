@@ -107,6 +107,11 @@ object Engine {
      *  [78..84]=best arEvalMove
      *  [85]=K candidates, then K rows of 16: anMove[8], equity(bits),
      *  arEvalMove[7](bits), ranked from best. */
+    /** Coach verdict computed BEFORE the move is applied -- same 166-int layout
+     *  as coachVerdict, but board-based: pre-move board + dice + the chosen
+     *  board, judged against the live pre-move match state. Empty on failure. */
+    external fun coachVerdictPre(oldBoard: IntArray, d0: Int, d1: Int, newBoard: IntArray): IntArray
+
     external fun coachVerdict(): IntArray
 
     /** Lock-free live-dice channel: [seq, die0, die1]. The seq advances the
