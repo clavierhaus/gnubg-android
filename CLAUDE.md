@@ -66,6 +66,45 @@ If you catch yourself writing or justifying a file that describes a position
 without calling the engine, you are reinventing. The correct move is to call
 gnubg, or to not compute the value at all.
 
+## NEVER ASSERT A FILE, PATH, SYMBOL, OR FACT WITHOUT READING IT FIRST
+
+This rule exists because it was broken. On 2026-07-11, mid-release, I told the
+maintainer to `git add engine-core/lib/SFMT-neon.h` and build around it. That file
+does not exist and never did. I had read `#elif defined(HAVE_NEON) #include
+"SFMT-neon.h"` in SFMT.c, concluded the file must be present and tracked, and
+asserted it as fact -- without once running `ls` on it. The maintainer lost two
+build-and-deploy cycles to `pathspec did not match` and `No such file` errors
+chasing a file I invented. An `#include` in a conditional branch is a CLAIM the
+file is reachable, not proof it exists on disk; the NDK can satisfy NEON without
+that header.
+
+The failure mode: reading a reference TO a thing and reporting the thing as
+verified. It is the same mistake as asserting gnubg behaviour without reading the
+function, only about the filesystem instead of the engine. Both substitute a
+plausible inference for a checked fact.
+
+The rule, absolute:
+
+  - Before naming a file as existing -- in an instruction, a command, a commit,
+    a doc -- I have run `ls` / `view` / `git ls-files` on that exact path in this
+    session. An `#include`, a build reference, or a memory of it is NOT
+    confirmation.
+  - Before telling the maintainer to run a command against a path, that path is
+    confirmed to exist (or the command is explicitly the thing that creates it).
+  - Before asserting a symbol, function, struct, line number, or config value, I
+    have read it in the source this session -- not recalled it, not inferred it
+    from a caller.
+  - If I have not checked, I do not assert. I say I need to check, then check.
+    "I believe" and "should be" are not permitted to stand in for a fact the
+    maintainer will act on; either I verify it or I flag it explicitly as
+    unverified and do not build instructions on it.
+  - When I discover I asserted something unchecked, I say so plainly, name what
+    was wrong, and correct it -- in the commit and to the maintainer. No quiet
+    walk-back.
+
+A fabricated fact costs more than a slow answer: it sends the maintainer to
+execute against a reality that is not there. Checking is cheap. Guessing is not.
+
 ## THE PORT CHECKPOINT (per-commit, no exceptions)
 
 The rule above is the rule. This is the operational test that catches
