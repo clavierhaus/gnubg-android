@@ -973,6 +973,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Leave the current match to the hub AND re-open the setup screen, so the
+     *  next entry to Play offers strength and length again -- rather than
+     *  dropping back into the abandoned match. This is what makes "Home" mean
+     *  "end this match", consistent with the first-launch flow. gnubg keeps the
+     *  match state until a new match/game command replaces it; nothing is
+     *  corrupted by leaving. */
+    fun leaveMatch() {
+        _showMatchSetup.value = true
+    }
+
     fun commandNewMatch(length: Int = _settings.value.matchLength) {
         _settings.value = _settings.value.copy(matchLength = length)
         _showMatchSetup.value = false

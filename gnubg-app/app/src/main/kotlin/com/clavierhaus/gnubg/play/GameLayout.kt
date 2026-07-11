@@ -253,7 +253,18 @@ fun GameLayout(
                                 LifecycleButton(
                                     label = "Home",
                                     color = pal.uiButtonNeutral,
-                                    onClick = { onReturnToHub?.invoke() },
+                                    onClick = {
+                                        // Leaving a live match ends it (and frees
+                                        // the setup screen for new parameters), so
+                                        // ask first. At game over there is nothing
+                                        // to lose -- leave straight away.
+                                        if (gameState.phase == GamePhase.GAME_OVER) {
+                                            viewModel.leaveMatch()
+                                            onReturnToHub?.invoke()
+                                        } else {
+                                            pendingLifecycleAction = PlayLifecycleAction.LEAVE_MATCH
+                                        }
+                                    },
                                     enabled = onReturnToHub != null
                                 )
                             }
@@ -319,6 +330,11 @@ fun GameLayout(
                 onConfirmNewMatch = {
                     pendingLifecycleAction = null
                     viewModel.commandNewMatch(settings.matchLength)
+                },
+                onConfirmLeaveMatch = {
+                    pendingLifecycleAction = null
+                    viewModel.leaveMatch()
+                    onReturnToHub?.invoke()
                 }
             )
         }
@@ -330,7 +346,8 @@ fun GameLayout(
 private enum class PlayLifecycleAction {
     RESIGN,
     NEW_GAME,
-    NEW_MATCH
+    NEW_MATCH,
+    LEAVE_MATCH
 }
 
 @Composable
@@ -394,7 +411,8 @@ private fun PlayLifecycleConfirmationDialog(
     onConfirmResignGammon: () -> Unit,
     onConfirmResignBackgammon: () -> Unit,
     onConfirmNewGame: () -> Unit,
-    onConfirmNewMatch: () -> Unit
+    onConfirmNewMatch: () -> Unit,
+    onConfirmLeaveMatch: () -> Unit
 ) {
     when (action) {
         PlayLifecycleAction.RESIGN -> {
@@ -449,6 +467,24 @@ private fun PlayLifecycleConfirmationDialog(
                 confirmButton = {
                     TextButton(onClick = onConfirmNewMatch) {
                         Text("New match")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        PlayLifecycleAction.LEAVE_MATCH -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text("Leave this match?") },
+                text = { Text("The current match will end and you'll return to the home screen, where you can start a new match with different strength and length.") },
+                confirmButton = {
+                    TextButton(onClick = onConfirmLeaveMatch) {
+                        Text("Leave match")
                     }
                 },
                 dismissButton = {

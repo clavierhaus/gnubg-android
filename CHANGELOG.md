@@ -15,6 +15,15 @@ the engine, or stopped hiding what the engine already knew.
 
 _Nothing yet._
 
+## [0.11.3] — 2026-07-11
+
+### Fixed
+- **You can now leave a match that isn't finished.** Mid-match, "Home" ends the
+  current match (after confirming) and returns to the home screen — where you can
+  start a new match with different strength and length. Before, leaving mid-match
+  dropped you back into the same game with no way to change parameters short of
+  playing it out.
+
 ## [0.11.2] — 2026-07-11
 
 Field-report fixes to the 0.11.0 release. (0.11.1 was a re-tag of identical code
@@ -189,7 +198,8 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...HEAD
+[0.11.3]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...v0.11.2
 [0.11.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.9.1-preview...v0.11.0
 [0.10.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.9.1-preview...v0.10.0
