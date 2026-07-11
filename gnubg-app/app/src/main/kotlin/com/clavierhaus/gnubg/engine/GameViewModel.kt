@@ -256,6 +256,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
+        // Before driving gnubg's new game (which may hand the opening to the
+        // engine and compute its move synchronously), show a thinking state and
+        // arm the live-dice watcher. Otherwise, when the engine wins the opening
+        // roll at a slow level, the board sits static for 7-9s and looks frozen
+        // -- a field report. The watcher surfaces the opening roll as it lands.
+        val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+        _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+        watchEngineDice(diceBase)
+
         if (isNewMatch) Engine.newGame(_settings.value.matchLength) else Engine.nextGame()
         val turn = Engine.getMatchTurn()
         val dice = Engine.getMatchDice()

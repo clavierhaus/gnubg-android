@@ -211,6 +211,12 @@ fun GameLayout(
                             gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0 -> {
                                 // The roll action is shown directly on the board surface.
                             }
+                            gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 1 -> {
+                                // Engine is on roll (e.g. it won the opening). Never
+                                // leave this blank -- that reads as frozen at slow
+                                // levels. Field report on the opening turn.
+                                Text("GNU to roll...", color = pal.uiTextSecondary, fontSize = 18.sp)
+                            }
                         }
                         }
 
@@ -221,7 +227,7 @@ fun GameLayout(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             if (tutorMode) {
-                                TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail)
+                                TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail, settings.showEquity)
                             } else {
                                 PlayLifecyclePanel(
                                     onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
@@ -752,7 +758,8 @@ private fun MatchSetupScreen(
 @Composable
 private fun TutorAnalysisPanel(
     analysis: com.clavierhaus.gnubg.engine.TutorAnalysis?,
-    detail: com.clavierhaus.gnubg.engine.MoveAnalysisDetail? = null
+    detail: com.clavierhaus.gnubg.engine.MoveAnalysisDetail? = null,
+    showEquity: Boolean = true
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -808,13 +815,15 @@ private fun TutorAnalysisPanel(
                     "Backgammon  ${pct(detail.winBackgammon)}  ·  ${pct(detail.loseBackgammon)}",
                     color = pal.uiTextSecondary, fontSize = 12.sp
                 )
-                val mp = (analysis.equityLoss * 1000f).toInt()
-                Text(
-                    "Equity  ${"%+.3f".format(detail.equityCubeless)}" +
-                        if (analysis.equityLoss > 0.0005f) "   (−$mp mP vs best)" else "   (best)",
-                    color = Color.White, fontSize = 13.sp
-                )
-            } else {
+                if (showEquity) {
+                    val mp = (analysis.equityLoss * 1000f).toInt()
+                    Text(
+                        "Equity  ${"%+.3f".format(detail.equityCubeless)}" +
+                            if (analysis.equityLoss > 0.0005f) "   (−$mp mP vs best)" else "   (best)",
+                        color = Color.White, fontSize = 13.sp
+                    )
+                }
+            } else if (showEquity) {
                 Text("Equity lost: ${"%.3f".format(analysis.equityLoss)}", color = Color.White, fontSize = 13.sp)
             }
         }

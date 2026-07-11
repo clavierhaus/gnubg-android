@@ -196,7 +196,15 @@ fun ReviewScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Weighted, so the verdict lines can never push the info block
+                // past the nav buttons and off the bottom edge. Field report:
+                // "it just says 'gnubg verdict:' and my screen cuts it off."
+                // Nothing scrolls; the block simply bounds itself to the space
+                // above the pinned buttons.
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Text("Review Match", color = Color.White, fontSize = 16.sp,
                         fontWeight = FontWeight.Bold, maxLines = 1)
 

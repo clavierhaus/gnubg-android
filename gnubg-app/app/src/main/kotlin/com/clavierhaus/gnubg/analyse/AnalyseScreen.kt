@@ -423,6 +423,16 @@ fun AnalyseScreen(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
+                // Everything state-specific lives in this weighted region; the
+                // Home row below is a fixed sibling measured first, so it is
+                // ALWAYS on screen. Field report: after analysing a pasted
+                // position there was no visible way back -- the user killed the
+                // app to leave. The exit is no longer hostage to which sub-state
+                // (paste / editor / result) is showing.
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                ) {
                 if (editing) {
                     // Controls live in a weighted region; the Analyse/Cancel row
                     // below is a fixed sibling, measured FIRST -- so it can never
@@ -595,12 +605,6 @@ fun AnalyseScreen(
                         color = pal.uiChipOff,
                         enabled = !busy
                     ) { beginEdit() }
-
-                    GameButton(
-                        label = "Home",
-                        color = pal.uiButtonNeutral,
-                        enabled = !busy
-                    ) { onBackToHub() }
                 }
 
                 val msg = status
@@ -698,6 +702,16 @@ fun AnalyseScreen(
                     } // end weighted result region
                 }
                 } // end !editing
+                } // end weighted state region
+
+                // Pinned foot: always-present exit. compact so it never crowds
+                // the content above it on a short pane.
+                GameButton(
+                    label = "Home",
+                    color = pal.uiButtonNeutral,
+                    enabled = !busy,
+                    compact = true
+                ) { onBackToHub() }
             }
         }
 

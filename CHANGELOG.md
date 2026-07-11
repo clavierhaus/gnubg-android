@@ -15,6 +15,27 @@ the engine, or stopped hiding what the engine already knew.
 
 _Nothing yet._
 
+## [0.11.2] — 2026-07-11
+
+Field-report fixes to the 0.11.0 release. (0.11.1 was a re-tag of identical code
+during release setup; 0.11.2 is the first with these fixes.)
+
+### Fixed
+- **The review verdict could be cut off** the bottom of the screen — the move
+  info and the verdict together overflowed past the navigation buttons on shorter
+  phones. The info block is now bounded above the buttons, so the verdict is
+  always on screen.
+- **No obvious way out of Analyse.** After analysing a position there was no
+  visible exit; you had to close the app. A Home button is now pinned to the
+  Analyse pane in every state (paste, editor, result).
+- **The engine's opening looked frozen.** When gnubg won the opening roll at a
+  slow level, the board sat static for several seconds with no sign it was
+  working. It now shows a thinking state and the opening roll as it lands, like
+  every other engine turn.
+- **The "Show equity" setting did nothing.** It now gates the equity line in the
+  analysis panel. (Showing match-winning-chance instead of equity is still to
+  come — it needs gnubg's own conversion, not an app-side one.)
+
 ## [0.11.0] — 2026-07-11
 
 **The first real release** — the successor to the 0.9.1 preview. It makes the app
@@ -168,7 +189,8 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...v0.11.2
 [0.11.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.9.1-preview...v0.11.0
 [0.10.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.9.1-preview...v0.10.0
 [0.9.1-preview]: https://github.com/clavierhaus/gnubg-android/releases/tag/v0.9.1-preview
