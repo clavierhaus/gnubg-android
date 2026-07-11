@@ -162,18 +162,27 @@ fun CoachScreen(
     // shows THAT move's resulting position -- checkers fully colored, movement
     // as green arrows -- on the board; tapping it again returns to the live
     // game. The result board comes from gnubg's own ApplyMove via the facade.
+    // Unified selection (maintainer design): index 0 is P -- the player's own
+    // move, first in the list, same mechanics as the alternatives -- and
+    // 1..n are gnubg's better moves. -1 = the live game board.
     var selectedAlt by remember { mutableStateOf(-1) }
     var altBoard by remember { mutableStateOf<IntArray?>(null) }
     LaunchedEffect(rawGlance) { selectedAlt = -1; altBoard = null }
     LaunchedEffect(selectedAlt) {
         val g = glance
-        altBoard = if (selectedAlt >= 0 && g != null && selectedAlt < g.alts.size) {
+        val move = when {
+            g == null || selectedAlt < 0 -> null
+            selectedAlt == 0 -> g.playedMove
+            selectedAlt - 1 < g.alts.size -> g.alts[selectedAlt - 1].anMove
+            else -> null
+        }
+        altBoard = move?.let { mv ->
             val preBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
             preBoard?.let { pb ->
-                val b = Engine.applyMoveToBoard(pb, g.alts[selectedAlt].anMove)
+                val b = Engine.applyMoveToBoard(pb, mv)
                 if (b.size == 50) b else null
             }
-        } else null
+        }
     }
 
     LaunchedEffect(rawGlance) {
@@ -218,6 +227,8 @@ fun CoachScreen(
                         // a counterfactual board must not accept game taps
                         // (the Analyse pattern). ENGINE_THINKING phase
                         // suppresses all action chrome.
+                        val shownMove = if (selectedAlt == 0) g!!.playedMove
+                                        else g!!.alts[selectedAlt - 1].anMove
                         BackgammonBoard(
                             settings = settings,
                             gameState = com.clavierhaus.gnubg.engine.BoardState(
@@ -231,8 +242,11 @@ fun CoachScreen(
                             tutorMode = false,
                             coachTrace = com.clavierhaus.gnubg.play.CoachTrace(
                                 played = null,
-                                best = g!!.alts[selectedAlt].anMove,
-                                ghost = false
+                                best = shownMove,
+                                ghost = false,
+                                // P view: the player's move in the player's
+                                // checker color; alternatives in gnubg's green.
+                                emphasisColor = if (selectedAlt == 0) pal.checkerLight else null
                             )
                         )
                     } else {
@@ -272,36 +286,51 @@ fun CoachScreen(
     }
 }
 
-/** The better alternatives, numbered; each number is a TOGGLE (maintainer
- *  design): tap to view that move's resulting position on the board, tap
- *  again to return to the live game. Values are gnubg's; the gain shown is
- *  the candidate's equity minus the played move's. */
+/** The move list (maintainer design): the player's own move is the FIRST
+ *  item, chip "P" in a distinct color, then gnubg's better moves numbered --
+ *  every item the same TOGGLE: tap to view that move's resulting position on
+ *  the board (original position -> position after move, no mental
+ *  reconstruction), tap again for the live game. Values are gnubg's. */
 @Composable
-private fun AltList(
-    alts: List<CoachAlt>,
+private fun MoveList(
+    glance: CoachGlance,
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit
 ) {
     val pal = LocalBoardPalette.current
-    if (alts.isEmpty()) return
     Spacer(modifier = Modifier.height(6.dp))
-    Text("Better:", color = pal.uiTextSecondary, fontSize = 11.sp)
-    alts.forEachIndexed { i, alt ->
+
+    // Row 0: P -- the player's move, same mechanics, its own color.
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
+            GameButton(
+                label = "P",
+                color = if (selectedAlt == 0) pal.uiActionRoll else pal.uiButtonNeutral,
+                compact = true
+            ) { onSelectAlt(0) }
+        }
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            glance.playedNotation,
+            color = if (selectedAlt == 0) Color.White else pal.uiTextSecondary,
+            fontSize = 12.sp
+        )
+    }
+
+    glance.alts.forEachIndexed { i, alt ->
         Spacer(modifier = Modifier.height(3.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Fixed-width slot keeps the numbers vertically aligned whatever
-            // the chip's intrinsic width (maintainer design).
             Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
                 GameButton(
                     label = "${i + 1}",
-                    color = if (selectedAlt == i) pal.uiChipOn else pal.uiChipOff,
+                    color = if (selectedAlt == i + 1) pal.uiChipOn else pal.uiChipOff,
                     compact = true
-                ) { onSelectAlt(i) }
+                ) { onSelectAlt(i + 1) }
             }
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 "${alt.notation}  ${"%+.3f".format(alt.gain)}",
-                color = if (selectedAlt == i) Color.White else pal.uiTextSecondary,
+                color = if (selectedAlt == i + 1) Color.White else pal.uiTextSecondary,
                 fontSize = 12.sp
             )
         }
@@ -309,7 +338,7 @@ private fun AltList(
     if (selectedAlt >= 0) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            "Viewing ${selectedAlt + 1}. Tap ${selectedAlt + 1} again for the game.",
+            "Tap again for the game.",
             color = pal.uiTextDisabled, fontSize = 10.sp
         )
     }
@@ -388,34 +417,31 @@ private fun CoachPanel(
                     )
                 }
                 g.rank == 0 -> {
-                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
                     Text(
                         "The best move.",
                         color = pal.uiActionPositive, fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    MoveList(g, selectedAlt, onSelectAlt)
                 }
                 !g.flagged -> {
-                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
                     Text(
                         "Fine. ${ordinal(g.rank + 1)} of ${g.cMoves} (${"%+.3f".format(-g.loss)}).",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
-                    AltList(g.alts, selectedAlt, onSelectAlt)
+                    MoveList(g, selectedAlt, onSelectAlt)
                 }
                 else -> {
-                    Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
                     Text(
                         "${skillLabel(g.skill)}: ${"%+.3f".format(-g.loss)}",
                         color = Color.White, fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         "${ordinal(g.rank + 1)} of ${g.cMoves} legal moves",
                         color = pal.uiTextSecondary, fontSize = 12.sp
                     )
-                    AltList(g.alts, selectedAlt, onSelectAlt)
+                    MoveList(g, selectedAlt, onSelectAlt)
                 }
             }
         }

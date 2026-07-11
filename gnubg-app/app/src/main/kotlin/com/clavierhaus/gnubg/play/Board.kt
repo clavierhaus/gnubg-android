@@ -270,7 +270,15 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
  * src 24 = bar, dst < 0 = bear-off, legs end at first negative src). Pure
  * rendering of gnubg-returned data; nothing is classified.
  */
-class CoachTrace(val played: IntArray?, val best: IntArray?, val ghost: Boolean = true)
+class CoachTrace(
+    val played: IntArray?,
+    val best: IntArray?,
+    val ghost: Boolean = true,
+    /** Arrow color for the emphasized (best-slot) trace. null = the hint green
+     *  (uiActionPositive). The Coach's P view passes the player's checker
+     *  color so "your move" and "gnubg's move" read apart at a glance. */
+    val emphasisColor: Color? = null
+)
 
 @Composable
 fun BackgammonBoard(
@@ -689,7 +697,8 @@ fun BackgammonBoard(
                 // the first free slot of the source column ON THE DISPLAYED
                 // board.
                 coachTrace.best?.let {
-                    drawMoveTrace(g, it, gameState.board, p.uiActionPositive,
+                    drawMoveTrace(g, it, gameState.board,
+                        coachTrace.emphasisColor ?: p.uiActionPositive,
                         g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
                 }
             }
