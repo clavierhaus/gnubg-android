@@ -77,6 +77,33 @@ threading a live move buys nothing and adds concurrency risk. Threading is the
 right tool ONLY for analysis and rollouts, which gnubg already decomposes, and
 only with the safeguards the doc lists. Re-litigate only from a new measurement.
 
+## NEVER SPECULATE -- EXHAUST THE RESOURCES (added 2026-07-11, maintainer order)
+
+Speculation is never an option. When behavior is not understood, the resources
+are, in order, and ALL of them before any hypothesis is voiced:
+
+  1. The COMPLETE vendored engine source. Read the entire call chain end to
+     end -- CommandX through every function it reaches -- not sampled lines
+     around a grep hit. A chain is not read until every early return, every
+     global it touches, and every loop exit condition has been seen.
+  2. The port's own code, same standard, including MY OWN recent verbs: a
+     verb written this session is the least trusted code in the tree, and its
+     lock/return balance is verified by reading, not by recalling that I
+     meant it to be balanced.
+  3. The repository history: git log/diff between the last working commit and
+     the first broken one bounds the search space to the actual change.
+  4. Prior-session transcripts (the journal) for decisions and known traps.
+  5. Instrumentation + the device, via the logcat discipline above: when the
+     static resources cannot distinguish remaining candidates, add targeted
+     logs and obtain the measurement. Requesting a measurement is not
+     speculation; narrating guesses is.
+  6. The maintainer, for device-side facts I cannot obtain.
+
+A hypothesis may be stated only as an ordered list where every item is paired
+with the concrete check that confirms or kills it, and the checks are then
+EXECUTED. Serial guess-narration -- theory, shrug, next theory -- is the
+failure mode this order exists to end.
+
 ## LOGCAT: PRECISE TAG FILTERING, ALWAYS (added 2026-07-11)
 
 When requesting or reading device logs, filter by the app's own tags with -s --
