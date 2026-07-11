@@ -511,6 +511,31 @@ Java_com_clavierhaus_gnubg_Engine_peekLiveDice(JNIEnv *env, jobject thiz) {
 }
 
 JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_applyMoveToBoard(JNIEnv *env, jobject thiz,
+        jintArray board, jintArray anMove) {
+    (void)thiz;
+    int b[50], m[8], out[50];
+    jint tmp[50];
+    int i;
+    if ((*env)->GetArrayLength(env, board) < 50 ||
+        (*env)->GetArrayLength(env, anMove) < 8)
+        return (*env)->NewIntArray(env, 0);
+    (*env)->GetIntArrayRegion(env, board, 0, 50, tmp);
+    for (i = 0; i < 50; i++) b[i] = (int) tmp[i];
+    (*env)->GetIntArrayRegion(env, anMove, 0, 8, tmp);
+    for (i = 0; i < 8; i++) m[i] = (int) tmp[i];
+    if (gnubg_mobile_apply_move(b, m, out) < 1)
+        return (*env)->NewIntArray(env, 0);
+    {
+        jintArray result = (*env)->NewIntArray(env, 50);
+        jint buf[50];
+        for (i = 0; i < 50; i++) buf[i] = (jint) out[i];
+        (*env)->SetIntArrayRegion(env, result, 0, 50, buf);
+        return result;
+    }
+}
+
+JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_coachVerdictPre(JNIEnv *env, jobject thiz,
         jintArray oldBoard, jint d0, jint d1, jintArray newBoard) {
     (void)thiz;

@@ -112,6 +112,10 @@ object Engine {
      *  board, judged against the live pre-move match state. Empty on failure. */
     external fun coachVerdictPre(oldBoard: IntArray, d0: Int, d1: Int, newBoard: IntArray): IntArray
 
+    /** gnubg's ApplyMove on a board: the resulting position of one of gnubg's
+     *  own anMove[8] candidates, for the Coach explorer. Empty on failure. */
+    external fun applyMoveToBoard(board: IntArray, anMove: IntArray): IntArray
+
     external fun coachVerdict(): IntArray
 
     /** Lock-free live-dice channel: [seq, die0, die1]. The seq advances the

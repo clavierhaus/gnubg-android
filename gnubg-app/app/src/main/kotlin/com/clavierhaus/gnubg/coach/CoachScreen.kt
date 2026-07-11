@@ -56,6 +56,14 @@ import androidx.compose.runtime.CompositionLocalProvider
  */
 
 /** Decoded gnubg coach verdict -- layout documented at Engine.coachVerdict. */
+/** One of gnubg's better alternatives: its move, notation, and how much it
+ *  gains over the played move (gnubg equities, subtracted for display). */
+private data class CoachAlt(
+    val anMove: IntArray,
+    val notation: String,
+    val gain: Float
+)
+
 private data class CoachGlance(
     val rank: Int,
     val cMoves: Int,
@@ -65,7 +73,8 @@ private data class CoachGlance(
     val playedNotation: String,
     val bestNotation: String,
     val playedMove: IntArray,    // anMove[8], human mover frame -- for the trace
-    val bestMove: IntArray
+    val bestMove: IntArray,
+    val alts: List<CoachAlt>     // better-than-played candidates, best first, <= 3
 ) {
     val loss: Float get() = eqBest - eqPlayed
     val flagged: Boolean get() = skill != 3
@@ -76,16 +85,31 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
     val preBoard = IntArray(50) { v[21 + it] }
     val played = IntArray(8) { v[5 + it] }
     val best = IntArray(8) { v[13 + it] }
+    // The verdict's candidate rows (base 86, 16 ints each: anMove[8],
+    // equity bits, arEvalMove[7] bits) are ranked from best; the ones ranked
+    // ABOVE the played move are its better alternatives. Up to three.
+    val eqPlayed = Float.fromBits(v[2])
+    val k = v[85].coerceIn(0, 5)
+    val alts = buildList {
+        val better = minOf(v[0], k, 3)
+        for (i in 0 until better) {
+            val base = 86 + i * 16
+            val mv = IntArray(8) { j -> v[base + j] }
+            val eq = Float.fromBits(v[base + 8])
+            add(CoachAlt(mv, Engine.formatMove(preBoard, mv), eq - eqPlayed))
+        }
+    }
     return CoachGlance(
         rank = v[0],
         cMoves = v[1],
-        eqPlayed = Float.fromBits(v[2]),
+        eqPlayed = eqPlayed,
         eqBest = Float.fromBits(v[3]),
         skill = v[4],
         playedNotation = Engine.formatMove(preBoard, played),
         bestNotation = Engine.formatMove(preBoard, best),
         playedMove = played,
-        bestMove = best
+        bestMove = best,
+        alts = alts
     )
 }
 
@@ -133,6 +157,25 @@ fun CoachScreen(
     // the Play pipeline's two; on a doubles roll the single engine thread
     // was saturated for 30+ seconds and GNU looked stuck -- field report.)
     val rawGlance by viewModel.coachGlance.collectAsState()
+
+    // Candidate explorer (maintainer design): tapping a numbered alternative
+    // shows THAT move's resulting position -- checkers fully colored, movement
+    // as green arrows -- on the board; tapping it again returns to the live
+    // game. The result board comes from gnubg's own ApplyMove via the facade.
+    var selectedAlt by remember { mutableStateOf(-1) }
+    var altBoard by remember { mutableStateOf<IntArray?>(null) }
+    LaunchedEffect(rawGlance) { selectedAlt = -1; altBoard = null }
+    LaunchedEffect(selectedAlt) {
+        val g = glance
+        altBoard = if (selectedAlt >= 0 && g != null && selectedAlt < g.alts.size) {
+            val preBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
+            preBoard?.let { pb ->
+                val b = Engine.applyMoveToBoard(pb, g.alts[selectedAlt].anMove)
+                if (b.size == 50) b else null
+            }
+        } else null
+    }
+
     LaunchedEffect(rawGlance) {
         // null now MEANS "cleared for judging" (confirm clears it before the
         // pre-apply verdict), so mirror it -- the panel shows the judging
@@ -166,23 +209,49 @@ fun CoachScreen(
                     .padding(start = 52.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    // The visual WHY shows from the moment the verdict lands
-                    // until the player rolls again (a new position makes the
-                    // old traces confusing) -- and only when there is a
-                    // difference to show (rank > 0; the best move IS the
-                    // played move).
-                    val trace = glance?.let { g ->
-                        if (g.rank > 0 && gameState.phase != GamePhase.HUMAN_MOVING)
-                            com.clavierhaus.gnubg.play.CoachTrace(g.playedMove, g.bestMove)
-                        else null
+                    val g = glance
+                    val exploring = selectedAlt >= 0 && altBoard != null && g != null
+                    if (exploring) {
+                        // Counterfactual view: the alternative's RESULTING
+                        // position (gnubg's ApplyMove), its movement as green
+                        // arrows, checkers fully colored. viewModel = null:
+                        // a counterfactual board must not accept game taps
+                        // (the Analyse pattern). ENGINE_THINKING phase
+                        // suppresses all action chrome.
+                        BackgammonBoard(
+                            settings = settings,
+                            gameState = com.clavierhaus.gnubg.engine.BoardState(
+                                board = altBoard!!,
+                                matchScore = gameState.matchScore,
+                                matchLength = gameState.matchLength,
+                                phase = GamePhase.ENGINE_THINKING
+                            ),
+                            viewModel = null,
+                            tutorMode = false,
+                            coachTrace = com.clavierhaus.gnubg.play.CoachTrace(
+                                played = null,
+                                best = g!!.alts[selectedAlt].anMove,
+                                ghost = false
+                            )
+                        )
+                    } else {
+                        // Live board, the player's own move traced -- only the
+                        // player's move (maintainer design); alternatives live
+                        // behind the numbered toggles. Shown until the next
+                        // roll.
+                        val trace = g?.let {
+                            if (it.rank > 0 && gameState.phase != GamePhase.HUMAN_MOVING)
+                                com.clavierhaus.gnubg.play.CoachTrace(it.playedMove, null)
+                            else null
+                        }
+                        BackgammonBoard(
+                            settings = settings,
+                            gameState = gameState,
+                            viewModel = viewModel,
+                            tutorMode = false,
+                            coachTrace = trace
+                        )
                     }
-                    BackgammonBoard(
-                        settings = settings,
-                        gameState = gameState,
-                        viewModel = viewModel,
-                        tutorMode = false,
-                        coachTrace = trace
-                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -191,6 +260,8 @@ fun CoachScreen(
                     glance = glance,
                     phase = gameState.phase,
                     winner = gameState.winner,
+                    selectedAlt = selectedAlt,
+                    onSelectAlt = { n -> selectedAlt = if (selectedAlt == n) -1 else n },
                     onNewGame = {
                         glance = null
                         viewModel.startCoachGame()
@@ -205,11 +276,52 @@ fun CoachScreen(
     }
 }
 
+/** The better alternatives, numbered; each number is a TOGGLE (maintainer
+ *  design): tap to view that move's resulting position on the board, tap
+ *  again to return to the live game. Values are gnubg's; the gain shown is
+ *  the candidate's equity minus the played move's. */
+@Composable
+private fun AltList(
+    alts: List<CoachAlt>,
+    selectedAlt: Int,
+    onSelectAlt: (Int) -> Unit
+) {
+    val pal = LocalBoardPalette.current
+    if (alts.isEmpty()) return
+    Spacer(modifier = Modifier.height(6.dp))
+    Text("Better:", color = pal.uiTextSecondary, fontSize = 11.sp)
+    alts.forEachIndexed { i, alt ->
+        Spacer(modifier = Modifier.height(3.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GameButton(
+                label = "${i + 1}",
+                color = if (selectedAlt == i) pal.uiChipOn else pal.uiChipOff,
+                compact = true
+            ) { onSelectAlt(i) }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                "${alt.notation}  ${"%+.3f".format(alt.gain)}",
+                color = if (selectedAlt == i) Color.White else pal.uiTextSecondary,
+                fontSize = 12.sp
+            )
+        }
+    }
+    if (selectedAlt >= 0) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Viewing ${selectedAlt + 1}. Tap ${selectedAlt + 1} again for the game.",
+            color = pal.uiTextDisabled, fontSize = 10.sp
+        )
+    }
+}
+
 @Composable
 private fun CoachPanel(
     glance: CoachGlance?,
     phase: GamePhase,
     winner: Int,
+    selectedAlt: Int,
+    onSelectAlt: (Int) -> Unit,
     onNewGame: () -> Unit,
     onHome: () -> Unit
 ) {
@@ -281,7 +393,7 @@ private fun CoachPanel(
                         "Fine. ${ordinal(g.rank + 1)} of ${g.cMoves} (${"%+.3f".format(-g.loss)}).",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
-                    Text("Best was ${g.bestNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
+                    AltList(g.alts, selectedAlt, onSelectAlt)
                 }
                 else -> {
                     Text("Your ${g.playedNotation}", color = pal.uiTextSecondary, fontSize = 12.sp)
@@ -290,12 +402,12 @@ private fun CoachPanel(
                         color = Color.White, fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Best: ${g.bestNotation}", color = Color.White, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         "${ordinal(g.rank + 1)} of ${g.cMoves} legal moves",
                         color = pal.uiTextSecondary, fontSize = 12.sp
                     )
+                    AltList(g.alts, selectedAlt, onSelectAlt)
                 }
             }
         }

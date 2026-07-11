@@ -953,6 +953,20 @@ int gnubg_mobile_peek_live_dice(int out[3]) {
  * Output layout identical to gnubg_mobile_coach_verdict; pre-board section is
  * the caller's old_board verbatim (already the frame formatMove expects).
  * Returns 1 written, 0 played move not identified, -1 error. */
+/* Apply one of gnubg's own moves (anMove[8], mover frame) to a board and return
+ * the resulting position -- for the Coach candidate explorer, which renders the
+ * RESULT of each alternative. The application is gnubg's ApplyMove (eval.c);
+ * the app never applies moves itself. No lock needed: pure function of its
+ * arguments, no engine state touched. Returns 1, or -1 on invalid input. */
+int gnubg_mobile_apply_move(const int board[50], const int anMove[8], int out[50]) {
+    TanBoard anBoard;
+    if (!board || !anMove || !out) return -1;
+    facade_unpack_board(board, anBoard);
+    if (ApplyMove(anBoard, anMove, FALSE) < 0) return -1;
+    facade_pack_board((ConstTanBoard) anBoard, out);
+    return 1;
+}
+
 int gnubg_mobile_coach_verdict_pre(const int old_board[50], int d0, int d1,
                                    const int new_board[50], int out[166]) {
     TanBoard oldB, newB;

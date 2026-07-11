@@ -270,7 +270,7 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
  * src 24 = bar, dst < 0 = bear-off, legs end at first negative src). Pure
  * rendering of gnubg-returned data; nothing is classified.
  */
-class CoachTrace(val played: IntArray, val best: IntArray)
+class CoachTrace(val played: IntArray?, val best: IntArray?, val ghost: Boolean = true)
 
 @Composable
 fun BackgammonBoard(
@@ -683,10 +683,14 @@ fun BackgammonBoard(
             // gnubg's destinations. Drawn over the checkers so the difference
             // is what the eye receives.
             if (coachTrace != null) {
-                drawMoveTrace(g, coachTrace.played,
-                    p.uiTextDisabled.copy(alpha = 0.55f), g.checkerR * 0.18f, ghost = false, p)
-                drawMoveTrace(g, coachTrace.best,
-                    p.uiActionPositive.copy(alpha = 0.9f), g.checkerR * 0.30f, ghost = true, p)
+                coachTrace.played?.let {
+                    drawMoveTrace(g, it, p.uiTextDisabled.copy(alpha = 0.55f),
+                        g.checkerR * 0.18f, ghost = false, p)
+                }
+                coachTrace.best?.let {
+                    drawMoveTrace(g, it, p.uiActionPositive.copy(alpha = 0.9f),
+                        g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
+                }
             }
 
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
