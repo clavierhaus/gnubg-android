@@ -973,7 +973,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> GamePhase.WAITING_FOR_ROLL
         }
 
-        readMatchState(phase = phase)
+        // HUMAN_MOVING needs the move-entry state (dice, legal moves, the board
+        // they were generated from), exactly as startNewGame builds it. A bare
+        // readMatchState(phase) left the player in HUMAN_MOVING with NO dice --
+        // Undo/Commit and nothing to play. Field report from the Coach opening;
+        // the same hole was latent under Play's "New match" whenever the human
+        // won the opening roll, since commandNewMatch also lands here.
+        if (phase == GamePhase.HUMAN_MOVING) {
+            val d0 = dice[0]; val d1 = dice[1]
+            val board    = Engine.getMatchBoard()
+            val allMoves = Engine.getLegalMoves(board, d0, d1)
+            readMatchState(
+                phase         = GamePhase.HUMAN_MOVING,
+                remainingDice = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1),
+                legalMoves    = allMoves,
+                oldBoard      = board,
+                originalDice  = Pair(d0, d1)
+            )
+        } else if (phase == GamePhase.WAITING_FOR_ROLL && turn == 0) {
+            // Show what the engine rolled for its completed move (same as
+            // startNewGame's engine-opening branch).
+            val ed = Engine.getMoveRecordDice()
+            readMatchState(phase = phase,
+                engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
+        } else {
+            readMatchState(phase = phase)
+        }
     }
 
     fun commandNewGame() {
