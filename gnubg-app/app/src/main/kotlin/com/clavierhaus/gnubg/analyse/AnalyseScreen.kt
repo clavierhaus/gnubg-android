@@ -434,28 +434,44 @@ fun AnalyseScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                 ) {
                 if (editing) {
-                    // Controls live in a weighted region; the Analyse/Cancel row
-                    // below is a fixed sibling, measured FIRST -- so it can never
-                    // be squeezed off a short screen. Same construction as the
-                    // Start Match fix; field report was "there's no button".
+                    // Controls in a single weighted region (no nested weight --
+                    // two competing weight(1f) let the last row overflow UNDER
+                    // the pinned Analyse row, which is exactly what clipped the
+                    // Cube row: measured at ~0.067 of screen height over budget,
+                    // issue #1). Tight 4dp pitch + no instruction line reclaim far
+                    // more than that, proportionally, on any aspect ratio.
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                    Text(
-                        "Tap a point or the bar to place checkers; tap the bear-off to reset.",
-                        color = pal.uiTextSecondary,
-                        fontSize = 12.sp
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Tool + Start-position preset on one row: place checkers, or
+                    // fill the standard opening (issue #1 asked for the preset).
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         GameButton("White", if (editTool == 0) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 0 }
                         GameButton("Black", if (editTool == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 1 }
                         GameButton("Erase", if (editTool == 2) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 2 }
+                        GameButton("Start pos", pal.uiButtonNeutral, compact = true) {
+                            // The standard opening, in the editor's own board
+                            // encoding (b[25+(p-1)] human point p; b[24-p] engine
+                            // frame; verified against editTap): 2 on 24, 5 on 13,
+                            // 3 on 8, 5 on 6, mirrored.
+                            editBoard = intArrayOf(
+                                2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0
+                            )
+                        }
                     }
 
+                    // On roll + Dice on ONE row -- both are small "who / what"
+                    // selectors, and merging them removes a full row of height
+                    // (measured ~0.088 of screen), which is what let the Cube row
+                    // fall under the pinned buttons on taller phones (issue #1).
+                    // A divider keeps the two groups legible.
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -463,12 +479,7 @@ fun AnalyseScreen(
                         Text("On roll", color = pal.uiTextSecondary, fontSize = 13.sp)
                         GameButton("You", if (editTurn == 0) pal.uiChipOn else pal.uiChipOff, compact = true) { editTurn = 0 }
                         GameButton("GNU", if (editTurn == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editTurn = 1 }
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Dice", color = pal.uiTextSecondary, fontSize = 13.sp)
                         // Tap to cycle: -, 1..6. No dice is a CUBE decision -- the
                         // same rule as gnubg's desktop edit mode.
@@ -480,11 +491,17 @@ fun AnalyseScreen(
                         GameButton(if (editD1 == 0) "-" else "" + editD1, pal.uiChipOff, compact = true) {
                             if (editD0 > 0) editD1 = if (editD1 >= 6) 1 else editD1 + 1
                         }
-                        Text(
-                            if (editD0 == 0) "no dice: cube decision" else "chequer decision",
-                            color = pal.uiTextDisabled, fontSize = 12.sp
-                        )
                     }
+
+                    // The description sits UNDER the merged row as a caption for
+                    // the whole roll/dice choice -- elegant because it explains the
+                    // consequence (which decision gnubg will make) rather than
+                    // labelling one control, and it costs almost no height.
+                    Text(
+                        if (editD0 == 0) "No dice → gnubg makes the cube decision"
+                        else "Dice set → gnubg ranks the chequer plays",
+                        color = pal.uiTextDisabled, fontSize = 11.sp
+                    )
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),

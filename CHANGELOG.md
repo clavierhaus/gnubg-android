@@ -15,6 +15,19 @@ the engine, or stopped hiding what the engine already knew.
 
 _Nothing yet._
 
+## [0.11.4] — 2026-07-11
+
+### Fixed
+- **The cube row in the position editor was cut off** the bottom of the screen on
+  taller phones, and couldn't be reached (issue #1). The editor now fits: "On
+  roll" and "Dice" share one row, the redundant instruction line is gone, and the
+  spacing is tighter — measured to clear the buttons with room to spare across the
+  supported aspect-ratio range.
+
+### Added
+- **A "Start pos" button** in the position editor fills the standard opening
+  position, so you don't have to place all 30 checkers by hand (issue #1).
+
 ## [0.11.3] — 2026-07-11
 
 ### Fixed
@@ -198,7 +211,8 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...HEAD
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...HEAD
+[0.11.4]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...v0.11.2
 [0.11.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.9.1-preview...v0.11.0
