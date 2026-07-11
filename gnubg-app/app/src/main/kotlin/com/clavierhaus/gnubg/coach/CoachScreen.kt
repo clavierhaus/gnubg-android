@@ -163,27 +163,21 @@ fun CoachScreen(
     // as green arrows -- on the board; tapping it again returns to the live
     // game. The result board comes from gnubg's own ApplyMove via the facade.
     // Unified selection (maintainer design): index 0 is P -- the player's own
-    // move, first in the list, same mechanics as the alternatives -- and
-    // 1..n are gnubg's better moves. -1 = the live game board.
+    // move -- and 1..n are gnubg's better moves; -1 = the live game board.
+    // COMMON GROUND for every toggled view: the position BEFORE any move,
+    // after the roll -- the same pre-move board for P and all alternatives,
+    // dice in full color (nothing played), only the arrows differing. The
+    // board is a constant; the moves are pure deltas.
     var selectedAlt by remember { mutableStateOf(-1) }
-    var altBoard by remember { mutableStateOf<IntArray?>(null) }
-    LaunchedEffect(rawGlance) { selectedAlt = -1; altBoard = null }
-    LaunchedEffect(selectedAlt) {
-        val g = glance
-        val move = when {
-            g == null || selectedAlt < 0 -> null
-            selectedAlt == 0 -> g.playedMove
-            selectedAlt - 1 < g.alts.size -> g.alts[selectedAlt - 1].anMove
-            else -> null
-        }
-        altBoard = move?.let { mv ->
-            val preBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
-            preBoard?.let { pb ->
-                val b = Engine.applyMoveToBoard(pb, mv)
-                if (b.size == 50) b else null
-            }
-        }
+    var glanceDice by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    LaunchedEffect(rawGlance) {
+        selectedAlt = -1
+        // The dice the judged move was rolled with, captured while the game
+        // state still carries them (COACH_REVIEW preserves the move-entry
+        // fields; after GNU's reply they are gone from live state).
+        if (rawGlance != null) glanceDice = gameState.originalDice
     }
+    val preMoveBoard = rawGlance?.let { v -> IntArray(50) { v[21 + it] } }
 
     LaunchedEffect(rawGlance) {
         // null now MEANS "cleared for judging" (confirm clears it before the
@@ -219,21 +213,28 @@ fun CoachScreen(
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     val g = glance
-                    val exploring = selectedAlt >= 0 && altBoard != null && g != null
+                    val exploring = selectedAlt >= 0 && preMoveBoard != null && g != null
                     if (exploring) {
-                        // Counterfactual view: the alternative's RESULTING
-                        // position (gnubg's ApplyMove), its movement as green
-                        // arrows, checkers fully colored. viewModel = null:
-                        // a counterfactual board must not accept game taps
-                        // (the Analyse pattern). ENGINE_THINKING phase
+                        // The toggled view: the PRE-move position -- identical
+                        // for P and every alternative -- with the roll's dice
+                        // in FULL color (remainingDice = the whole roll: no
+                        // die used, nothing moved) and the selected move as
+                        // arrows departing from the very checkers that would
+                        // move. viewModel = null: this board must not accept
+                        // game taps (the Analyse pattern); ENGINE_THINKING
                         // suppresses all action chrome.
                         val shownMove = if (selectedAlt == 0) g!!.playedMove
                                         else g!!.alts[selectedAlt - 1].anMove
+                        val d = glanceDice
+                        val fullRoll = d?.let { (d0, d1) ->
+                            if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1)
+                        } ?: emptyList()
                         BackgammonBoard(
                             settings = settings,
                             gameState = com.clavierhaus.gnubg.engine.BoardState(
-                                board = altBoard!!,
-                                dice = gameState.originalDice,
+                                board = preMoveBoard!!,
+                                dice = d,
+                                remainingDice = fullRoll,
                                 matchScore = gameState.matchScore,
                                 matchLength = gameState.matchLength,
                                 phase = GamePhase.ENGINE_THINKING
