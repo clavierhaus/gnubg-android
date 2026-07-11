@@ -114,21 +114,15 @@ fun CoachScreen(
         }
     }
 
-    // Fetch gnubg's verdict when control returns to the player after the
-    // engine's reply (the record tail then holds: human move, engine move --
-    // analyze_replay(NULL) scans back to the last HUMAN chequer move, so the
-    // engine's reply does not disturb it). Also at game over, for the last
-    // move's verdict. Returns empty when there is no human move yet.
-    LaunchedEffect(gameState.phase, gameState.turn) {
-        val fetch = when (gameState.phase) {
-            GamePhase.WAITING_FOR_ROLL -> gameState.turn == 0
-            GamePhase.GAME_OVER -> true
-            else -> false
-        }
-        if (fetch) {
-            val v = viewModel.fetchCoachVerdict()
-            decodeGlance(v)?.let { glance = it }
-        }
+    // The verdict arrives via the VM's coachGlance flow -- ONE analysis per
+    // move, run by confirm() in the same decoupled slot the tutor analysis
+    // occupies in Play. The screen only decodes. (The first design fetched
+    // from a LaunchedEffect here, stacking a third 2-ply analysis on top of
+    // the Play pipeline's two; on a doubles roll the single engine thread
+    // was saturated for 30+ seconds and GNU looked stuck -- field report.)
+    val rawGlance by viewModel.coachGlance.collectAsState()
+    LaunchedEffect(rawGlance) {
+        rawGlance?.let { v -> decodeGlance(v)?.let { glance = it } }
     }
 
     CompositionLocalProvider(LocalBoardPalette provides pal) {

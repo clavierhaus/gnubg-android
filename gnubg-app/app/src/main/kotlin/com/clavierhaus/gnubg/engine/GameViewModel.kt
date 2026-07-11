@@ -25,6 +25,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var lastTutorAnalysis: TutorAnalysis? = null
     private var lastAnalysisDetail: MoveAnalysisDetail? = null
 
+    /* Coach session (docs/COACH.md). While active, confirm() runs ONE analysis
+     * per move -- the coach verdict -- instead of the Play/Tutor pair
+     * (tutorAnalyze + analyzePlayedMove). Field report: all three stacked on
+     * the single engine thread made a doubles-roll turn take 30+ seconds and
+     * GNU looked stuck. One move, one evaluation (vision C6). */
+    private var coachSession = false
+    private val _coachGlance = MutableStateFlow<IntArray?>(null)
+    val coachGlance: StateFlow<IntArray?> = _coachGlance.asStateFlow()
+
     private val _engineReady = MutableStateFlow(false)
     val engineReady: StateFlow<Boolean> = _engineReady.asStateFlow()
 
@@ -745,6 +754,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val winner = if (humanDelta > engineDelta) 0 else 1
                 val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
                 readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
+                if (coachSession) publishCoachVerdict()
                 return@launch
             }
             val cubeInfo = Engine.getMatchCubeInfo()
@@ -755,7 +765,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
-            analyzeMoveInBackground(state.oldBoard)
+            if (coachSession) publishCoachVerdict() else analyzeMoveInBackground(state.oldBoard)
         }
     }
 
@@ -990,6 +1000,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      *  In a 1-point match the cube is dead by the rules, so no cube UI can
      *  arise -- V1's "no cube" falls out of match play itself. */
     fun startCoachGame() {
+        coachSession = true
+        _coachGlance.value = null
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(Difficulty.EXPERT.settingIndex)
             Engine.commandNewMatch(1)
@@ -998,17 +1010,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Coach glance: gnubg's verdict on the last human chequer move, fetched on
-     *  the engine dispatcher so it serializes with the engine's own turn --
-     *  never concurrent, never blocking the UI (vision P3). Empty array when
-     *  there is no human move to judge yet. */
-    suspend fun fetchCoachVerdict(): IntArray =
-        kotlinx.coroutines.withContext(engineThread) { Engine.coachVerdict() }
+    /** The ONE per-move analysis of a coach session: gnubg's verdict on the
+     *  move just played, run decoupled after the turn publish (same slot the
+     *  tutor analysis occupies in Play), published as a flow the CoachScreen
+     *  collects. Launched onto the single engine thread, so it queues after
+     *  the current job -- the player is already back in control when it runs. */
+    private fun publishCoachVerdict() {
+        viewModelScope.launch(engineThread) {
+            val v = Engine.coachVerdict()
+            if (v.size >= 166) _coachGlance.value = v
+        }
+    }
 
     /** Leaving Coach: restore the player's saved strength (Coach forced
      *  Expert), and re-open Play's setup so a later "Play" never resumes the
      *  coach game as if it were a tournament match. */
     fun endCoachSession() {
+        coachSession = false
+        _coachGlance.value = null
         _showMatchSetup.value = true
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
