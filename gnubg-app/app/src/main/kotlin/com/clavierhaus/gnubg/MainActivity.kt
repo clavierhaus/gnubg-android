@@ -22,6 +22,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clavierhaus.gnubg.analyse.AnalyseScreen
 import com.clavierhaus.gnubg.engine.GameViewModel
+import com.clavierhaus.gnubg.coach.CoachScreen
 import com.clavierhaus.gnubg.hub.HomeHubScreen
 import com.clavierhaus.gnubg.learn.LearnScreen
 import com.clavierhaus.gnubg.options.OptionsModeScreen
@@ -156,6 +157,7 @@ class MainActivity : ComponentActivity() {
                 when (mode) {
                     AppMode.HUB -> HomeHubScreen(
                         onPlay = { mode = AppMode.PLAY },
+                        onCoach = { mode = AppMode.COACH },
                         onAnalysePosition = { mode = AppMode.ANALYSE },
                         onReviewMatch = { mode = AppMode.REVIEW },
                         onOptions = { showSettings = true },
@@ -166,6 +168,13 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onReturnToHub = { mode = AppMode.HUB },
                         onSaveMatch = { saveMatch.launch(defaultMatchFilename()) },
+                        onOpenSettings = { showSettings = true }
+                    )
+
+                    AppMode.COACH -> CoachScreen(
+                        viewModel = viewModel,
+                        settings = settings,
+                        onReturnToHub = { mode = AppMode.HUB },
                         onOpenSettings = { showSettings = true }
                     )
 

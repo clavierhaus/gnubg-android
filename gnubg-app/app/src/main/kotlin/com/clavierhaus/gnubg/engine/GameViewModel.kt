@@ -983,6 +983,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _showMatchSetup.value = true
     }
 
+    /** Coach mode (docs/COACH.md): start the contained single game. A 1-point
+     *  game against gnubg's Expert preset (0-ply, no noise -- instant replies
+     *  keep the coaching rhythm tight), started with DIRECT engine calls so the
+     *  player's saved Play settings (strength, match length) are never touched.
+     *  In a 1-point match the cube is dead by the rules, so no cube UI can
+     *  arise -- V1's "no cube" falls out of match play itself. */
+    fun startCoachGame() {
+        viewModelScope.launch(engineThread) {
+            Engine.setEngineStrength(Difficulty.EXPERT.settingIndex)
+            Engine.commandNewMatch(1)
+            Engine.commandNewGame()
+            refreshFromEngineAfterControl()
+        }
+    }
+
+    /** Coach glance: gnubg's verdict on the last human chequer move, fetched on
+     *  the engine dispatcher so it serializes with the engine's own turn --
+     *  never concurrent, never blocking the UI (vision P3). Empty array when
+     *  there is no human move to judge yet. */
+    suspend fun fetchCoachVerdict(): IntArray =
+        kotlinx.coroutines.withContext(engineThread) { Engine.coachVerdict() }
+
+    /** Leaving Coach: restore the player's saved strength (Coach forced
+     *  Expert), and re-open Play's setup so a later "Play" never resumes the
+     *  coach game as if it were a tournament match. */
+    fun endCoachSession() {
+        _showMatchSetup.value = true
+        viewModelScope.launch(engineThread) {
+            Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
+        }
+    }
+
     fun commandNewMatch(length: Int = _settings.value.matchLength) {
         _settings.value = _settings.value.copy(matchLength = length)
         _showMatchSetup.value = false

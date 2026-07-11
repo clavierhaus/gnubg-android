@@ -39,6 +39,7 @@ import com.clavierhaus.gnubg.R
 @Composable
 fun HomeHubScreen(
     onPlay: () -> Unit,
+    onCoach: () -> Unit,
     onAnalysePosition: () -> Unit,
     onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
@@ -120,6 +121,11 @@ fun HomeHubScreen(
                 .padding(start = 64.dp, top = 32.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
+            Spacer(modifier = Modifier.height(22.dp))
+            // The fourth mode (docs/COACH.md): play gnubg with the engine
+            // looking over your shoulder. Second position: learning sits
+            // between competing and analysing.
+            HomeHubEntry("Train with the Coach", onCoach)
             Spacer(modifier = Modifier.height(22.dp))
             // Second: the feature people still open XG Mobile for.
             HomeHubEntry("Analyse Position", onAnalysePosition)
