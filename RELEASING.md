@@ -20,30 +20,53 @@ install over the old one.
 
 ## Each release
 
-1. Bump `versionCode` (must increase) and `versionName` in
-   `gnubg-app/app/build.gradle.kts`, commit, and move/create the tag.
+Two steps: prepare the version in a commit, then run `./release.sh`.
 
-2. Build the signed release APK:
+**1. Prepare (a normal commit).** Bump `versionCode` (must increase) and
+`versionName` in `gnubg-app/app/build.gradle.kts`; roll `CHANGELOG.md` (rename
+`[Unreleased]` to the new version, open a fresh `[Unreleased]`, fix the compare
+links); regenerate `RELEASE_NOTES.md` from that changelog section. Commit and push
+all of it to `main`.
 
-       cd gnubg-app
-       ./gradlew clean assembleRelease
-       ls -la app/build/outputs/apk/release/
-       # -> app-release.apk   (NOT app-release-unsigned.apk)
+    # regenerate RELEASE_NOTES.md from the new changelog section, e.g.:
+    awk '/^## \[0.11.4\]/{f=1} f&&/^## \[0.11.3\]/{exit} f' CHANGELOG.md > RELEASE_NOTES.md
+    # then set its first line to the release title:
+    #   ## GNU Backgammon for Android 0.11.4
 
-   If you see `app-release-unsigned.apk`, `keystore.properties` was not found --
-   fix that before publishing.
+**2. Release (one command).**
 
-3. Test the built APK on a device before publishing:
+    ./release.sh
 
-       adb install -r app/build/outputs/apk/release/app-release.apk
+`release.sh` does the whole thing and refuses to proceed if anything is off:
 
-4. Publish, attaching the APK and using RELEASE_NOTES.md as the body:
+- reads the version from `build.gradle.kts` (the single source of truth);
+- checks the working tree is clean, you are on `main`, and in sync with origin;
+- checks the tag `vX.Y.Z` does **not** already exist (never silently moves a
+  release tag -- moving tags is what left stale APKs on releases before);
+- runs the buildable-clone check;
+- verifies `gh` is authenticated;
+- builds the debug APK (signed with the debug key, so it installs -- this is
+  what the preview releases ship; `assembleRelease` produces an *unsigned* APK
+  that will not install unless a keystore is configured, so the debug APK is the
+  correct artifact for these sideloaded builds);
+- tags `vX.Y.Z`, pushes it, and creates the GitHub release with the APK attached
+  and `RELEASE_NOTES.md` as the body.
 
-       cd ..
-       gh release create v0.10.0 \
-         gnubg-app/app/build/outputs/apk/release/app-release.apk \
-         --title "0.10.0 position setup, match save, match review" \
-         --notes-file RELEASE_NOTES.md
+Useful flags: `--dry-run` (verify and build, but do not tag/push/publish),
+`--no-build` (reuse an APK you already built), `--prerelease` (mark it a
+pre-release).
+
+To try a build without a device attached, `release.sh` builds the APK directly;
+to also install and test on a device first, run `./build_and_deploy.sh` before it.
+
+### On signed release builds
+
+The steps above ship the **debug-signed** APK, which is what these sideloaded
+preview releases have always used. If you later want a proper release-signed APK
+(for the Play Store, or a stable published signature), configure a keystore as
+below and build `assembleRelease`; then point `release.sh` at that artifact. The
+one rule that never changes: every update must be signed with the SAME key as the
+one before it, or it will not install over the old version.
 
 ## Versioning and the changelog (from 0.10.0 on)
 
