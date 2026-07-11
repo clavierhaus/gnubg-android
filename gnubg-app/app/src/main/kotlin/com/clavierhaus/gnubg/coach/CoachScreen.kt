@@ -285,7 +285,11 @@ fun CoachScreen(
                     phase = gameState.phase,
                     winner = gameState.winner,
                     selectedAlt = selectedAlt,
-                    onSelectAlt = { n -> selectedAlt = if (selectedAlt == n) -1 else n },
+                    onSelectAlt = { n ->
+                        selectedAlt = if (selectedAlt == n) -1 else n
+                        android.util.Log.i("gnubg-coach",
+                            "screen: toggle sel=$selectedAlt fp(pre)=${preMoveBoard?.sum()} dice=$glanceDice")
+                    },
                     onContinue = { selectedAlt = -1; viewModel.continueCoachTurn() },
                     onNewGame = {
                         glance = null
@@ -349,13 +353,6 @@ private fun MoveList(
                 fontSize = 12.sp
             )
         }
-    }
-    if (selectedAlt >= 0) {
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            "Tap again for the game.",
-            color = pal.uiTextDisabled, fontSize = 10.sp
-        )
     }
 }
 
@@ -448,13 +445,10 @@ private fun CoachPanel(
                 }
                 else -> {
                     Text(
-                        "${skillLabel(g.skill)}: ${"%+.3f".format(-g.loss)}",
-                        color = Color.White, fontSize = 15.sp,
+                        "${skillLabel(g.skill)}: ${"%+.3f".format(-g.loss)} " +
+                            "(${ordinal(g.rank + 1)} of ${g.cMoves})",
+                        color = Color.White, fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "${ordinal(g.rank + 1)} of ${g.cMoves} legal moves",
-                        color = pal.uiTextSecondary, fontSize = 12.sp
                     )
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
