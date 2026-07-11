@@ -273,11 +273,7 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
 class CoachTrace(
     val played: IntArray?,
     val best: IntArray?,
-    val ghost: Boolean = true,
-    /** Arrow color for the emphasized (best-slot) trace. null = the hint green
-     *  (uiActionPositive). The Coach's P view passes the player's checker
-     *  color so "your move" and "gnubg's move" read apart at a glance. */
-    val emphasisColor: Color? = null
+    val ghost: Boolean = true
 )
 
 @Composable
@@ -697,8 +693,11 @@ fun BackgammonBoard(
                 // the first free slot of the source column ON THE DISPLAYED
                 // board.
                 coachTrace.best?.let {
-                    drawMoveTrace(g, it, gameState.board,
-                        coachTrace.emphasisColor ?: p.uiActionPositive,
+                    // ALL toggle arrows are the hint green -- the same green
+                    // as the 1-24 frame-number highlights (maintainer order;
+                    // a white-for-P variant was an unordered invention, and a
+                    // near-invisible one on light points).
+                    drawMoveTrace(g, it, gameState.board, p.uiActionPositive,
                         g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
                 }
             }

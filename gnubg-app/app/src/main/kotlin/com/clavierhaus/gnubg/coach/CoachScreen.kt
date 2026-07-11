@@ -257,10 +257,7 @@ fun CoachScreen(
                             coachTrace = com.clavierhaus.gnubg.play.CoachTrace(
                                 played = null,
                                 best = shownMove,
-                                ghost = false,
-                                // P view: the player's move in the player's
-                                // checker color; alternatives in gnubg's green.
-                                emphasisColor = if (selectedAlt == 0) pal.checkerLight else null
+                                ghost = false
                             )
                         )
                     } else {
