@@ -113,6 +113,36 @@ The rule, absolute:
     was wrong, and correct it -- in the commit and to the maintainer. No quiet
     walk-back.
 
+### The rule extends to every symbol NEW CODE touches (added 2026-07-11)
+
+Broken again the same day it was written, in a subtler form. Writing
+CoachScreen.kt -- a new file -- I dereferenced `BoardPalettes.forName`,
+`settings.paletteName`, and `pal.uiBackground`. None of the three exists. I had
+verified that the TYPES existed (`BoardPalettes`, `GameSettings`,
+`BoardPalette`) and then wrote their members from expectation. Two were caught
+before commit; `uiBackground` reached the maintainer's build and failed it.
+Asserting a fact to the compiler is still asserting a fact: an unresolved
+reference costs the maintainer a build-and-deploy cycle exactly like a
+nonexistent file does.
+
+The extension, absolute:
+
+  - Verifying a type exists does NOT verify its members. Before new code
+    dereferences a field, calls a method, or names an enum constant, I have
+    read that member's declaration in the source THIS session. Plausible names
+    (`uiBackground`, `forName`) are the signature of this failure mode --
+    convention is not confirmation.
+  - Before committing a NEW file, I re-read it symbol by symbol and, for every
+    external member it touches, point to the declaration (file:line) I read.
+    The pre-commit check for new Kotlin is exactly the C discipline: grep the
+    declaration, not the vibe.
+  - The strongest form of compliance is to copy the usage from a working call
+    site (as ReviewScreen was the template for the screen structure) -- and
+    where I copy, I copy exactly, not approximately from memory of it.
+  - Brace/paren balance checks and syntax_check.sh do not cover Kotlin
+    references; until a Kotlin compile exists in my environment, member-level
+    read-verification is the ONLY defence, so it is mandatory, not best-effort.
+
 A fabricated fact costs more than a slow answer: it sends the maintainer to
 execute against a reality that is not there. Checking is cheap. Guessing is not.
 
