@@ -729,7 +729,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val origDice = state.originalDice ?: return@launch
             if (state.board.contentEquals(state.oldBoard)) return@launch
             val moveStr = Engine.findMove(state.oldBoard, state.board, origDice.first, origDice.second)
-            android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice}")
+            android.util.Log.i("gnubg-vm", "confirm: findMove='$moveStr' dice=${origDice.first},${origDice.second} remaining=${state.remainingDice} " +
+                "fp(old)=${state.oldBoard.sum()} fp(new)=${state.board.sum()}")
             if (moveStr.isEmpty()) { android.util.Log.e("gnubg-vm", "confirm: findMove empty"); return@launch }
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
             // Capture the match score before the move. A game-ending move triggers

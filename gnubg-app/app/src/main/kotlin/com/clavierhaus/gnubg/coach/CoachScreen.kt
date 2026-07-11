@@ -189,7 +189,8 @@ fun CoachScreen(
             try {
                 val d = decodeGlance(v)
                 android.util.Log.i("gnubg-coach",
-                    "screen: decoded rank=${v[0]} of=${v[1]} played='${d?.playedNotation}' alts=${d?.alts?.size}")
+                    "screen: decoded rank=${v[0]} of=${v[1]} played='${d?.playedNotation}' alts=${d?.alts?.size} " +
+                    "fp(pre)=${(0 until 50).sumOf { j -> v[21 + j] }}")
                 d
             } catch (t: Throwable) {
                 android.util.Log.e("gnubg-coach", "screen: decode FAILED: $t")

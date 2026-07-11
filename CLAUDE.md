@@ -107,9 +107,16 @@ failure mode this order exists to end.
 ## LOGCAT: PRECISE TAG FILTERING, ALWAYS (added 2026-07-11)
 
 When requesting or reading device logs, filter by the app's own tags with -s --
-never a bare `logcat | grep`. The canonical command:
+never a bare `logcat | grep`, and NEVER a bare `-d` full-buffer dump: it
+collects hours of stale lines from dead processes and then exits (field
+lesson, 2026-07-12). The canonical procedures:
 
-    adb logcat -d -v time -s gnubg-vm:I gnubg-tutor:I gnubg-cube:I gnubg-coach:I
+    # live session (preferred): clear, then STREAM while reproducing
+    adb logcat -c
+    adb logcat -v time -s gnubg-vm:I gnubg-tutor:I gnubg-cube:I gnubg-coach:I
+
+    # post-mortem only: bounded tail, never the whole buffer
+    adb logcat -d -t 300 -v time -s gnubg-vm:I gnubg-tutor:I gnubg-cube:I gnubg-coach:I
 
 Tags in use: `gnubg-vm` (game flow: confirm/roll/cube), `gnubg-tutor` (tutor
 analysis), `gnubg-cube` (cube evaluations), `gnubg-coach` (coach verdict, WITH
