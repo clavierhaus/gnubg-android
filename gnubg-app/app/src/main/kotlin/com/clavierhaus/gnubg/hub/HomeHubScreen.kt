@@ -112,6 +112,23 @@ fun HomeHubScreen(
                 .padding(start = 48.dp, top = 66.dp)
         )
 
+        // Publisher attribution, top-right, symmetric with the settings gear on
+        // the top-left. Same face as the title and menu entries (DejaVu Serif),
+        // sized for a corner mark rather than a primary control (HomeSecondaryStyle,
+        // reserved for this). "vie" set in GNU orange for Vienna -- the pun the
+        // company name carries -- the rest in the hub's off-white.
+        BasicText(
+            text = buildAnnotatedString {
+                append("cla")
+                withStyle(SpanStyle(color = GnuOrange)) { append("vie") }
+                append("rhaus.at")
+            },
+            style = HomeSecondaryStyle,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 48.dp, top = 18.dp)
+        )
+
         // padding, not offset. An offset composable keeps the layout slot its parent
         // allocated; if it is pushed outside the parent's bounds it stops receiving
         // pointer events, which is how the match-setup screen once grew a button that
