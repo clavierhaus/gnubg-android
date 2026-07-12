@@ -1,5 +1,24 @@
 # HANDOVER — session of 2026-07-12 (coach state rebuild → 0.20.0 release)
 
+## BOOTSTRAP — paste this as the FIRST message of a new chat
+A fresh session knows nothing: no repo, no paths, no state. This block is the
+only thing that must be pasted by hand; everything else follows from it.
+
+```
+Project gnubg-android. Run exactly this, then continue from the handover:
+
+git clone https://github.com/clavierhaus/gnubg-android /home/claude/repo
+cd /home/claude/repo
+
+Then read, in this order, before saying anything else:
+1. CLAUDE.md          (the contract -- every order binds)
+2. docs/STATUS.md     (authoritative current state)
+3. docs/HANDOVER.md   (what is in flight, environment, next steps)
+
+My tree is /home/erweitert/gnubg-android. Give me only full pastable
+command blocks. Never run ./release.sh yourself.
+```
+
 Purpose: a fresh assistant session continues seamlessly from here. Tracked in
 git so `git pull` keeps the maintainer's tree and any assistant clone in sync.
 
