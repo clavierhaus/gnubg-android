@@ -42,7 +42,7 @@ V0.9 continued the engine work on top of the V0.8.x shell. The only V0.8.x
 stream not carried forward is the deep BMPCC-inspired Settings UX vision,
 which remains design intent (see SETTINGS-UX-BLUEPRINT.md), not built.
 
-build versionName: 0.9.1 · last engine milestone: Phase 13 (tutor analysis)
+build versionName: 0.20.0 (code 8, release staged) · last engine milestone: Phase 13 (tutor analysis)
 
 ## The three features that define current work
 
