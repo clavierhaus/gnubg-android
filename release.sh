@@ -107,7 +107,16 @@ fi
 
 # gh authed to the right account
 command -v gh >/dev/null 2>&1 || die "gh (GitHub CLI) not found on PATH"
-gh auth status >/dev/null 2>&1 || die "gh not authenticated -- run: gh auth login"
+# Guard shows gh's OWN report on failure (third guard fixed for swallowing
+# its reason). Scoped to github.com: a failure on some other configured host
+# must not block this release. Known trap named in the message: a stale
+# GH_TOKEN/GITHUB_TOKEN env var OVERRIDES 'gh auth login', so status can fail
+# right after a successful web login.
+if ! gh auth status --hostname github.com >/dev/null 2>&1; then
+  gh auth status --hostname github.com 2>&1 | sed 's/^/    /' || true
+  env | grep -E '^(GH_TOKEN|GITHUB_TOKEN)=' | sed 's/=.*/=<set -- this OVERRIDES gh auth login>/; s/^/    /' || true
+  die "gh not authenticated for github.com -- gh's own report is above. If GH_TOKEN/GITHUB_TOKEN is shown as set, unset it (unset GH_TOKEN GITHUB_TOKEN) or renew it; otherwise run: gh auth login"
+fi
 ok "gh authenticated"
 
 # --- 2. build ----------------------------------------------------------------
