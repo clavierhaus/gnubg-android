@@ -130,6 +130,33 @@ private fun skillLabel(skill: Int): String = when (skill) {
     else -> ""
 }
 
+
+/** The cube verdict (M4). Only gnubg's own values: what the human did, whether
+ *  it matched gnubg's decision, the equity cost, the skill band. No cube
+ *  wording is invented here -- the dictionary layer comes later. */
+private data class CubeGlance(
+    val isBest: Boolean,
+    val skill: Int,          // Skill(): 0 verybad 1 bad 2 doubtful 3 none
+    val eqChosen: Float,
+    val eqBest: Float,
+    val takeDrop: Boolean    // false = double-or-not, true = take-or-drop
+) {
+    val loss: Float get() = eqBest - eqChosen
+    val flagged: Boolean get() = skill != 3
+}
+
+private fun decodeCube(v: IntArray): CubeGlance? {
+    if (v.size < 10) return null
+    return CubeGlance(
+        isBest = v[0] == 1,
+        skill = v[4],
+        eqChosen = Float.fromBits(v[2]),
+        eqBest = Float.fromBits(v[3]),
+        takeDrop = v[9] == 1
+    )
+}
+
+
 @Composable
 fun CoachScreen(
     viewModel: GameViewModel,
@@ -159,6 +186,9 @@ fun CoachScreen(
     // the Play pipeline's two; on a doubles roll the single engine thread
     // was saturated for 30+ seconds and GNU looked stuck -- field report.)
     val rawGlance by viewModel.coachGlance.collectAsState()
+    // Cube glance (M4): present whenever a cube decision is under review.
+    val rawCubeGlance by viewModel.coachCubeGlance.collectAsState()
+    val cubeGlance = rawCubeGlance?.let { decodeCube(it) }
 
     // Candidate explorer (maintainer design): tapping a numbered alternative
     // shows THAT move's resulting position -- checkers fully colored, movement
@@ -328,7 +358,9 @@ fun CoachScreen(
                                     ghost = false
                                 ) else null,
                             onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { { selectedAlt = -1; viewModel.continueCoachTurn() } } else null
+                                { { selectedAlt = -1
+                                    if (rawCubeGlance != null) viewModel.continueCoachCube()
+                                    else viewModel.continueCoachTurn() } } else null
                         )
                     } else {
                         // The live game board carries NO arrows (maintainer
@@ -341,7 +373,9 @@ fun CoachScreen(
                             viewModel = viewModel,
                             tutorMode = false,
                             onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { { selectedAlt = -1; viewModel.continueCoachTurn() } } else null
+                                { { selectedAlt = -1
+                                    if (rawCubeGlance != null) viewModel.continueCoachCube()
+                                    else viewModel.continueCoachTurn() } } else null
                         )
                     }
                 }
@@ -350,6 +384,7 @@ fun CoachScreen(
 
                 CoachPanel(
                     glance = glance,
+                    cubeGlance = cubeGlance,
                     phase = gameState.phase,
                     winner = gameState.winner,
                     selectedAlt = selectedAlt,
@@ -448,6 +483,7 @@ private fun WhyStub() {
 @Composable
 private fun CoachPanel(
     glance: CoachGlance?,
+    cubeGlance: CubeGlance?,
     phase: GamePhase,
     winner: Int,
     selectedAlt: Int,
@@ -501,6 +537,41 @@ private fun CoachPanel(
                 else -> {}
             }
 
+            // A cube decision under review takes the panel: only gnubg's own
+            // values (M4, dictionary later) -- the equity cost and the skill
+            // band, the same currency as chequer play. No invented cube words.
+            if (cubeGlance != null) {
+                val cg = cubeGlance
+                when {
+                    !cg.flagged -> {
+                        Text(
+                            if (cg.isBest) "Correct cube decision." else "Reasonable cube decision.",
+                            color = pal.uiActionPositive, fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    else -> {
+                        Text(
+                            "${skillLabel(cg.skill)}: ${"%+.3f".format(-cg.loss)}",
+                            color = Color.White, fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            if (cg.takeDrop) "Take vs drop equity"
+                            else "Double vs no-double equity",
+                            color = pal.uiTextSecondary, fontSize = 12.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    "Your action: ${"%+.3f".format(cg.eqChosen)}   " +
+                        "Best: ${"%+.3f".format(cg.eqBest)}",
+                    color = pal.uiTextSecondary, fontSize = 11.sp
+                )
+            } else {
+
             val g = glance
             // Every verdict is ANCHORED to the move it judges by naming it --
             // field report: the message lands a beat after GNU's reply, when
@@ -552,6 +623,7 @@ private fun CoachPanel(
                 Spacer(modifier = Modifier.height(14.dp))
                 WhyStub()
             }
+            } // end else (chequer verdict; cube verdict handled above)
         }
 
         // GNU's turn now lives ON the board (left-half mirror of Roll).
