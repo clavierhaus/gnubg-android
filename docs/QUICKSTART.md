@@ -1,0 +1,191 @@
+# GNU Backgammon for Android — Quick Start
+
+This is the real engine of GNU Backgammon in your hand: the same neural-net
+player and analyser that runs on the desktop, judging every move to a
+thousandth of a point. The board is a touch surface, and a few of its gestures
+are not obvious until someone points them out. This guide points them out.
+
+One idea underlies the whole app: **gnubg is the authority.** Every number,
+every "best move", every verdict is the engine's own — the app only shows it to
+you. Nothing here is the app's opinion.
+
+The board is **landscape only**. The gear at the top-left of every screen opens
+Settings; it is always the same gear in the same place.
+
+---
+
+## The four modes
+
+From the hub you choose one of four things to do. The verb leads each one:
+
+- **Play** a tournament match against gnubg.
+- **Train** with the Coach — play, and have each move judged.
+- **Analyse** any position you set up or paste in.
+- **Review** a saved match, move by move.
+
+---
+
+## Moving the checkers (Play and Train)
+
+You roll, then move. There are two ways to move a checker, and the second is
+the one people miss.
+
+**Tap the source, then let the dice place it.** Tap a point that has your
+checker; the app plays one die from there (it tries your dice in order). Tap
+again to play the second die. The engine decides at each tap whether that
+sub-move is legal — if nothing happens, that die can't be played from there.
+
+**Tap the destination directly — the shortcut worth knowing.** Instead of
+walking a checker die-by-die, tap an **empty point you want to land on**. If
+some combination of your dice reaches it, the app makes the whole move at once.
+This is the fast way to **make a point**: tap the empty point you want to
+occupy and, when both dice can land there, two checkers slide in together. No
+need to move each checker separately.
+
+**Long-press a checker to see where it can go.** Press and hold a point that
+holds your checkers; every legal landing point for that checker lights up.
+Release without moving — it's a preview, not a commitment. Use it whenever
+you're unsure which of your dice actually plays.
+
+**Drag, if you prefer.** You can also drag a checker from its point to a
+destination; the same legality rules apply.
+
+**Coming off the bar.** If you have a checker on the bar, tap the bar (the
+centre strip) as your source — you must enter before any other move, exactly as
+the rules require.
+
+**Undo and confirm.** While you have a move in progress, the two buttons by the
+dice **undo** the last sub-move or **confirm** the whole move. gnubg enforces
+the real rule that you must use both dice and make the largest legal play — if
+your move can't complete to a legal maximum, confirm won't accept it, and you
+undo and try another way. That is the engine refusing, not the app.
+
+**When you can't move.** If the roll leaves you no legal move, a single
+**pass** affordance appears where the buttons were; tap it to hand the turn on.
+
+---
+
+## The dice and the cube
+
+**Roll** by tapping the **Roll** button on the right half of the board, where
+your dice will appear. gnubg's dice for the turn sit greyed on the left half
+until you roll.
+
+**Swap the dice order.** Tap your two dice to swap which one is "first". This
+only matters for how a tap-to-move sequence tries them — the move is the same
+either way.
+
+**Double** by tapping the **doubling cube**. The app offers the cube only when
+doubling is actually legal — the engine decides that, so if a tap does nothing,
+a double isn't available to you yet. When gnubg doubles you, buttons appear to
+**take** or **drop**.
+
+---
+
+## Train with the Coach
+
+Coach is Play with a teacher. It opens on a **setup screen**: choose the
+opponent's **strength** (the same seven levels as tournament play, from
+Beginner to Grandmaster) and the **match length**.
+
+- **One point** keeps the doubling cube dead — you get **chequer-play coaching
+  only**.
+- **Longer matches** put the cube in play, and the Coach judges your **cube
+  decisions** too.
+
+Then you play. After each of your moves, gnubg judges it and the game pauses so
+you can study the verdict — **GNU waits for you**. You'll see one of three
+honest verdicts:
+
+- **The best move** — you found gnubg's top choice.
+- **Fine, Nth of M** — a reasonable move, with what would have been better.
+- **A flagged move** — gnubg's severity (doubtful, bad, very bad) and the exact
+  equity it cost.
+
+**Study the alternatives — the two-tap toggle.** Below the verdict is a list:
+your move first, marked **P** in red, then gnubg's better moves numbered by
+rank. Tap any one of them:
+
+- **First tap** shows the **decision point** — the position before the move,
+  with the dice, no arrows. This is the same starting picture for every entry
+  in the list, so you're always comparing like with like.
+- **Second tap** shows the **result** of that move — where the checkers end up,
+  with **green arrows** pointing to the destinations they occupy.
+- **Tap again** to flip back.
+
+So you can hold your move and gnubg's best move against the identical starting
+position and see, arrow by arrow, how they differ.
+
+**Continue** by tapping **GNU's turn** — the button on the board's left half,
+the mirror of your Roll. Only then does gnubg receive your move and reply. The
+Coach never rolls for GNU while alternatives are still on the table, so the
+position you're studying never shifts under you.
+
+**Cube coaching** (longer matches). When you double, take, or drop, the Coach
+judges that decision against gnubg's — correct, reasonable, or flagged with the
+equity cost — using the engine's own cube evaluation.
+
+**One thing about the cube that surprises people.** When you tap the cube to
+double, the Coach shows its verdict on your decision *straight away* — but the
+**cube face does not change yet**, and GNU has not answered yet. This is
+deliberate. Just like a chequer move, your cube decision is *held*: the Coach
+judges what you chose, and nothing is committed until you tap **GNU's turn**.
+Only then does gnubg actually receive the double, roll, and either take or drop
+— and only then does the cube move to **2** and take its place on the board. So
+the sequence is: tap the cube → read the verdict → **GNU's turn** → GNU
+responds and the cube updates. A doubling cube that doesn't move the instant
+you tap it feels odd at first, but it is the only way to judge your decision
+*before* the game commits to it — the same "decide, see the verdict, then
+continue" rhythm the whole Coach uses.
+
+---
+
+## Analyse a position
+
+Analyse lets you set up any position and ask gnubg what it thinks.
+
+**Build a position by hand.** Tap a point to add your checkers; the edit
+controls let you switch which colour you're placing (**You** / **GNU**), send
+checkers to the **bar**, or **erase** a point by tapping the tray. **Start pos**
+resets to the opening arrangement; **Swap** exchanges the two sides.
+
+**Or paste an ID.** Paste a **GNU BG ID** (`PositionID:MatchID`) or an **XGID**
+— the app recognises either dialect and installs it exactly as given.
+
+**Set the context that changes the answer.** The score, the match length, the
+cube's position and owner, whose roll it is, and the **Crawford** flag all
+affect the right play — set them so gnubg evaluates the position you actually
+mean.
+
+**Dice or no dice — this is the key distinction.** If you set **dice**, gnubg
+gives you the best **chequer play** for that roll. If you leave the dice
+**unset**, gnubg gives you the **cube decision** — whether to double, take, or
+drop — in its own words. Setting the dice or clearing them is how you ask the
+two different questions.
+
+---
+
+## Review a saved match
+
+Review walks through a match you've saved to `.sgf`, one move at a time.
+
+**Open a match** with **Open match** and pick the saved file. Then step through
+it: **Move >** advances one move, **Game >** jumps to the next game of the
+match. The header shows the running score and where you are (which game, whose
+turn, end of game).
+
+This is the way to go back over a finished game and see how it unfolded —
+the same board, replayed.
+
+---
+
+## A few things worth remembering
+
+- **The gear is always top-left.** Settings — themes, match rules, equity
+  tables — live there, on every screen.
+- **Nothing scrolls.** Every screen is sized to fit its device; if something
+  looks like it should scroll, it doesn't — it's all there.
+- **The engine is always right, by design.** If a tap seems to do nothing, the
+  most common reason is that gnubg has judged the move illegal or the action
+  unavailable. That's not a bug; it's the rules being enforced by the same
+  engine that will, elsewhere, tell you the move was a blunder.
