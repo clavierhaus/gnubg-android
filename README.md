@@ -3,12 +3,7 @@
 A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/) — the free, world-class backgammon engine. Not a re-implementation and not a stripped-down evaluator: the real gnubg engine runs under a modern touch interface, so the strength you play, the cube decisions, and the analysis you learn from are gnubg's own — checkable against the upstream source in this repository. All offline, all free, all open source.
 
 <p align="center">
-  <img src="docs/screenshots/hub.png"     width="49%" alt="Home hub: Play, Train, Analyse, Review">
-  <img src="docs/screenshots/coach.png"   width="49%" alt="Train with the Coach: gnubg's per-move verdict">
-</p>
-<p align="center">
-  <img src="docs/screenshots/analyse.png" width="49%" alt="Analyse: build or paste any position">
-  <img src="docs/screenshots/play.png"    width="49%" alt="Live play on the touch board">
+  <img src="docs/screenshots/hub.png" width="88%" alt="Home hub — Play, Train, Analyse, Review">
 </p>
 
 > **Status: 0.20.1.** Four modes — **Play, Train, Analyse, Review** — are built and working, and the core is stable. The active frontier is deeper analysis reporting and online play. See the [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
@@ -26,6 +21,20 @@ A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/)
 ### One board, every device
 
 The board is drawn from a single geometry computed once from the screen size, so a tap lands exactly where the eye says it will — verified from tablet (16:10) to tall phone (20:9), which sit on opposite sides of the point where the scaling flips sign. Nothing scrolls; what does not fit is made to fit. Three hand-tuned themes (Ocean, Classic, Forest) plus a System option that follows Material You, and the whole interface themes together. Settings persist across restarts. Built for Android 12+ (minSdk 31), landscape, tap or drag to move.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/setup.png" width="49%" alt="Match setup — opponent strength (seven levels), chequer-play tutor, and match length">
+  <img src="docs/screenshots/play.png"  width="49%" alt="Live play against the gnubg engine, with pip counts and the doubling cube">
+</p>
+<p align="center">
+  <img src="docs/screenshots/coach.png"          width="49%" alt="Train with the Coach — gnubg's verdict on your move and its ranked better plays">
+  <img src="docs/screenshots/coach-explorer.png" width="49%" alt="The before/after explorer — arrows show a chosen candidate move on the board">
+</p>
+<p align="center">
+  <img src="docs/screenshots/analyse.png" width="49%" alt="Analyse — paste a GNU BG ID or XGID, or set a position up">
+</p>
 
 ## Design principle: gnubg is the authority
 
