@@ -259,6 +259,20 @@ fun AnalyseScreen(
     // gnubg's own CheckPosition validates it. The editor only keeps taps from
     // producing what gnubg would refuse (a 16th checker, both colours on a point).
     var editing by remember { mutableStateOf(false) }
+
+    // The MET drives the mwc<->equity conversion behind the cube numbers, and
+    // the Settings overlay applies it to the engine immediately. A shown
+    // result must therefore be RE-DERIVED from gnubg under the new table --
+    // never left as stale numbers beside a live label. The position is still
+    // installed, so one readBack recomputes everything.
+    LaunchedEffect(settings.metTable) {
+        if (result != null && !editing && !busy) {
+            busy = true
+            rolloutRes = null
+            result = readBack()
+            busy = false
+        }
+    }
     var editBoard by remember { mutableStateOf(IntArray(50)) }
     var editTool by remember { mutableStateOf(0) }        // 0 add white, 1 add black, 2 erase
     var editD0 by remember { mutableStateOf(0) }          // 0 = no dice = cube decision
