@@ -23,6 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -200,6 +206,24 @@ fun CoachScreen(
     // Cube glance (M4): present whenever a cube decision is under review.
     val rawCubeGlance by viewModel.coachCubeGlance.collectAsState()
     val cubeGlance = rawCubeGlance?.let { decodeCube(it) }
+
+    // A cube double is held for review when a cube glance is present in
+    // COACH_REVIEW and it was the double-or-not decision (not take/drop). While
+    // it is, the cube "breathes" on the board -- you have offered, GNU's answer
+    // is still open. pulse is 0..1, driven continuously; 0 when nothing pends.
+    val doublePending = gameState.phase == GamePhase.COACH_REVIEW &&
+        cubeGlance != null && !cubeGlance.takeDrop
+    val pulse = if (doublePending) {
+        val t = rememberInfiniteTransition(label = "cube-double-pending")
+        t.animateFloat(
+            initialValue = 0f, targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(900, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "cube-pulse"
+        ).value
+    } else 0f
 
     // Candidate explorer (maintainer design): tapping a numbered alternative
     // shows THAT move's resulting position -- checkers fully colored, movement
