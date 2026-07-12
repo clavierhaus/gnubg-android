@@ -113,3 +113,42 @@ pattern; overlaps race.break.ahead at the edges, pilot separates them.
 Pilot order (per plan §9.4): board.close.entry and blot.shot.given first —
 their inputs carry the clearest source comments — then the anchor pair to
 settle position-value encodings, then the UNCOMMENTED set or their removal.
+
+---
+
+## Pilot log — first measurements (2026-07-12)
+
+Instrument: `tools/pilot/inputs_harness` (build.sh), THIS repo's eval.c on
+the host — same provenance as the device verb. Debian gnubg 1.07 has NO
+`show inputs`; the plan's §9.4 tooling assumption was false and the harness
+supersedes it. Boards below in gnubg `set board simple` order.
+
+**Pair 1 — board.close.entry.** Opp on the bar; player owns 2 vs 3 home
+points (spares from the 8 make the 4-point).
+  A: 1  0 0 0 0 2 2 0 4 0 0 0 0 5 0 0 0 0 0 -3 -3 -2 0 0 -6 0
+  B: 1  0 0 0 2 2 2 0 2 0 0 0 0 5 0 0 0 0 0 -3 -3 -2 0 0 -6 0
+  measured: opp I_ENTER 0.224 -> 0.408, opp I_ENTER2 0.556 -> 0.750.
+  FINDING: both inputs are normalised as entry DIFFICULTY — they RISE as
+  the board closes, opposite the naive reading of the source comment. Entry
+  corrected: signature is opp I_ENTER2 **up**, opp I_ENTER **up** (direction
+  per schema: sign of best − played, best being the point-making play).
+
+**Pair 2 — blot.shot.given.** Player blot on the 10 under a direct 6 from
+opp checkers on the 4, vs the same checker safe on the 8. Contact held via
+player back checkers on the 24.
+  C: 0  0 0 0 -2 2 2 0 4 0 1 0 0 4 0 0 0 0 -5 -3 -3 -2 0 0 2 0
+  D: 0  0 0 0 -2 2 2 0 5 0 0 0 0 4 0 0 0 0 -5 -3 -3 -2 0 0 2 0
+  measured: opp I_P1 0.389 -> 0.000, opp I_PIPLOSS 0.486 -> 0.000 (safe).
+  FINDINGS: (1) side attribution settled — the player's exposure registers
+  in the OPPONENT's half-inputs, as guessed. (2) Direction per schema is
+  **down** for both terms (best − played < 0); the entry's loose "up" is
+  corrected. (3) I_TIMING / I_BREAK_CONTACT drifted ~0.01–0.02 from the
+  2-pip position change — the noise floor min_abs_delta exists to gate.
+
+Method note: a mis-built pair (13 checkers, contact lost) drove
+ClassifyPosition into the bearoff path and the harness ABORTED on a loud
+stub rather than print garbage — the stub design is doing its job; keep it.
+
+Measured so far: board.close.entry CONFIRMED (direction corrected),
+blot.shot.given CONFIRMED (direction corrected, side settled). Next per
+pilot order: the anchor pair, to establish position-value encodings.

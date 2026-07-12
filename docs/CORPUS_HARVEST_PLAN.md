@@ -359,12 +359,14 @@ Notes:
      enough to prove the workflow before scaling to 40-80.
   3. STRUCK (2026-07-12): both sibling verbs already existed end-to-end;
      see the §3 correction. Q0 caught it.
-  4. Pilot signal-discovery: paste 3-4 paired position IDs (prime
-     intact / prime broken; anchor held / anchor surrendered; etc.)
-     into gnubg CLI, run `show inputs` for each, diff the I_* by hand
-     to identify which inputs actually respond to the pattern. Uses
-     gnubg's own tooling, needs no new code. Results feed the corpus
-     signatures before any phrase is authored.
+  4. Pilot signal-discovery: CORRECTED 2026-07-12 -- desktop gnubg 1.07
+     has no `show inputs`; the assumption above was never verified. The
+     pilot instead runs tools/pilot/inputs_harness (build.sh), a host
+     harness over THIS repo's eval.c -- same code the APK runs -- printing
+     PipCount, positionclass and both sides' named I_* inputs for a board
+     in `set board simple` order. Paired positions are diffed; results
+     land in the Pilot log of CORPUS_ENTRIES_DRAFT.md. First two pairs
+     measured; two entries confirmed with corrected directions.
   5. Only then: pilot harvest of the first ~10 signatures against a
      small position set, curated end-to-end, to prove Phase E's
      rejection criteria are workable before running at full scale.
