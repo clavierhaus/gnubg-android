@@ -72,3 +72,7 @@ float aafMET[50][50];
 float aafMETPostCrawford[2][50];
 float aaaafGammonPrices[4][50][50][4];
 float aaaafGammonPricesPostCrawford[4][50][4];
+
+/* Surfaced by compiling eval.c at -O0 (kept for the ComputeTable symbol):
+ * error-output printf, unreachable from the pure paths. */
+void outputerrf(const char *sz, ...) { (void)sz; LOUD("outputerrf") }

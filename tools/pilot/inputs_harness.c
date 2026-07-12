@@ -51,8 +51,16 @@ static const char *CLASS_NAME[] = {
     "CLASS_CONTACT"
 };
 
+/* eval.c fills its escape lookup tables (anEscapes, anEscapes1) lazily in
+ * its init path, which this harness deliberately does not run. Without them
+ * Escapes() returns zeros and the four containment inputs read 0.0/1.0 for
+ * EVERY board -- measured, absurdly, before this call existed. ComputeTable
+ * is static in eval.c; build.sh globalizes the symbol with objcopy. */
+extern void ComputeTable(void);
+
 int main(int argc, char **argv)
 {
+    ComputeTable();
     TanBoard anBoard;
     unsigned int anPips[2];
     float in0[MORE_INPUTS], in1[MORE_INPUTS];

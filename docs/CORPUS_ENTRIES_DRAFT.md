@@ -31,15 +31,22 @@ Rules this file lives under:
 ## board
 
 **prime.break.5** — A 5-prime is worth holding.
-signature: opp I_BACKESCAPES up · me I_BACKBONE down (UNCOMMENTED)
+signature (MEASURED 2026-07-12): me I_BACKESCAPES down · me I_CONTAIN up
+(direction per schema; the MISTAKE of breaking reads BACKESCAPES 0.056 ->
+0.25-0.28, CONTAIN 0.944 -> 0.72-0.81, front or middle alike)
 bands: doubtful, bad
-note: the plan §5 example, kept verbatim as the workflow's reference entry.
+note: was the plan §5 example; its guessed signature was wrong on BOTH
+terms -- containment registers on the CONTAINER'S side (eval.c:1126 uses my
+board as the wall), and I_BACKBONE barely responds (its home is anchor
+solidity, pair 5). The plan's example should not be copied further.
 
 **prime.contain.lost** — Don't let the trapped checker out for free.
-signature: opp I_BACKESCAPES up · me I_CONTAIN down (UNCOMMENTED)
+signature (MEASURED 2026-07-12): me I_CONTAIN down hard (0.944 -> 0.333 on
+full dissolution) · me I_BACKESCAPES up
 bands: doubtful, bad, very bad
-note: the general containment sibling of prime.break.5; pilot must separate
-the two or merge them.
+note: measurement shows the two prime entries share one signal, separated
+by magnitude -- break = partial delta, containment lost = the full swing.
+Keep both ids; the matcher's min_abs_delta separates them.
 
 **anchor.surrender.back** — A back anchor is shelter; don't leave it without a reason.
 signature (MEASURED 2026-07-12): me I_FORWARD_ANCHOR crosses above 1.0
@@ -191,3 +198,36 @@ Measured so far: board.close.entry, blot.shot.given, anchor.advance.golden,
 anchor.surrender.back -- FOUR of twelve confirmed with corrected,
 source-backed signatures. Next: the prime pair (prime.break.5 /
 prime.contain.lost), now armed with a characterized I_BACKBONE.
+
+**Pairs 6-8 -- the prime set, and an instrument defect found and fixed.**
+  J held 4-8 prime, opp pair trapped on the 2:
+     0  0 -2 0 2 2 2 2 2 0 0 0 -5 3 0 0 0 0 0 -3 -3 -2 0 0 2 0
+  K middle broken (6-pt -> 10), K2 front broken (8-pt -> 10), K3 dissolved
+  (only 5,6 held, rest stacked on the 13).
+
+  DEFECT: the harness's first prime runs read anEscapes[] UNINITIALIZED --
+  eval.c fills it lazily via static ComputeTable(), which the harness never
+  ran. Symptom: I_BACKESCAPES 0.000 and I_CONTAIN 1.000 on EVERY board,
+  including no-prime -- absurd data, which is what exposed it. Fix: eval.o
+  at -O0 (at -O1 the static is inlined away), objcopy --globalize-symbol,
+  harness calls ComputeTable() first. Audit: the four containment inputs
+  (+ I_BACKRESCAPES) were garbage in ALL raw output before this fix; none
+  of the previously logged findings cited them, so pairs 1-5 stand. The
+  interim "victim too deep for the 12-pip window" theory was an artifact
+  and is RETRACTED.
+
+  Measured on the fixed instrument (me = the priming side):
+    I_BACKESCAPES  held 0.056  mid-break 0.278  front-break 0.250  gone 0.694
+    I_CONTAIN      held 0.944  mid-break 0.722  front-break 0.806  gone 0.333
+  Findings: (1) containment registers on the CONTAINER's side -- both prime
+  entries' side attribution corrected from opp to me (source: eval.c:1126,
+  Escapes over MY board vs THEIR back checker). (2) Where the prime breaks
+  barely matters to the signal; any break moves it strongly. (3) I_BACKBONE
+  is NOT a prime signal (0.970 -> 0.939 only on full dissolution); it stays
+  with the anchor entries. (4) I_BACKRESCAPES characterized free: tracks
+  I_BACKESCAPES via Escapes1 (eval.c:1128), moved in lockstep throughout.
+
+Measured so far: SIX of twelve -- board.close.entry, blot.shot.given,
+anchor.advance.golden, anchor.surrender.back, prime.break.5,
+prime.contain.lost. Remaining: stack.mobility.dead, backgame.timing,
+blot.double.given, hit.declined, race.break.ahead, race.escape.window.
