@@ -226,24 +226,36 @@ fun CoachScreen(
                 .fillMaxSize()
                 .background(pal.uiPanelDeep)
         ) {
-            // Gear keeps the top-left, as on every screen.
-            if (onOpenSettings != null) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings",
-                    tint = pal.uiTextSecondary,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp)
-                        .size(28.dp)
-                        .clickable { onOpenSettings() }
-                )
+            // The left strip: gear on top (as on every screen), Home in the
+            // blank area below it (maintainer design: screen estate -- the
+            // right panel keeps only the coaching).
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (onOpenSettings != null) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = pal.uiTextSecondary,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable { onOpenSettings() }
+                    )
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+                GameButton("Home", pal.uiButtonNeutral, compact = true) {
+                    viewModel.endCoachSession()
+                    onReturnToHub()
+                }
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 52.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
+                    .padding(start = 88.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     val g = glance
@@ -327,10 +339,6 @@ fun CoachScreen(
                     onNewGame = {
                         glance = null
                         viewModel.startCoachGame()
-                    },
-                    onHome = {
-                        viewModel.endCoachSession()
-                        onReturnToHub()
                     }
                 )
             }
@@ -397,8 +405,7 @@ private fun CoachPanel(
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit,
     onContinue: () -> Unit,
-    onNewGame: () -> Unit,
-    onHome: () -> Unit
+    onNewGame: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -428,8 +435,9 @@ private fun CoachPanel(
                 }
                 phase == GamePhase.COACH_REVIEW -> {
                     Text(
-                        "Study the verdict. GNU waits for you.",
-                        color = pal.uiTextSecondary, fontSize = 12.sp
+                        "Study the eval while GNU waits.",
+                        color = pal.uiTextSecondary, fontSize = 11.sp,
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -499,7 +507,6 @@ private fun CoachPanel(
                 GameButton("New game", pal.uiChipOff, compact = true) { onNewGame() }
                 Spacer(modifier = Modifier.height(6.dp))
             }
-            GameButton("Home", pal.uiButtonNeutral, compact = true) { onHome() }
         }
     }
 }
