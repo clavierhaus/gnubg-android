@@ -48,7 +48,63 @@ legality, cube legality, scoring, pip counts, match progression, OR any
 analysis, description, classification, or quality judgement of a position or
 move.
 
-## THE BRIGHT LINE (no interpretation required)
+## ONE STATE, ONE WRITER, PROJECTED FROM GNUBG (added 2026-07-12, maintainer order)
+
+This is the SOLE-AUTHORITY rule applied to *state*, not just logic. The engine
+already holds the authoritative match state -- whose turn, the dice, the board,
+the cube, what is legal, what is on the bar. The UI must be a PROJECTION of that
+state, never a parallel replica the app maintains and re-synchronises by hand.
+
+The rule, in force from now on:
+
+  - **gnubg is the sole authority for match STATE, exactly as it is for match
+    LOGIC.** Every field the engine can answer -- turn, board, dice, cube
+    owner/value, canDouble, score, on-bar, game-over -- is READ from gnubg at
+    the moment of projection and never inferred, cached-and-mutated, or
+    reconstructed in Kotlin. A hand-maintained mirror of engine state is
+    reinvention of the same kind as a hand-rolled cube rule.
+
+  - **One writer.** The observable UI state (`_gameState`) has EXACTLY ONE
+    function that writes the gnubg-derived fields: the projection
+    (`readMatchState`). No other code path may write those fields -- no
+    `_gameState.value = _gameState.value.copy(...)` scattered across handlers,
+    and above all no SECOND thread writing the shadow. The clobber that froze
+    the coach board (a `Dispatchers.Default` dice-watcher overwriting a phase
+    the engine thread had just settled) is the canonical failure this forbids.
+
+  - **Transient UI state is a THIN, EXPLICIT OVERLAY, kept apart.** A few things
+    are genuinely app-side and have no engine equivalent: the coach HOLD (a
+    move committed by the player but deliberately withheld from the engine so
+    it can be studied), the displayed dice order, an uncommitted sub-move
+    snapshot for undo, a "thinking/replying" indicator. These are allowed --
+    but they must be a small, named overlay layered ON TOP of the projection,
+    not woven into it as extra phases mutated in place. If you cannot say in one
+    sentence why a piece of state has no gnubg source, it does not belong in the
+    overlay -- it belongs in the projection, read from gnubg.
+
+  - **Derived display values are computed at the projection, once.** Anything
+    the view needs that is a pure function of engine state (pip counts,
+    unplayable dice, cube display value, whether the Roll button shows) is
+    derived inside the single projection from freshly-read engine state -- not
+    recomputed independently in the view or in a handler, where it can disagree
+    with the state it was meant to describe.
+
+  - **Test before every state write and every gameplay commit:** is this write
+    the projection, or an overlay change? If it is neither -- if it is a
+    handler reaching in to patch a gnubg-derived field -- STOP. Route it through
+    the projection. If two code paths can write the same field, one of them is
+    wrong.
+
+Named from this project's record so the pattern is recognised when it recurs:
+a stale verdict left on screen because a continuation path forgot to clear it;
+a "GNU is replying" frame frozen because a status flag was derived from the
+wrong signal; a pass path that diverged from the continue path because each
+re-implemented the settle; a `watchEngineDice` write racing `readMatchState`
+across two threads. Every one was a second writer or a hand-kept mirror. This
+order ends the category: the board and panel show what gnubg IS, projected once,
+by one writer -- not what Kotlin has been trying to remember gnubg was.
+
+
 
 If you write a function that reads the board array (board[...]) and returns
 anything other than a pixel/hitbox coordinate or a value gnubg literally handed
