@@ -13,6 +13,16 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Added
+- **XG-grade cube analysis in Analyse Position.** The cube verdict now shows
+  the full winning-chance table for both sides (win / gammon / backgammon),
+  gnubg's cubeless and cubeful equities, and the three action equities
+  (No double, Double/take, Double/pass) each with its delta from gnubg's
+  optimal -- the best action marked. A Rollout button runs gnubg's own
+  cubeful, variance-reduced rollout (144 games) and reports win% and cubeful
+  equity with standard deviations. The match equity table in use is named.
+  Every value is the engine's; the app renders and subtracts, nothing more.
+
 ## [0.20.1] — 2026-07-12
 
 A cosmetic follow-up to 0.20.0. Two small user-visible changes, no engine

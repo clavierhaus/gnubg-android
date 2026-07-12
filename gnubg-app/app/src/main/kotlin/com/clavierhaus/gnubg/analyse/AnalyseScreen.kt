@@ -59,6 +59,7 @@ private data class Candidate(val text: String, val equity: Float)
 
 private class AnalyseResult(
     val board: IntArray,
+    val rawBoard: IntArray,   // engine frame, as cubeDecision/rollout take it
     val dice: Pair<Int, Int>?,
     val matchTo: Int,
     val score: Pair<Int, Int>,
@@ -111,6 +112,10 @@ fun AnalyseScreen(
     var askSwap by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<AnalyseResult?>(null) }
     var busy by remember { mutableStateOf(false) }
+    // Rollout of the analysed position: gnubg_mobile_rollout's means + std
+    // devs (7 + 7), or null when none has been run for this result.
+    var rolloutRes by remember { mutableStateOf<FloatArray?>(null) }
+    var rolloutBusy by remember { mutableStateOf(false) }
 
     suspend fun readBack(): AnalyseResult = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
@@ -149,6 +154,7 @@ fun AnalyseScreen(
 
         AnalyseResult(
             board = display,
+            rawBoard = raw,
             dice = if (d0 > 0 && d1 > 0) Pair(d0, d1) else null,
             matchTo = st[12],
             score = Pair(st[10], st[11]),
@@ -167,6 +173,7 @@ fun AnalyseScreen(
     fun applyId() {
         if (busy || idText.isBlank()) return
         busy = true
+        rolloutRes = null
         scope.launch {
             val rc = withContext(Dispatchers.Default) { Engine.setGnubgId(idText.trim()) }
 
@@ -222,11 +229,25 @@ fun AnalyseScreen(
     fun doSwap() {
         if (busy) return
         busy = true
+        rolloutRes = null
         scope.launch {
             withContext(Dispatchers.Default) { Engine.swapPlayers() }
             askSwap = false
             result = readBack()
             busy = false
+        }
+    }
+
+    fun doRollout() {
+        val r = result ?: return
+        if (busy || rolloutBusy) return
+        rolloutBusy = true
+        scope.launch {
+            val out = withContext(Dispatchers.Default) {
+                Engine.rollout(r.rawBoard, 144)
+            }
+            rolloutRes = out           // null stays null: verb reported failure
+            rolloutBusy = false
         }
     }
 
@@ -666,9 +687,12 @@ fun AnalyseScreen(
                     )
 
                     if (r.cubeText != null) {
-                        // No dice = a cube decision, and this is gnubg's verdict on
-                        // it: GetCubeRecommendation's own words, the winning chances
-                        // behind them, and the three equities it compared.
+                        // No dice = a cube decision. Every number below is
+                        // gnubg's own: aarOutput[0][] (chances + cubeless +
+                        // cubeful equity), arDouble[] (the action equities),
+                        // and the rollout verb's means and std devs. The only
+                        // arithmetic here is display subtraction of gnubg's
+                        // values, the same convention as the chequer list.
                         Text(
                             r.cubeText,
                             color = Color.White,
@@ -676,22 +700,75 @@ fun AnalyseScreen(
                             fontWeight = FontWeight.Bold
                         )
                         r.cubeWin?.let { w ->
+                            @Composable
+                            fun chanceRow(a: String, b: String, c: String, d: String, hdr: Boolean) {
+                                val col = if (hdr) pal.uiTextDisabled else pal.uiTextSecondary
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Text(a, color = col, fontSize = 13.sp, modifier = Modifier.weight(0.8f))
+                                    Text(b, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                    Text(c, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                    Text(d, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                }
+                            }
+                            chanceRow("", "Win", "Gammon", "Backgmn", hdr = true)
+                            chanceRow("Player", pct(w[0]), pct(w[1]), pct(w[2]), hdr = false)
+                            chanceRow("Opp", pct(1f - w[0]), pct(w[3]), pct(w[4]), hdr = false)
                             Text(
-                                "Win " + pct(w[0]) + "  (G " + pct(w[1]) + ", BG " + pct(w[2]) + ")",
-                                color = pal.uiTextSecondary, fontSize = 13.sp
-                            )
-                            Text(
-                                "Lose gammon " + pct(w[3]) + ", backgammon " + pct(w[4]),
+                                "Cubeless " + eq(w[5]) + "    Cubeful " + eq(w[6]),
                                 color = pal.uiTextSecondary, fontSize = 13.sp
                             )
                         }
                         r.cubeEq?.let { e ->
+                            @Composable
+                            fun actionRow(label: String, v: Float) {
+                                val d = v - e[0]   // vs gnubg's OPTIMAL
+                                val best = kotlin.math.abs(d) < 0.0005f
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        label,
+                                        color = if (best) Color.White else pal.uiTextSecondary,
+                                        fontSize = 14.sp, modifier = Modifier.weight(1.4f)
+                                    )
+                                    Text(
+                                        eq(v),
+                                        color = if (best) Color.White else pal.uiTextSecondary,
+                                        fontSize = 14.sp, modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        if (best) "best" else eq(d),
+                                        color = if (best) Color.White else pal.uiTextDisabled,
+                                        fontSize = 14.sp, modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            actionRow("No double", e[1])
+                            actionRow("Double, take", e[2])
+                            actionRow("Double, pass", e[3])
+                        }
+                        val ro = rolloutRes
+                        if (ro != null && ro.size >= 14) {
                             Text(
-                                "No double " + eq(e[1]) + "   Double/take " + eq(e[2]) +
-                                    "   Double/pass " + eq(e[3]),
+                                "Rollout, 144 games (cubeful, variance reduced)",
+                                color = pal.uiTextSecondary, fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Win " + pct(ro[0]) + " ± " + pct(ro[7]) +
+                                    "    Cubeful " + eq(ro[6]) + " ± " + String.format("%.3f", ro[13]),
                                 color = pal.uiTextSecondary, fontSize = 13.sp
                             )
+                        } else {
+                            GameButton(
+                                label = if (rolloutBusy) "Rolling out..." else "Rollout",
+                                color = pal.uiButtonNeutral,
+                                enabled = !rolloutBusy && !busy,
+                                compact = true
+                            ) { doRollout() }
                         }
+                        Text(
+                            "MET " + settings.metTable.displayName,
+                            color = pal.uiTextDisabled, fontSize = 11.sp
+                        )
                     } else if (r.noDice) {
                         Text(
                             "No dice in this position, so there is no chequer play to rank.",
@@ -731,7 +808,7 @@ fun AnalyseScreen(
                         color = pal.uiButtonNeutral,
                         enabled = !busy,
                         compact = true
-                    ) { result = null; status = null; askSwap = false }
+                    ) { result = null; status = null; askSwap = false; rolloutRes = null }
                 } else {
                     GameButton(
                         label = "Home",
