@@ -568,6 +568,7 @@ fun AnalyseScreen(
                         GameButton("Cancel", pal.uiButtonNeutral, !busy, compact = true) { editing = false }
                     }
                 } else {
+                if (result == null) {
                 Text(
                     "Paste a GNU BG ID or an XGID. gnubg decides which it is.",
                     color = pal.uiTextSecondary,
@@ -628,7 +629,10 @@ fun AnalyseScreen(
                 if (msg != null) {
                     Text(msg, color = pal.uiActionNegative, fontSize = 14.sp)
                 }
+                } // end paste controls (shown only before a result exists)
 
+                val r = result
+                if (r != null) {
                 if (askSwap) {
                     Text(
                         "This position has the player on roll at the top. Swap sides?",
@@ -640,9 +644,6 @@ fun AnalyseScreen(
                         GameButton("Leave as is", pal.uiButtonNeutral, !busy) { askSwap = false }
                     }
                 }
-
-                val r = result
-                if (r != null) {
                     // The result takes exactly the space left below the buttons.
                     // Field report: "the analysis doesn't show up" -- it rendered
                     // BELOW the pane and was clipped, because nothing scrolls and
@@ -721,14 +722,24 @@ fun AnalyseScreen(
                 } // end !editing
                 } // end weighted state region
 
-                // Pinned foot: always-present exit. compact so it never crowds
-                // the content above it on a short pane.
-                GameButton(
-                    label = "Home",
-                    color = pal.uiButtonNeutral,
-                    enabled = !busy,
-                    compact = true
-                ) { onBackToHub() }
+                // Pinned foot: always-present exit. In the result view it is
+                // Back, which drops the verdict and returns to the paste/setup
+                // entry; everywhere else it is Home, to the hub.
+                if (result != null && !editing) {
+                    GameButton(
+                        label = "Back",
+                        color = pal.uiButtonNeutral,
+                        enabled = !busy,
+                        compact = true
+                    ) { result = null; status = null; askSwap = false }
+                } else {
+                    GameButton(
+                        label = "Home",
+                        color = pal.uiButtonNeutral,
+                        enabled = !busy,
+                        compact = true
+                    ) { onBackToHub() }
+                }
             }
         }
 
