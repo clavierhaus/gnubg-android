@@ -1,6 +1,7 @@
 # CORPUS_ENTRIES_DRAFT.md — the signature-driven phrase list (Phase B)
 
-Status: DRAFT, first pass (2026-07-12). Maintainer-owned; assistant proposes.
+Status: first pass APPROVED as written (maintainer, 2026-07-12) -- the 12
+entries stand unchanged. Next: the §9.4 pilot measures each signature.
 Governed by CORPUS_HARVEST_PLAN.md. 12 entries — enough to prove the workflow
 (plan §9.2) before scaling to 40–80.
 
