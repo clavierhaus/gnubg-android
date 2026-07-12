@@ -99,3 +99,7 @@ exist.
 M1 scaffold: `AppMode.COACH`, the "Train with the Coach" hub entry, the
 contained single-game CoachScreen; then the glance line over `coachVerdict`,
 the visual WHY, and the try-again sandbox. See the plan for the full sequence.
+
+
+Companion / natural-language layer: docs/COMPANION.md (analysis of
+yairwein/backgammon-teacher and the local-LLM plan, phases A/B/C).
