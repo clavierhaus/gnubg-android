@@ -3,14 +3,25 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_FORWARD_ANCHOR",
-   "side": "me",
-   "direction": "up"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "up",
+    "min_abs": 0.3,
+    "weight": 1.0,
+    "played_in": [
+     0.01,
+     0.4
+    ],
+    "best_in": [
+     0.5,
+     1.0
+    ]
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "a19f1",

@@ -3,19 +3,25 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_BACKESCAPES",
-   "side": "me",
-   "direction": "down"
-  },
-  {
-   "term": "I_CONTAIN",
-   "side": "me",
-   "direction": "up"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_BACKESCAPES",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.05,
+    "weight": 1.0
+   },
+   {
+    "term": "I_CONTAIN",
+    "side": "me",
+    "direction": "up",
+    "min_abs": 0.05,
+    "max_abs": 0.3,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "s3d1front",
@@ -705,83 +711,6 @@
    },
    "pips_played": [
     153,
-    150
-   ],
-   "class_played": 10,
-   "class_best": 10
-  },
-  {
-   "id": "s4d3mid",
-   "params": {
-    "span": [
-     4,
-     8
-    ],
-    "trap": 3,
-    "break": "mid"
-   },
-   "played": [
-    0,
-    0,
-    0,
-    -2,
-    2,
-    2,
-    0,
-    2,
-    2,
-    0,
-    0,
-    2,
-    -5,
-    3,
-    0,
-    0,
-    0,
-    0,
-    0,
-    -3,
-    -3,
-    -2,
-    0,
-    0,
-    2,
-    0
-   ],
-   "best": [
-    0,
-    0,
-    0,
-    -2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    0,
-    0,
-    0,
-    -5,
-    3,
-    0,
-    0,
-    0,
-    0,
-    0,
-    -3,
-    -3,
-    -2,
-    0,
-    0,
-    2,
-    0
-   ],
-   "deltas": {
-    "me.I_BACKESCAPES": -0.027778,
-    "me.I_CONTAIN": 0.194444
-   },
-   "pips_played": [
-    157,
     150
    ],
    "class_played": 10,

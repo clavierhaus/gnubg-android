@@ -18,6 +18,9 @@ import sys
 import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from signatures import SIGNATURES  # schema v2: single source of truth
+
 REPO = Path(__file__).resolve().parents[2]
 HARNESS = REPO / "tools/pilot/inputs_harness"
 OUTDIR = REPO / "tools/harvest/positions"
@@ -62,18 +65,34 @@ def run_harness(vec):
     return r
 
 
+def term_value(r, t):
+    if t["term"] == "PipCount.opp":
+        return float(r["pips"][1])
+    return r[t["side"]][t["term"]]
+
+
 def verify(sig, played, best):
-    """sig: list of (term, side, direction). Extra callable checks allowed."""
+    """Schema v2: per-term min/max gates, value ranges, class constraints."""
+    if "class_played" in sig and played["class"] != sig["class_played"]:
+        return None
+    if "class_best" in sig and best["class"] != sig["class_best"]:
+        return None
     deltas = {}
-    for term, side, direction in sig:
-        if term == "PipCount.opp":
-            d = best["pips"][1] - played["pips"][1]
-        else:
-            d = best[side][term] - played[side][term]
-        deltas[f"{side}.{term}"] = round(d, 6)
-        if direction == "up" and d < MIN_DELTA:
+    for t in sig["terms"]:
+        vp, vb = term_value(played, t), term_value(best, t)
+        d = vb - vp
+        deltas[f"{t['side']}.{t['term']}" if t["side"] else t["term"]] = round(d, 6)
+        if t["direction"] == "any":
+            pass                          # context term: range/max gates only
+        elif t["direction"] == "up" and d < t["min_abs"]:
             return None
-        if direction == "down" and d > -MIN_DELTA:
+        if t["direction"] == "down" and d > -t["min_abs"]:
+            return None
+        if "max_abs" in t and abs(d) > t["max_abs"]:
+            return None
+        if "played_in" in t and not (t["played_in"][0] <= vp <= t["played_in"][1]):
+            return None
+        if "best_in" in t and not (t["best_in"][0] <= vb <= t["best_in"][1]):
             return None
     return deltas
 
@@ -212,38 +231,17 @@ def hit_pairs():
         yield f"h{hp}s{src}", played, best, {"hit_point": hp, "from": src}
 
 
-ENTRIES = {
-    "prime.break.5": (lambda: prime_pairs(False),
-                      [("I_BACKESCAPES", "me", "down"), ("I_CONTAIN", "me", "up")]),
-    "prime.contain.lost": (lambda: prime_pairs(True),
-                           [("I_CONTAIN", "me", "up"), ("I_BACKESCAPES", "me", "down")]),
-    "board.close.entry": (close_entry_pairs,
-                          [("I_ENTER2", "opp", "up")]),
-    "blot.shot.given": (blot_shot_pairs,
-                        [("I_P1", "opp", "down"), ("I_PIPLOSS", "opp", "down")]),
-    "blot.double.given": (blot_double_pairs,
-                          [("I_P2", "opp", "down")]),
-    "anchor.surrender.back": (anchor_surrender_pairs,
-                              [("I_FORWARD_ANCHOR", "me", "down"),
-                               ("I_BACKBONE", "me", "up"), ("I_P1", "opp", "down")]),
-    "anchor.advance.golden": (anchor_golden_pairs,
-                              [("I_FORWARD_ANCHOR", "me", "up")]),
-    "race.break.ahead": (race_break_pairs,
-                         [("I_BREAK_CONTACT", "me", "down")]),
-    "race.escape.window": (race_escape_pairs,
-                           [("I_BACK_CHEQUER", "me", "down"),
-                            ("I_BACKESCAPES", "opp", "up")]),
-    "hit.declined": (hit_pairs,
-                     [("I_BACK_CHEQUER", "opp", "up"), ("PipCount.opp", "", "up")]),
-}
-
-EXTRA = {
-    # entry-specific structural checks beyond term deltas
-    "race.break.ahead": lambda pl, be: pl["pips"][0] < pl["pips"][1]
-                        and pl["class"] == CLASS_CONTACT and be["class"] == CLASS_RACE,
-    "anchor.surrender.back": lambda pl, be: pl["me"]["I_FORWARD_ANCHOR"] > 1.0
-                        and 0 < be["me"]["I_FORWARD_ANCHOR"] <= 1.0,
-    "anchor.advance.golden": lambda pl, be: 0 < be["me"]["I_FORWARD_ANCHOR"] <= 1.0,
+GENERATORS = {
+    "prime.break.5": lambda: prime_pairs(False),
+    "prime.contain.lost": lambda: prime_pairs(True),
+    "board.close.entry": close_entry_pairs,
+    "blot.shot.given": blot_shot_pairs,
+    "blot.double.given": blot_double_pairs,
+    "anchor.surrender.back": anchor_surrender_pairs,
+    "anchor.advance.golden": anchor_golden_pairs,
+    "race.break.ahead": race_break_pairs,
+    "race.escape.window": race_escape_pairs,
+    "hit.declined": hit_pairs,
 }
 
 
@@ -253,7 +251,8 @@ def main():
     OUTDIR.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
     grand = 0
-    for entry, (gen, sig) in ENTRIES.items():
+    for entry, gen in GENERATORS.items():
+        sig = SIGNATURES[entry]
         kept, tried = [], 0
         for pid, played_v, best_v, params in gen():
             tried += 1
@@ -262,8 +261,6 @@ def main():
             pl, be = run_harness(played_v), run_harness(best_v)
             if pl is None or be is None:
                 continue                              # harness rejected/aborted
-            if entry in EXTRA and not EXTRA[entry](pl, be):
-                continue
             deltas = verify(sig, pl, be)
             if deltas is None:
                 continue
@@ -274,9 +271,7 @@ def main():
                          "class_best": be["class"]})
         doc = {"entry": entry, "provenance": "parametric", "generated": today,
                "verifier": "tools/pilot/inputs_harness",
-               "signature": [{"term": t, "side": sd, "direction": d}
-                             for t, sd, d in sig],
-               "min_abs_delta": MIN_DELTA,
+               "signature": sig,
                "pairs": kept}
         (OUTDIR / f"{entry}.json").write_text(json.dumps(doc, indent=1) + "\n")
         grand += len(kept)

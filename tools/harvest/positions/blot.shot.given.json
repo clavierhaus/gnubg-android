@@ -3,19 +3,31 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_P1",
-   "side": "opp",
-   "direction": "down"
-  },
-  {
-   "term": "I_PIPLOSS",
-   "side": "opp",
-   "direction": "down"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "any",
+    "max_abs": 0.29,
+    "weight": 0.0
+   },
+   {
+    "term": "I_P1",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.1,
+    "weight": 1.0
+   },
+   {
+    "term": "I_PIPLOSS",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.05,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "b9d5",
@@ -80,6 +92,7 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.361111,
     "opp.I_PIPLOSS": -0.481481
    },
@@ -153,6 +166,7 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.416667,
     "opp.I_PIPLOSS": -0.555556
    },
@@ -226,6 +240,7 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.361111,
     "opp.I_PIPLOSS": -0.451389
    },
@@ -299,6 +314,7 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.388889,
     "opp.I_PIPLOSS": -0.486111
    },
@@ -372,6 +388,7 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.388889,
     "opp.I_PIPLOSS": -0.453704
    },

@@ -3,14 +3,38 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_P2",
-   "side": "opp",
-   "direction": "down"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "any",
+    "max_abs": 0.29,
+    "weight": 0.0
+   },
+   {
+    "term": "I_P2",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.05,
+    "weight": 2.0
+   },
+   {
+    "term": "I_P1",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.05,
+    "weight": 1.0
+   },
+   {
+    "term": "I_PIPLOSS",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.05,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "s3b9-10",
@@ -78,7 +102,10 @@
     0
    ],
    "deltas": {
-    "opp.I_P2": -0.055556
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_P2": -0.055556,
+    "opp.I_P1": -0.472222,
+    "opp.I_PIPLOSS": -0.625
    },
    "pips_played": [
     165,
@@ -153,7 +180,10 @@
     0
    ],
    "deltas": {
-    "opp.I_P2": -0.055556
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_P2": -0.055556,
+    "opp.I_P1": -0.444444,
+    "opp.I_PIPLOSS": -0.587963
    },
    "pips_played": [
     166,
@@ -228,7 +258,10 @@
     0
    ],
    "deltas": {
-    "opp.I_P2": -0.111111
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_P2": -0.111111,
+    "opp.I_P1": -0.638889,
+    "opp.I_PIPLOSS": -0.828704
    },
    "pips_played": [
     165,
@@ -303,7 +336,10 @@
     0
    ],
    "deltas": {
-    "opp.I_P2": -0.055556
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_P2": -0.055556,
+    "opp.I_P1": -0.472222,
+    "opp.I_PIPLOSS": -0.611111
    },
    "pips_played": [
     166,
@@ -378,7 +414,10 @@
     0
    ],
    "deltas": {
-    "opp.I_P2": -0.055556
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_P2": -0.055556,
+    "opp.I_P1": -0.5,
+    "opp.I_PIPLOSS": -0.615741
    },
    "pips_played": [
     167,

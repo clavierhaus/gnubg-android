@@ -3,19 +3,24 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_CONTAIN",
-   "side": "me",
-   "direction": "up"
-  },
-  {
-   "term": "I_BACKESCAPES",
-   "side": "me",
-   "direction": "down"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_CONTAIN",
+    "side": "me",
+    "direction": "up",
+    "min_abs": 0.35,
+    "weight": 1.5
+   },
+   {
+    "term": "I_BACKESCAPES",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.2,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "s3d1",

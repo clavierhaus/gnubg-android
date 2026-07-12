@@ -267,3 +267,18 @@ vocabulary is now documented in docs/INPUT_DICTIONARY.md -- comment vs
 formula vs measurement, with verdicts on the enum comments (two are wrong,
 several misleading). Next phase per the plan: C.1 parametric position
 corpus construction against the measured signatures.
+
+---
+
+## Matcher validation (2026-07-12)
+
+The Phase G scoring contract, prototyped offline (matcher_proto.py) against
+all 63 verified C.1 pairs x all ten signatures: **63/63 top-1 correct, no
+foreign wins, no silent pairs.** Schema v2 (signatures.py) is the product:
+v1's confusion matrix showed magnitude bullies, sibling ties, and
+specific-loses-to-general -- fixed by per-term gates and weights,
+value-range gates on zone-encoded inputs, class constraints, and
+zero-weight context/veto terms. Remaining co-fires are physically true and
+occupy the second slot by design. The signatures in this file are therefore
+not only measured but DISCRIMINATING -- ready for Phase D harvest and the
+Kotlin matcher port.

@@ -3,24 +3,39 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_FORWARD_ANCHOR",
-   "side": "me",
-   "direction": "down"
-  },
-  {
-   "term": "I_BACKBONE",
-   "side": "me",
-   "direction": "up"
-  },
-  {
-   "term": "I_P1",
-   "side": "opp",
-   "direction": "down"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.3,
+    "weight": 1.0,
+    "played_in": [
+     1.01,
+     2.0
+    ],
+    "best_in": [
+     0.01,
+     1.0
+    ]
+   },
+   {
+    "term": "I_BACKBONE",
+    "side": "me",
+    "direction": "up",
+    "min_abs": 0.2,
+    "weight": 1.0
+   },
+   {
+    "term": "I_P1",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.1,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "a20",

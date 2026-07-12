@@ -3,19 +3,31 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_BACK_CHEQUER",
-   "side": "opp",
-   "direction": "up"
-  },
-  {
-   "term": "PipCount.opp",
-   "side": "",
-   "direction": "up"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "terms": [
+   {
+    "term": "I_BACK_CHEQUER",
+    "side": "opp",
+    "direction": "up",
+    "min_abs": 0.3,
+    "weight": 1.5
+   },
+   {
+    "term": "PipCount.opp",
+    "side": "",
+    "direction": "up",
+    "min_abs": 4.0,
+    "weight": 1.5
+   },
+   {
+    "term": "I_ENTER",
+    "side": "opp",
+    "direction": "up",
+    "min_abs": 0.02,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "h9s13",
@@ -81,7 +93,8 @@
    ],
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.375,
-    ".PipCount.opp": 9
+    "PipCount.opp": 9.0,
+    "opp.I_ENTER": 0.22449
    },
    "pips_played": [
     167,
@@ -154,7 +167,8 @@
    ],
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.416667,
-    ".PipCount.opp": 10
+    "PipCount.opp": 10.0,
+    "opp.I_ENTER": 0.22449
    },
    "pips_played": [
     167,
@@ -227,7 +241,8 @@
    ],
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.458333,
-    ".PipCount.opp": 11
+    "PipCount.opp": 11.0,
+    "opp.I_ENTER": 0.22449
    },
    "pips_played": [
     167,
@@ -300,7 +315,8 @@
    ],
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.708333,
-    ".PipCount.opp": 18
+    "PipCount.opp": 18.0,
+    "opp.I_ENTER": 0.22449
    },
    "pips_played": [
     167,
@@ -373,7 +389,8 @@
    ],
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.708333,
-    ".PipCount.opp": 20
+    "PipCount.opp": 20.0,
+    "opp.I_ENTER": 0.22449
    },
    "pips_played": [
     167,

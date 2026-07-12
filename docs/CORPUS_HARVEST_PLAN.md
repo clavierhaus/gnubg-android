@@ -214,6 +214,24 @@ Sequenced, each stage a separable commit:
      without touching code.
 
   G. Matcher. `gnubg-app/.../coach/InsightMatcher.kt`.
+     PROTOTYPE VALIDATED 2026-07-12 (tools/harvest/matcher_proto.py): the
+     scoring contract was run against every Phase C.1 pair with every
+     entry's signature -- a full confusion matrix. Schema v2 emerged from
+     the failures of v1 (single wide-range terms dominating on magnitude;
+     sibling entries tying; specific entries losing to general ones) and is
+     now the law, in tools/harvest/signatures.py: per-term min_abs/max_abs
+     delta gates, per-term weights, VALUE-RANGE gates for zone-encoded
+     inputs (I_FORWARD_ANCHOR), positionclass constraints, and zero-weight
+     CONTEXT/VETO terms that bind an entry to its situation (escape means
+     leaving the anchor zone; blot entries do not fire on anchor events;
+     close-entry requires the opponent on the bar). Scoring: all gates or
+     nothing; passing terms contribute weight x min(|delta|/(3*min_abs), 1)
+     -- capped and min-normalised. Result: 63/63 top-1 correct, zero
+     foreign wins, zero silent pairs; the only co-fires are physically
+     true (double blot IS shots given; an inner point IS containment) and
+     land in the second slot, which the up-to-two contract exists for.
+     The Kotlin port implements exactly this scoring; the JSON schema of
+     §5 gains max_abs, played_in/best_in, class gates, and "any" terms.
      At coach verdict:
        * request Phase A features for both played and best boards;
        * compute delta per named input;

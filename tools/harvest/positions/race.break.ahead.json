@@ -3,14 +3,19 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_BREAK_CONTACT",
-   "side": "me",
-   "direction": "down"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "class_played": 10,
+  "class_best": 8,
+  "terms": [
+   {
+    "term": "I_BREAK_CONTACT",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.1,
+    "weight": 1.0
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "r22t10",

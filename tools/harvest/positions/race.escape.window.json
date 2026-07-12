@@ -3,19 +3,42 @@
  "provenance": "parametric",
  "generated": "2026-07-12",
  "verifier": "tools/pilot/inputs_harness",
- "signature": [
-  {
-   "term": "I_BACK_CHEQUER",
-   "side": "me",
-   "direction": "down"
-  },
-  {
-   "term": "I_BACKESCAPES",
-   "side": "opp",
-   "direction": "up"
-  }
- ],
- "min_abs_delta": 0.02,
+ "signature": {
+  "class_best": 10,
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "any",
+    "best_in": [
+     1.01,
+     2.0
+    ],
+    "weight": 0.0
+   },
+   {
+    "term": "I_BACK_CHEQUER",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.1,
+    "weight": 1.0
+   },
+   {
+    "term": "I_BACKESCAPES",
+    "side": "opp",
+    "direction": "up",
+    "min_abs": 0.1,
+    "weight": 1.0
+   },
+   {
+    "term": "I_BREAK_CONTACT",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.02,
+    "weight": 0.5
+   }
+  ]
+ },
  "pairs": [
   {
    "id": "r23e14",
@@ -80,8 +103,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 1.5,
     "me.I_BACK_CHEQUER": -0.375,
-    "opp.I_BACKESCAPES": 0.638888
+    "opp.I_BACKESCAPES": 0.638888,
+    "me.I_BREAK_CONTACT": -0.107785
    },
    "pips_played": [
     112,
@@ -153,8 +178,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 1.166667,
     "me.I_BACK_CHEQUER": -0.291667,
-    "opp.I_BACKESCAPES": 0.583333
+    "opp.I_BACKESCAPES": 0.583333,
+    "me.I_BREAK_CONTACT": -0.083833
    },
    "pips_played": [
     112,
@@ -226,8 +253,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 0.833334,
     "me.I_BACK_CHEQUER": -0.208334,
-    "opp.I_BACKESCAPES": 0.444444
+    "opp.I_BACKESCAPES": 0.444444,
+    "me.I_BREAK_CONTACT": -0.059881
    },
    "pips_played": [
     112,
@@ -299,8 +328,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 1.666666,
     "me.I_BACK_CHEQUER": -0.416666,
-    "opp.I_BACKESCAPES": 0.583333
+    "opp.I_BACKESCAPES": 0.583333,
+    "me.I_BREAK_CONTACT": -0.119761
    },
    "pips_played": [
     114,
@@ -372,8 +403,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 1.333333,
     "me.I_BACK_CHEQUER": -0.333333,
-    "opp.I_BACKESCAPES": 0.527778
+    "opp.I_BACKESCAPES": 0.527778,
+    "me.I_BREAK_CONTACT": -0.095809
    },
    "pips_played": [
     114,
@@ -445,8 +478,10 @@
     0
    ],
    "deltas": {
+    "me.I_FORWARD_ANCHOR": 1.0,
     "me.I_BACK_CHEQUER": -0.25,
-    "opp.I_BACKESCAPES": 0.388889
+    "opp.I_BACKESCAPES": 0.388889,
+    "me.I_BREAK_CONTACT": -0.071857
    },
    "pips_played": [
     114,
