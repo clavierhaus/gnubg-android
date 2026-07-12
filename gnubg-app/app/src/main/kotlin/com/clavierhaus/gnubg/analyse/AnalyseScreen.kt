@@ -698,12 +698,20 @@ fun AnalyseScreen(
                         // pane does not scroll (the game view law), so the
                         // block is made to fit -- its tail was clipping on
                         // 20:9 at the parent's 6dp pitch.
-                        Text(
-                            r.cubeText,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row {
+                            Text(
+                                "gnubg's verdict:  ",
+                                color = pal.uiTextSecondary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                r.cubeText,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Column(
                             verticalArrangement = Arrangement.spacedBy(2.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -827,12 +835,17 @@ fun AnalyseScreen(
                 // Back, which drops the verdict and returns to the paste/setup
                 // entry; everywhere else it is Home, to the hub.
                 if (result != null && !editing) {
-                    GameButton(
-                        label = "Back",
-                        color = pal.uiButtonNeutral,
-                        enabled = !busy,
-                        compact = true
-                    ) { result = null; status = null; askSwap = false; rolloutRes = null }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        GameButton(
+                            label = "Back",
+                            color = pal.uiButtonNeutral,
+                            enabled = !busy,
+                            compact = true
+                        ) { result = null; status = null; askSwap = false; rolloutRes = null }
+                    }
                 } else {
                     GameButton(
                         label = "Home",
@@ -878,7 +891,6 @@ fun AnalyseScreen(
 /* Every field here is gnubg's, read back after the ID was installed. */
 @Composable
 private fun MatchContext(r: AnalyseResult) {
-    val pal = LocalBoardPalette.current
     val owner = when (r.cubeOwner) {
         -1 -> "Centred"
         0 -> "Player"
@@ -891,13 +903,10 @@ private fun MatchContext(r: AnalyseResult) {
         if (r.crawford) append(", Crawford")
     }
     val line2 = "Cube " + r.cube + " (" + owner + ") and " + roller + " rolls"
+    // No section header: the two lines are self-explanatory, and on 20:9 the
+    // header's row is exactly the height the rollout row needs (nothing
+    // scrolls -- what does not fit is made to fit).
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            "Match context",
-            color = pal.uiTextSecondary,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
         Text(line1, color = Color.White, fontSize = 14.sp)
         Text(line2, color = Color.White, fontSize = 14.sp)
         val d = r.dice
