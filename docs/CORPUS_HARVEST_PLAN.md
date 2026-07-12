@@ -304,6 +304,15 @@ Notes:
   - "weight" is contribution to the entry's match score.
   - Multiple terms let one signature say "prime broken AND back checker
     exposed" as one phrase, not two.
+  - SCHEMA v2 AMENDMENT (2026-07-12, validated by the matcher prototype):
+    signature terms additionally carry optional "max_abs" (upper delta
+    gate), "played_in"/"best_in" ([lo,hi] VALUE-range gates on the raw
+    input, required for zone-encoded inputs like I_FORWARD_ANCHOR), and
+    direction "any" for zero-weight context/veto terms; entries may carry
+    "class_played"/"class_best" positionclass constraints. Scoring: all
+    gates or nothing; passing weighted terms contribute
+    weight x min(|delta| / (3 x min_abs_delta), 1). The authoritative
+    machine-readable form is tools/harvest/signatures.py.
 
 ## 6. Attribution mechanics (per commit)
 

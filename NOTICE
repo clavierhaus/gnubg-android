@@ -61,3 +61,15 @@ Upstream GNU Backgammon
 
 GNU Backgammon home page:  https://www.gnu.org/software/gnubg/
 Upstream source:           https://ftp.gnu.org/gnu/gnubg/
+
+--------------------------------------------------------------------------
+Insight-corpus tooling acknowledgement (offline tools only; not in the APK)
+
+Portions of the offline harvest tooling under tools/harvest/ adapt material
+from yairwein/backgammon-teacher (https://github.com/yairwein/backgammon-
+teacher), Copyright (c) 2024-2026 Yair Weinberger, MIT License. Adopted
+with credit: the race/board/threat presentation taxonomy, the notable-delta
+threshold shape, and the prompt scaffolding of src/lib/llm/prompt.ts,
+including the rule "Only reference facts provided in the data. Never invent
+strategic facts." The full MIT notice is carried verbatim at the top of
+tools/harvest/prompt_template.py. Nothing MIT-origin ships in the APK.
