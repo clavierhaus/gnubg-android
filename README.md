@@ -1,66 +1,45 @@
 # GNU Backgammon for Android
 
-A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/) — the free, world-class backgammon engine. This is not a re-implementation or a stripped-down evaluator: the actual gnubg engine runs underneath a modern touch interface, so the strength you play against, the cube decisions, the match handling, and the analysis you learn from are gnubg's own — verifiable against the upstream source in this repository.
+A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/) — the free, world-class backgammon engine. Not a re-implementation and not a stripped-down evaluator: the real gnubg engine runs under a modern touch interface, so the strength you play, the cube decisions, and the analysis you learn from are gnubg's own — checkable against the upstream source in this repository. All offline, all free, all open source.
 
-The aim is **the** comprehensive backgammon companion for Android: an app a serious player keeps on their phone because the opponent is world-class, the board is clean and precise on every screen, positions can be set up and analysed on the spot, and matches can be reviewed move by move — all offline, all free, all open source.
+<p align="center">
+  <img src="docs/screenshots/hub.png"     width="49%" alt="Home hub: Play, Train, Analyse, Review">
+  <img src="docs/screenshots/coach.png"   width="49%" alt="Train with the Coach: gnubg's per-move verdict">
+</p>
+<p align="center">
+  <img src="docs/screenshots/analyse.png" width="49%" alt="Analyse: build or paste any position">
+  <img src="docs/screenshots/play.png"    width="49%" alt="Live play on the touch board">
+</p>
 
-> **Status: 0.11.0** — the first full release, successor to the 0.9.1 preview. The core game is stable and the three companion features below (position setup and analysis, match save, match review) are built and working. Online play and deeper analysis reporting are the active frontier — see [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
+> **Status: 0.20.1.** Four modes — **Play, Train, Analyse, Review** — are built and working, and the core is stable. The active frontier is deeper analysis reporting and online play. See the [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What it does
 
-### Play
+**Play** — Full matches against the gnubg engine, at any match length, across seven strength levels from Beginner up to Grandmaster (3-ply). Every move, cube decision, and resignation is gnubg's own; there are no app-side heuristics. The full doubling cube (offer, take, drop, redouble, resign), tournament rules (Crawford, Jacoby, automatic doubles, beavers, cube on/off), and a choice of match equity table — Kazaross-XG2, Woolsey, Jacobs & Trice, Snowie, and the other canonical gnubg tables. A live tutor shows gnubg's own equity as you play. (At 3-ply a move takes a few seconds: the honest cost of a strong pruned, NEON-vectorised search — see [`docs/THREADING.md`](docs/THREADING.md).)
 
-- **Full matches against the gnubg engine.** Match play to any length, seven strength levels from Beginner up to Grandmaster (3-ply). Every move is gnubg's own decision — no app-side heuristics. At the top levels a move takes a few seconds (about 7-9s at 3-ply): the honest cost of a strong pruned, NEON-vectorised search, shared by any app at this strength on the same phone. See [`docs/THREADING.md`](docs/THREADING.md).
-- **The doubling cube, in full.** Offer, take, drop, redouble, and resign, all decided by gnubg. When the engine is losing it resigns; when it is winning it doubles, and it is gnubg that judges your take.
-- **Tournament rules.** Crawford, Jacoby, automatic doubles, beavers, and cube on/off, plus a choice of **match equity table** (Kazaross-XG2, Woolsey, Jacobs & Trice, Snowie, and the other canonical gnubg tables) for match-play cube decisions.
-- **Live tutor.** See gnubg's own equity evaluation of your positions as you play — the same numbers the desktop tutor produces.
+**Train with the Coach** — Play gnubg with the engine judging each move. Every move gets one of three honest verdicts — best, fine-but-not-best (with what beat it), or flagged (with gnubg's severity and the equity it cost) — and a two-tap before/after explorer steps you through your move and gnubg's better ones on the board. In matches longer than a point the cube comes into play, and the Coach judges the doubles you offer, take, and drop. Every value on screen is gnubg's own; the app only renders it.
 
-### The three things a companion app is for
+**Analyse a position** — Build any position on the board (tap points and the bar to place checkers, tap the tray to clear) or paste a GNU BG ID or XGID from a forum, book, or another app. With dice set, gnubg ranks the chequer plays; with **no dice**, gnubg gives the cube decision — double / take / drop and the equities behind it, exactly as its desktop edit mode does. The GNU BG ID is shown and can be copied out. This is the feature most people open XG Mobile for — here it is free and runs on current Android.
 
-These are the features players reach for other apps to get. Each runs entirely on gnubg's own engine, and each is built and working:
+**Review a match** — Save a whole match to standard `.sgf` at any point through the Android file picker, then step through it game by game and move by move on gnubg's own board. At every move: what was played, what gnubg preferred, the equity cost, and gnubg's verdict (doubtful / bad / very bad). Navigation is gnubg's own game-record walk, not a re-derivation. Saved files open in desktop gnubg and Backgammon Studio.
 
-- **Set up any position and analyse it.** Open the position editor, tap points and the bar to place checkers, tap the bear-off tray to clear the board, then set the dice, cube, score, match length, and who is on roll. With dice set you get gnubg's ranked chequer plays; with **no dice** you get gnubg's cube decision — double / take / drop with the equities behind it, exactly as gnubg's desktop edit mode treats a no-dice position. The encoded GNU BG ID is shown and can be copied out. This is what most people open XG Mobile for; here it is free, and it works on current Android.
-- **Paste a position from anywhere.** Have a GNU BG ID or an XGID from a forum, a book, or another app? Paste it and gnubg installs and evaluates it — the same engine path a hand-built position takes.
-- **Save the match as a file.** Write the whole match to a standard `.sgf` at any point, through the Android file picker — to review later on a bigger screen, to catalogue, or to open in desktop gnubg.
-- **Review a match move by move — with gnubg's verdict.** Open a saved `.sgf` and step through it, game by game and move by move, on gnubg's own board. At every move: what was played, what gnubg preferred, the equity cost, and gnubg's own judgement (doubtful / bad / very bad). Navigation is gnubg's own game-record walk, not a re-derivation.
+### One board, every device
 
-### Interface
-
-- **One board, every device.** The board is drawn from a single geometry computed once from the screen size, so a tap lands exactly where the eye says it will — verified across aspect ratios from tablet (16:10) to tall phone (20:9), which sit on opposite sides of the point where the scaling flips sign. Nothing scrolls; what does not fit is made to fit.
-- **Consistent navigation.** A settings gear sits top-left on every screen. "Home" always returns to the hub; "New match" always restarts with the same parameters. One word for each action, everywhere.
-- **Themed throughout.** Three hand-tuned themes (Ocean, Classic, Forest) plus a System option that follows Material You dynamic colour. The whole interface themes together, and the hub carries the app's own serif identity.
-- **Your settings stick.** Preferences persist across restarts.
-
-Built for Android 12+ (minSdk 31), landscape, with a native touch board (tap or drag to move).
+The board is drawn from a single geometry computed once from the screen size, so a tap lands exactly where the eye says it will — verified from tablet (16:10) to tall phone (20:9), which sit on opposite sides of the point where the scaling flips sign. Nothing scrolls; what does not fit is made to fit. Three hand-tuned themes (Ocean, Classic, Forest) plus a System option that follows Material You, and the whole interface themes together. Settings persist across restarts. Built for Android 12+ (minSdk 31), landscape, tap or drag to move.
 
 ## Design principle: gnubg is the authority
 
-The single rule this project is built around: **GNU Backgammon is the sole authority for all game logic and analysis.** The Android layer draws the board, translates taps into gnubg commands, and presents gnubg's output. It does not invent, re-rank, or second-guess a single backgammon decision — not a move ranking, not a cube verdict, not a legal-move list, not a resignation. A position you build in the editor is encoded by gnubg's own encoders and installed through the same validated path a pasted ID takes; a cube verdict is gnubg's own `GetCubeRecommendation`, not a Kotlin mapping of it.
-
-Where the port must diverge from upstream for the mobile context, every divergence is recorded in [`PROVENANCE.md`](PROVENANCE.md).
-
-This is what makes the app trustworthy: the strength you play against and the analysis you learn from are gnubg's, checkable against the upstream source shipped in this repository.
+**GNU Backgammon is the sole authority for all game logic and analysis.** The Android layer draws the board, turns taps into gnubg commands, and presents gnubg's output — it does not invent, re-rank, or second-guess a single decision. A position built in the editor is encoded by gnubg's own encoders and installed through the same validated path a pasted ID takes; a cube verdict is gnubg's own `GetCubeRecommendation`, not a Kotlin mapping of it. Every divergence the mobile context forces is recorded in [`PROVENANCE.md`](PROVENANCE.md). This is what makes the app trustworthy: the strength you face and the analysis you learn from are gnubg's, checkable against the upstream source shipped here.
 
 ## Building
 
-Requirements:
-
-- Android SDK with the NDK installed (the native engine is compiled with CMake via the NDK)
-- JDK 17
-- A device or emulator running Android 12+ (arm64-v8a)
-
-A standard debug build compiles the engine and the app together:
+Requirements: the Android SDK with the NDK installed (the native engine is compiled with CMake via the NDK), JDK 17, and a device or emulator running Android 12+ (arm64-v8a). A standard debug build compiles the engine and the app together:
 
     cd gnubg-app
     ./gradlew assembleDebug
     adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-The native engine (`engine-core/` + `jni-bridge/`) is built as part of the Gradle build through CMake — there is no separate engine compilation step. The repository builds from a clean clone with no submodule initialisation: every source the native build needs is tracked here.
-
-After installing, a clean restart is:
-
-    adb shell am force-stop com.clavierhaus.gnubg
-    adb shell am start -n com.clavierhaus.gnubg/.MainActivity
+The native engine (`engine-core/` + `jni-bridge/`) builds as part of the Gradle build through CMake — there is no separate engine step and no submodules to initialise. Every source the native build needs is tracked here, so the project builds from a clean clone.
 
 ## Repository layout
 
@@ -72,52 +51,36 @@ After installing, a clean restart is:
 
 ## Documentation
 
-- [`docs/STATUS.md`](docs/STATUS.md) — authoritative current-state document
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture and design philosophy
-- [`docs/ARCHITECTURE_FOR_CONTRIBUTORS.md`](docs/ARCHITECTURE_FOR_CONTRIBUTORS.md) — the four-layer stack, real data-flow, and how to add a feature
-- [`docs/ARCHITECTURE_ANALYSE_MODE.md`](docs/ARCHITECTURE_ANALYSE_MODE.md) — design and outcome of position entry, match save, and review
-- [`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md) — the traps this port hit, each verified against the engine source
-- [`docs/THREADING.md`](docs/THREADING.md) — why the app is single-threaded, and the conditions under which that changes
-- [`docs/COACH.md`](docs/COACH.md) — the fourth mode, "Train with the Coach": identity, decisions, and document map
-- [`docs/TUTOR_VISION.md`](docs/TUTOR_VISION.md) — the coaching north star
-- [`docs/COACH_MODE_PLAN.md`](docs/COACH_MODE_PLAN.md) — the Coach milestones
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — forward plans
-- [`CHANGELOG.md`](CHANGELOG.md) — what changed in each release
-- [`RELEASING.md`](RELEASING.md) — how a release is cut
+Start with [`docs/STATUS.md`](docs/STATUS.md), the authoritative current-state document. To contribute, [`docs/ARCHITECTURE_FOR_CONTRIBUTORS.md`](docs/ARCHITECTURE_FOR_CONTRIBUTORS.md) traces exactly how a tap becomes a gnubg command and back. [`CHANGELOG.md`](CHANGELOG.md) records each release and [`docs/ROADMAP.md`](docs/ROADMAP.md) the forward plan; deeper references — architecture, threading, the traps this port hit, and the coach design — live under [`docs/`](docs/).
 
 ## Roadmap
 
-The three companion features are built; the core is solid. The frontier now:
+The four modes are built and the core is solid. The frontier now:
 
-- **"Train with the Coach"** — the fourth mode, in progress: play gnubg with the engine looking over your shoulder, gnubg's verdict rendered on the board itself, grounded explanation with no app-side backgammon judgement. Engine groundwork done; see [`docs/COACH.md`](docs/COACH.md).
-- **Analysis reporting** — the per-move verdict inside review is done (gnubg's ranking against the move actually played, shown at every step); still to come: a jump-to-blunder move list and a Performance Rating for a whole match.
+- **Analysis reporting** — the per-move verdict inside review is done; still to come are a jump-to-blunder move list and a whole-match performance rating. See [`docs/ROADMAP_ANALYSIS_PARITY.md`](docs/ROADMAP_ANALYSIS_PARITY.md).
 - **Review while playing** — stepping back through the live game record in place, not only from a saved file.
 - **Online play** — a modern client for [FIBS](http://www.fibs.com/), the long-running free backgammon server, with local gnubg analysis alongside.
 - **Multi-core evaluation** for faster analysis and rollouts.
 
-See [`docs/ROADMAP_ANALYSIS_PARITY.md`](docs/ROADMAP_ANALYSIS_PARITY.md) for the detailed analysis plan.
-
 ## Comparison
 
-Two apps cover this ground for most players today. Where this port stands, by their own published feature lists and documentation:
+Two apps cover this ground for most players today. This port is free, open, offline, and does position setup, match save, and reviewed playback together, on gnubg's own engine:
 
-- **XG Mobile** has a position editor — the feature it is chiefly used for — but its editor is widely described as fiddly, and the app has become hard to install on current Android. This port offers position entry that starts from an empty board (the gnubg way: place what you have, rather than clear a full board first), is free, and targets Android 12+.
-- **Backgammon NJ** displays a position's GNU BG ID, top moves, and cube decision during play, and its paid analysis package steps through matches — but it has no position editor at all. This port sets up positions *and* reads pasted GNU BG IDs, so a BGNJ user's IDs drop straight in.
+- **XG Mobile** has the position editor it is chiefly used for, but that editor is widely described as fiddly and the app has grown hard to install on current Android. This port's editor starts from an empty board — place what you have, the gnubg way — is free, and targets Android 12+.
+- **Backgammon NJ** shows a position's GNU BG ID, top moves, and cube decision during play, and its paid package steps through matches — but it has no position editor. This port both sets up positions *and* reads pasted GNU BG IDs, so a BGNJ user's IDs drop straight in.
 
-Neither is a criticism of strong apps; the point is that this one is free, open, offline, and covers position setup, match save, and match review together, on gnubg's own engine.
+Neither is a criticism of strong apps; the point is that this one is free, open, offline, and covers setup, save, and review together on gnubg's own engine.
 
 ## Contributing
 
-Contributions are welcome. The most useful starting point is [`docs/ARCHITECTURE_FOR_CONTRIBUTORS.md`](docs/ARCHITECTURE_FOR_CONTRIBUTORS.md), which traces exactly how a tap becomes a gnubg command and back. Please keep the guiding rule in mind: game and analysis logic belongs in gnubg, not in the app layer. If a piece of Kotlin computes, ranks, or classifies a backgammon decision, it is in the wrong place.
+Contributions are welcome. The best starting point is [`docs/ARCHITECTURE_FOR_CONTRIBUTORS.md`](docs/ARCHITECTURE_FOR_CONTRIBUTORS.md). Please keep the guiding rule in mind: game and analysis logic belongs in gnubg, not the app layer. If a piece of Kotlin computes, ranks, or classifies a backgammon decision, it is in the wrong place.
 
 ## License
 
-This program is a modified derivative of **GNU Backgammon** and is licensed under the **GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later)**.
+This program is a modified derivative of **GNU Backgammon**, licensed under the **GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later)**.
 
 - Full license text: [`COPYING`](COPYING)
 - Attribution, copyright holders, and modification notice: [`NOTICE`](NOTICE)
 - Record of every divergence from upstream: [`PROVENANCE.md`](PROVENANCE.md)
 
-GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS; the per-file copyright notices in `engine-core/` retain the authoritative attribution. The Android front end, JNI bridge, and port integration are Copyright (C) 2025-2026 clavierhaus <gnubg@clavierhaus.at>.
-
-This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under the conditions of the GPL. You have the right to the complete corresponding source code.
+GNU Backgammon is Copyright © the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS; the per-file copyright notices in `engine-core/` retain the authoritative attribution. The Android front end, JNI bridge, and port integration are Copyright © 2025–2026 clavierhaus <gnubg@clavierhaus.at>. This program comes with ABSOLUTELY NO WARRANTY; it is free software, redistributable under the conditions of the GPL, and you have the right to the complete corresponding source code.
