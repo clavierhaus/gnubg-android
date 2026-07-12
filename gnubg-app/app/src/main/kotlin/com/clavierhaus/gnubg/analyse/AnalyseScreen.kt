@@ -73,6 +73,7 @@ private class AnalyseResult(
     // semantic, shared with its desktop edit mode: dice set = a chequer
     // decision, no dice = a cube decision.
     val cubeText: String? = null,        // GetCubeRecommendation, gnubg's words
+    val cubeDecision: Int = -1,          // the cubedecision ordinal behind it
     val cubeWin: FloatArray? = null,     // aarOutput[0][0..6] for the player on roll
     val cubeEq: FloatArray? = null       // arDouble: optimal, no-double, take, drop
 )
@@ -89,6 +90,12 @@ private const val GAME_PLAYING = 1
 private const val GAME_OVER = 2
 private const val GAME_RESIGNED = 3
 private const val GAME_DROP = 4
+
+/* cubedecision NOT_AVAILABLE, engine-core/eval.h:208 -- "Cube not available":
+ * the player on roll can neither double nor redouble (opponent owns the cube,
+ * Crawford, or cube off). gnubg's own classification; when it says there is
+ * no decision, the panel must not render decision rows. */
+private const val CUBEDECISION_NOT_AVAILABLE = 15
 
 private fun gameStateSuffix(gs: Int): String = when (gs) {
     GAME_NONE -> " (no game started)"
@@ -143,10 +150,12 @@ fun AnalyseScreen(
         var cubeText: String? = null
         var cubeWin: FloatArray? = null
         var cubeEq: FloatArray? = null
+        var cubeDec = -1
         if (d0 == 0) {
             val cd = Engine.cubeDecision(raw)
             if (cd != null && cd.size >= 19) {
                 cubeText = Engine.cubeRecommendation(cd[18])
+                cubeDec = cd[18]
                 cubeWin = FloatArray(7) { i -> Float.fromBits(cd[i]) }
                 cubeEq = FloatArray(4) { i -> Float.fromBits(cd[14 + i]) }
             }
@@ -165,6 +174,7 @@ fun AnalyseScreen(
             candidates = cands,
             noDice = n == 0,
             cubeText = cubeText,
+            cubeDecision = cubeDec,
             cubeWin = cubeWin,
             cubeEq = cubeEq
         )
@@ -749,6 +759,7 @@ fun AnalyseScreen(
                                 color = pal.uiTextSecondary, fontSize = 12.sp
                             )
                         }
+                        if (r.cubeDecision != CUBEDECISION_NOT_AVAILABLE) {
                         r.cubeEq?.let { e ->
                             @Composable
                             fun actionRow(label: String, v: Float) {
@@ -776,6 +787,7 @@ fun AnalyseScreen(
                             actionRow("Double, take", e[2])
                             actionRow("Double, pass", e[3])
                         }
+                        } // end decision rows (hidden when gnubg says NOT_AVAILABLE)
                         // Rollout and the MET share one row: result (or the
                         // button) on the left, the table name on the right.
                         Row(
