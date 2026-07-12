@@ -462,6 +462,37 @@ fun CoachScreen(
     }
 }
 
+/** A single-character identifier chip: fixed-size circular badge with a
+ *  centered letter or digit. Used for the row-labels in MoveList (P for
+ *  the player's move, 1..3 for gnubg's better alternatives). Distinct
+ *  from GameButton, which is an action button sized for multi-character
+ *  labels ("Take", "Drop", "New game") whose compact 19dp horizontal
+ *  padding, wrapped in a 30dp-wide slot, previously insetted the label's
+ *  own width constraint to zero and drew a coloured pill with no glyph.
+ *  A fixed circular size makes that failure mode unrepresentable. */
+@Composable
+private fun IdentChip(
+    label: String,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(26.dp)
+            .background(color, androidx.compose.foundation.shape.CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
+    }
+}
+
 /** The move list (maintainer design): the player's own move is the FIRST
  *  item, chip "P" in a distinct color, then gnubg's better moves numbered --
  *  every item the same TOGGLE: tap to view that move's resulting position on
@@ -481,14 +512,11 @@ private fun MoveList(
     // Rows are full-width and left-anchored so every chip sits in one
     // vertical column flush to the board's right-hand side.
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
-            GameButton(
-                label = "P",
-                color = if (selectedAlt == 0) pal.uiActionNegative
-                        else pal.uiActionNegative.copy(alpha = 0.45f),
-                compact = true
-            ) { onSelectAlt(0) }
-        }
+        IdentChip(
+            label = "P",
+            color = if (selectedAlt == 0) pal.uiActionNegative
+                    else pal.uiActionNegative.copy(alpha = 0.45f)
+        ) { onSelectAlt(0) }
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             glance.playedNotation,
@@ -500,13 +528,10 @@ private fun MoveList(
     glance.alts.forEachIndexed { i, alt ->
         Spacer(modifier = Modifier.height(3.dp))
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
-                GameButton(
-                    label = "${i + 1}",
-                    color = if (selectedAlt == i + 1) pal.uiChipOn else pal.uiChipOff,
-                    compact = true
-                ) { onSelectAlt(i + 1) }
-            }
+            IdentChip(
+                label = "${i + 1}",
+                color = if (selectedAlt == i + 1) pal.uiChipOn else pal.uiChipOff
+            ) { onSelectAlt(i + 1) }
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 "${alt.notation}  ${"%+.3f".format(alt.gain)}",
