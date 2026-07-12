@@ -573,8 +573,18 @@ private fun CoachPanel(
                 val cg = cubeGlance
                 when {
                     !cg.flagged -> {
+                        // Present tense, about the CHOICE -- the double/take/
+                        // drop is held, not yet applied (GNU has not responded).
+                        // "Correct cube decision" read as a completed, accepted
+                        // transaction (field report); this states the verdict on
+                        // the action you are about to commit with GNU's turn.
                         Text(
-                            if (cg.isBest) "Correct cube decision." else "Reasonable cube decision.",
+                            when {
+                                !cg.takeDrop && cg.isBest -> "Doubling is correct."
+                                !cg.takeDrop              -> "Doubling is reasonable."
+                                cg.isBest                 -> "The right response."
+                                else                      -> "A reasonable response."
+                            },
                             color = pal.uiActionPositive, fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
