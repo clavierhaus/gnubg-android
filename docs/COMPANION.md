@@ -1,71 +1,70 @@
-# The Companion: natural-language coaching, fully local
+# The Insight Layer: a phrase that explains the move
 
-Status: ANALYSIS + PLAN (2026-07-12). Source studied: yairwein/backgammon-teacher
-(MIT, SvelteKit client/server, gnubg CLI adapter, cloud LLMs). Its design
-principles are our constitution independently rediscovered:
+Status: ANALYSIS + PLAN (2026-07-12, reframed per maintainer). NOT voice, NOT a
+chatbot, NOT a talking companion. The deliverable is ONE OR TWO PHRASES of
+written guidance matched to the move actually played -- teaching the PATTERN
+behind gnubg's verdict in backgammon's own conceptual vocabulary.
 
-    1. Engine truth -- GNU Backgammon is the authority on move strength
-    2. Structured interpretation -- feature extraction provides interpretable data
-    3. Natural language teaching -- LLM explains using features, NEVER invents facts
+## Who it is for
 
-That convergence is the strongest possible validation of the coach vision, and
-their pipeline gives us a concrete checklist. Where we differ BY DESIGN: they
-ship a server and call Anthropic/OpenAI; we are an offline GPL app on a phone
--- everything below is local, or it does not ship.
+Not primarily the rookie and not the expert -- the large MIDDLE: players already
+decent who want to significantly improve their grasp of patterns and standards.
+For them "-0.081, 4th of 17" is legible but inert; "you broke your 5-prime for a
+play that gains nothing" is the lesson. The number says THAT the move was worse;
+the phrase says WHY, in terms they can carry to the next game.
 
-## Element-by-element sift
+## What it is NOT
 
-| backgammon-teacher element      | gnubg-android status                          |
-|---------------------------------|-----------------------------------------------|
-| gnubg as sole analysis engine   | HAVE -- in-process, deeper than their CLI parse|
-| blunder threshold (equity)      | HAVE -- gnubg's own Skill() thresholds         |
-| pause to review alternatives    | HAVE, better -- COACH_REVIEW hold, P/1..3      |
-|                                 | before/after toggles on the common ground      |
-| interactive board, legal hints  | HAVE                                           |
-| position feature extraction     | ADOPT -- this is M2, their feature list is the |
-|                                 | starting schema (below)                        |
-| LLM explanation layer           | ADOPT TRANSFORMED -- local model, phase C      |
-| client/server, database, cloud  | REJECT -- offline, single APK + optional local |
-|                                 | model download                                 |
+- Not speech/audio -- text only.
+- Not a language model writing prose (that is a later, optional flavor layer at
+  most; the product must be whole and shippable without it).
+- Not gnubg's numbers restated -- those already show. The phrase adds the
+  CONCEPT the numbers embody.
 
-## Phase A (= M2): the features verb -- gnubg speaks in structure
+## The two hard problems (maintainer-identified, and they ARE the whole problem)
 
-`gnubg_mobile_position_features(board[50], out[])`: a fixed schema computed by
-gnubg's OWN functions (CalculateHalfInputs, eval.c:61/613, exports the neural
-inputs; ClassifyPosition, eval.h:413, names the position class). Starting
-schema, informed by their list: pip counts + race lead (HAVE: pipCount),
-position class (race/contact/crashed...), blots and hit exposure, prime length
-and location, anchors, home-board points made, checkers back, checkers on the
-bar. The verb runs on BOTH boards of a verdict (played result, best result):
-the coach's raw material is the FEATURE DELTA between them.
+### (a) The phrase corpus -- authored, versioned, curated
 
-Rule: the app never computes a feature itself. If gnubg's inputs do not
-express a concept, the concept waits.
+A table of backgammon PRINCIPLES, each a short teachable phrase keyed to a
+detectable positional pattern. Authored content, GPL-compatible (gnubg manual +
+standard published theory), never generated. The craft is in the collection:
+coverage of the standard pattern vocabulary, phrases true across the skill
+range, each falsifiable against a concrete feature signature. Domains to cover:
+prime integrity and length, anchor holding vs. timing, builder economy and
+flexibility, blot exposure weighed against board strength, race vs. hold
+commitment, timing and crunch, home-board priority, bar-point and golden-point
+value, back-checker escape. This is the biggest and most valuable single body
+of work in the whole feature; it is DATA, editable without touching code.
 
-## Phase B (= M2 delivery, no LLM required): the deterministic reason line
+### (b) Analysis of possible moves -- already gnubg's, to be made structural
 
-Dominant-delta -> one sentence from a fixed template table keyed to the
-lexicon (M3). "Best keeps a 5-prime; your move breaks it." Deterministic,
-offline, tiny, shippable soon -- and it IS the grounding harness the LLM will
-later be constrained by. Their project needed the LLM for this; we do not.
+gnubg has ranked and scored every legal move (the coach verdict already carries
+the top-K with equities and neural eval). Phase A adds the STRUCTURE: a features
+verb (gnubg's own CalculateHalfInputs / ClassifyPosition) run on the played
+result AND the best result, so each candidate is described not just by equity
+but by a vector of named positional facts.
 
-## Phase C (new milestone M6): the local companion
+### (c) Matching phrase to gameplay -- the FEATURE DELTA selects
 
-A small instruct model on-device verbalizes -- prompt = verdict numbers +
-feature deltas + lexicon entries; hard constraint mirrored from their
-principle 3: the model may only restate provided facts, in coaching tone, as
-a SHORT LESSON. No position reasoning by the model, ever; gnubg reasons, the
-model speaks.
+The match is deterministic and gnubg-grounded: the delta between the played
+result's feature vector and the best result's names what changed -- prime length
+-1, a blot added in the home board, an anchor surrendered. The corpus entry
+whose signature best fits the dominant delta is the phrase shown. gnubg computed
+the difference; the app only looks up which authored principle that difference
+instantiates. No invention, offline, fully explainable ("shown because: prime
+5->4 while best held it").
 
-Open decisions (maintainer): runtime (llama.cpp JNI vs MediaPipe LLM
-inference); model + LICENSE (Qwen small = Apache-2.0 fits the FOSS stance;
-Gemma/Llama licenses do not sit cleanly beside GPLv3+); distribution
-(optional download, never in the APK); expertise corpus for lesson flavor --
-the gnubg MANUAL is GPL and expert-written, a cleaner grounding source than
-Wikipedia's thin backgammon coverage; Wikipedia can supplement terminology.
+Matching design questions to settle in build:
+  - dominant-delta vs. weighted top-2 (a move can violate two principles);
+  - thresholds per feature so trivial deltas stay silent (P2 no-noise);
+  - tie-break order when several signatures fit;
+  - a phrase must be allowed to say "nothing standard -- just equity"; honesty
+    over a forced lesson.
 
-## Order of work
+## Order of work (unchanged in sequence, reframed in aim)
 
-Phase A after 0.12.0 ships (try-again sandbox first, per COACH_MODE_PLAN).
-Phase B immediately on A. Phase C prototyped only when A+B are field-proven:
-the companion's voice is worthless until the facts it speaks are.
+0.12.0 (try-again sandbox) ships first. Then Phase A features verb; then the
+corpus (a) begun in parallel since it is data; then the matcher (c) as a
+deterministic reason line. Optional prose polish by a local model is a distant
+maybe, explicitly after the deterministic phrase is proven -- and it too may
+only restate the matched principle, never reason about the position.
