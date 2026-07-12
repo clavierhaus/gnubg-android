@@ -432,6 +432,9 @@ fun CoachScreen(
                     winner = gameState.winner,
                     canDouble = gameState.canDouble,
                     busy = busyKind,
+                    cubeValue = gameState.cubeValue,
+                    onTake = { viewModel.acceptDouble() },
+                    onDrop = { viewModel.dropDouble() },
                     humanScore = gameState.humanScore,
                     engineScore = gameState.engineScore,
                     matchLength = gameState.matchLength,
@@ -557,6 +560,9 @@ private fun CoachPanel(
     winner: Int,
     canDouble: Boolean,
     busy: BusyKind,
+    cubeValue: Int,
+    onTake: () -> Unit,
+    onDrop: () -> Unit,
     humanScore: Int,
     engineScore: Int,
     matchLength: Int,
@@ -628,6 +634,27 @@ private fun CoachPanel(
                         },
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                phase == GamePhase.CUBE_OFFERED -> {
+                    // GNU doubles. This was M4's missing quadrant -- your cube
+                    // RESPONSES were judged (actions 2/3) but nothing ever
+                    // offered the choice: at CUBE_OFFERED the coach pane showed
+                    // idle text and no buttons (field report: softlock after
+                    // GNU redoubled). gnubg flags the offer (fDoubled) with the
+                    // cube still at its pre-take value, so the offered stake is
+                    // value*2. Take/Drop route through the coach diversion:
+                    // judged and held first, carried out on GNU's turn.
+                    Text(
+                        "GNU doubles to ${cubeValue * 2}.",
+                        color = Color.White, fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        GameButton("Take", pal.uiActionPositive, compact = true) { onTake() }
+                        GameButton("Drop", pal.uiActionNegative, compact = true) { onDrop() }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 phase == GamePhase.WAITING_FOR_ROLL -> {

@@ -87,9 +87,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // 0 no-double(roll), 1 doubled, 2 took, 3 dropped -- the action to carry
     // out on continue. -1 = nothing pending.
     private var pendingCubeAction: Int = -1
-    // True only while continueCoachCube is carrying out a held action, so the
-    // reused rollDice/offerDouble/accept/drop do NOT re-judge and re-hold.
-    private var performingHeldCube = false
 
     companion object {
         /** Position-SENSITIVE fingerprint (a plain sum is invariant: every
@@ -872,7 +869,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         // Coach: doubling is a cube decision -- judge and hold before offering.
-        if (coachSession && !performingHeldCube) {
+        if (coachSession) {
             viewModelScope.launch(engineThread) {
                 val cd = Engine.canDouble()
                 android.util.Log.i("gnubg-cube",
@@ -883,12 +880,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        viewModelScope.launch(engineThread) {
+        viewModelScope.launch(engineThread) { offerDoubleNow() }
+    }
+
+    /** The double itself, on the engine thread. Called by offerDouble (Play,
+     *  or Coach carrying out a held decision via continueCoachCube) -- the
+     *  continuation calls it DIRECTLY rather than faking a phase to satisfy
+     *  the public guard (contract order: no handler patches the phase). */
+    private suspend fun offerDoubleNow() {
             try {
                 val scoreBefore = Engine.getMatchScore()
-                // Busy entry INSIDE the engine launch: the old code wrote the
-                // thinking phase on the caller thread, a second-thread writer
-                // of the shadow (contract order violation found in review).
                 beginEngineWork(BusyKind.REPLYING)
                 val dbg = Engine.getCubeDebugState()
                 android.util.Log.i(
@@ -907,7 +908,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (!Engine.canDouble()) {
                     android.util.Log.i("gnubg-vm", "offerDouble: rejected by engine canDouble()")
                     settleFromEngine()
-                    return@launch
+                    return
                 }
 
                 val matchBoard = Engine.getMatchBoard()
@@ -965,36 +966,41 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 actionInProgress.set(false)
             }
-        }
     }
 
     fun acceptDouble() {
-        if (coachSession && !performingHeldCube) {
+        // Coach: taking is a cube decision -- judge and hold; the take itself
+        // happens in takeNow() when the player continues.
+        if (coachSession) {
             viewModelScope.launch(engineThread) { judgeAndHoldCube(Engine.getMatchBoard(), 2) }
             return
         }
-        viewModelScope.launch(engineThread) {
-            // The take hands the turn straight to the engine, which rolls and
-            // thinks inside commandTake -- the busy overlay + dice watcher show
-            // the wait; the projection derives whatever gnubg says follows
-            // (including a game GNU's ensuing move may have ended).
-            val scoreBefore = Engine.getMatchScore()
-            beginEngineWork(BusyKind.REPLYING)
-            Engine.commandTake()
-            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
-        }
+        viewModelScope.launch(engineThread) { takeNow() }
+    }
+
+    /** The take itself, on the engine thread. commandTake hands the turn
+     *  straight to the engine, which rolls and thinks inside it -- the busy
+     *  overlay + dice watcher show the wait; the projection derives whatever
+     *  gnubg says follows (including a game GNU's ensuing move ended). */
+    private suspend fun takeNow() {
+        val scoreBefore = Engine.getMatchScore()
+        beginEngineWork(BusyKind.REPLYING)
+        Engine.commandTake()
+        settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
     }
 
     fun dropDouble() {
-        if (coachSession && !performingHeldCube) {
+        if (coachSession) {
             viewModelScope.launch(engineThread) { judgeAndHoldCube(Engine.getMatchBoard(), 3) }
             return
         }
-        viewModelScope.launch(engineThread) {
-            val scoreBefore = Engine.getMatchScore()
-            Engine.commandDrop()
-            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
-        }
+        viewModelScope.launch(engineThread) { dropNow() }
+    }
+
+    private suspend fun dropNow() {
+        val scoreBefore = Engine.getMatchScore()
+        Engine.commandDrop()
+        settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
     }
 
 
@@ -1142,19 +1148,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (action < 0 || _gameState.value.phase != GamePhase.COACH_REVIEW) return@launch
             pendingCubeAction = -1
             _coachCubeGlance.value = null
-            // Restore WAITING_FOR_ROLL / CUBE_OFFERED so the reused action
-            // functions see the phase they expect, then perform the action the
-            // human chose via the SAME code the non-coach path runs. A guard
-            // flag stops them from re-judging (they call maybeJudgeCube* which
-            // no-ops while carrying out a held action).
-            performingHeldCube = true
+            // Carry out the held decision via the SAME engine-thread bodies the
+            // non-coach path runs -- called DIRECTLY, so no phase is faked to
+            // slip past a public guard and no re-judging flag is needed (the
+            // diversions live only in the public functions). Contract order:
+            // handlers never patch the phase; the projection derives it.
             when (action) {
-                0 -> { _gameState.value = _gameState.value.copy(phase = GamePhase.WAITING_FOR_ROLL); rollDice() }
-                1 -> { _gameState.value = _gameState.value.copy(phase = GamePhase.WAITING_FOR_ROLL); offerDouble() }
-                2 -> { _gameState.value = _gameState.value.copy(phase = GamePhase.CUBE_OFFERED); acceptDouble() }
-                3 -> { _gameState.value = _gameState.value.copy(phase = GamePhase.CUBE_OFFERED); dropDouble() }
+                0 -> doRollNow()
+                1 -> offerDoubleNow()
+                2 -> takeNow()
+                3 -> dropNow()
             }
-            performingHeldCube = false
         }
     }
 
@@ -1187,7 +1191,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         pendingCoachMove = null
         _coachCubeGlance.value = null
         pendingCubeAction = -1
-        performingHeldCube = false
         _busyKind.value = BusyKind.NONE
         _liveEngineDice.value = null
         viewModelScope.launch(engineThread) {
@@ -1207,7 +1210,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         pendingCoachMove = null
         _coachCubeGlance.value = null
         pendingCubeAction = -1
-        performingHeldCube = false
         _busyKind.value = BusyKind.NONE
         _liveEngineDice.value = null
         _showMatchSetup.value = true
