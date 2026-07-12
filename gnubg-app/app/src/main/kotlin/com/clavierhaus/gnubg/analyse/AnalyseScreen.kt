@@ -756,6 +756,18 @@ fun AnalyseScreen(
 @Composable
 private fun MatchContext(r: AnalyseResult) {
     val pal = LocalBoardPalette.current
+    val owner = when (r.cubeOwner) {
+        -1 -> "Centred"
+        0 -> "Player"
+        else -> "Opponent"
+    }
+    val roller = if (r.onRoll == 0) "Player" else "Opponent"
+    val line1 = buildString {
+        append(if (r.matchTo == 0) "Money play" else "" + r.matchTo + " point match")
+        if (r.matchTo > 0) append(", score " + r.score.first + " - " + r.score.second)
+        if (r.crawford) append(", Crawford")
+    }
+    val line2 = "Cube " + r.cube + " (" + owner + ") and " + roller + " rolls"
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             "Match context",
@@ -763,39 +775,11 @@ private fun MatchContext(r: AnalyseResult) {
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-        Text(
-            if (r.matchTo == 0) "Money play" else "" + r.matchTo + "-point match",
-            color = Color.White,
-            fontSize = 14.sp
-        )
-        if (r.matchTo > 0) {
-            Text(
-                "Score " + r.score.first + " - " + r.score.second,
-                color = Color.White,
-                fontSize = 14.sp
-            )
-            if (r.crawford) {
-                Text("Crawford game", color = Color.White, fontSize = 14.sp)
-            }
-        }
-        Text(
-            "Cube " + r.cube + ", " + when (r.cubeOwner) {
-                -1 -> "centred"
-                0 -> "owned by you"
-                else -> "owned by opponent"
-            },
-            color = Color.White,
-            fontSize = 14.sp
-        )
-        Text(
-            if (r.onRoll == 0) "You are on roll" else "Opponent is on roll",
-            color = Color.White,
-            fontSize = 14.sp
-        )
+        Text(line1, color = Color.White, fontSize = 14.sp)
+        Text(line2, color = Color.White, fontSize = 14.sp)
         val d = r.dice
         if (d != null) {
             Text("Dice " + d.first + " " + d.second, color = Color.White, fontSize = 14.sp)
         }
-
     }
 }
