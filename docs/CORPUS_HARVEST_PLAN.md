@@ -10,6 +10,18 @@ network at play time; ship a hand-verified static JSON. Credit Yair
 Weinberger's yairwein/backgammon-teacher (MIT) throughout, where its schema
 shape, threshold table, taxonomy, and prompt structure shaped ours.
 
+## 0. Maintainer decision on the gnubg manual (2026-07-12)
+
+Supersedes the GFDL firewall of Part 1 / §7e below for the gnubg manual
+specifically. The maintainer's reading: the GFDL states for text essentially
+what the GPL states for code, and the claimed GFDL/GPL incompatibility has
+been offered in vague terms only, without specificity, case law, or rms
+correspondence. The gnubg manual (GFDL) WILL be used as source material for
+the insight corpus. A mail to Richard has been sent; the maintainer stands by
+this decision by name and commits to immediately pulling all GFDL-derived
+content from the project should the answer contradict it. Nothing in Phase A
+or B touches manual text, so no work is gated on the reply.
+
 ## 1. What is taken and what is not from yairwein/backgammon-teacher
 
 Verified this session against the actual repo (LICENSE, src/lib/*). MIT
@@ -83,12 +95,21 @@ Verified this session by grep + reading:
     interpretation, no denormalisation. This is the input the matcher scores
     corpus signatures against.
 
-  positionClass : MISSING. Add `gnubg_mobile_get_position_class(board[50])`
-    -> int, wrapping ClassifyPosition(tanboard, ms.bgv). Small marshalling
-    verb, no logic.
+  positionClass : DONE (corrected 2026-07-12; this plan previously said
+    MISSING, unverified). gnubg_mobile_classify(board[50]) -> int wraps
+    ClassifyPosition (jni-bridge/src/gnubg_mobile.c:1186), JNI
+    Engine_classifyPosition (native-lib.c:781), Kotlin external
+    classifyPosition (Engine.kt:145). Note: passes VARIATION_STANDARD, not
+    ms.bgv -- acceptable for the corpus (standard backgammon only), recorded
+    here so nobody "fixes" it blind.
 
-  pipCount : MISSING. Add `gnubg_mobile_get_pip_count(board[50], out[2])`
-    -> 2, wrapping PipCount(tanboard, out). Small marshalling verb.
+  pipCount : DONE (same correction). gnubg_mobile_pip_count(board[50],
+    out[2]) wraps PipCount (gnubg_mobile.c:607), JNI Engine_pipCount
+    (native-lib.c:735), Kotlin external pipCount (Engine.kt:137).
+
+  All three Phase A verbs therefore exist end-to-end; there is no Phase A
+  code to write. The MISSING claims above were asserted without the Q0
+  grep this contract requires -- the correction is the lesson.
 
 Convention for the caller: the C facade's existing positionFeatures returns
 side 0 first, side 1 second, regardless of ms.fMove -- callers that need
@@ -336,8 +357,8 @@ Notes:
   2. Maintainer + assistant iterate the phrase list in
      `docs/CORPUS_ENTRIES_DRAFT.md` (Phase B). First pass 10-15 entries,
      enough to prove the workflow before scaling to 40-80.
-  3. Sibling verbs positionClass and pipCount (small, one commit each)
-     per §3, per contract Q0/Q1 discipline.
+  3. STRUCK (2026-07-12): both sibling verbs already existed end-to-end;
+     see the §3 correction. Q0 caught it.
   4. Pilot signal-discovery: paste 3-4 paired position IDs (prime
      intact / prime broken; anchor held / anchor surrendered; etc.)
      into gnubg CLI, run `show inputs` for each, diff the I_* by hand
