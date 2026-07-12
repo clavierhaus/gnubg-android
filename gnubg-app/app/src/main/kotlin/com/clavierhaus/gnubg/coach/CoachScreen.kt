@@ -230,9 +230,13 @@ fun CoachScreen(
             // The left strip: gear on top (as on every screen), Home in the
             // blank area below it (maintainer design: screen estate -- the
             // right panel keeps only the coaching).
+            // Left control rail (maintainer: game controls -- Home now, quit/
+            // hub/etc. TBD). A tidy vertical column, minimal footprint so the
+            // board and coaching pane get the reclaimed estate.
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .width(56.dp)
                     .padding(start = 8.dp, top = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -246,7 +250,7 @@ fun CoachScreen(
                             .clickable { onOpenSettings() }
                     )
                 }
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 GameButton("Home", pal.uiButtonNeutral, compact = true) {
                     viewModel.endCoachSession()
                     onReturnToHub()
@@ -256,7 +260,7 @@ fun CoachScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 88.dp, top = 8.dp, end = 12.dp, bottom = 8.dp)
+                    .padding(start = 56.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     val g = glance
@@ -300,7 +304,9 @@ fun CoachScreen(
                                     played = null,
                                     best = selectedMove,
                                     ghost = false
-                                ) else null
+                                ) else null,
+                            onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
+                                { { selectedAlt = -1; viewModel.continueCoachTurn() } } else null
                         )
                     } else {
                         // The live game board carries NO arrows (maintainer
@@ -311,7 +317,9 @@ fun CoachScreen(
                             settings = settings,
                             gameState = gameState,
                             viewModel = viewModel,
-                            tutorMode = false
+                            tutorMode = false,
+                            onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
+                                { { selectedAlt = -1; viewModel.continueCoachTurn() } } else null
                         )
                     }
                 }
@@ -336,7 +344,6 @@ fun CoachScreen(
                             "fp(pre)=${preMoveBoard?.let { com.clavierhaus.gnubg.engine.GameViewModel.fpOf(it) }} " +
                             "fp(live)=${com.clavierhaus.gnubg.engine.GameViewModel.fpOf(gameState.board)} dice=$glanceDice")
                     },
-                    onContinue = { selectedAlt = -1; viewModel.continueCoachTurn() },
                     onNewGame = {
                         glance = null
                         viewModel.startCoachGame()
@@ -402,6 +409,20 @@ private fun MoveList(
     }
 }
 
+/** Placeholder for the verbose "Why" (docs/COMPANION.md). A quiet, reserved
+ *  block so the panel's lower half is claimed now; the insight layer will fill
+ *  it with a phrase matched to the feature delta. Deliberately minimal until
+ *  then -- no faux content. */
+@Composable
+private fun WhyStub() {
+    val pal = LocalBoardPalette.current
+    Text("Why", color = pal.uiTextSecondary, fontSize = 11.sp,
+        fontWeight = FontWeight.Bold)
+    Spacer(modifier = Modifier.height(4.dp))
+    Text("Coaching insight coming soon.",
+        color = pal.uiTextDisabled, fontSize = 11.sp)
+}
+
 @Composable
 private fun CoachPanel(
     glance: CoachGlance?,
@@ -409,12 +430,11 @@ private fun CoachPanel(
     winner: Int,
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit,
-    onContinue: () -> Unit,
     onNewGame: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
     Column(
-        modifier = Modifier.width(200.dp).fillMaxHeight().padding(vertical = 8.dp),
+        modifier = Modifier.width(240.dp).fillMaxHeight().padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -499,18 +519,24 @@ private fun CoachPanel(
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
             }
+
+            // The "Why" area (stub) -- the space freed by moving Home to the
+            // rail and GNU's turn onto the board. Reserved for the verbose
+            // explanation the insight layer (docs/COMPANION.md) will produce:
+            // a phrase matched to the feature delta between the played move
+            // and the best. Empty until that layer lands; occupies the room
+            // now so the layout is already correct when it does.
+            if (glance != null && glance.rank > 0) {
+                Spacer(modifier = Modifier.height(14.dp))
+                WhyStub()
+            }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (phase == GamePhase.COACH_REVIEW) {
-                // The player's active continuation: only now does gnubg
-                // receive the move; GNU rolls and replies after this.
-                GameButton("GNU's turn", pal.uiActionRoll, compact = true) { onContinue() }
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-            if (phase == GamePhase.GAME_OVER) {
+        // GNU's turn now lives ON the board (left-half mirror of Roll).
+        // Only New game remains a pane button, at game over.
+        if (phase == GamePhase.GAME_OVER) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 GameButton("New game", pal.uiChipOff, compact = true) { onNewGame() }
-                Spacer(modifier = Modifier.height(6.dp))
             }
         }
     }

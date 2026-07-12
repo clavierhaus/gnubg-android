@@ -126,6 +126,10 @@ private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, private val 
     private val rollH = dieSize * 1.2f
     val rollRect = Rect(rightGapCX - rollW / 2f, boardCY - dieSize / 2f,
                         rightGapCX + rollW / 2f, boardCY - dieSize / 2f + rollH)
+    /** Coach "GNU's turn": the exact mirror of rollRect on the LEFT half (where
+     *  the engine dice sit) -- the on-board counterpart to the player's Roll. */
+    val coachTurnRect = Rect(leftGapCX - rollW / 2f, boardCY - dieSize / 2f,
+                        leftGapCX + rollW / 2f, boardCY - dieSize / 2f + rollH)
 
     val cubeSize = pc(BAR_W * 0.75f)
     private val cubeGap = cubeSize * 0.18f
@@ -283,6 +287,9 @@ fun BackgammonBoard(
     viewModel: GameViewModel? = null,
     tutorMode: Boolean = false,
     coachTrace: CoachTrace? = null,
+    /** Coach review only: the on-board "GNU's turn" button (mirror of Roll on
+     *  the left half). Non-null draws it and routes its tap here. */
+    onCoachTurn: (() -> Unit)? = null,
     /**
      * Position-editor hook. Non-null puts the board in EDIT: every tap is
      * reported as a zone and nothing reaches the game. Zones: 1..24 a point,
@@ -344,6 +351,16 @@ fun BackgammonBoard(
                     }
                     if (zone != -1) onEditTap.invoke(zone)
                     return@detectTapGestures
+                }
+                // Coach "GNU's turn" -- works even though the study board passes
+                // viewModel=null, so it is tested BEFORE that gate.
+                if (onCoachTurn != null) {
+                    val gc = BoardGeom(size.width.toFloat(), size.height.toFloat(),
+                                       gameState.cubeOwner, diceCountOf(gameState))
+                    if (gc.coachTurnRect.contains(offset)) {
+                        onCoachTurn.invoke()
+                        return@detectTapGestures
+                    }
                 }
                 if (viewModel == null) return@detectTapGestures
 
@@ -743,6 +760,40 @@ fun BackgammonBoard(
                     canvas.nativeCanvas.drawText("Roll",
                         btnX + btnW / 2f,
                         btnY + btnH / 2f - (paint.descent() + paint.ascent()) / 2f,
+                        paint)
+                }
+            }
+
+            // Coach "GNU's turn" -- left-half mirror of Roll, drawn during review.
+            if (onCoachTurn != null) {
+                val bW = g.coachTurnRect.width
+                val bH = g.coachTurnRect.height
+                val bX = g.coachTurnRect.left
+                val bY = g.coachTurnRect.top
+                val cr = bW * 0.08f
+                val path = Path().apply {
+                    moveTo(bX + cr, bY)
+                    lineTo(bX + bW - cr, bY)
+                    quadraticTo(bX + bW, bY, bX + bW, bY + cr)
+                    lineTo(bX + bW, bY + bH - cr)
+                    quadraticTo(bX + bW, bY + bH, bX + bW - cr, bY + bH)
+                    lineTo(bX + cr, bY + bH)
+                    quadraticTo(bX, bY + bH, bX, bY + bH - cr)
+                    lineTo(bX, bY + cr)
+                    quadraticTo(bX, bY, bX + cr, bY)
+                    close()
+                }
+                drawPath(path, p.uiActionRoll)
+                drawIntoCanvas { canvas ->
+                    val paint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = bH * 0.34f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isAntiAlias = true; isFakeBoldText = true
+                    }
+                    canvas.nativeCanvas.drawText("GNU's turn",
+                        bX + bW / 2f,
+                        bY + bH / 2f - (paint.descent() + paint.ascent()) / 2f,
                         paint)
                 }
             }
