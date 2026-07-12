@@ -920,7 +920,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (cd) judgeAndHoldCube(Engine.getMatchBoard(), 1)
                 else android.util.Log.i("gnubg-cube", "coach offerDouble: gnubg refuses the double here")
             }
-            }
             return
         }
 
