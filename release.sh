@@ -74,7 +74,13 @@ ok "working tree clean"
 # on main, in sync with origin
 BR="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BR" = "main" ] || die "not on main (on '$BR') -- release from main"
-git fetch origin main --tags -q
+# NOTE: this fetch once killed the script SILENTLY -- a stale local tag
+# (v0.10.0, left over from the git-history reset) made 'fetch --tags' exit 1
+# with the rejection notice suppressed by -q, and set -e ended the run with no
+# message at all. A guard that dies without naming itself is a defect: every
+# failure here must say what refused and how to fix it.
+git fetch origin main --tags -q \
+  || die "git fetch --tags failed -- a local tag likely diverges from origin (stale from a history reset). Fix: git fetch origin --tags --force"
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] \
   || die "local main is not in sync with origin/main -- pull/push first"
 ok "on main, in sync with origin"
