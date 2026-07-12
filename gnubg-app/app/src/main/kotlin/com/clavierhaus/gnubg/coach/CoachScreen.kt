@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -360,12 +361,16 @@ private fun MoveList(
     val pal = LocalBoardPalette.current
     Spacer(modifier = Modifier.height(6.dp))
 
-    // Row 0: P -- the player's move, same mechanics, its own color.
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // Row 0: P -- the player's move, same mechanics, RED marking (maintainer
+    // design: visually apart from the numbered, rank-ordered suggestions).
+    // Rows are full-width and left-anchored so every chip sits in one
+    // vertical column flush to the board's right-hand side.
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
             GameButton(
                 label = "P",
-                color = if (selectedAlt == 0) pal.uiActionRoll else pal.uiButtonNeutral,
+                color = if (selectedAlt == 0) pal.uiActionNegative
+                        else pal.uiActionNegative.copy(alpha = 0.45f),
                 compact = true
             ) { onSelectAlt(0) }
         }
@@ -379,7 +384,7 @@ private fun MoveList(
 
     glance.alts.forEachIndexed { i, alt ->
         Spacer(modifier = Modifier.height(3.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.width(30.dp), contentAlignment = Alignment.Center) {
                 GameButton(
                     label = "${i + 1}",
