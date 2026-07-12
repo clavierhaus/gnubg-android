@@ -151,8 +151,16 @@ private fun HomeHubEntry(
     label: String,
     onClick: () -> Unit
 ) {
+    // Emphasise the VERB: the first word (Play / Train / Analyse / Review) in
+    // GNU-orange, the rest in the entry's default colour -- echoing the "GNU"
+    // in the title so each entry reads as an action.
+    val verb = label.substringBefore(' ')
+    val rest = label.substring(verb.length)
     BasicText(
-        text = label,
+        text = buildAnnotatedString {
+            withStyle(SpanStyle(color = GnuOrange)) { append(verb) }
+            append(rest)
+        },
         style = HomeEntryStyle,
         modifier = Modifier
             .clickable(onClick = onClick)
