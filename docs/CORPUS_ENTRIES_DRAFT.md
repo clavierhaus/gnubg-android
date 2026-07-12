@@ -42,16 +42,21 @@ note: the general containment sibling of prime.break.5; pilot must separate
 the two or merge them.
 
 **anchor.surrender.back** — A back anchor is shelter; don't leave it without a reason.
-signature: me I_BACK_ANCHOR delta (sign = pilot question) · opp I_P1 up
+signature (MEASURED 2026-07-12): me I_FORWARD_ANCHOR crosses above 1.0
+(anchor leaves the opp-home zone; 0.833 -> 2.0 measured) · me I_BACKBONE
+down (0.864 -> 0.333) · opp I_P1 up (0 -> 0.917)
 bands: bad, very bad
-note: "Position of the back anchor" — whether surrender reads as the value
-rising, falling, or vanishing is exactly what the pilot measures first.
+note: I_BACK_ANCHOR alone is UNRELIABLE for surrender -- eval.c:840 falls
+back to any outfield stack (measured false-drop to 0.500 via a 13-point
+stack). The FORWARD_ANCHOR >1.0 threshold is the clean discriminator.
 
 **anchor.advance.golden** — The 20-point anchor is worth fighting for.
-signature: me I_FORWARD_ANCHOR delta (sign = pilot question)
+signature (MEASURED 2026-07-12): me I_FORWARD_ANCHOR up within (0,1]
+-- golden point = 5/6 = 0.833 exactly (eval.c:845: n=(24-j)/6 over the
+opp-home zone); deep-only anchor reads 0.167
 bands: doubtful
 note: praise-side candidate — fires when the BEST move makes the forward
-anchor and the played move declined it.
+anchor and the played move declined it. Encoding source-confirmed.
 
 **board.close.entry** — Every home point you make keeps the hit man out longer.
 signature: opp I_ENTER2 down · opp I_ENTER down
@@ -152,3 +157,37 @@ stub rather than print garbage — the stub design is doing its job; keep it.
 Measured so far: board.close.entry CONFIRMED (direction corrected),
 blot.shot.given CONFIRMED (direction corrected, side settled). Next per
 pilot order: the anchor pair, to establish position-value encodings.
+
+**Pairs 3–5 — the anchor set (encodings settled, source-confirmed).**
+  E anchor-20:  0  0 0 0 0 2 2 0 4 0 0 0 -5 5 0 0 0 -3 0 -3 2 -2 0 -2 0 0
+  F anchor-24:  0  same but p20=0, p24=2
+  G anchors 24+20: 0  0 0 0 0 2 2 0 4 0 0 0 -5 3 0 0 0 -3 0 -3 2 -2 0 -2 2 0
+  Hh anchors 24+18: 0  same but p20=0, p18=2
+  I surrendered (E's anchor split to blots 20+22)
+
+  Encodings, measured AND read from source (agreement on all five boards):
+  - I_BACK_CHEQUER = rearmost-checker index / 24 (eval.c:830). Up = further
+    back; 1.0 = on the bar. Settles race.escape.window / race.break.ahead
+    direction: escaping moves it DOWN.
+  - I_BACK_ANCHOR = rearmost >=2-point index / 24, searched down from the
+    back chequer (eval.c:840). CAVEAT: falls back to ANY stack -- board I
+    read 0.500 from the 13-point, not a "no anchor" sentinel. My first
+    inference said sentinel; reading the source falsified it. Measure AND
+    read, always.
+  - I_FORWARD_ANCHOR (eval.c:845-861) = (24 - j)/6 for the most ADVANCED
+    anchor in the opp-home zone (indices 18..back-anchor), so golden point
+    = 0.833, deepest = 0.167; outfield fallback yields >1.0; 2.0 = none
+    (colliding with a 13-point fallback, also 2.0). Values in (0,1] mean a
+    true home-board anchor -- a threshold, not just a delta.
+
+  Surrender pair (E vs I), full deltas: me FORWARD_ANCHOR 0.833->2.0,
+  me BACKBONE 0.864->0.333, me BACKG1 0.25->0, me TIMING 0.52->0.92,
+  opp I_P1 0->0.917, opp I_P2 0->0.25, opp PIPLOSS 0->0.340.
+  FIRST CHARACTERIZATION of the uncommented I_BACKBONE: responds strongly
+  to anchor solidity -- raises confidence in prime.break.5's guessed
+  I_BACKBONE term. I_TIMING also moved (uncommented, logged, not yet used).
+
+Measured so far: board.close.entry, blot.shot.given, anchor.advance.golden,
+anchor.surrender.back -- FOUR of twelve confirmed with corrected,
+source-backed signatures. Next: the prime pair (prime.break.5 /
+prime.contain.lost), now armed with a characterized I_BACKBONE.
