@@ -403,6 +403,9 @@ fun CoachScreen(
                     phase = gameState.phase,
                     winner = gameState.winner,
                     canDouble = gameState.canDouble,
+                    humanScore = gameState.humanScore,
+                    engineScore = gameState.engineScore,
+                    matchLength = gameState.matchLength,
                     selectedAlt = selectedAlt,
                     onSelectAlt = { n ->
                         // A toggle has TWO states (maintainer design): tap a
@@ -496,6 +499,21 @@ private fun WhyStub() {
         color = pal.uiTextDisabled, fontSize = 11.sp)
 }
 
+/** A score tag: a checker-coloured dot for the side, and its points. Used to
+ *  flank the Coach title with the running match score. */
+@Composable
+private fun ScoreTag(dotColor: Color, points: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .background(dotColor, androidx.compose.foundation.shape.CircleShape)
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text("$points", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 private fun CoachPanel(
     glance: CoachGlance?,
@@ -503,6 +521,9 @@ private fun CoachPanel(
     phase: GamePhase,
     winner: Int,
     canDouble: Boolean,
+    humanScore: Int,
+    engineScore: Int,
+    matchLength: Int,
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit,
     onNewGame: () -> Unit
@@ -517,12 +538,30 @@ private fun CoachPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.weight(1f, fill = false)
         ) {
-            Text(
-                "Coach",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            // Header: the match score flanks the centred title -- GNU on the
+            // left, you on the right, each a checker-coloured dot with its
+            // points. Shown only in a real match (length > 1); a 1-point game
+            // has no running score to keep. The Row spans the panel so "Coach"
+            // sits centred over the eval area beneath it.
+            if (matchLength > 1) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ScoreTag(pal.checkerDark, engineScore)
+                    Text(
+                        "Coach",
+                        color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
+                    )
+                    ScoreTag(pal.checkerLight, humanScore)
+                }
+            } else {
+                Text(
+                    "Coach",
+                    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
 
             when {
