@@ -72,17 +72,23 @@ note: "Probability of entering from the bar" — cleanest-commented signal in
 the enum; good pilot starter.
 
 **stack.mobility.dead** — Stacked checkers are pips doing nothing.
-signature: me I_MOBILITY down · me I_MOMENT2 delta (UNCOMMENTED)
-bands: doubtful
-note: I_MOBILITY carries a comment ("contribution of mobility"); I_MOMENT2
-("second moment about centre of mass") may proxy distribution — pilot decides
-whether one input suffices.
+signature: INVALIDATED 2026-07-12 -- PARKED. I_MOBILITY is pip-weighted
+throughput through the opponent's blockade (eval.c:1155): a 9-stack on a
+free point RAISES it. I_MOMENT2 is a one-sided rearward moment, not a
+distribution measure. No gnubg input expresses "stacked = bad" directly.
+bands: --
+note: per plan Phase E, "no standard pattern, just equity" is a valid
+outcome. The phrase waits unless a composite (MOBILITY-per-checker?) earns
+its way in through a future pilot.
 
 **backgame.timing** — A backgame lives or dies on timing.
-signature: me I_TIMING delta (UNCOMMENTED) · me I_BACKG delta (UNCOMMENTED)
+signature (SOURCE-GROUNDED 2026-07-12, pair pending): precondition
+me I_BACKG > 0 (two-plus rear anchors, eval.c:1272 -- the backgame
+indicator) · me I_TIMING as the axis (the timing reserve, eval.c:816)
 bands: bad, very bad
-note: BOTH inputs uncommented; parked until the pilot names them. Included so
-the shelf shows where backgame coaching would sit.
+note: both formerly-uncommented inputs are now defined in INPUT_DICTIONARY;
+the entry is speakable but its measurement pair is deferred -- backgame
+boards need the matcher's severity context to pick a meaningful pair.
 
 ## threat
 
@@ -94,28 +100,35 @@ from hits" — which side's half-inputs carry MY exposure is a pilot question
 (CalculateHalfInputs is per-side).
 
 **blot.double.given** — One blot is a risk; two in range is a plan for disaster.
-signature: opp I_P2 up
+signature (MEASURED 2026-07-12): opp I_P2 up in played (0 -> 0.111 =
+exactly 4/36 for the two-blot board; direction per schema: down)
 bands: bad, very bad
-note: the I_P2 ("hit at least two") sibling of blot.shot.given.
+note: the I_P2 sibling of blot.shot.given; confirmed on the C-board with a
+second blot added.
 
 **hit.declined** — When the hit is right, take it — pips on the bar are pips won.
-signature: opp I_ENTER up when played vs best (best puts opp on the bar) ·
-me I_PIPLOSS delta (side/sign = pilot question)
+signature (MEASURED 2026-07-12): opp I_BACK_CHEQUER to 1.0 (on the bar) ·
+opp PipCount up (117 -> 131, the pip swing) · opp I_ENTER from 0 to >0
 bands: doubtful, bad
-note: hitting shows as the OPPONENT suddenly having entry inputs at all;
-weakest-specified entry in this pass, pilot may replace the signature wholesale.
+note: measured on a hit/no-hit pair; the pip swing plus bar state is the
+clean composite. CAVEAT for the matcher: me I_BREAK_CONTACT spikes on a
+hit (their rearmost becomes the bar, so my whole army counts as engaged --
+0.198 -> 1.102 measured); do not read that spike as a structural change.
 
 ## race
 
 **race.break.ahead** — Ahead in the race, break contact and run.
-signature: PipCount me < opp (precondition) · me I_BREAK_CONTACT delta
-(sign = pilot question)
+signature (MEASURED 2026-07-12): PipCount me < opp (precondition) ·
+me I_BREAK_CONTACT down (0.156 -> 0.000 on running) · positionclass
+CONTACT -> RACE as the terminal confirmation
 bands: doubtful, bad
 note: first entry using the PipCount verb as a signature precondition —
 proves the §2 "or PipCount" clause in practice.
 
 **race.escape.window** — Escape rolls are a resource; don't spend the window doing nothing.
-signature: me I_BACKESCAPES down · me I_BACK_CHEQUER delta (sign = pilot question)
+signature (MEASURED 2026-07-12): me I_BACK_CHEQUER down (0.958 -> 0.708)
+· opp I_BACKESCAPES up (0.361 -> 0.750 -- THEIR containment input, my
+freedom; side corrected per INPUT_DICTIONARY) · me I_BREAK_CONTACT down
 bands: doubtful, bad
 note: "How many rolls let the back checker escape" — the decline-to-run
 pattern; overlaps race.break.ahead at the edges, pilot separates them.
@@ -231,3 +244,26 @@ Measured so far: SIX of twelve -- board.close.entry, blot.shot.given,
 anchor.advance.golden, anchor.surrender.back, prime.break.5,
 prime.contain.lost. Remaining: stack.mobility.dead, backgame.timing,
 blot.double.given, hit.declined, race.break.ahead, race.escape.window.
+
+**Pairs 9-12 -- races, the double blot, the hit (2026-07-12).**
+  M/N race.break.ahead: ahead 114-122, contact via my pair on the 24 vs run
+  to the 11: me I_BREAK_CONTACT 0.156 -> 0.000, positionclass CONTACT ->
+  RACE. (Race boards required making the isBearoff stub truthful for a
+  NULL database -- "no db loaded" is honestly "not a db bearoff"; the loud
+  abort remains for any non-NULL db.)
+  O/P race.escape.window: runner 24 vs 18 under held contact: me
+  I_BACK_CHEQUER 0.958 -> 0.708, opp I_BACKESCAPES 0.361 -> 0.750 -- the
+  dictionary's side correction demonstrated live.
+  C/Q blot.double.given: second blot in range: opp I_P2 0 -> 0.111 (4/36),
+  opp I_P1 0.389 -> 0.639, opp I_PIPLOSS 0.486 -> 0.829.
+  R/R2 hit.declined: their blot to the bar: opp I_BACK_CHEQUER -> 1.000,
+  opp pips 117 -> 131, opp I_ENTER 0 -> 0.224; me I_BREAK_CONTACT artifact
+  spike 0.198 -> 1.102 recorded as a matcher caveat.
+
+PILOT COMPLETE: TEN of twelve entries measured with source-backed
+signatures; stack.mobility.dead INVALIDATED and honestly parked;
+backgame.timing source-grounded with its pair deferred. Every input in the
+vocabulary is now documented in docs/INPUT_DICTIONARY.md -- comment vs
+formula vs measurement, with verdicts on the enum comments (two are wrong,
+several misleading). Next phase per the plan: C.1 parametric position
+corpus construction against the measured signatures.

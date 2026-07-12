@@ -34,7 +34,14 @@ int BearoffCubeful(const void *p, unsigned int n, float *ar, float *aq)
 int BearoffHyper(const void *p, unsigned int n, float *ar, float *aq)
 { (void)p; (void)n; (void)ar; (void)aq; LOUD("BearoffHyper") }
 int isBearoff(const void *p, const unsigned int (*b)[25])
-{ (void)p; (void)b; LOUD("isBearoff") }
+{
+    /* The harness loads no bearoff database, so the db pointer is NULL and
+     * "not a database bearoff" is the TRUTHFUL answer -- this is what lets
+     * ClassifyPosition return CLASS_RACE for race boards. A non-NULL db
+     * would mean someone wired real bearoff in; then this stub is a bug. */
+    if (p == NULL) { (void)b; return 0; }
+    LOUD("isBearoff-with-db")
+}
 
 void GetPoints(float *ar, const void *pci, float *aq)
 { (void)ar; (void)pci; (void)aq; LOUD("GetPoints") }
