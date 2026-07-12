@@ -368,10 +368,13 @@ fun CoachScreen(
                                     best = selectedMove,
                                     ghost = false
                                 ) else null,
+                            // On a study view the button RETURNS to the live
+                            // position (clears the toggle) rather than handing
+                            // the turn on -- so continuing is always a two-step,
+                            // unambiguous act: Back to reality, then GNU's turn.
                             onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { { selectedAlt = -1
-                                    if (rawCubeGlance != null) viewModel.continueCoachCube()
-                                    else viewModel.continueCoachTurn() } } else null
+                                { { selectedAlt = -1; viewAfter = false } } else null,
+                            coachTurnLabel = "Back"
                         )
                     } else {
                         // The live game board carries NO arrows (maintainer
@@ -384,9 +387,10 @@ fun CoachScreen(
                             viewModel = viewModel,
                             tutorMode = false,
                             onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { { selectedAlt = -1
+                                { {
                                     if (rawCubeGlance != null) viewModel.continueCoachCube()
-                                    else viewModel.continueCoachTurn() } } else null
+                                    else viewModel.continueCoachTurn()
+                                } } else null
                         )
                     }
                 }

@@ -288,9 +288,13 @@ fun BackgammonBoard(
     viewModel: GameViewModel? = null,
     tutorMode: Boolean = false,
     coachTrace: CoachTrace? = null,
-    /** Coach review only: the on-board "GNU's turn" button (mirror of Roll on
-     *  the left half). Non-null draws it and routes its tap here. */
+    /** Coach review only: the on-board button on the left half (mirror of Roll).
+     *  Non-null draws it and routes its tap here. The label switches with
+     *  context: "GNU's turn" on the live board, "Back" while a study view is
+     *  toggled (so the first press returns to the real position, the second
+     *  hands the turn on). */
     onCoachTurn: (() -> Unit)? = null,
+    coachTurnLabel: String = "GNU's turn",
     /**
      * Position-editor hook. Non-null puts the board in EDIT: every tap is
      * reported as a zone and nothing reaches the game. Zones: 1..24 a point,
@@ -792,7 +796,7 @@ fun BackgammonBoard(
                         textAlign = android.graphics.Paint.Align.CENTER
                         isAntiAlias = true; isFakeBoldText = true
                     }
-                    canvas.nativeCanvas.drawText("GNU's turn",
+                    canvas.nativeCanvas.drawText(coachTurnLabel,
                         bX + bW / 2f,
                         bY + bH / 2f - (paint.descent() + paint.ascent()) / 2f,
                         paint)
