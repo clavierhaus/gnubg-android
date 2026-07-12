@@ -22,6 +22,20 @@ the engine, or stopped hiding what the engine already knew.
   cubeful, variance-reduced rollout (144 games) and reports win% and cubeful
   equity with standard deviations. The match equity table in use is named.
   Every value is the engine's; the app renders and subtracts, nothing more.
+- **The Analyse result stands alone.** After Analyse, the entry controls
+  (paste field, buttons) give way to the result; **Back** (bottom right)
+  returns to entry. The screen title sits in the top-right corner, and the
+  whole cube verdict fits the pane without scrolling on every supported
+  aspect ratio.
+
+### Fixed
+- **"Cube not available" is honoured.** When gnubg classifies a position as
+  having no cube decision for the roller (opponent-owned cube, Crawford,
+  cube off), the action rows are not rendered — the panel no longer argues
+  with the verdict one line above it.
+- **Changing the match equity table recomputes a shown result.** The MET is
+  applied to the engine immediately; a result on screen is re-derived under
+  the new table, so the numbers always belong to the table named beside them.
 
 ## [0.20.1] — 2026-07-12
 

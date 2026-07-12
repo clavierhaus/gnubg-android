@@ -163,6 +163,38 @@ gives you the best **chequer play** for that roll. If you leave the dice
 drop — in its own words. Setting the dice or clearing them is how you ask the
 two different questions.
 
+**Reading the result.** Once you press **Analyse**, the entry controls step
+aside and the pane shows only the answer: the match context on top, then
+gnubg's verdict. **Back** (bottom right) returns you to the entry screen; the
+board keeps showing the analysed position while you read.
+
+With **dice set** you get gnubg's ranked plays: the best move carries its own
+equity, and every line below shows how much *worse* it is than the best — so
+`-0,318` means that play gives up 0,318 equity against the top choice, not
+that the position is bad.
+
+With **no dice** you get the full cube picture:
+
+- the **verdict**, in gnubg's own words ("No redouble, take");
+- a **chances table** — Win / Gammon / Backgammon for both sides;
+- **Cubeless** and **Cubeful** equity;
+- the three **actions** — No double, Double/take, Double/pass — each with its
+  equity and its distance from gnubg's optimal, the best one marked;
+- a **Rollout** button: gnubg plays the position out 144 times (cubeful,
+  variance-reduced) and reports win% and cubeful equity, each with a ±
+  confidence figure. On a strong phone this takes a few seconds;
+- the **MET** in use, named bottom-right. Changing the match equity table in
+  Settings while a result is on screen recomputes the result under the new
+  table on the spot — the numbers you see always belong to the table named.
+
+**"Cube not available" is an answer, not an error.** The player on roll can
+only double if the cube is centred or they own it. If your setup gives the
+cube to the opponent (or it is the Crawford game, or the cube is off), gnubg
+says so, and the action rows disappear — there is no cube decision to rank.
+The chances and equities remain, because they describe the position itself.
+If you meant to ask a redouble question, set **Cube owner: You** in the
+editor.
+
 ---
 
 ## Review a saved match

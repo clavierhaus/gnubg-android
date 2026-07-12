@@ -514,3 +514,98 @@ what the user did not state.** An unstated score or cube position is an invented
 input, and an invented input produces an invented answer no less surely than
 invented code does. Where the context is unknown, the screen asks -- it does not
 assume.
+
+## The result view, redesigned (July 2026, feat/analyse-cube-depth)
+
+Field-driven rework of what the right pane shows once **Analyse** is pressed.
+Every change below is on one branch and this section is its record.
+
+### The two-state pane
+
+The pane now has exactly two states, and they do not mix:
+
+- **Entry** (no result): the paste field, **Analyse** / **Copy current** /
+  **Set up**, and the editor behind Set up. Pinned foot: **Home**.
+- **Result**: the match context, gnubg's verdict, and nothing else — the
+  entry controls are gone. Pinned foot: **Back** (bottom-right), which drops
+  the result and returns to Entry. Home is one step further.
+
+The screen title "Analyse Position" floats top-right as a corner label
+(mirroring the gear top-left, the hub's grammar) so it costs the result no
+row. Entry and editor keep their previous top offset so their first rows do
+not slide under it.
+
+### What the result shows, and where every number comes from
+
+Context, two lines, from the matchstate read back after install:
+`"<N> point match, score a - b[, Crawford]"` and
+`"Cube <n> (<Owner>) and <Roller> rolls"` (+ `Dice a b` when set).
+
+**Dice set — chequer question.** `hintMoves` (FindnSaveBestMoves) ranked
+list, best move's own equity first, every other line its delta from best.
+Unchanged this rework apart from the surrounding chrome.
+
+**No dice — cube question.** All values cross in one verb,
+`gnubg_mobile_cube_decision` (GeneralCubeDecisionE + FindCubeDecision on the
+LIVE matchstate):
+
+| shown | source |
+|---|---|
+| verdict line ("gnubg's verdict: …", light-blue prefix inline) | GetCubeRecommendation(cd) |
+| chances table, Player row: Win / Gammon / Backgammon | aarOutput[0][0..2] |
+| chances table, Opp row | 1 − aarOutput[0][0]; aarOutput[0][3..4] |
+| Cubeless / Cubeful equity | aarOutput[0][5] / aarOutput[0][6] |
+| No double / Double,take / Double,pass rows | arDouble[1..3] |
+| the per-row delta, "best" mark | display subtraction from arDouble[OPTIMAL] — same convention as the chequer list, no judgement of ours |
+| Rollout line | gnubg_mobile_rollout, 144 games, cubeful, variance-reduced: means + std devs (arOutput/arStdDev) |
+| MET footer | settings.metTable.displayName — the table the user selected, which Engine.setMet loaded |
+
+Not shown, deliberately: the eval **ply**. No verb reads the live
+evalcontext back, and a value gnubg did not hand across is not displayed
+(checkpoint Q4). A read-back verb is the honest path if it is ever wanted.
+
+### gnubg's classification governs the rows
+
+`cubedecision == NOT_AVAILABLE` (eval.h:208 — opponent owns the cube,
+Crawford, or cube off) means there IS no cube decision for the roller.
+The decision ordinal (cd[18], the same value the recommendation text is
+built from) crosses into the result, and the three action rows render only
+when gnubg says a decision exists. Chances, equities and Rollout stay: they
+describe the position, not a decision. The panel never argues with the
+verdict one line above it.
+
+### The MET is live state, so the result is a projection
+
+The Settings overlay applies a MET choice to the engine immediately
+(Engine.setMet → InitMatchEquity). A result computed under the old table
+must not sit beside a label naming the new one — and a rollout pressed
+after the change would have mixed tables. `LaunchedEffect(settings.metTable)`
+re-runs `readBack` while a result is showing: the position is still
+installed, gnubg recomputes verdict, chances and equities under the newly
+loaded table, and any rollout is invalidated. ONE-STATE applied to a
+settings dependency: re-derive from the engine, never patch or annotate a
+stale value.
+
+### Fitting without scrolling (the law, applied twice)
+
+Nothing scrolls, so the pane fits by compaction, measured against the 20:9
+device where the tail clipped twice:
+
+1. First clip: Double,take / Double,pass / Rollout / MET fell below the
+   pane. Reclaimed: title to the corner (its row freed), the cube block in
+   its own 2dp-pitch column (parent is 6dp), table + equity line at 12sp,
+   action rows 13sp, Rollout and MET sharing one row, the "gnubg's verdict"
+   section header dropped (the bold recommendation line is the header).
+2. Second clip, subtler: the Rollout button drew as an EMPTY sliver — the
+   row was cut mid-height and the button's centered label fell below the
+   clip line. A blank control is this failure's signature; the missing
+   height was exactly one header row, so the "Match context" heading went
+   (its two lines are self-explanatory) and the inline light-blue
+   "gnubg's verdict:" prefix replaced the one header the result kept.
+
+### Invalidation map (rollout state)
+
+`rolloutRes` is dropped on: new Analyse (applyId), Swap (frame flips), MET
+change (tables differ), Back (result gone). If a new reader adds a path
+that changes the installed position or its evaluation context, it must
+invalidate here too.
