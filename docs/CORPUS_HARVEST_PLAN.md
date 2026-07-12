@@ -141,6 +141,15 @@ Sequenced, each stage a separable commit:
        C.1  Parametric construction. For each entry in B, build ~10-30
             positions instantiating the signature; verify each with a
             Phase A roundtrip that the intended signal is present.
+            STATUS 2026-07-12: first pass DONE -- tools/harvest/
+            gen_positions.py generates pairs along each entry's axes and
+            admits only pairs the pilot harness verifies (signature terms
+            move the measured direction by >= 0.02, plus per-entry
+            structural checks: class flip for the race entry, the
+            forward-anchor 1.0 threshold for surrender). 64 pairs across
+            all ten measured entries in tools/harvest/positions/*.json;
+            entries below the 10-pair floor (surrender 3, race.break 4)
+            await axis expansion or the C.2 self-play supplement.
        C.2  gnubg self-play supplement. Headless run from a seed set;
             filter for positions where the target delta appears between
             played and best after gnubg analysis.

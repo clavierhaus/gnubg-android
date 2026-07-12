@@ -1,0 +1,257 @@
+{
+ "entry": "anchor.surrender.back",
+ "provenance": "parametric",
+ "generated": "2026-07-12",
+ "verifier": "tools/pilot/inputs_harness",
+ "signature": [
+  {
+   "term": "I_FORWARD_ANCHOR",
+   "side": "me",
+   "direction": "down"
+  },
+  {
+   "term": "I_BACKBONE",
+   "side": "me",
+   "direction": "up"
+  },
+  {
+   "term": "I_P1",
+   "side": "opp",
+   "direction": "down"
+  }
+ ],
+ "min_abs_delta": 0.02,
+ "pairs": [
+  {
+   "id": "a20",
+   "params": {
+    "anchor": 20,
+    "split_to": [
+     20,
+     22
+    ]
+   },
+   "played": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    1,
+    -2,
+    1,
+    -2,
+    0,
+    0
+   ],
+   "best": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    2,
+    -2,
+    0,
+    -2,
+    0,
+    0
+   ],
+   "deltas": {
+    "me.I_FORWARD_ANCHOR": -1.166667,
+    "me.I_BACKBONE": 0.530303,
+    "opp.I_P1": -0.916667
+   },
+   "pips_played": [
+    161,
+    119
+   ],
+   "class_played": 10,
+   "class_best": 10
+  },
+  {
+   "id": "a21",
+   "params": {
+    "anchor": 21,
+    "split_to": [
+     21,
+     24
+    ]
+   },
+   "played": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    -2,
+    1,
+    0,
+    -2,
+    1,
+    0
+   ],
+   "best": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    -2,
+    2,
+    0,
+    -2,
+    0,
+    0
+   ],
+   "deltas": {
+    "me.I_FORWARD_ANCHOR": -1.333333,
+    "me.I_BACKBONE": 0.553031,
+    "opp.I_P1": -1.0
+   },
+   "pips_played": [
+    164,
+    121
+   ],
+   "class_played": 10,
+   "class_best": 10
+  },
+  {
+   "id": "a22",
+   "params": {
+    "anchor": 22,
+    "split_to": [
+     22,
+     24
+    ]
+   },
+   "played": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    -2,
+    -2,
+    1,
+    0,
+    1,
+    0
+   ],
+   "best": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    4,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -3,
+    -2,
+    -2,
+    2,
+    0,
+    0,
+    0
+   ],
+   "deltas": {
+    "me.I_FORWARD_ANCHOR": -1.5,
+    "me.I_BACKBONE": 0.575758,
+    "opp.I_P1": -0.861111
+   },
+   "pips_played": [
+    165,
+    125
+   ],
+   "class_played": 10,
+   "class_best": 10
+  }
+ ]
+}
