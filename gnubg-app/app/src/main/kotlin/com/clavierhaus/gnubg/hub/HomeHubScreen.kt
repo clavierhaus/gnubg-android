@@ -48,10 +48,16 @@ fun HomeHubScreen(
         Image(
             painter = painterResource(id = R.drawable.home_hub_background),
             contentDescription = null,
-            // Fit preserves aspect (no distortion) and is device-independent;
-            // wider screens get black bars left/right, taller ones top/bottom.
+            // Crop, not Fit: the background FILLS the available screen estate on
+            // any device (no black bars), the raster equivalent of the board's
+            // relative-only rule -- occupy all the space, don't sit letterboxed
+            // inside it. Fit downscaled the 1.55-aspect image to fit INSIDE the
+            // 2.23-aspect screen (~0.46x), and that heavy downscale stairstepped
+            // the piano's thin ornamental lines. Crop covers the screen at a much
+            // gentler ~0.67x, preserving aspect (no distortion); the overflow
+            // (here top/bottom) is cropped, and the piano is the centred subject.
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Crop
         )
 
         // The same gear as in-game (Icons.Filled.Settings), wearing the hub's own
