@@ -76,3 +76,25 @@ the doubtful/bad/very-bad cutoffs apply directly. No invented thresholds.
 MWC display (needs eq2mwc exposure); beavers/raccoons (money play, not match);
 the cube REASON phrase (insight layer, docs/COMPANION.md, after the chequer
 reason line is proven).
+
+## Regression + correction (2026-07-12)
+
+The first cube flow intercepted the ordinary ROLL to coach the no-double
+decision (action 0): rollDice diverted to a cube verdict every turn, because
+canDouble() is true at the start of most turns. This held a CUBE verdict before
+the player could move, and its glance masked the chequer verdict (panel shows
+cube-if-present) -- the reported "checker evaluation disabled, only cube flags"
+regression. It also risked a double hold (cube then chequer) per turn.
+
+Correction: the no-double roll interception is REMOVED. Cube coaching now
+triggers ONLY on cube actions the player explicitly initiates -- offerDouble
+(action 1), acceptDouble (2), dropDouble (3) -- which are genuine, occasional,
+and non-intrusive. confirm()'s chequer branch clears any stale cube glance so a
+chequer move always owns the panel. Chequer evaluation flows normally again.
+
+DEFERRED (not lost): coaching the no-double / missed-double decision. The right
+design is NON-blocking -- judge it ALONGSIDE the chequer verdict (or as a
+passive note), never as a hold that pre-empts the move. It belongs with the
+insight layer, where a "you could have doubled here" line sits beside the
+chequer reason, not as a separate forced review. Tracked here so it returns by
+design rather than by re-adding the interception.

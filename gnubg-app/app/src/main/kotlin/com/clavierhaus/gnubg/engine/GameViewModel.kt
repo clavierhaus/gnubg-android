@@ -384,19 +384,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun rollDice() {
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
-        // Coach: rolling instead of doubling IS a cube decision (no-double),
-        // but only when a double is actually legal -- otherwise there is no
-        // decision to coach and the roll proceeds normally below.
-        if (coachSession && !performingHeldCube && Engine.getMatchCubeInfo()[0] == 0) {
-            viewModelScope.launch(engineThread) {
-                if (Engine.canDouble()) {
-                    judgeAndHoldCube(Engine.getMatchBoard(), 0)
-                } else {
-                    doRollNow()
-                }
-            }
-            return
-        }
         viewModelScope.launch(engineThread) {
             doRollNow()
         }
@@ -807,6 +794,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // is labelled as such.
             if (coachSession) {
                 _coachGlance.value = null
+                // A chequer verdict must never be masked by a stale cube glance
+                // (the panel shows cube-if-present): clear it here so the
+                // chequer branch always owns the panel for a chequer move.
+                _coachCubeGlance.value = null
+                pendingCubeAction = -1
                 val t0 = android.os.SystemClock.elapsedRealtime()
                 val cv = Engine.coachVerdictPre(state.oldBoard, origDice.first, origDice.second, state.board)
                 val cms = android.os.SystemClock.elapsedRealtime() - t0
