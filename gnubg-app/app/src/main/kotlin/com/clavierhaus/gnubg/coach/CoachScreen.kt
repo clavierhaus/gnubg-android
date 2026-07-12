@@ -511,8 +511,7 @@ private fun ScoreTag(label: String, badgeColor: Color, points: Int) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                label, color = Color.White,
-                fontSize = if (label.length > 4) 8.sp else 9.sp,
+                label, color = Color.White, fontSize = 9.sp,
                 fontWeight = FontWeight.Bold, maxLines = 1
             )
         }
@@ -561,7 +560,7 @@ private fun CoachPanel(
                         "Coach",
                         color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
                     )
-                    ScoreTag("Player", pal.uiActionPositive, humanScore)
+                    ScoreTag("You", pal.uiActionPositive, humanScore)
                 }
             } else {
                 Text(
