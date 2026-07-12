@@ -13,12 +13,7 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
-> **0.20.0 was staged here on 2026-07-12 and WITHDRAWN before release** (no tag
-> was ever cut). Field testing exposed a class of state-synchronisation defects
-> in the coach gameplay loop — stale verdicts, frozen phases, a cross-thread
-> clobber race. Rather than patch them piecemeal, the flow is being rebuilt
-> under the "ONE STATE, ONE WRITER, PROJECTED FROM GNUBG" contract order.
-> The content below ships when that architecture is in and field-verified.
+## [0.20.0] — 2026-07-12
 
 A milestone: **"Train with the Coach"** is now a complete, self-contained
 fourth mode. You play a full game or match against gnubg and, after each of
@@ -56,8 +51,17 @@ the app only renders it.
 - **A breathing cube.** When you offer a double, the cube softly pulses to show
   the offer is made but GNU has not answered yet; it settles to its new value
   once you continue and GNU responds.
+- **GNU's doubles are coached too.** When gnubg turns the cube on you, the pane
+  names the offer and presents Take/Drop — your response is judged and held
+  like every other coached decision, then carried out on GNU's turn.
 
 ### Changed
+- The gameplay state machine was rebuilt on a single principle: gnubg is the
+  sole authority for match *state* as it already was for match *logic*. One
+  projection reads the engine after every operation and derives the phase —
+  no code path picks one by hand, and no second thread can contradict a
+  settled turn. This closed, as one class, the frozen-panel and stale-verdict
+  defects the first staging of this release was withdrawn for.
 - The hub background now fills the screen rather than sitting letterboxed,
   which also removes the downscaling that pixelated the piano's fine lines.
 - Hub entries lead with their verb — **Play**, **Train**, **Analyse**,
@@ -77,6 +81,8 @@ the app only renders it.
   is no longer easy to miss.
 - The cube verdict now reads in the present tense, about the decision you are
   about to commit, rather than as a completed, already-accepted transaction.
+- A softlock when gnubg doubled in a coach match — the state was derived
+  correctly but no control existed to answer; Take/Drop now do.
 
 ### Documentation
 - A **Quick Start** guide covering all four modes and the non-obvious gestures —
@@ -279,7 +285,8 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...HEAD
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...v0.20.0
 [0.11.4]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...v0.11.2
