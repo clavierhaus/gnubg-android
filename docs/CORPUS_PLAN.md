@@ -166,3 +166,47 @@ A NOTICE file crediting yairwein/backgammon-teacher (MIT) for the feature
 schema, threshold table, and explanation taxonomy; the porting commit names it;
 ported files carry a header noting MIT origin + author. gnubg-android stays
 GPLv3+ as a whole.
+
+## Part 6 -- Public-domain sources: authoritative, free, but PRE-MODERN
+
+Investigated per maintainer: backgammon is centuries old, so pre-copyright
+texts exist and sidestep the licensing wall entirely (public domain = usable
+verbatim, no license). Findings, verified:
+
+  - Cady, "Backgammon" (Alice Howard Cady, 1890s): NYPL confirms public domain
+    in the US; freely available. Authoritative for its era.
+  - Hoyle's backgammon treatise (1740s) and 18th/19th-c. Hoyle editions:
+    public domain. The first instructional backgammon book.
+  - "Backgammon Rules and Directions" (1798) and similar: public domain.
+
+THE DISQUALIFYING FACT (verified, and it governs this whole avenue): the modern
+strategic framework gnubg embodies did not exist when these were written.
+  - The DOUBLING CUBE was introduced only in the late 1920s. Every pre-1930
+    text describes a cubeless game -- half of gnubg's judgement (cube equity)
+    has no vocabulary there at all.
+  - Nobody recorded backgammon match moves until 1973 (bkgm.com); there was no
+    analytical notation, no position database, no way to verify a claim.
+  - Opening and positional theory from that era is, per the New England BC
+    bibliography, "thoroughly refuted over the decades to come"; "the older a
+    book is, the greater the skepticism you should apply to its lessons."
+
+So public-domain texts are authoritative ABOUT THEIR ERA'S GAME, which is not
+the game gnubg analyzes. Using their strategic PHRASES would teach patterns a
+bot would mark wrong -- the opposite of this feature's purpose.
+
+What public-domain sources ARE good for (bounded, real):
+  1. TERMINOLOGY and the game's vocabulary where it is stable and still correct
+     (point, blot, bar, bear off, prime, pip) -- but these are Tier-B facts we
+     already have freely, not a reason to mine the texts.
+  2. HISTORY / flavor content, if the app ever wants an "about the game"
+     section -- Cady's and Jacoby's historical passages (Jacoby is NOT public
+     domain -- 1970s -- so only the genuinely old ones).
+  3. NOT strategy phrases. The corpus's teaching content cannot come from here.
+
+Conclusion for the corpus: the public-domain avenue does not yield usable
+STRATEGY phrases, because authority-in-copyright-terms and authority-in-
+backgammon-terms diverge by a century. The Tier-A decision stands: phrases are
+authored by us against gnubg's modern judgement, using the free Tier-B
+vocabulary, informed (never copied) by the modern Tier-C literature and by the
+MIT feature design (Part 5). Public-domain texts are a HISTORY resource, not a
+strategy resource.
