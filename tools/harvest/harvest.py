@@ -84,14 +84,16 @@ def main():
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
 
     providers = []
-    ak = os.environ.get("ANTHROPIC_API_KEY")
+    # .strip(): a trailing newline from a copy-paste corrupts the auth
+    # header and yields a misleading 401.
+    ak = (os.environ.get("ANTHROPIC_API_KEY") or "").strip() or None
     if ak:
         providers.append(("anthropic",
                           os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
                           lambda m, p, k=ak: call_anthropic(k, m, p)))
     else:
         print("ANTHROPIC_API_KEY unset -- skipping Claude")
-    ok = os.environ.get("OPENAI_API_KEY")
+    ok = (os.environ.get("OPENAI_API_KEY") or "").strip() or None
     if ok:
         om = os.environ.get("OPENAI_MODEL")
         if not om:
