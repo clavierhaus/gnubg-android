@@ -17,6 +17,10 @@ Then read, in this order, before saying anything else:
 
 My tree is /home/erweitert/gnubg-android. Give me only full pastable
 command blocks. Never run ./release.sh yourself.
+
+To enable your git push, I will paste a GitHub PAT (repo scope) on request;
+install it per the Credentials section of docs/HANDOVER.md. Build the Kotlin
+compile gate per that same file before your first Kotlin push.
 ```
 
 Purpose: a fresh assistant session continues seamlessly from here. Tracked in
@@ -39,17 +43,66 @@ git so `git pull` keeps the maintainer's tree and any assistant clone in sync.
   `./build_and_deploy.sh`, `--apk-only` for Kotlin-only). Test device:
   Pixel 8 Pro, landscape. Logcat, always:
   `adb logcat -c` then `adb logcat -v time -s gnubg-vm:I gnubg-coach:I gnubg-cube:I`
-- Assistant clone: `/home/claude/repo` (fresh session: clone
-  `https://github.com/clavierhaus/gnubg-android`, branch main).
-- Assistant compile gate (rebuild in a fresh sandbox; ~5 min, one time):
-  cmdline-tools → `/opt/android-sdk/cmdline-tools/latest`, accept licenses,
-  `apt-get install -y openjdk-21-jdk-headless`,
-  `echo "sdk.dir=/opt/android-sdk" > gnubg-app/local.properties` (**keep
-  untracked; delete before commits**), then
-  `cd gnubg-app && ANDROID_HOME=/opt/android-sdk ./gradlew --no-daemon :app:compileDebugKotlin`.
-  No NDK needed: the .so is built outside Gradle by build_and_deploy.sh.
-- The assistant NEVER runs `./release.sh` (needs the maintainer's gh auth and
-  signing key). Commits: `git commit -F tmp/m.txt`, push immediately.
+- Assistant clone: `/home/claude/repo`.
+
+### Credentials (NEVER written to any tracked file — supplied at runtime)
+This repo is public and git-tracked; a token committed here is a public leak.
+So no secret lives in this document. Instead:
+
+**GitHub read/write (assistant push access).** A fresh sandbox has no
+credential. To enable `git push`, the maintainer pastes a PAT into the new
+chat and the assistant installs it into the sandbox credential store (the
+token value stays in the chat, never in a commit):
+```
+git config --global credential.helper store
+printf 'https://clavierhaus:%s@github.com\n' 'PAT_GOES_HERE' > ~/.git-credentials
+chmod 600 ~/.git-credentials
+git -C /home/claude/repo remote set-url origin https://github.com/clavierhaus/gnubg-android.git
+```
+PAT scope needed: `repo` (contents read/write). Classic or fine-grained both
+work; fine-grained should grant Contents: Read and write on this repo. If push
+returns 403, the token lacks `repo`/Contents-write or has expired — the
+maintainer issues a new one at github.com/settings/tokens. Cloning a public
+repo needs no credential; only pushing does.
+
+**Release signing + publish (maintainer only, never the assistant).**
+`./release.sh` needs the maintainer's `gh` auth (active account `clavierhaus`)
+and the APK signing keystore. `keystore.properties` is gitignored and lives
+only on the maintainer's machine; the assistant never has it and never runs
+release.sh. Nothing about signing belongs in the sandbox.
+
+### Assistant Kotlin compile gate (contract: verify before every Kotlin push)
+`syntax_check.sh` is C-only; brace-counting is inventory, not verification.
+A fresh sandbox has no Android toolchain — build it once (~5 min). No NDK is
+needed: the gate compiles Kotlin only, against the prebuilt `.so` already in
+`gnubg-app/app/src/main/jniLibs/arm64-v8a/` (the maintainer's
+build_and_deploy.sh builds the `.so` with the NDK; the assistant does not).
+
+One-time setup in a new sandbox:
+```
+# 1. Java compiler (javac, not just the JRE)
+apt-get install -y openjdk-21-jdk-headless
+
+# 2. Android SDK command-line tools
+mkdir -p /opt/android-sdk/cmdline-tools && cd /tmp
+curl -sS -o clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip -q clt.zip -d /opt/android-sdk/cmdline-tools
+mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
+
+# 3. Point Gradle at the SDK (local.properties MUST stay untracked)
+echo "sdk.dir=/opt/android-sdk" > /home/claude/repo/gnubg-app/local.properties
+```
+Run the gate before every push that touches Kotlin:
+```
+cd /home/claude/repo/gnubg-app && \
+  ANDROID_HOME=/opt/android-sdk ./gradlew --no-daemon :app:compileDebugKotlin
+```
+Expect `BUILD SUCCESSFUL`. Missing SDK packages (compileSdk 35, build-tools)
+download automatically on first run. **Before any commit:
+`rm -f /home/claude/repo/gnubg-app/local.properties`** — it is machine-specific
+and must never be committed. Standard commit loop: run the gate → confirm green
+→ `rm local.properties` → `git commit -F tmp/m.txt` → `git push`.
 
 ## IN FLIGHT: release v0.20.1 — one command from done
 0.20.0 shipped 2026-07-12. 0.20.1 is a cosmetic follow-up with two
