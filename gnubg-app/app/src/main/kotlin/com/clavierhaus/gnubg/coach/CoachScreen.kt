@@ -402,6 +402,7 @@ fun CoachScreen(
                     cubeGlance = cubeGlance,
                     phase = gameState.phase,
                     winner = gameState.winner,
+                    canDouble = gameState.canDouble,
                     selectedAlt = selectedAlt,
                     onSelectAlt = { n ->
                         // A toggle has TWO states (maintainer design): tap a
@@ -501,6 +502,7 @@ private fun CoachPanel(
     cubeGlance: CubeGlance?,
     phase: GamePhase,
     winner: Int,
+    canDouble: Boolean,
     selectedAlt: Int,
     onSelectAlt: (Int) -> Unit,
     onNewGame: () -> Unit
@@ -546,6 +548,18 @@ private fun CoachPanel(
                     Text(
                         if (glance == null) "Judging your move..." else "GNU is replying...",
                         color = pal.uiTextSecondary, fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                phase == GamePhase.WAITING_FOR_ROLL -> {
+                    // The doubling window is HERE and easy to miss: the cube is
+                    // tappable before you roll, but nothing said so (field
+                    // report: "cube doesn't react" -- it does, but only at this
+                    // moment, and the player had already moved). Surface it.
+                    Text(
+                        if (canDouble) "Your turn. Roll, or tap the cube to double."
+                        else "Your turn. Tap Roll.",
+                        color = pal.uiTextSecondary, fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
