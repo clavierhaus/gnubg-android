@@ -107,17 +107,14 @@ fi
 
 # gh authed to the right account
 command -v gh >/dev/null 2>&1 || die "gh (GitHub CLI) not found on PATH"
-# Guard shows gh's OWN report on failure (third guard fixed for swallowing
-# its reason). Scoped to github.com: a failure on some other configured host
-# must not block this release. Known trap named in the message: a stale
-# GH_TOKEN/GITHUB_TOKEN env var OVERRIDES 'gh auth login', so status can fail
-# right after a successful web login.
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-  gh auth status --hostname github.com 2>&1 | sed 's/^/    /' || true
-  env | grep -E '^(GH_TOKEN|GITHUB_TOKEN)=' | sed 's/=.*/=<set -- this OVERRIDES gh auth login>/; s/^/    /' || true
-  die "gh not authenticated for github.com -- gh's own report is above. If GH_TOKEN/GITHUB_TOKEN is shown as set, unset it (unset GH_TOKEN GITHUB_TOKEN) or renew it; otherwise run: gh auth login"
-fi
-ok "gh authenticated"
+# The guard tests ONLY the credential the release will actually use: the
+# ACTIVE account's token, validated by one real API call. 'gh auth status'
+# exits non-zero if ANY configured account is broken -- a stale, inactive
+# second account (field incident: invalid default account OE1FEU-DF5JT beside
+# a perfectly valid active clavierhaus) must never block a release.
+ACTIVE_LOGIN="$(gh api user --jq .login 2>/dev/null)" \
+  || die "gh cannot reach github.com with the ACTIVE account's token -- run: gh auth login  (a stale GH_TOKEN/GITHUB_TOKEN env var also overrides the keyring login; check: env | grep -E '^(GH|GITHUB)_TOKEN')"
+ok "gh authenticated as $ACTIVE_LOGIN"
 
 # --- 2. build ----------------------------------------------------------------
 if [ "$DO_BUILD" -eq 1 ]; then
