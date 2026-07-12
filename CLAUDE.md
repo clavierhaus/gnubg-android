@@ -466,6 +466,17 @@ dead; only the reader for ms.fResigned was missing.
 The same omission nearly rebuilt SetGNUbgID, and nearly rebuilt match saving.
 Neither was caught by a compiler. Both were caught by a person, late.
 
+## KOTLIN IS COMPILE-VERIFIED BEFORE EVERY PUSH (added 2026-07-12)
+
+syntax_check.sh covers C only; it passed real Kotlin breakage twice (an
+unresolved reference shipped to the maintainer's build). Any commit touching
+Kotlin must first pass the ACTUAL compiler in the assistant's sandbox:
+
+    cd gnubg-app && ./gradlew --no-daemon :app:compileDebugKotlin
+
+Brace/paren counting and grep are inventory checks, not verification. A Kotlin
+edit reported as verified without a green compileDebugKotlin is a fabrication.
+
 ## RUN ./tools/syntax_check.sh BEFORE EVERY COMMIT THAT TOUCHES C
 
 There is no excuse for shipping a C file that does not compile. gcc, the glib

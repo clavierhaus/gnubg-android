@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.clavierhaus.gnubg.Engine
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +23,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val settings: StateFlow<GameSettings> = _settings.asStateFlow()
 
     private val _gameState = MutableStateFlow(BoardState())
-    val gameState: StateFlow<BoardState> = _gameState.asStateFlow()
+    /* ONE STATE, ONE WRITER (contract order): _gameState is written ONLY on
+     * the engine thread -- readMatchState (the projection) plus the sanctioned
+     * transient writers (the tap pipeline's sub-move draft, the busy/hold
+     * overlay setters below). The live-dice watcher runs on another thread and
+     * therefore NEVER touches _gameState: it owns its own leaf flow, merged
+     * read-only here. No field has two writers; no writer crosses a thread. */
+    private val _liveEngineDice = MutableStateFlow<Pair<Int, Int>?>(null)
+    val gameState: StateFlow<BoardState> =
+        combine(_gameState, _liveEngineDice) { st, live ->
+            if (st.phase == GamePhase.ENGINE_THINKING && live != null)
+                st.copy(engineDice = live) else st
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, BoardState())
+
+    /* What the engine work is, while phase == ENGINE_THINKING -- the one
+     * genuinely app-side distinction the panel needs (judging the player's
+     * move vs delivering it for GNU's reply). Set only by beginEngineWork /
+     * settleFromEngine on the engine thread. */
+    private val _busyKind = MutableStateFlow(BusyKind.NONE)
+    val busyKind: StateFlow<BusyKind> = _busyKind.asStateFlow()
 
     private var lastTutorAnalysis: TutorAnalysis? = null
     private var lastAnalysisDetail: MoveAnalysisDetail? = null
@@ -47,11 +68,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _coachGlance = MutableStateFlow<IntArray?>(null)
     val coachGlance: StateFlow<IntArray?> = _coachGlance.asStateFlow()
-    // True only while GNU is replying to a delivered coach move (the brief
-    // ENGINE_THINKING after continue). Distinguishes "GNU is replying" from
-    // "Judging your move" now that the glance is cleared on continue.
-    private val _coachReplying = MutableStateFlow(false)
-    val coachReplying: StateFlow<Boolean> = _coachReplying.asStateFlow()
 
     /* Coach: the committed move is HELD here, not yet given to gnubg, while the
      * player studies the verdict (maintainer design: GNU must not move -- must
@@ -318,29 +334,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // arm the live-dice watcher. Otherwise, when the engine wins the opening
         // roll at a slow level, the board sits static for 7-9s and looks frozen
         // -- a field report. The watcher surfaces the opening roll as it lands.
-        val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
-        _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
-        watchEngineDice(diceBase)
-
+        beginEngineWork(BusyKind.REPLYING)
         if (isNewMatch) Engine.newGame(_settings.value.matchLength) else Engine.nextGame()
-        val turn = Engine.getMatchTurn()
-        val dice = Engine.getMatchDice()
-        val d0 = dice[0]; val d1 = dice[1]
-        if (turn == 0 && d0 > 0) {
-            val board    = Engine.getMatchBoard()
-            val allMoves = Engine.getLegalMoves(board, d0, d1)
-            readMatchState(
-                phase         = GamePhase.HUMAN_MOVING,
-                remainingDice = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1),
-                legalMoves    = allMoves,
-                oldBoard      = board,
-                originalDice  = Pair(d0, d1)
-            )
-        } else {
-            val ed = Engine.getMoveRecordDice()
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
-                engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
-        }
+        settleFromEngine()
     }
 
     fun newGame() {
@@ -366,13 +362,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun acceptResignation() {
         viewModelScope.launch(engineThread) {
+            val scoreBefore = Engine.getMatchScore()
             Engine.commandAgree()
-            if (Engine.getMatchStatus() >= 2) {
-                val gr = Engine.getGameResult()
-                readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
-            } else {
-                readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-            }
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
         }
     }
 
@@ -383,7 +375,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun declineResignation() {
         viewModelScope.launch(engineThread) {
             Engine.commandDecline()
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+            settleFromEngine()
         }
     }
 
@@ -394,49 +386,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** The actual roll, on engineThread. Shared by the normal path and the
-     *  coach no-double fall-through (when a double is not legal there is no
-     *  cube decision to coach). */
+    /** The actual roll, on engineThread. gnubg refuses to roll while a
+     *  resignation is unanswered (play.c:4048), so surface that WITHOUT
+     *  rolling; otherwise roll and let the projection derive whatever gnubg
+     *  now says the state is. No phase is picked here (contract order). */
     private suspend fun doRollNow() {
-            // gnubg refuses to roll while a resignation is unanswered. Surface it
-            // rather than calling CommandRoll and re-entering WAITING_FOR_ROLL,
-            // which looks exactly like a stuck game.
-            if (Engine.getResignation() > 0 && Engine.getMatchTurn() == 0) {
-                readMatchState(phase = GamePhase.RESIGNATION_OFFERED)
-                return
-            }
-            Engine.rollDice()
-            val cubeAfter = Engine.getMatchCubeInfo()
-            if (cubeAfter[0] == 1 && Engine.getMatchTurn() == 0) {
-                readMatchState(phase = GamePhase.CUBE_OFFERED)
-                return
-            }
-            val turn = Engine.getMatchTurn()
-            val dice = Engine.getMatchDice()
-            val d0 = dice[0]; val d1 = dice[1]
-            android.util.Log.i("gnubg-vm", "rollDice: turn=$turn d0=$d0 d1=$d1 gs=${Engine.getMatchStatus()}")
-            if (turn == 0 && d0 > 0) {
-                val board    = Engine.getMatchBoard()
-                val remaining = if (d0 == d1) listOf(d0,d0,d0,d0) else listOf(d0,d1)
-                val allMoves = Engine.getLegalMoves(board, d0, d1)
-                android.util.Log.i("gnubg-vm", "rollDice legal d0=$d0 d1=$d1 moves=${allMoves.size/8}")
-                readMatchState(
-                    phase         = GamePhase.HUMAN_MOVING,
-                    remainingDice = remaining,
-                    legalMoves    = allMoves,
-                    oldBoard      = board,
-                    originalDice  = Pair(d0, d1),
-                    engineDice    = null
-                )
-            } else {
-                if (Engine.getMatchStatus() >= 2)
-                    Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
-                else {
-                    val ed = Engine.getMoveRecordDice()
-                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
-                        engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
-                }
-            }
+        if (Engine.getResignation() > 0 && Engine.getMatchTurn() == 0) {
+            settleFromEngine()
+            return
+        }
+        Engine.rollDice()
+        settleFromEngine()
     }
 
 
@@ -732,15 +692,42 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             while (_gameState.value.phase == GamePhase.ENGINE_THINKING) {
                 val v = Engine.peekLiveDice()
                 if (v.size == 3 && v[0] != baseSeq && v[1] in 1..6 && v[2] in 1..6) {
-                    val cur = _gameState.value
-                    if (cur.phase == GamePhase.ENGINE_THINKING) {
-                        _gameState.value = cur.copy(engineDice = Pair(v[1], v[2]))
-                    }
+                    // Contract order: this coroutine is on Dispatchers.Default;
+                    // it must NEVER write _gameState (the read-copy-write here
+                    // once clobbered a just-settled WAITING_FOR_ROLL back to
+                    // ENGINE_THINKING -- the frozen-board bug). It owns its own
+                    // leaf flow; the public gameState merges it, gated on the
+                    // thinking phase, so a late write is displayed nowhere.
+                    _liveEngineDice.value = Pair(v[1], v[2])
                     break
                 }
                 kotlinx.coroutines.delay(100)
             }
+            if (_gameState.value.phase != GamePhase.ENGINE_THINKING)
+                _liveEngineDice.value = null
         }
+    }
+
+    /* The single entry into engine work. Clears the coach verdicts (any new
+     * engine work invalidates the verdict on screen -- this ONE rule replaces
+     * the per-path clears that kept being forgotten), records what the work
+     * is, shows the thinking overlay, and arms the live-dice watcher. Engine
+     * thread only. */
+    private fun beginEngineWork(kind: BusyKind) {
+        _coachGlance.value = null
+        _coachCubeGlance.value = null
+        pendingCubeAction = -1
+        _busyKind.value = kind
+        val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
+        _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+        watchEngineDice(diceBase)
+    }
+
+    /* The coach HOLD -- the one genuinely app-side phase (a decision judged
+     * but deliberately not yet given to gnubg). Engine thread only. */
+    private fun holdCoachReview() {
+        _busyKind.value = BusyKind.NONE
+        _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
     }
 
     fun passTurn() {
@@ -750,33 +737,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.board.contentEquals(state.oldBoard)) return
         viewModelScope.launch(engineThread) {
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
-            // Coach: a no-move turn has no chequer decision to judge, so there
-            // is nothing to hold -- but the stale verdict from the PREVIOUS
-            // move must still be cleared so it does not linger on the pass.
-            if (coachSession) { _coachGlance.value = null; _coachReplying.value = true }
-            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
-            watchEngineDice(diceBase)
-            android.util.Log.i("gnubg-vm", "passTurn: applyMoveString('')")
+            val scoreBefore = Engine.getMatchScore()
+            // A no-move turn has nothing to judge, so no hold -- but the same
+            // one busy entry applies: it clears any stale verdict and labels
+            // the wait. The projection derives whatever gnubg says comes next
+            // (including a game the forced pass just lost).
+            beginEngineWork(BusyKind.REPLYING)
             Engine.applyMoveString("")
-            if (Engine.getMatchStatus() >= 2) {
-                if (coachSession) _coachReplying.value = false
-                Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
-                return@launch
-            }
-            val cubeInfo = Engine.getMatchCubeInfo()
-            if (cubeInfo[0] == 1 && Engine.getMatchTurn() == 0) {
-                if (coachSession) _coachReplying.value = false
-                readMatchState(phase = GamePhase.CUBE_OFFERED)
-                return@launch
-            }
-            val mrd = Engine.getMoveRecordDice()
-            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
-            if (coachSession) _coachReplying.value = false
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
-            android.util.Log.i("gnubg-vm",
-                "passTurn: settled phase=${_gameState.value.phase} turn=${_gameState.value.turn} " +
-                    "onBar=${_gameState.value.board.getOrElse(49){0}}")
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
         }
     }
 
@@ -799,22 +767,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // (play.c:291 updates anScore synchronously before the new game starts),
             // so it is the reliable game-over signal -- same pattern as commandResign.
             val scoreBefore = Engine.getMatchScore()
-            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
 
             // Coach: the verdict is computed and shown BEFORE gnubg's reply
             // (maintainer order) -- board-based against the live pre-move
-            // state, so no record walking. The panel shows "Judging your
-            // move..." (glance cleared) until the verdict lands, THEN the
-            // engine rolls. The wait the player feels is the judging, and it
-            // is labelled as such.
+            // state, so no record walking. beginEngineWork(JUDGING) is the ONE
+            // clear point: it wipes both stale glances so a chequer verdict is
+            // never masked by an old cube one, and labels the wait honestly.
             if (coachSession) {
-                _coachGlance.value = null
-                // A chequer verdict must never be masked by a stale cube glance
-                // (the panel shows cube-if-present): clear it here so the
-                // chequer branch always owns the panel for a chequer move.
-                _coachCubeGlance.value = null
-                pendingCubeAction = -1
+                beginEngineWork(BusyKind.JUDGING)
                 val t0 = android.os.SystemClock.elapsedRealtime()
                 val cv = Engine.coachVerdictPre(state.oldBoard, origDice.first, origDice.second, state.board)
                 val cms = android.os.SystemClock.elapsedRealtime() - t0
@@ -829,11 +789,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // the player's position and dice; the game waits for the
                 // player's active "GNU's turn".
                 pendingCoachMove = moveStr
-                _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
+                holdCoachReview()
                 return@launch
             }
 
-            watchEngineDice(diceBase)
+            beginEngineWork(BusyKind.REPLYING)
             Engine.applyMoveString(moveStr)
 
             // Tutor 2-ply analysis (~2s) is DECOUPLED: it runs in
@@ -846,23 +806,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // score, so the delta -- and the winner/points derived from it -- is
             // gnubg-authoritative. getMatchStatus()/getGameResult() are NOT used
             // here because the auto-advance resets ms.gs and the game-info record.
-            val scoreAfter = Engine.getMatchScore()
-            val humanDelta  = scoreAfter[0] - scoreBefore[0]
-            val engineDelta = scoreAfter[1] - scoreBefore[1]
-            if (humanDelta != 0 || engineDelta != 0) {
-                val winner = if (humanDelta > engineDelta) 0 else 1
-                val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
-                readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
-                return@launch
-            }
-            val cubeInfo = Engine.getMatchCubeInfo()
-            if (cubeInfo[0] == 1 && Engine.getMatchTurn() == 0) {
-                readMatchState(phase = GamePhase.CUBE_OFFERED)
-                return@launch
-            }
-            val mrd = Engine.getMoveRecordDice()
-            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
             if (!coachSession) analyzeMoveInBackground(state.oldBoard)
         }
     }
@@ -939,10 +883,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        _gameState.value = state.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
-
         viewModelScope.launch(engineThread) {
             try {
+                val scoreBefore = Engine.getMatchScore()
+                // Busy entry INSIDE the engine launch: the old code wrote the
+                // thinking phase on the caller thread, a second-thread writer
+                // of the shadow (contract order violation found in review).
+                beginEngineWork(BusyKind.REPLYING)
                 val dbg = Engine.getCubeDebugState()
                 android.util.Log.i(
                     "gnubg-vm",
@@ -959,7 +906,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // the Kotlin side is no longer reimplementing cube legality.
                 if (!Engine.canDouble()) {
                     android.util.Log.i("gnubg-vm", "offerDouble: rejected by engine canDouble()")
-                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                    settleFromEngine()
                     return@launch
                 }
 
@@ -1006,23 +953,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // no winner means it took and play continues. (getGameResult
                 // returns result[0] = -1 while the game is still in progress.)
                 val gr = Engine.getGameResult()
-                if (gr[0] >= 0) {
-                    android.util.Log.i(
-                        "gnubg-vm",
-                        "offerDouble: engine dropped; result=${gr.joinToString(",")}"
-                    )
-                    readMatchState(
-                        phase = GamePhase.GAME_OVER,
-                        winner = gr[0],
-                        nPoints = gr[1]
-                    )
-                } else {
-                    android.util.Log.i("gnubg-vm", "offerDouble: engine took; play continues")
-                    readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
-                }
+                android.util.Log.i("gnubg-vm",
+                    if (gr[0] >= 0) "offerDouble: engine dropped; result=${gr.joinToString(",")}"
+                    else "offerDouble: engine took; play continues")
+                // Score delta is the uniform gnubg-authoritative end signal
+                // (survives NextTurn auto-advance); a drop changes the score.
+                settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
             } catch (t: Throwable) {
                 android.util.Log.e("gnubg-vm", "offerDouble: failed", t)
-                readMatchState(phase = GamePhase.WAITING_FOR_ROLL)
+                settleFromEngine()
             } finally {
                 actionInProgress.set(false)
             }
@@ -1036,16 +975,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch(engineThread) {
             // The take hands the turn straight to the engine, which rolls and
-            // thinks inside commandTake -- previously the UI sat frozen in
-            // CUBE_OFFERED for the whole think. Enter ENGINE_THINKING and watch
-            // for its roll, same as the chequer paths.
-            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
-            watchEngineDice(diceBase)
+            // thinks inside commandTake -- the busy overlay + dice watcher show
+            // the wait; the projection derives whatever gnubg says follows
+            // (including a game GNU's ensuing move may have ended).
+            val scoreBefore = Engine.getMatchScore()
+            beginEngineWork(BusyKind.REPLYING)
             Engine.commandTake()
-            val ed = Engine.getMoveRecordDice()
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL,
-                engineDice = if (ed[0] > 0) Pair(ed[0], ed[1]) else null)
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
         }
     }
 
@@ -1055,15 +991,42 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch(engineThread) {
+            val scoreBefore = Engine.getMatchScore()
             Engine.commandDrop()
-            Engine.getGameResult().let { gr ->
-                readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1])
-            }
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
         }
     }
 
 
-    private fun refreshFromEngineAfterControl() {
+    /* THE settle (contract order: one projection, every path). After ANY
+     * engine operation, this derives the phase FROM gnubg -- game over,
+     * resignation, cube, a rolled human turn, or waiting -- and projects it via
+     * readMatchState, the sole writer. `result` carries the one thing gnubg
+     * cannot answer after the fact: a game that ended by score delta, because
+     * NextTurn(TRUE) auto-starts the next game and resets ms.gs/game-info
+     * before we can read them (play.c:291; the confirm() comment documents
+     * it). No caller picks a phase; gnubg IS the phase. */
+    /* Game-over by score delta: gnubg updates anScore synchronously before
+     * NextTurn(TRUE) auto-starts the next game (play.c:291), so the delta is
+     * the gnubg-authoritative end-of-game signal that survives the advance.
+     * Returns (winner, points) or null if no game ended. */
+    private fun gameResultFromScoreDelta(scoreBefore: IntArray): Pair<Int, Int>? {
+        val after = Engine.getMatchScore()
+        val humanDelta  = after[0] - scoreBefore[0]
+        val engineDelta = after[1] - scoreBefore[1]
+        if (humanDelta == 0 && engineDelta == 0) return null
+        val winner = if (humanDelta > engineDelta) 0 else 1
+        val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
+        return Pair(winner, points)
+    }
+
+    private fun settleFromEngine(result: Pair<Int, Int>? = null) {
+        _busyKind.value = BusyKind.NONE
+        if (result != null) {
+            android.util.Log.i("gnubg-vm", "settle: GAME_OVER winner=${result.first} pts=${result.second}")
+            readMatchState(phase = GamePhase.GAME_OVER, winner = result.first, nPoints = result.second)
+            return
+        }
         val status = Engine.getMatchStatus()
         if (status >= 2) {
             Engine.getGameResult().let { gr ->
@@ -1096,10 +1059,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Undo/Commit and nothing to play. Field report from the Coach opening;
         // the same hole was latent under Play's "New match" whenever the human
         // won the opening roll, since commandNewMatch also lands here.
+        android.util.Log.i("gnubg-vm",
+            "settle: phase=$phase turn=$turn dice=${dice[0]},${dice[1]} " +
+                "cube=${cubeInfo[0]},${cubeInfo[1]},${cubeInfo[2]}")
         if (phase == GamePhase.HUMAN_MOVING) {
             val d0 = dice[0]; val d1 = dice[1]
             val board    = Engine.getMatchBoard()
             val allMoves = Engine.getLegalMoves(board, d0, d1)
+            android.util.Log.i("gnubg-vm", "settle: human turn d0=$d0 d1=$d1 moves=${allMoves.size / 8}")
             readMatchState(
                 phase         = GamePhase.HUMAN_MOVING,
                 remainingDice = if (d0 == d1) listOf(d0, d0, d0, d0) else listOf(d0, d1),
@@ -1121,7 +1088,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun commandNewGame() {
         viewModelScope.launch(engineThread) {
             Engine.commandNewGame()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
@@ -1164,7 +1131,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _coachCubeGlance.value = null
         }
         pendingCubeAction = action
-        _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
+        holdCoachReview()
     }
 
     /* The player's active continuation for a cube decision (mirrors
@@ -1196,39 +1163,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val mv = pendingCoachMove ?: return@launch
             if (_gameState.value.phase != GamePhase.COACH_REVIEW) return@launch
             pendingCoachMove = null
-            // The verdict belonged to the move you just studied; clear it now
-            // so it does not linger into GNU's reply and the next turn. Without
-            // this the panel keeps showing the old verdict (and, mid-reply, the
-            // "GNU is replying" line never gives way to "Your turn"). confirm()
-            // clears it before each NEW verdict; the continuation must clear it
-            // when the studied move is finally committed.
-            _coachGlance.value = null
-            _coachReplying.value = true
             val scoreBefore = Engine.getMatchScore()
-            val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
-            _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
-            watchEngineDice(diceBase)
+            // beginEngineWork clears the studied verdict (it belonged to the
+            // held move, now being committed -- one rule, every path) and
+            // labels the wait as GNU's reply; settleFromEngine derives
+            // whatever gnubg says comes next. No phase is picked here.
+            beginEngineWork(BusyKind.REPLYING)
             android.util.Log.i("gnubg-coach", "continue: delivering '$mv'")
             Engine.applyMoveString(mv)
-            android.util.Log.i("gnubg-coach",
-                "continue: applied; turn=${Engine.getMatchTurn()} gs=${Engine.getMatchStatus()}")
-            val scoreAfter = Engine.getMatchScore()
-            val humanDelta  = scoreAfter[0] - scoreBefore[0]
-            val engineDelta = scoreAfter[1] - scoreBefore[1]
-            if (humanDelta != 0 || engineDelta != 0) {
-                val winner = if (humanDelta > engineDelta) 0 else 1
-                val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
-                _coachReplying.value = false
-                readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
-                return@launch
-            }
-            val mrd = Engine.getMoveRecordDice()
-            val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
-            android.util.Log.i("gnubg-coach",
-                "continue: pre-settle mrd0=${mrd[0]} mrd1=${mrd.getOrElse(1){0}} -> WAITING_FOR_ROLL")
-            _coachReplying.value = false
-            readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
-            android.util.Log.i("gnubg-coach", "continue: settled phase=${_gameState.value.phase}")
+            settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
         }
     }
 
@@ -1245,12 +1188,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachCubeGlance.value = null
         pendingCubeAction = -1
         performingHeldCube = false
-        _coachReplying.value = false
+        _busyKind.value = BusyKind.NONE
+        _liveEngineDice.value = null
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(difficulty.settingIndex)
             Engine.commandNewMatch(length)
             Engine.commandNewGame()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
@@ -1264,7 +1208,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachCubeGlance.value = null
         pendingCubeAction = -1
         performingHeldCube = false
-        _coachReplying.value = false
+        _busyKind.value = BusyKind.NONE
+        _liveEngineDice.value = null
         _showMatchSetup.value = true
         // Next Coach entry starts at its setup screen, not straight into a game.
         _showCoachSetup.value = true
@@ -1279,21 +1224,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(engineThread) {
             Engine.commandNewMatch(length)
             Engine.commandNewGame()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     fun commandNewSession(games: Int = 0) {
         viewModelScope.launch(engineThread) {
             Engine.commandNewSession(games)
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     fun commandEndGame() {
         viewModelScope.launch(engineThread) {
             Engine.commandEndGame()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
@@ -1310,14 +1255,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val winner = if (humanDelta > engineDelta) 0 else 1
                 val points = kotlin.math.abs(humanDelta - engineDelta)
                     .coerceAtLeast(1)
-
-                readMatchState(
-                    phase = GamePhase.GAME_OVER,
-                    winner = winner,
-                    nPoints = points
-                )
+                settleFromEngine(result = Pair(winner, points))
             } else {
-                refreshFromEngineAfterControl()
+                settleFromEngine()
             }
         }
     }
@@ -1325,26 +1265,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun commandNext(argument: String = "") {
         viewModelScope.launch(engineThread) {
             Engine.commandNext(argument)
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     fun commandAccept() {
         viewModelScope.launch(engineThread) {
             Engine.commandAccept()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     fun commandReject() {
         viewModelScope.launch(engineThread) {
             Engine.commandReject()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     // commandAgree() / commandDecline() wrappers were removed here. They had no
-    // caller, and they routed through refreshFromEngineAfterControl(), which has
+    // caller, and they routed through settleFromEngine(), which has
     // no GAME_OVER branch -- so accepting a resignation through them would have
     // left the phase at WAITING_FOR_ROLL after gnubg ended the game. Use
     // acceptResignation() / declineResignation(), which read gnubg's match status.
@@ -1352,14 +1292,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun commandRedouble() {
         viewModelScope.launch(engineThread) {
             Engine.commandRedouble()
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
     fun loadGame(path: String) {
         viewModelScope.launch(engineThread) {
             Engine.loadGame(path)
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
@@ -1372,7 +1312,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun loadMatch(path: String) {
         viewModelScope.launch(engineThread) {
             Engine.loadMatch(path)
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 
@@ -1385,7 +1325,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun loadPosition(path: String) {
         viewModelScope.launch(engineThread) {
             Engine.loadPosition(path)
-            refreshFromEngineAfterControl()
+            settleFromEngine()
         }
     }
 

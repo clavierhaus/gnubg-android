@@ -101,6 +101,14 @@ data class BoardState(
     }
 }
 
+/** What ENGINE_THINKING is doing -- the one app-side distinction the coach
+ *  panel needs. Set only by the engine thread's beginEngineWork/settle. */
+enum class BusyKind {
+    NONE,
+    JUDGING,   // computing the verdict on the player's move (coach)
+    REPLYING   // the player's action is delivered; GNU rolls and replies
+}
+
 enum class GamePhase {
     WAITING_FOR_ROLL,
     HUMAN_MOVING,

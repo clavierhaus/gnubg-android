@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.engine.GamePhase
+import com.clavierhaus.gnubg.engine.BusyKind
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
@@ -206,7 +207,7 @@ fun CoachScreen(
     // Cube glance (M4): present whenever a cube decision is under review.
     val rawCubeGlance by viewModel.coachCubeGlance.collectAsState()
     val cubeGlance = rawCubeGlance?.let { decodeCube(it) }
-    val coachReplying by viewModel.coachReplying.collectAsState()
+    val busyKind by viewModel.busyKind.collectAsState()
 
     // A cube double is held for review when a cube glance is present in
     // COACH_REVIEW and it was the double-or-not decision (not take/drop). While
@@ -430,7 +431,7 @@ fun CoachScreen(
                     phase = gameState.phase,
                     winner = gameState.winner,
                     canDouble = gameState.canDouble,
-                    replying = coachReplying,
+                    busy = busyKind,
                     humanScore = gameState.humanScore,
                     engineScore = gameState.engineScore,
                     matchLength = gameState.matchLength,
@@ -555,7 +556,7 @@ private fun CoachPanel(
     phase: GamePhase,
     winner: Int,
     canDouble: Boolean,
-    replying: Boolean,
+    busy: BusyKind,
     humanScore: Int,
     engineScore: Int,
     matchLength: Int,
@@ -620,7 +621,11 @@ private fun CoachPanel(
                     // verdict is computed FIRST -- "Judging your move..." --
                     // then, verdict on screen, GNU rolls and replies.
                     Text(
-                        if (replying) "GNU is replying..." else "Judging your move...",
+                        when (busy) {
+                            BusyKind.JUDGING  -> "Judging your move..."
+                            BusyKind.REPLYING -> "GNU is replying..."
+                            BusyKind.NONE     -> "GNU is thinking..."
+                        },
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
