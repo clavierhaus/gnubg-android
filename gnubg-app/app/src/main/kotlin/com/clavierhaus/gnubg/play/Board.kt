@@ -295,6 +295,10 @@ fun BackgammonBoard(
      *  hands the turn on). */
     onCoachTurn: (() -> Unit)? = null,
     coachTurnLabel: String = "GNU's turn",
+    /** 0 = no pending double. >0 breathes a glow around the cube to signal a
+     *  coach double that has been OFFERED but not yet answered by GNU. Driven
+     *  by an animation in the caller; the Canvas redraws as it changes. */
+    cubePendingPulse: Float = 0f,
     /**
      * Position-editor hook. Non-null puts the board in EDIT: every tap is
      * reported as a zone and nothing reaches the game. Zones: 1..24 a point,
@@ -593,6 +597,22 @@ fun BackgammonBoard(
             // Cube is not part of tutor / live-analysis mode: no doubling, so
             // nothing to draw (not even the centred 64).
             if (!tutorMode) {
+                // Pending-double glow: a soft ring that breathes around the
+                // cube while a coach double awaits GNU's answer. Drawn UNDER
+                // the cube so the face stays crisp. pulse 0..1 -> alpha and a
+                // little extra radius.
+                if (cubePendingPulse > 0f) {
+                    val cx = g.cubeRect.left + g.cubeSize / 2f
+                    val cy = g.cubeRect.top + g.cubeSize / 2f
+                    val baseR = g.cubeSize * 0.72f
+                    val r = baseR + g.cubeSize * 0.12f * cubePendingPulse
+                    val a = 0.20f + 0.45f * cubePendingPulse
+                    drawCircle(
+                        color = p.uiActionRoll.copy(alpha = a),
+                        radius = r, center = Offset(cx, cy),
+                        style = Stroke(width = g.cubeSize * 0.10f)
+                    )
+                }
                 val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
                 drawCube(g.cubeRect.left, g.cubeRect.top, g.cubeSize, cubeDisplayValue,
                     p.cubeFace, p.cubeDot, p.cubeText)

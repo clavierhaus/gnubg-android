@@ -374,7 +374,8 @@ fun CoachScreen(
                             // unambiguous act: Back to reality, then GNU's turn.
                             onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
                                 { { selectedAlt = -1; viewAfter = false } } else null,
-                            coachTurnLabel = "Back"
+                            coachTurnLabel = "Back",
+                            cubePendingPulse = pulse
                         )
                     } else {
                         // The live game board carries NO arrows (maintainer
@@ -390,7 +391,8 @@ fun CoachScreen(
                                 { {
                                     if (rawCubeGlance != null) viewModel.continueCoachCube()
                                     else viewModel.continueCoachTurn()
-                                } } else null
+                                } } else null,
+                            cubePendingPulse = pulse
                         )
                     }
                 }
