@@ -750,22 +750,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.board.contentEquals(state.oldBoard)) return
         viewModelScope.launch(engineThread) {
             if (_gameState.value.phase != GamePhase.HUMAN_MOVING) return@launch
+            // Coach: a no-move turn has no chequer decision to judge, so there
+            // is nothing to hold -- but the stale verdict from the PREVIOUS
+            // move must still be cleared so it does not linger on the pass.
+            if (coachSession) { _coachGlance.value = null; _coachReplying.value = true }
             val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
             watchEngineDice(diceBase)
+            android.util.Log.i("gnubg-vm", "passTurn: applyMoveString('')")
             Engine.applyMoveString("")
             if (Engine.getMatchStatus() >= 2) {
+                if (coachSession) _coachReplying.value = false
                 Engine.getGameResult().let { gr -> readMatchState(phase = GamePhase.GAME_OVER, winner = gr[0], nPoints = gr[1]) }
                 return@launch
             }
             val cubeInfo = Engine.getMatchCubeInfo()
             if (cubeInfo[0] == 1 && Engine.getMatchTurn() == 0) {
+                if (coachSession) _coachReplying.value = false
                 readMatchState(phase = GamePhase.CUBE_OFFERED)
                 return@launch
             }
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
+            if (coachSession) _coachReplying.value = false
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
+            android.util.Log.i("gnubg-vm",
+                "passTurn: settled phase=${_gameState.value.phase} turn=${_gameState.value.turn} " +
+                    "onBar=${_gameState.value.board.getOrElse(49){0}}")
         }
     }
 
