@@ -499,18 +499,25 @@ private fun WhyStub() {
         color = pal.uiTextDisabled, fontSize = 11.sp)
 }
 
-/** A score tag: a checker-coloured dot for the side, and its points. Used to
- *  flank the Coach title with the running match score. */
+/** A score badge matching the tournament scoreboard: a circular avatar with
+ *  the side's label inside (GNU / Player), and its points beside it. */
 @Composable
-private fun ScoreTag(dotColor: Color, points: Int) {
+private fun ScoreTag(label: String, badgeColor: Color, points: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(14.dp)
-                .background(dotColor, androidx.compose.foundation.shape.CircleShape)
-        )
+                .size(34.dp)
+                .background(badgeColor, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                label, color = Color.White,
+                fontSize = if (label.length > 4) 8.sp else 9.sp,
+                fontWeight = FontWeight.Bold, maxLines = 1
+            )
+        }
         Spacer(modifier = Modifier.width(5.dp))
-        Text("$points", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text("$points", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -549,12 +556,12 @@ private fun CoachPanel(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    ScoreTag(pal.checkerDark, engineScore)
+                    ScoreTag("GNU", pal.uiActionRoll, engineScore)
                     Text(
                         "Coach",
                         color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
                     )
-                    ScoreTag(pal.checkerLight, humanScore)
+                    ScoreTag("Player", pal.uiActionPositive, humanScore)
                 }
             } else {
                 Text(
