@@ -744,7 +744,7 @@ fun AnalyseScreen(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp, top = 12.dp)
-                    .size(24.dp)
+                    .size(28.dp)
                     .clickable { onOpenSettings() }
             )
         }

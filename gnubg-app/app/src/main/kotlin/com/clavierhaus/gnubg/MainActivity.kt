@@ -27,7 +27,6 @@ import com.clavierhaus.gnubg.hub.HomeHubScreen
 import com.clavierhaus.gnubg.learn.LearnScreen
 import com.clavierhaus.gnubg.options.OptionsModeScreen
 import com.clavierhaus.gnubg.play.GameLayout
-import com.clavierhaus.gnubg.profile.ProfileScreen
 import com.clavierhaus.gnubg.shared.AppMode
 import com.clavierhaus.gnubg.review.ReviewScreen
 import com.clavierhaus.gnubg.ui.theme.GnubgTheme
@@ -161,7 +160,6 @@ class MainActivity : ComponentActivity() {
                         onAnalysePosition = { mode = AppMode.ANALYSE },
                         onReviewMatch = { mode = AppMode.REVIEW },
                         onOptions = { showSettings = true },
-                        onProfile = { mode = AppMode.PROFILE }
                     )
 
                     AppMode.PLAY -> GameLayout(
@@ -202,9 +200,6 @@ class MainActivity : ComponentActivity() {
                         onBackToHub = { mode = AppMode.HUB }
                     )
 
-                    AppMode.PROFILE -> ProfileScreen(
-                        onBackToHub = { mode = AppMode.HUB }
-                    )
                 }
 
                 if (showSettings) {

@@ -7,6 +7,5 @@ enum class AppMode {
     LEARN,
     ANALYSE,
     REVIEW,
-    OPTIONS,
-    PROFILE
+    OPTIONS
 }

@@ -43,7 +43,6 @@ fun HomeHubScreen(
     onAnalysePosition: () -> Unit,
     onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
-    onProfile: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
@@ -135,14 +134,6 @@ fun HomeHubScreen(
             HomeHubEntry("Review Match", onReviewMatch)
         }
 
-        BasicText(
-            text = "Profile",
-            style = HomeSecondaryStyle,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .clickable(onClick = onProfile)
-                .padding(end = 42.dp, bottom = 34.dp)
-        )
     }
 }
 
@@ -182,7 +173,7 @@ private val DejaVuSerif = FontFamily(
 // The hub's drop shadow, in the units Shadow uses: pixels.
 private const val HOME_SHADOW_OFFSET_PX = 2f
 private const val HOME_SHADOW_BLUR_PX = 8f
-private val GEAR_SIZE = 36.dp
+private val GEAR_SIZE = 28.dp
 
 private val HomeShadow = Shadow(
     color = Color.Black,
