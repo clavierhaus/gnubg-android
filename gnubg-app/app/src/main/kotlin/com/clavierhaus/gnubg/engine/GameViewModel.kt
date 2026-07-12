@@ -1199,7 +1199,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             val mrd = Engine.getMoveRecordDice()
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
+            android.util.Log.i("gnubg-coach",
+                "continue: pre-settle mrd0=${mrd[0]} mrd1=${mrd.getOrElse(1){0}} -> WAITING_FOR_ROLL")
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
+            android.util.Log.i("gnubg-coach", "continue: settled phase=${_gameState.value.phase}")
         }
     }
 
