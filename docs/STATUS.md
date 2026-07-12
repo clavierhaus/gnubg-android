@@ -1,4 +1,4 @@
-# GNU Backgammon for Android — Status (V0.9.1)
+# GNU Backgammon for Android — Status (0.20.0)
 
 **Authoritative current-state document.** Everything else defers to this.
 For deep engineering history see MASTER_V0.9.md; for forward plans see ROADMAP.md.
@@ -11,13 +11,22 @@ own engine. What remains on each is reporting depth, not the feature: a per-move
 verdict inside review, review of the live game in place, a whole-match rating.
 The README leads with these; this document records their gaps in detail below.
 
-**The fourth mode is underway (July 2026): "Train with the Coach".** The engine
-side of its first milestone is done and build-verified: gnubg_mobile_coach_verdict
-returns gnubg's full verdict on the last human move (rank, equities, severity,
-both moves, pre-move board, per-move probability vectors, top-5 candidates) from
-one evaluation. No UI yet. Identity, decisions and document map: docs/COACH.md;
-milestones: docs/COACH_MODE_PLAN.md; north star: docs/TUTOR_VISION.md. The
-one-point Chequer-Play Tutor stays permanently as the movement-only companion.
+**The fourth mode is COMPLETE (0.20.0, July 2026): "Train with the Coach".**
+A self-contained mode: a setup screen (strength + match length) opens it, then
+you play a full game or match and gnubg judges each of your moves — three honest
+tiers (best / fine-but-not-best / flagged with severity and equity cost), a
+before/after explorer over your move and gnubg's better ones, and — at match
+length > 1 — cube coaching on the doubles you offer, take, or drop. Every value
+is gnubg's own; no terminology is invented. Verbs: gnubg_mobile_coach_verdict_pre
+(chequer, carries the pre-board, candidates and dice) and
+gnubg_mobile_coach_cube_verdict (cube: gnubg's cubedecision, arDouble equities,
+Skill band). Deferred by design (docs/COACH_CUBE_PLAN.md): coaching the
+no-double / missed-double decision, to return NON-blocking beside the chequer
+verdict via the insight layer. The insight/phrase layer itself (a one-or-two
+phrase explanation matched to the feature delta) is planned, not built:
+docs/COMPANION.md, docs/CORPUS_PLAN.md. Identity and document map: docs/COACH.md;
+north star: docs/TUTOR_VISION.md. The one-point game is the movement-only,
+chequer-only trainer; longer matches add the cube.
 
 ## What V0.9.1 is
 

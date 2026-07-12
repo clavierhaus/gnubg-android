@@ -28,8 +28,8 @@ android {
         applicationId = "com.clavierhaus.gnubg"
         minSdk = 31
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.11.4"
+        versionCode = 8
+        versionName = "0.20.0"
     }
 
     signingConfigs {
