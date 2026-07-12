@@ -13,7 +13,12 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
-## [0.20.0] — 2026-07-12
+> **0.20.0 was staged here on 2026-07-12 and WITHDRAWN before release** (no tag
+> was ever cut). Field testing exposed a class of state-synchronisation defects
+> in the coach gameplay loop — stale verdicts, frozen phases, a cross-thread
+> clobber race. Rather than patch them piecemeal, the flow is being rebuilt
+> under the "ONE STATE, ONE WRITER, PROJECTED FROM GNUBG" contract order.
+> The content below ships when that architecture is in and field-verified.
 
 A milestone: **"Train with the Coach"** is now a complete, self-contained
 fourth mode. You play a full game or match against gnubg and, after each of
@@ -274,8 +279,7 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.20.0...HEAD
-[0.20.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...v0.20.0
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...HEAD
 [0.11.4]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.0...v0.11.2
