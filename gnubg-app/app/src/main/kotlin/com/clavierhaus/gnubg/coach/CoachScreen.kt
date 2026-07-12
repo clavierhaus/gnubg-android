@@ -2,6 +2,7 @@ package com.clavierhaus.gnubg.coach
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -251,11 +252,30 @@ fun CoachScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                // Vertical label (H/o/m/e) -- fits the narrow control rail and
-                // reads as a spine down the left edge (maintainer aesthetic).
-                GameButton("H\no\nm\ne", pal.uiButtonNeutral, compact = true) {
-                    viewModel.endCoachSession()
-                    onReturnToHub()
+                // Vertical Home -- one letter per line, a spine down the narrow
+                // control rail (maintainer aesthetic). Built inline rather than
+                // via GameButton: that shared button is maxLines=1 by contract
+                // (a wrapping button label is malformed), so it collapses a
+                // multi-line label -- which is exactly why the earlier "H\no\nm\ne"
+                // GameButton rendered flat. Here the Text owns its own line count.
+                Box(
+                    modifier = Modifier
+                        .background(pal.uiButtonNeutral, RoundedCornerShape(8.dp))
+                        .clickable {
+                            viewModel.endCoachSession()
+                            onReturnToHub()
+                        }
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "H\no\nm\ne",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 15.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
 
