@@ -536,6 +536,28 @@ Java_com_clavierhaus_gnubg_Engine_applyMoveToBoard(JNIEnv *env, jobject thiz,
 }
 
 JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_coachCubeVerdict(JNIEnv *env, jobject thiz,
+        jintArray board, jint action) {
+    (void)thiz;
+    int b[50], out[10] = {0};
+    jint tmp[50];
+    int i;
+    if ((*env)->GetArrayLength(env, board) < 50)
+        return (*env)->NewIntArray(env, 0);
+    (*env)->GetIntArrayRegion(env, board, 0, 50, tmp);
+    for (i = 0; i < 50; i++) b[i] = (int) tmp[i];
+    if (gnubg_mobile_coach_cube_verdict(b, (int) action, out) < 1)
+        return (*env)->NewIntArray(env, 0);
+    {
+        jintArray result = (*env)->NewIntArray(env, 10);
+        jint buf[10];
+        for (i = 0; i < 10; i++) buf[i] = (jint) out[i];
+        (*env)->SetIntArrayRegion(env, result, 0, 10, buf);
+        return result;
+    }
+}
+
+JNIEXPORT jintArray JNICALL
 Java_com_clavierhaus_gnubg_Engine_coachVerdictPre(JNIEnv *env, jobject thiz,
         jintArray oldBoard, jint d0, jint d1, jintArray newBoard) {
     (void)thiz;

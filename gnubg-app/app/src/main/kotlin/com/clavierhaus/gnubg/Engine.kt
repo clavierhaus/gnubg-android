@@ -112,6 +112,12 @@ object Engine {
      *  board, judged against the live pre-move match state. Empty on failure. */
     external fun coachVerdictPre(oldBoard: IntArray, d0: Int, d1: Int, newBoard: IntArray): IntArray
 
+    /** Coach cube verdict (M4): judges the human's cube action against gnubg's
+     *  decision. action = 0 no-double, 1 doubled, 2 took, 3 dropped. Returns a
+     *  10-int array (layout at gnubg_mobile_coach_cube_verdict) of gnubg's own
+     *  values only -- cd enum, arDouble equities, Skill() band. Empty on error. */
+    external fun coachCubeVerdict(board: IntArray, action: Int): IntArray
+
     /** gnubg's ApplyMove on a board: the resulting position of one of gnubg's
      *  own anMove[8] candidates, for the Coach explorer. Empty on failure. */
     external fun applyMoveToBoard(board: IntArray, anMove: IntArray): IntArray

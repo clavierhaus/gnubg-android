@@ -113,12 +113,13 @@ fun HomeHubScreen(
         // could be seen but not tapped. padding moves the slot itself, so the question
         // does not arise.
         // The column is centre-aligned, so top padding p lowers its content by p/2.
-        // 32dp of padding buys 16dp of clearance from the title. The 22dp spacers
-        // between the entries are untouched.
+        // 72dp of padding buys 36dp of clearance from the title (was 32/16 --
+        // widened per maintainer for breathing room below "GNU Backgammon").
+        // The 22dp spacers between the entries are untouched.
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 64.dp, top = 32.dp)
+                .padding(start = 64.dp, top = 72.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay)
             Spacer(modifier = Modifier.height(22.dp))

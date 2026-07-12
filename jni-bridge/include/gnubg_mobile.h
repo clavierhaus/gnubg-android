@@ -110,6 +110,7 @@ int gnubg_mobile_evaluate(const int board[50], float *out, int out_cap);
 int gnubg_mobile_classify(const int board[50]);
 
 
+int gnubg_mobile_coach_cube_verdict(const int board[50], int action, int out[10]); /* PORT: Coach M4, judges the human cube action; gnubg values only */
 int gnubg_mobile_cube_decision(const int board[50],
                                float *out, int out_cap, int *out_decision);
 int gnubg_mobile_rollout(const int board[50], int trials,

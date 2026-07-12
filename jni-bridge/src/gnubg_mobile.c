@@ -1194,6 +1194,85 @@ int gnubg_mobile_classify(const int board[50]) {
     return (int) pc;
 }
 
+/* Coach cube verdict: judge the human's cube ACTION against gnubg's decision.
+ * Pure wrapper over the SAME GeneralCubeDecisionENoLocking + FindCubeDecision
+ * the cube_decision verb runs -- NO new reasoning, and (maintainer) NO new
+ * terminology: it emits only gnubg's own cd enum, gnubg's arDouble equities,
+ * and gnubg's Skill() band. The dictionary/phrasing comes later.
+ *
+ * action = what the human DID:
+ *   0 no-double (rolled)   1 doubled     -- the double-or-not decision
+ *   2 took                 3 dropped     -- the take-or-drop decision
+ *
+ * out[] layout (ints via bit-cast for floats, matching the chequer verdict):
+ *   [0]  isBest        1 if the human's action equals gnubg's correct action
+ *   [1]  cd            the raw cubedecision enum (gnubg's own classification)
+ *   [2]  eqChosen bits cubeful equity of what the human did
+ *   [3]  eqBest   bits cubeful equity of gnubg's correct action
+ *   [4]  skill         Skill(eqBest-eqChosen): 0 verybad 1 bad 2 doubtful 3 none
+ *   [5..8]  arDouble[0..3] bits: OPTIMAL, NODOUBLE, TAKE, DROP (gnubg equities)
+ *   [9]  decisionKind  0 = double-or-not, 1 = take-or-drop (from action)
+ * Returns 10 written, -1 on error. */
+int gnubg_mobile_coach_cube_verdict(const int board[50], int action, int out[10]) {
+    TanBoard anBoard;
+    cubeinfo ci;
+    evalsetup *pesCube;
+    float aarOutput[2][NUM_ROLLOUT_OUTPUTS];
+    float arDouble[4];
+    cubedecision cd;
+    union { float f; int bits; } u;
+    float eqChosen, eqBest;
+    int rc, i, isBest, takeDrop;
+
+    if (!out || !board) return -1;
+    facade_unpack_board(board, anBoard);
+
+    pthread_mutex_lock(&gnubg_lock);
+    GetMatchStateCubeInfo(&ci, &ms);
+    pesCube = GetEvalCube();
+    memset(aarOutput, 0, sizeof(aarOutput));
+    rc = GeneralCubeDecisionENoLocking(aarOutput, (ConstTanBoard) anBoard,
+                                       &ci, &pesCube->ec, pesCube);
+    if (rc != 0) { pthread_mutex_unlock(&gnubg_lock); return -1; }
+    cd = FindCubeDecision(arDouble, aarOutput, &ci);
+    pthread_mutex_unlock(&gnubg_lock);
+
+    /* arDouble: [OPTIMAL] the equity of playing correctly; [NODOUBLE] equity of
+     * not doubling; [TAKE] equity (to the doubled player) of taking; [DROP] of
+     * dropping. gnubg's own values -- we only SELECT among them per the human's
+     * decision, never compute an equity ourselves. */
+    takeDrop = (action >= 2);
+    if (!takeDrop) {
+        /* double-or-not: doubling realises OPTIMAL when a double is right; not
+         * doubling realises NODOUBLE. Best = max of the two (higher equity for
+         * the player on roll). Chosen = the branch the human took. */
+        float eqDouble   = arDouble[OUTPUT_OPTIMAL];
+        float eqNoDouble = arDouble[OUTPUT_NODOUBLE];
+        eqBest   = (eqDouble > eqNoDouble) ? eqDouble : eqNoDouble;
+        eqChosen = (action == 1) ? eqDouble : eqNoDouble;
+        isBest   = (eqChosen >= eqBest) ? 1 : 0;
+    } else {
+        /* take-or-drop: gnubg frames TAKE and DROP from the perspective where
+         * lower is better for the doubled player is NOT assumed -- FindCubeDecision
+         * already ordered them; the correct action is the one with the higher
+         * equity to the doubled player. Best = max(TAKE, DROP). */
+        float eqTake = arDouble[OUTPUT_TAKE];
+        float eqDrop = arDouble[OUTPUT_DROP];
+        eqBest   = (eqTake > eqDrop) ? eqTake : eqDrop;
+        eqChosen = (action == 2) ? eqTake : eqDrop;
+        isBest   = (eqChosen >= eqBest) ? 1 : 0;
+    }
+
+    out[0] = isBest;
+    out[1] = (int) cd;
+    u.f = eqChosen; out[2] = u.bits;
+    u.f = eqBest;   out[3] = u.bits;
+    out[4] = (int) Skill(eqBest - eqChosen);
+    for (i = 0; i < 4; i++) { u.f = arDouble[i]; out[5 + i] = u.bits; }
+    out[9] = takeDrop ? 1 : 0;
+    return 10;
+}
+
 int gnubg_mobile_cube_decision(const int board[50],
                                float *out, int out_cap, int *out_decision) {
     TanBoard anBoard;
