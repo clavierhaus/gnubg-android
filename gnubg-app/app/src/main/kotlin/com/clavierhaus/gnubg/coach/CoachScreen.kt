@@ -251,7 +251,9 @@ fun CoachScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                GameButton("Home", pal.uiButtonNeutral, compact = true) {
+                // Vertical label (H/o/m/e) -- fits the narrow control rail and
+                // reads as a spine down the left edge (maintainer aesthetic).
+                GameButton("H\no\nm\ne", pal.uiButtonNeutral, compact = true) {
                     viewModel.endCoachSession()
                     onReturnToHub()
                 }

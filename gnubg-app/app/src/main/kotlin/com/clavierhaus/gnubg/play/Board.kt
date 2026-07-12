@@ -126,10 +126,11 @@ private class BoardGeom(val w: Float, val h: Float, cubeOwner: Int, private val 
     private val rollH = dieSize * 1.2f
     val rollRect = Rect(rightGapCX - rollW / 2f, boardCY - dieSize / 2f,
                         rightGapCX + rollW / 2f, boardCY - dieSize / 2f + rollH)
-    /** Coach "GNU's turn": the exact mirror of rollRect on the LEFT half (where
-     *  the engine dice sit) -- the on-board counterpart to the player's Roll. */
-    val coachTurnRect = Rect(leftGapCX - rollW / 2f, boardCY - dieSize / 2f,
-                        leftGapCX + rollW / 2f, boardCY - dieSize / 2f + rollH)
+    /** Coach "GNU's turn": left-half button aligned HORIZONTALLY with the
+     *  player's dice row (top = diceTop), for aesthetic symmetry with the
+     *  dice rather than with the centre-straddling Roll button. */
+    val coachTurnRect = Rect(leftGapCX - rollW / 2f, diceTop,
+                        leftGapCX + rollW / 2f, diceTop + rollH)
 
     val cubeSize = pc(BAR_W * 0.75f)
     private val cubeGap = cubeSize * 0.18f
