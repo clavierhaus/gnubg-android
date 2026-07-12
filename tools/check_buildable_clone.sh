@@ -10,7 +10,13 @@ mapfile -t csrc < <(grep -oE '\$\{ENGINE\}/[A-Za-z0-9_./-]+\.c' jni-bridge/CMake
 csrc+=(jni-bridge/src/gnubg_mobile.c jni-bridge/src/native-lib.c \
        jni-bridge/src/android-app.c jni-bridge/src/stubs.c)
 # Their local #include "..." targets, one level (covers the headers that bit us).
-check() { git check-ignore -q "$1" && { echo "IGNORED but build-required: $1"; bad=1; }; }
+# A fresh clone contains a file iff it is TRACKED. git check-ignore was the
+# wrong test: it matches per-clone (.git/info/exclude) and per-user (global
+# excludesFile) patterns too, and it fires even on tracked files -- which are
+# immune to ignore rules. That produced a machine-dependent false positive
+# (release blocked on the maintainer's box, passing elsewhere, same commit).
+check() { git ls-files --error-unmatch "$1" >/dev/null 2>&1 \
+          || { echo "UNTRACKED but build-required: $1"; bad=1; }; }
 for c in "${csrc[@]}"; do
   [ -f "$c" ] && check "$c"
   [ -f "$c" ] || continue

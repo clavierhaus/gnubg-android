@@ -99,7 +99,9 @@ ok "release notes present"
 
 # buildable clone gate
 if [ -x tools/check_buildable_clone.sh ]; then
-  ./tools/check_buildable_clone.sh >/dev/null || die "buildable-clone check FAILED -- a fresh clone would not build"
+  # Output NOT swallowed: the check names the offending file (same
+  # named-failure principle as the tag-fetch guard above).
+  ./tools/check_buildable_clone.sh || die "buildable-clone check FAILED -- a fresh clone would not build"
   ok "buildable-clone check passes"
 fi
 
