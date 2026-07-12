@@ -31,6 +31,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * the single engine thread made a doubles-roll turn take 30+ seconds and
      * GNU looked stuck. One move, one evaluation (vision C6). */
     private var coachSession = false
+    /* Coach setup (M4): the mode shows a setup screen -- strength + length --
+     * before the board, mirroring the tournament setup, so match length > 1 is
+     * selectable now that cube coaching exists. Independent of the Play/tutor
+     * settings; the coach owns its own choices. */
+    private val _showCoachSetup = MutableStateFlow(true)
+    val showCoachSetup: StateFlow<Boolean> = _showCoachSetup.asStateFlow()
+    private val _coachLength = MutableStateFlow(1)
+    val coachLength: StateFlow<Int> = _coachLength.asStateFlow()
+    private val _coachDifficulty = MutableStateFlow(Difficulty.EXPERT)
+    val coachDifficulty: StateFlow<Difficulty> = _coachDifficulty.asStateFlow()
+    fun setCoachLength(n: Int) { _coachLength.value = n.coerceIn(1, 25) }
+    fun setCoachDifficulty(d: Difficulty) { _coachDifficulty.value = d }
+    fun openCoachSetup() { _showCoachSetup.value = true }
+
     private val _coachGlance = MutableStateFlow<IntArray?>(null)
     val coachGlance: StateFlow<IntArray?> = _coachGlance.asStateFlow()
 
@@ -1193,16 +1207,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun startCoachGame() {
+    fun startCoachGame(
+        length: Int = _coachLength.value,
+        difficulty: Difficulty = _coachDifficulty.value
+    ) {
         coachSession = true
+        _coachLength.value = length
+        _coachDifficulty.value = difficulty
+        _showCoachSetup.value = false
         _coachGlance.value = null
         pendingCoachMove = null
         _coachCubeGlance.value = null
         pendingCubeAction = -1
         performingHeldCube = false
         viewModelScope.launch(engineThread) {
-            Engine.setEngineStrength(Difficulty.EXPERT.settingIndex)
-            Engine.commandNewMatch(1)
+            Engine.setEngineStrength(difficulty.settingIndex)
+            Engine.commandNewMatch(length)
             Engine.commandNewGame()
             refreshFromEngineAfterControl()
         }
@@ -1219,6 +1239,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         pendingCubeAction = -1
         performingHeldCube = false
         _showMatchSetup.value = true
+        // Next Coach entry starts at its setup screen, not straight into a game.
+        _showCoachSetup.value = true
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(_settings.value.difficulty.settingIndex)
         }

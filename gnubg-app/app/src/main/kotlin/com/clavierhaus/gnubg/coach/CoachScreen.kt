@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.Engine
 import com.clavierhaus.gnubg.engine.GamePhase
+import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.GameViewModel
 import com.clavierhaus.gnubg.play.BackgammonBoard
@@ -167,17 +168,27 @@ fun CoachScreen(
     val gameState by viewModel.gameState.collectAsState()
     val pal = BoardPalettes.from(settings.boardTheme)
 
-    var glance by remember { mutableStateOf<CoachGlance?>(null) }
-    var started by remember { mutableStateOf(false) }
-
-    // One contained game, started once per entry into the mode.
-    LaunchedEffect(Unit) {
-        if (!started) {
-            started = true
-            glance = null
-            viewModel.startCoachGame()
-        }
+    // Setup gate (M4): the mode opens on a setup screen -- strength + length --
+    // before any board, so match length > 1 (cube in play) is a deliberate
+    // choice. The game starts from the setup's Start button, not on entry.
+    val showSetup by viewModel.showCoachSetup.collectAsState()
+    val coachLength by viewModel.coachLength.collectAsState()
+    val coachDifficulty by viewModel.coachDifficulty.collectAsState()
+    if (showSetup) {
+        CoachSetupScreen(
+            settings = settings,
+            selectedLength = coachLength,
+            selectedDifficulty = coachDifficulty,
+            onSelectLength = { viewModel.setCoachLength(it) },
+            onSelectDifficulty = { viewModel.setCoachDifficulty(it) },
+            onStart = { viewModel.startCoachGame(coachLength, coachDifficulty) },
+            onReturnToHub = onReturnToHub,
+            onOpenSettings = onOpenSettings
+        )
+        return
     }
+
+    var glance by remember { mutableStateOf<CoachGlance?>(null) }
 
     // The verdict arrives via the VM's coachGlance flow -- ONE analysis per
     // move, run by confirm() in the same decoupled slot the tutor analysis
@@ -631,6 +642,128 @@ private fun CoachPanel(
         if (phase == GamePhase.GAME_OVER) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 GameButton("New game", pal.uiChipOff, compact = true) { onNewGame() }
+            }
+        }
+    }
+}
+
+
+/**
+ * Coach setup -- strength + match length, chosen before the board. Modeled on
+ * the tournament MatchSetupScreen (same weighted-column-with-pinned-foot law:
+ * nothing scrolls, the Start button is laid out first so it can never be
+ * squeezed to zero). No tutor toggle -- coaching IS the mode. Length > 1 puts
+ * the cube in play, which the Coach now teaches (M4); the caption says so, the
+ * differentiation from the 1-point chequer-only game made explicit.
+ */
+@Composable
+private fun CoachSetupScreen(
+    settings: GameSettings,
+    selectedLength: Int,
+    selectedDifficulty: Difficulty,
+    onSelectLength: (Int) -> Unit,
+    onSelectDifficulty: (Difficulty) -> Unit,
+    onStart: () -> Unit,
+    onReturnToHub: () -> Unit,
+    onOpenSettings: (() -> Unit)?
+) {
+    val pal = BoardPalettes.from(settings.boardTheme)
+    CompositionLocalProvider(LocalBoardPalette provides pal) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(pal.uiPanelDeep),
+            contentAlignment = Alignment.Center
+        ) {
+            if (onOpenSettings != null) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = pal.uiTextSecondary,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 16.dp, top = 12.dp)
+                        .size(28.dp)
+                        .clickable { onOpenSettings() }
+                )
+            }
+            Box(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
+                GameButton("Home", pal.uiButtonNeutral) { onReturnToHub() }
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                ) {
+                    Text(
+                        "Train with the Coach",
+                        color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold
+                    )
+
+                    Text("Opponent strength", color = pal.uiTextSecondary, fontSize = 16.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Difficulty.entries.forEach { d ->
+                            GameButton(
+                                label = d.label,
+                                color = if (selectedDifficulty == d) pal.uiChipOn else pal.uiChipOff,
+                                compact = true
+                            ) { onSelectDifficulty(d) }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text("Match length", color = pal.uiTextSecondary, fontSize = 16.sp)
+                    // 1, 3, 5 shortcuts + a flexible chip with steppers, exactly
+                    // as the tournament screen. 1 point = cube dead = chequer
+                    // only; longer = cube in play, coached.
+                    val shortcuts = listOf(1, 3, 5)
+                    val flexible = if (selectedLength in shortcuts) 7 else selectedLength
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        shortcuts.forEach { n ->
+                            GameButton(
+                                label = "$n",
+                                color = if (selectedLength == n) pal.uiChipOn else pal.uiChipOff
+                            ) { onSelectLength(n) }
+                        }
+                        val onFlexible = selectedLength == flexible
+                        GameButton(
+                            label = "$flexible",
+                            color = if (selectedLength == flexible) pal.uiChipOn else pal.uiChipOff
+                        ) { onSelectLength(flexible) }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            GameButton(
+                                label = "+", color = pal.uiButtonNeutral,
+                                enabled = onFlexible && flexible < 25
+                            ) { onSelectLength((flexible + 1).coerceAtMost(25)) }
+                            GameButton(
+                                label = "-", color = pal.uiButtonNeutral,
+                                enabled = onFlexible && flexible > 1
+                            ) { onSelectLength((flexible - 1).coerceAtLeast(1)) }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        if (selectedLength == 1)
+                            "1 point: the cube is dead -- chequer play only."
+                        else
+                            "$selectedLength points: the cube is in play and coached.",
+                        color = pal.uiTextDisabled, fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                GameButton("Start", pal.uiActionPositive) { onStart() }
             }
         }
     }
