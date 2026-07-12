@@ -47,6 +47,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _coachGlance = MutableStateFlow<IntArray?>(null)
     val coachGlance: StateFlow<IntArray?> = _coachGlance.asStateFlow()
+    // True only while GNU is replying to a delivered coach move (the brief
+    // ENGINE_THINKING after continue). Distinguishes "GNU is replying" from
+    // "Judging your move" now that the glance is cleared on continue.
+    private val _coachReplying = MutableStateFlow(false)
+    val coachReplying: StateFlow<Boolean> = _coachReplying.asStateFlow()
 
     /* Coach: the committed move is HELD here, not yet given to gnubg, while the
      * player studies the verdict (maintainer design: GNU must not move -- must
@@ -1180,6 +1185,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val mv = pendingCoachMove ?: return@launch
             if (_gameState.value.phase != GamePhase.COACH_REVIEW) return@launch
             pendingCoachMove = null
+            // The verdict belonged to the move you just studied; clear it now
+            // so it does not linger into GNU's reply and the next turn. Without
+            // this the panel keeps showing the old verdict (and, mid-reply, the
+            // "GNU is replying" line never gives way to "Your turn"). confirm()
+            // clears it before each NEW verdict; the continuation must clear it
+            // when the studied move is finally committed.
+            _coachGlance.value = null
+            _coachReplying.value = true
             val scoreBefore = Engine.getMatchScore()
             val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
             _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
@@ -1194,6 +1207,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (humanDelta != 0 || engineDelta != 0) {
                 val winner = if (humanDelta > engineDelta) 0 else 1
                 val points = kotlin.math.abs(humanDelta - engineDelta).coerceAtLeast(1)
+                _coachReplying.value = false
                 readMatchState(phase = GamePhase.GAME_OVER, winner = winner, nPoints = points)
                 return@launch
             }
@@ -1201,6 +1215,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val engDice = if (mrd[0] > 0) Pair(mrd[0], mrd[1]) else null
             android.util.Log.i("gnubg-coach",
                 "continue: pre-settle mrd0=${mrd[0]} mrd1=${mrd.getOrElse(1){0}} -> WAITING_FOR_ROLL")
+            _coachReplying.value = false
             readMatchState(phase = GamePhase.WAITING_FOR_ROLL, engineDice = engDice)
             android.util.Log.i("gnubg-coach", "continue: settled phase=${_gameState.value.phase}")
         }
@@ -1219,6 +1234,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachCubeGlance.value = null
         pendingCubeAction = -1
         performingHeldCube = false
+        _coachReplying.value = false
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(difficulty.settingIndex)
             Engine.commandNewMatch(length)
@@ -1237,6 +1253,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachCubeGlance.value = null
         pendingCubeAction = -1
         performingHeldCube = false
+        _coachReplying.value = false
         _showMatchSetup.value = true
         // Next Coach entry starts at its setup screen, not straight into a game.
         _showCoachSetup.value = true

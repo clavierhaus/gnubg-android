@@ -206,6 +206,7 @@ fun CoachScreen(
     // Cube glance (M4): present whenever a cube decision is under review.
     val rawCubeGlance by viewModel.coachCubeGlance.collectAsState()
     val cubeGlance = rawCubeGlance?.let { decodeCube(it) }
+    val coachReplying by viewModel.coachReplying.collectAsState()
 
     // A cube double is held for review when a cube glance is present in
     // COACH_REVIEW and it was the double-or-not decision (not take/drop). While
@@ -429,6 +430,7 @@ fun CoachScreen(
                     phase = gameState.phase,
                     winner = gameState.winner,
                     canDouble = gameState.canDouble,
+                    replying = coachReplying,
                     humanScore = gameState.humanScore,
                     engineScore = gameState.engineScore,
                     matchLength = gameState.matchLength,
@@ -553,6 +555,7 @@ private fun CoachPanel(
     phase: GamePhase,
     winner: Int,
     canDouble: Boolean,
+    replying: Boolean,
     humanScore: Int,
     engineScore: Int,
     matchLength: Int,
@@ -617,7 +620,7 @@ private fun CoachPanel(
                     // verdict is computed FIRST -- "Judging your move..." --
                     // then, verdict on screen, GNU rolls and replies.
                     Text(
-                        if (glance == null) "Judging your move..." else "GNU is replying...",
+                        if (replying) "GNU is replying..." else "Judging your move...",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
