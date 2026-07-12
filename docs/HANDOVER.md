@@ -51,18 +51,29 @@ git so `git pull` keeps the maintainer's tree and any assistant clone in sync.
 - The assistant NEVER runs `./release.sh` (needs the maintainer's gh auth and
   signing key). Commits: `git commit -F tmp/m.txt`, push immediately.
 
-## IN FLIGHT: release v0.20.0 — one command from done
-Staged and verified: CHANGELOG `[0.20.0] — 2026-07-12`, RELEASE_NOTES.md,
-versionName 0.20.0 / versionCode 8 (staging commit `cbda0d6`). All release.sh
-guards pass through "buildable-clone check"; the gh guard was the last blocker
-and was rewritten (`ce251a7`) to validate ONLY the active account via
-`gh api user` (a stale inactive account, invalid default `OE1FEU-DF5JT`, was
-failing `gh auth status` beside the valid active `clavierhaus`).
-**Next step (maintainer):** `git pull origin main && ./release.sh --dry-run && ./release.sh`
-**Verify:** v0.20.0 tag + release at github.com/clavierhaus/gnubg-android/releases.
-Optional hygiene, his call: `gh auth logout -h github.com -u OE1FEU-DF5JT`.
+## IN FLIGHT: release v0.20.1 — one command from done
+0.20.0 shipped 2026-07-12. 0.20.1 is a cosmetic follow-up with two
+user-visible changes and no engine changes:
 
-### Release-tooling defects fixed this session (the release itself was never broken)
+  1. Coach move-list chip labels ("P" for the player's move, "1"/"2"/"3" for
+     gnubg's better alternatives) drew as coloured pills without letters since
+     the coach shipped, because a 30dp containing slot squeezed the compact
+     button's inner Text constraint to zero width (30 − 19 − 19 dp of padding).
+     Replaced with a 26dp circular IdentChip in CoachScreen.kt.
+  2. Publisher mark "clavierhaus.at" added to the hub's top-right corner,
+     symmetric with the settings gear, DejaVu Serif with "vie" in GNU orange
+     (Vienna pun), the rest off-white (HomeHubScreen.kt).
+
+Both changes verified with :app:compileDebugKotlin green in the assistant
+sandbox before push.
+
+Staged: CHANGELOG `[0.20.1] — 2026-07-12` (Added + Fixed), RELEASE_NOTES.md
+rewritten, versionName 0.20.1 / versionCode 9, STATUS.md header + build line
+updated, this file updated. All release.sh guards known-good from the 0.20.0 run.
+**Next step (maintainer):** `git pull origin main && ./release.sh --dry-run && ./release.sh`
+**Verify:** v0.20.1 tag + release at github.com/clavierhaus/gnubg-android/releases.
+
+### Release-tooling defects fixed prior to 0.20.0 (kept for reference, no re-work needed)
 - Tag-fetch guard died silently on a stale local tag diverging from origin
   (leftover of the old history reset). Fix `6b384db`; user-side remedy
   `git fetch origin --tags --force` (already applied on his machine).

@@ -1,4 +1,4 @@
-# GNU Backgammon for Android — Status (0.20.0)
+# GNU Backgammon for Android — Status (0.20.1)
 
 **Authoritative current-state document.** Everything else defers to this.
 For deep engineering history see MASTER_V0.9.md; for forward plans see ROADMAP.md.
@@ -42,7 +42,7 @@ V0.9 continued the engine work on top of the V0.8.x shell. The only V0.8.x
 stream not carried forward is the deep BMPCC-inspired Settings UX vision,
 which remains design intent (see SETTINGS-UX-BLUEPRINT.md), not built.
 
-build versionName: 0.20.0 (code 8, release staged) · last engine milestone: Phase 13 (tutor analysis)
+build versionName: 0.20.1 (code 9, cosmetic follow-up to 0.20.0 -- coach chip labels rendered, hub publisher mark added) · last engine milestone: Phase 13 (tutor analysis)
 
 ## The three features that define current work
 

@@ -13,6 +13,27 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.20.1] — 2026-07-12
+
+A cosmetic follow-up to 0.20.0. Two small user-visible changes, no engine
+changes.
+
+### Added
+- **Publisher mark on the hub.** "clavierhaus.at" now reads in the top-right
+  corner, symmetric with the settings gear on the top-left, in the same DejaVu
+  Serif as the title and menu entries. "vie" is set in GNU orange — the Vienna
+  pun the company name carries — the rest in the hub's off-white.
+
+### Fixed
+- **Coach move-list chip labels are now visible.** The "P" identifier on the
+  player's move row and "1", "2", "3" on gnubg's better alternatives drew as
+  coloured pills with no letters on every device since the coach shipped. The
+  strings were in the source, but the 30dp chip slot squeezed the compact
+  button's inner text constraint (30 − 19 − 19 dp of padding) to zero width, so
+  the glyph measured to zero and never rasterised. Replaced with a fixed-size
+  26dp circular identifier chip whose size makes that failure mode
+  unrepresentable; matches the visual grammar of the score-tag badge.
+
 ## [0.20.0] — 2026-07-12
 
 A milestone: **"Train with the Coach"** is now a complete, self-contained
@@ -285,7 +306,8 @@ First public preview.
 - Live tutor: gnubg's own equity evaluation as you play.
 - A native touch board with three themes; persistent settings.
 
-[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/clavierhaus/gnubg-android/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/clavierhaus/gnubg-android/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.4...v0.20.0
 [0.11.4]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/clavierhaus/gnubg-android/compare/v0.11.2...v0.11.3
