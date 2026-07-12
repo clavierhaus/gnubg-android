@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -84,6 +86,9 @@ private data class CoachGlance(
     val bestNotation: String,
     val playedMove: IntArray,    // anMove[8], human mover frame -- for the trace
     val bestMove: IntArray,
+    val preBoard: IntArray,      // the pre-move board[50] from the glance --
+                                 // the matcher derives played/best boards from
+                                 // it via gnubg's own ApplyMove (single source)
     val alts: List<CoachAlt>     // better-than-played candidates, best first, <= 3
 ) {
     val loss: Float get() = eqBest - eqPlayed
@@ -119,6 +124,7 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
         bestNotation = Engine.formatMove(preBoard, best),
         playedMove = played,
         bestMove = best,
+        preBoard = preBoard,
         alts = alts
     )
 }
@@ -547,13 +553,46 @@ private fun MoveList(
  *  it with a phrase matched to the feature delta. Deliberately minimal until
  *  then -- no faux content. */
 @Composable
-private fun WhyStub() {
+private fun WhyInsights(glance: CoachGlance) {
     val pal = LocalBoardPalette.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val matcher = remember { InsightMatcher(context) }
+    var insights by remember { mutableStateOf<List<InsightMatcher.Insight>?>(null) }
+
+    // One computation per verdict: gnubg's ApplyMove derives both boards from
+    // the glance's pre-board (the array is the single source of truth), then
+    // the matcher scores the corpus against gnubg's own feature deltas.
+    LaunchedEffect(glance) {
+        insights = if (!matcher.available || !glance.flagged) emptyList()
+        else withContext(Dispatchers.Default) {
+            val skillWord = when (glance.skill) {
+                0 -> "very bad"; 1 -> "bad"; 2 -> "doubtful"; else -> ""
+            }
+            val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
+            val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
+            matcher.match(playedBoard, bestBoard, skillWord)
+        }
+    }
+
+    val list = insights
+    if (list.isNullOrEmpty()) return   // silence is the design: phrases or nothing
     Text("Why", color = pal.uiTextSecondary, fontSize = 11.sp,
         fontWeight = FontWeight.Bold)
     Spacer(modifier = Modifier.height(4.dp))
-    Text("Coaching insight coming soon.",
-        color = pal.uiTextDisabled, fontSize = 11.sp)
+    for (ins in list) {
+        Row(verticalAlignment = Alignment.Top) {
+            Text(
+                when (ins.category) {
+                    "race" -> "Race"; "threat" -> "Threat"; else -> "Board"
+                },
+                color = pal.uiTextDisabled, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(end = 6.dp, top = 1.dp)
+            )
+            Text(ins.phrase, color = Color.White, fontSize = 12.sp)
+        }
+        Spacer(modifier = Modifier.height(3.dp))
+    }
 }
 
 /** A score badge matching the tournament scoreboard: a circular avatar with
@@ -783,15 +822,13 @@ private fun CoachPanel(
                 }
             }
 
-            // The "Why" area (stub) -- the space freed by moving Home to the
-            // rail and GNU's turn onto the board. Reserved for the verbose
-            // explanation the insight layer (docs/COMPANION.md) will produce:
-            // a phrase matched to the feature delta between the played move
-            // and the best. Empty until that layer lands; occupies the room
-            // now so the layout is already correct when it does.
+            // The "Why" area: the insight layer (docs/COMPANION.md,
+            // CORPUS_HARVEST_PLAN). Up to two corpus phrases matched against
+            // gnubg's own feature deltas between the played and best boards;
+            // silence when nothing clears the gates.
             if (glance != null && glance.rank > 0) {
                 Spacer(modifier = Modifier.height(14.dp))
-                WhyStub()
+                WhyInsights(glance)
             }
             } // end else (chequer verdict; cube verdict handled above)
         }
