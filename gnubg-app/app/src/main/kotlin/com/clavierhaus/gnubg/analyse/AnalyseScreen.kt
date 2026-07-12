@@ -438,12 +438,9 @@ fun AnalyseScreen(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    "Analyse Position",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                // The screen title floats top-right as a corner label (see the
+                // root Box below), not in this column: it is not contextually
+                // bound to the result, and the result view needs its row.
                 // Everything state-specific lives in this weighted region; the
                 // Home row below is a fixed sibling measured first, so it is
                 // ALWAYS on screen. Field report: after analysing a pasted
@@ -466,6 +463,7 @@ fun AnalyseScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
+                            .padding(top = 36.dp)   // clear of the floated title
                     ) {
                     // Tool + Start-position preset on one row: place checkers, or
                     // fill the standard opening (issue #1 asked for the preset).
@@ -590,6 +588,7 @@ fun AnalyseScreen(
                     }
                 } else {
                 if (result == null) {
+                Spacer(modifier = Modifier.height(28.dp))   // clear of the floated title
                 Text(
                     "Paste a GNU BG ID or an XGID. gnubg decides which it is.",
                     color = pal.uiTextSecondary,
@@ -679,12 +678,14 @@ fun AnalyseScreen(
                     ) {
                     MatchContext(r)
 
-                    Text(
-                        if (r.cubeText != null) "gnubg's verdict" else "gnubg's candidates",
-                        color = pal.uiTextSecondary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (r.cubeText == null) {
+                        Text(
+                            "gnubg's candidates",
+                            color = pal.uiTextSecondary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
                     if (r.cubeText != null) {
                         // No dice = a cube decision. Every number below is
@@ -693,21 +694,29 @@ fun AnalyseScreen(
                         // and the rollout verb's means and std devs. The only
                         // arithmetic here is display subtraction of gnubg's
                         // values, the same convention as the chequer list.
+                        // The whole block sits in one 2dp-pitch column: the
+                        // pane does not scroll (the game view law), so the
+                        // block is made to fit -- its tail was clipping on
+                        // 20:9 at the parent's 6dp pitch.
                         Text(
                             r.cubeText,
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                         r.cubeWin?.let { w ->
                             @Composable
                             fun chanceRow(a: String, b: String, c: String, d: String, hdr: Boolean) {
                                 val col = if (hdr) pal.uiTextDisabled else pal.uiTextSecondary
                                 Row(modifier = Modifier.fillMaxWidth()) {
-                                    Text(a, color = col, fontSize = 13.sp, modifier = Modifier.weight(0.8f))
-                                    Text(b, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                                    Text(c, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                                    Text(d, color = col, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                    Text(a, color = col, fontSize = 12.sp, modifier = Modifier.weight(0.8f))
+                                    Text(b, color = col, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                    Text(c, color = col, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                    Text(d, color = col, fontSize = 12.sp, modifier = Modifier.weight(1f))
                                 }
                             }
                             chanceRow("", "Win", "Gammon", "Backgmn", hdr = true)
@@ -715,7 +724,7 @@ fun AnalyseScreen(
                             chanceRow("Opp", pct(1f - w[0]), pct(w[3]), pct(w[4]), hdr = false)
                             Text(
                                 "Cubeless " + eq(w[5]) + "    Cubeful " + eq(w[6]),
-                                color = pal.uiTextSecondary, fontSize = 13.sp
+                                color = pal.uiTextSecondary, fontSize = 12.sp
                             )
                         }
                         r.cubeEq?.let { e ->
@@ -727,17 +736,17 @@ fun AnalyseScreen(
                                     Text(
                                         label,
                                         color = if (best) Color.White else pal.uiTextSecondary,
-                                        fontSize = 14.sp, modifier = Modifier.weight(1.4f)
+                                        fontSize = 13.sp, modifier = Modifier.weight(1.4f)
                                     )
                                     Text(
                                         eq(v),
                                         color = if (best) Color.White else pal.uiTextSecondary,
-                                        fontSize = 14.sp, modifier = Modifier.weight(1f)
+                                        fontSize = 13.sp, modifier = Modifier.weight(1f)
                                     )
                                     Text(
                                         if (best) "best" else eq(d),
                                         color = if (best) Color.White else pal.uiTextDisabled,
-                                        fontSize = 14.sp, modifier = Modifier.weight(1f)
+                                        fontSize = 13.sp, modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -745,30 +754,45 @@ fun AnalyseScreen(
                             actionRow("Double, take", e[2])
                             actionRow("Double, pass", e[3])
                         }
-                        val ro = rolloutRes
-                        if (ro != null && ro.size >= 14) {
+                        // Rollout and the MET share one row: result (or the
+                        // button) on the left, the table name on the right.
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val ro = rolloutRes
+                            if (ro != null && ro.size >= 14) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        "Rollout, 144 games (cubeful, variance reduced)",
+                                        color = pal.uiTextSecondary, fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        "Win " + pct(ro[0]) + " ± " + pct(ro[7]) +
+                                            "    Cubeful " + eq(ro[6]) + " ± " + String.format("%.3f", ro[13]),
+                                        color = pal.uiTextSecondary, fontSize = 12.sp
+                                    )
+                                }
+                            } else {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    GameButton(
+                                        label = if (rolloutBusy) "Rolling out..." else "Rollout",
+                                        color = pal.uiButtonNeutral,
+                                        enabled = !rolloutBusy && !busy,
+                                        compact = true
+                                    ) { doRollout() }
+                                }
+                            }
                             Text(
-                                "Rollout, 144 games (cubeful, variance reduced)",
-                                color = pal.uiTextSecondary, fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                "MET " + settings.metTable.displayName,
+                                color = pal.uiTextDisabled, fontSize = 11.sp
                             )
-                            Text(
-                                "Win " + pct(ro[0]) + " ± " + pct(ro[7]) +
-                                    "    Cubeful " + eq(ro[6]) + " ± " + String.format("%.3f", ro[13]),
-                                color = pal.uiTextSecondary, fontSize = 13.sp
-                            )
-                        } else {
-                            GameButton(
-                                label = if (rolloutBusy) "Rolling out..." else "Rollout",
-                                color = pal.uiButtonNeutral,
-                                enabled = !rolloutBusy && !busy,
-                                compact = true
-                            ) { doRollout() }
                         }
-                        Text(
-                            "MET " + settings.metTable.displayName,
-                            color = pal.uiTextDisabled, fontSize = 11.sp
-                        )
+                        } // end compact cube block
                     } else if (r.noDice) {
                         Text(
                             "No dice in this position, so there is no chequer play to rank.",
@@ -824,6 +848,17 @@ fun AnalyseScreen(
         // board pane below is padded down past it, so the gear cannot sit on
         // point 13 and steal editor taps: the thing in the way moved, not the
         // gear.
+        // The screen title mirrors it top-right, hub-style: a corner label,
+        // not a row of the result column.
+        Text(
+            "Analyse Position",
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 16.dp, top = 12.dp)
+        )
         if (onOpenSettings != null) {
             Icon(
                 imageVector = Icons.Filled.Settings,
