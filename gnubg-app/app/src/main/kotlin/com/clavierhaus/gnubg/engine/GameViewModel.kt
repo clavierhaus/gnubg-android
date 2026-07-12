@@ -914,7 +914,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Coach: doubling is a cube decision -- judge and hold before offering.
         if (coachSession && !performingHeldCube) {
             viewModelScope.launch(engineThread) {
-                if (Engine.canDouble()) judgeAndHoldCube(Engine.getMatchBoard(), 1)
+                val cd = Engine.canDouble()
+                android.util.Log.i("gnubg-cube",
+                    "coach offerDouble: canDouble=$cd cubeInfo=${Engine.getMatchCubeInfo().joinToString(",")}")
+                if (cd) judgeAndHoldCube(Engine.getMatchBoard(), 1)
+                else android.util.Log.i("gnubg-cube", "coach offerDouble: gnubg refuses the double here")
+            }
             }
             return
         }
