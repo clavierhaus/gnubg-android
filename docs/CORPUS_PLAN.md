@@ -107,3 +107,62 @@ engine-computed delta instantiates.
      (prime break, blot in home board, anchor surrender, builder waste,
      race/hold mismatch) to pressure-test the schema before the verb exists.
   C. Then Phase A features verb; then wire the matcher; then expand the corpus.
+
+## Part 5 -- Reuse from yairwein/backgammon-teacher (MIT, GPLv3-compatible)
+
+Verified: their LICENSE is MIT (Copyright (c) 2024-2026 Yair Weinberger).
+MIT is a lax license, GPLv3-compatible: their code MAY be incorporated into our
+GPLv3+ app, the combined work is GPLv3+, and each incorporated file keeps its
+MIT notice + our attribution. This is the opposite of the GFDL wall -- here we
+can use the actual EXPRESSION, not merely the ideas.
+
+What is worth taking, and in what form (theirs is TypeScript over their own
+board type; ours is Kotlin over gnubg -- so this is PORTING A DESIGN, with
+attribution, not copy-paste):
+
+  1. THE FEATURE SCHEMA (features/types.ts) -- directly adopt. Their
+     FeatureVector is the exact vector we were about to design: positionType,
+     player/opponent pip + pipDifference, madePoints, anchors, longestPrime,
+     homeBoardStrength, blotCount, direct/indirectShots, mobility, bar,
+     escaped, trapped, borneOff, wastage. FeatureDelta{feature, playedValue,
+     bestValue, delta, notable} and FeatureComparison{played, best, deltas,
+     notableDeltas} ARE our matcher's data model. Adopt names and shape;
+     credit them.
+
+  2. THE NOTABLE-THRESHOLD TABLE (features/extract.ts getNotableThreshold) --
+     adopt as our silence gate (P2 no-noise): pip 5, blots/shots 1, prime/
+     anchor 1, home board 1, bar/trapped 1, wastage 2. A field-tuned starting
+     point we would otherwise have guessed.
+
+  3. THE PROMPT CONTRACT (llm/prompt.ts buildSystemPrompt) -- its RULES are our
+     constitution in their words: "Only reference facts provided in the data.
+     Never invent strategic facts." Its race/board/threat decomposition is a
+     ready TAXONOMY for organizing our corpus by concern. We take the STRUCTURE
+     as the shape of a deterministic phrase (no LLM needed to honor it); if a
+     local model is ever added, this is its system prompt.
+
+  CRITICAL DIVERGENCE -- engine truth. THEY compute features in app code
+  (their extractFeatures). WE must not: gnubg is our sole authority
+  (CLAUDE.md), and gnubg already HAS these signals in CalculateHalfInputs /
+  ClassifyPosition. So we adopt their SCHEMA and THRESHOLDS as the interface,
+  but the VALUES come from gnubg via the Phase A verb, not from re-derived
+  Kotlin. Where gnubg does not expose a given feature, that feature waits or
+  is computed only as an unambiguous count from the board gnubg returned
+  (e.g. borne-off), never as a heuristic the engine would dispute.
+
+  NOT reused: their server, DB, auth, GCS storage, Svelte components, cloud
+  LLM calls -- all rejected as before (offline single APK).
+
+Net effect on the plan: Part 2's schema is REPLACED by their FeatureVector
+(credited); Part 3's candidate list is CONFIRMED against a second independent
+design; Part 4's matcher gains their delta model and thresholds. The corpus
+phrases themselves remain Tier-A (ours) -- their code carries feature MATH, not
+backgammon PHRASES (their prose was to be LLM-generated at runtime, so there is
+no phrase library to borrow even if we wanted one).
+
+## Attribution mechanics (when code lands)
+
+A NOTICE file crediting yairwein/backgammon-teacher (MIT) for the feature
+schema, threshold table, and explanation taxonomy; the porting commit names it;
+ported files carry a header noting MIT origin + author. gnubg-android stays
+GPLv3+ as a whole.
