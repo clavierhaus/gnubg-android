@@ -18,11 +18,11 @@ the engine, or stopped hiding what the engine already knew.
   a move, up to two short teaching phrases appear, each tagged Race / Board /
   Threat, matched against gnubg's own position-feature deltas between the
   played move and the best (the insight layer -- docs/COMPANION.md,
-  CORPUS_HARVEST_PLAN). Ten patterns ship in this first corpus, every
+  CORPUS_HARVEST_PLAN). The corpus grew from ten to fourteen patterns during hardening, every
   signature measured against the engine and validated 63/63 on the
   construction corpus. Silence when nothing clears the gates -- the coach
-  never reaches. Phrase wording pending final maintainer authorship
-  (asset tier "proposed"; the shipping bake refuses until authored).
+  never reaches. Fourteen patterns ship, every phrase maintainer-authored
+  (asset tier "authored", insights_v0.json).
 - **XG-grade cube analysis in Analyse Position.** The cube verdict now shows
   the full winning-chance table for both sides (win / gammon / backgammon),
   gnubg's cubeless and cubeful equities, and the three action equities

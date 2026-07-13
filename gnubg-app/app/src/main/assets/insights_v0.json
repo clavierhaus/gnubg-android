@@ -1,8 +1,8 @@
 {
  "version": 1,
  "corpus_license": "GPL-3.0-or-later",
- "generated": "2026-07-12",
- "tier": "proposed",
+ "generated": "2026-07-13",
+ "tier": "authored",
  "authors": [
   "clavierhaus <gnubg@clavierhaus.at>",
   "GNU Backgammon for Android contributors"
@@ -37,7 +37,11 @@
       "direction": "up",
       "min_abs": 0.05,
       "max_abs": 0.3,
-      "weight": 1.0
+      "weight": 1.0,
+      "best_in": [
+       0.85,
+       1.0
+      ]
      }
     ]
    },
@@ -45,7 +49,7 @@
     "doubtful",
     "bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "prime.contain.lost",
@@ -76,7 +80,7 @@
     "bad",
     "very bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "anchor.surrender.back",
@@ -121,7 +125,7 @@
     "bad",
     "very bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "anchor.advance.golden",
@@ -142,8 +146,8 @@
        0.4
       ],
       "best_in": [
-       0.5,
-       1.0
+       0.8,
+       0.87
       ]
      }
     ]
@@ -151,7 +155,37 @@
    "severity_hint": [
     "doubtful"
    ],
-   "tier": "proposed"
+   "tier": "authored"
+  },
+  {
+   "id": "anchor.advance.mid",
+   "principle": "An advanced anchor beats a deep one.",
+   "phrase_flag": "The anchor stayed buried when a higher point was there to hold.",
+   "phrase_praise": "The anchor steps up -- more board, more ways out.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_FORWARD_ANCHOR",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.25,
+      "weight": 1.0,
+      "played_in": [
+       0.01,
+       0.4
+      ],
+      "best_in": [
+       0.45,
+       0.7
+      ]
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful"
+   ],
+   "tier": "authored"
   },
   {
    "id": "board.close.entry",
@@ -188,7 +222,7 @@
     "doubtful",
     "bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "blot.shot.given",
@@ -226,7 +260,7 @@
     "bad",
     "very bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "blot.double.given",
@@ -270,7 +304,7 @@
     "bad",
     "very bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "hit.declined",
@@ -307,7 +341,7 @@
     "doubtful",
     "bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "race.break.ahead",
@@ -332,7 +366,7 @@
     "doubtful",
     "bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
   },
   {
    "id": "race.escape.window",
@@ -380,7 +414,135 @@
     "doubtful",
     "bad"
    ],
-   "tier": "proposed"
+   "tier": "authored"
+  },
+  {
+   "id": "backgame.timing",
+   "principle": "A backgame lives or dies on timing.",
+   "phrase_flag": "The backgame burned its timing -- it will crunch before the shot comes.",
+   "phrase_praise": "The timing holds -- the backgame stays dangerous.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_BACKG",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       0.01,
+       5.0
+      ],
+      "best_in": [
+       0.01,
+       5.0
+      ],
+      "weight": 0.5
+     },
+     {
+      "term": "I_TIMING",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.5
+     }
+    ]
+   },
+   "severity_hint": [
+    "bad",
+    "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "timing.hold.crunch",
+   "principle": "A holding game survives on its timing.",
+   "phrase_flag": "The board crunched early -- a holding game has to outwait the shot.",
+   "phrase_praise": "The timing holds; the anchor can wait for its shot.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_BACKG1",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       0.01,
+       5.0
+      ],
+      "best_in": [
+       0.01,
+       5.0
+      ],
+      "weight": 0.5
+     },
+     {
+      "term": "I_CONTAIN",
+      "side": "me",
+      "direction": "any",
+      "best_in": [
+       0.0,
+       0.84
+      ],
+      "weight": 0.0
+     },
+     {
+      "term": "I_TIMING",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.5
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "blitz.point.missed",
+   "principle": "When the blitz is on, points are made on heads.",
+   "phrase_flag": "The blot stood in your home board and the point went unmade -- a blitz cannot pause.",
+   "phrase_praise": "Point on his head -- the blitz rolls on.",
+   "category": "threat",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_ENTER2",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.5
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.0
+     },
+     {
+      "term": "I_ENTER",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.0
+     },
+     {
+      "term": "PipCount.opp",
+      "side": "",
+      "direction": "up",
+      "min_abs": 3.0,
+      "weight": 1.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
   }
  ]
 }

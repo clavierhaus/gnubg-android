@@ -30,6 +30,10 @@ SEVERITY = {                       # gnubg skill bands per entry, from the draft
     "race.break.ahead": ["doubtful", "bad"],
     "race.escape.window": ["doubtful", "bad"],
     "hit.declined": ["doubtful", "bad"],
+    "backgame.timing": ["bad", "very bad"],
+    "timing.hold.crunch": ["doubtful", "bad"],
+    "blitz.point.missed": ["doubtful", "bad"],
+    "anchor.advance.mid": ["doubtful"],
 }
 
 
