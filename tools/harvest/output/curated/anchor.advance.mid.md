@@ -8,15 +8,15 @@ is deliberately uncovered rather than mislabeled.
 Drafts: claude-sonnet-4-6, run 2026-07-13, one per verified pair (4) --
 first run under the polarity-fixed prompt: ALL flags correctly name the
 mistake.
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice. Verbatim-overlap spot-check: pending (author-side).
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check: pending (author-side).
 
 ## Best drafts (quoted, model-attributed)
 - [a22f1] "Your anchor stayed deep in the opponent's home board when a more advanced point was available."
 - [a21f1] "Your anchor sat deep in their home board, leaving you farther from escaping danger."
 - [a22f1 (praise)] "Moving your anchor forward secures a stronger foothold deep in enemy territory."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The anchor stayed buried when a higher point was there to hold.
 - phrase_praise: The anchor steps up -- more board, more ways out.
 

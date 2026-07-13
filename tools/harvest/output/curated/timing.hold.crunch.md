@@ -5,8 +5,8 @@ exclusive with backgame's I_BACKG) · veto me I_CONTAIN best <= 0.84 (a
 holding game is not a prime; the 0.85 partition separates it from
 prime.break.5, measured 0.58-0.67 vs 0.94) · me I_TIMING up (min 0.10)
 Drafts: claude-sonnet-4-6, run 2026-07-13, one per verified pair (6).
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice; tier becomes "authored" only then. Verbatim-overlap spot-check
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check
 against Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 
 ## Best drafts (quoted, model-attributed)
@@ -14,7 +14,7 @@ against Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 - [a19l3h11] "Crunching your home board early bleeds the timing a holding game depends on to wait for a shot."
 - [a21l3h11 (praise)] "Preserving home-board structure keeps the timing that makes a holding game work."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The board crunched early -- a holding game has to outwait the shot.
 - phrase_praise: The timing holds; the anchor can wait for its shot.
 

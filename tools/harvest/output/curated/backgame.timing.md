@@ -2,8 +2,8 @@
 Signature (measured; tools/harvest/signatures.py): context me I_BACKG > 0
 (two-plus rear anchors, both boards) · me I_TIMING up (min 0.10, w 1.5)
 Drafts: claude-sonnet-4-6, run 2026-07-13, one draft per verified pair (12).
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice; tier becomes "authored" only then. Verbatim-overlap spot-check against
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check against
 Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 
 ## Best drafts (quoted, model-attributed)
@@ -11,7 +11,7 @@ Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 - [a21-23l4h12] "Advancing checkers forward burns the timing a backgame depends on to stay alive."
 - [a20-22l5h11 (praise)] "Keeping your timing intact gives your backgame a real chance to catch a shot later."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The backgame burned its timing -- it will crunch before the shot comes.
 - phrase_praise: The timing holds -- the backgame stays dangerous.
 

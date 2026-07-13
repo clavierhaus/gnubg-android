@@ -5,15 +5,15 @@ Signature (measured; tools/harvest/signatures.py): opp I_ENTER2 up (min
 0.30 BACK_CHEQUER gate and close.entry's on-bar-both range each block on
 these pairs by construction.
 Drafts: claude-sonnet-4-6, run 2026-07-13, one per verified pair (4).
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice; tier becomes "authored" only then. Verbatim-overlap spot-check
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check
 against Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 
 ## Best drafts (quoted, model-attributed)
 - [b4o1 (praise)] "Exactly right: you hit and claimed a home-board point, trapping the opponent on the bar."
 - [b3o1 (praise)] "Great blitz instinct -- closing a home-board point pinned the opponent on the bar and tightened the attack."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The blot stood in your home board and the point went unmade -- a blitz cannot pause.
 - phrase_praise: Point on his head -- the blitz rolls on.
 

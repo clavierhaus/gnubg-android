@@ -1,15 +1,15 @@
 # Curated: anchor.advance.golden
 Signature (measured; tools/harvest/signatures.py): me I_FORWARD_ANCHOR up (min 0.30), played in (0,0.4], best in [0.5,1.0]
 Drafts: claude-sonnet-4-6, run 2026-07-12, one draft per verified pair.
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice; tier becomes "authored" only then. Verbatim-overlap spot-check against
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check against
 Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 
 ## Best drafts (quoted, model-attributed)
 - [a20f1] "Advancing to the golden point gives you a strong anchor deep in enemy territory -- staying back on the 24 wastes that opportunity."
 - [a20f1 (praise)] "Well played -- claiming the golden point plants a deep anchor that makes you very hard to attack."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The golden point was there for the taking, and the anchor stayed buried on the 24.
 - phrase_praise: The golden anchor is made -- the best point in their board is yours.
 

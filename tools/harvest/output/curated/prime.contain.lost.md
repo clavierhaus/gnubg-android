@@ -1,15 +1,15 @@
 # Curated: prime.contain.lost
 Signature (measured; tools/harvest/signatures.py): me I_CONTAIN up (min 0.35), me I_BACKESCAPES down (min 0.20)
 Drafts: claude-sonnet-4-6, run 2026-07-12, one draft per verified pair.
-Status of the final phrase: **PROPOSED** -- the maintainer edits it into his
-voice; tier becomes "authored" only then. Verbatim-overlap spot-check against
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-13, "Take them all"). Verbatim-overlap spot-check against
 Robertie/Magriel/Woolsey/Trice: pending (author-side, per plan).
 
 ## Best drafts (quoted, model-attributed)
 - [s5d2] "Letting a trapped checker slip free wastes the prime you worked hard to build."
 - [s4d2] "Letting the trapped checker slip out for nothing hands your opponent an easy escape that a solid prime would have denied."
 
-## Proposed final phrases (maintainer to edit; tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: You let the trapped checker out for nothing.
 - phrase_praise: null
 
