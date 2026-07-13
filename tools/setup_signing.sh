@@ -19,7 +19,7 @@
 # step is the copy-pasteable GitHub registration you run yourself.
 set -eu
 
-SCOPE="--local"; MODE="gpg"; NAME="clavierhaus"; EMAIL="gnubg@clavierhaus.at"
+SCOPE="--local"; MODE="gpg"; NAME="clavierhaus"; EMAIL="gnubg@clavierhaus.at"; KEYARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --global) SCOPE="--global" ;;
@@ -27,6 +27,7 @@ while [ $# -gt 0 ]; do
     --gpg) MODE="gpg" ;;
     --name) NAME="$2"; shift ;;
     --email) EMAIL="$2"; shift ;;
+    --key) KEYARG="$2"; shift ;;
     *) echo "unknown arg: $1"; exit 2 ;;
   esac; shift
 done
@@ -36,12 +37,27 @@ say() { printf '\033[1m%s\033[0m\n' "$*"; }
 
 if [ "$MODE" = "ssh" ]; then
   command -v ssh-keygen >/dev/null || { echo "ssh-keygen not found"; exit 1; }
-  KEY="$HOME/.ssh/gnubg_signing"
-  if [ ! -f "$KEY" ]; then
-    say "creating an SSH signing key at $KEY"
-    ssh-keygen -t ed25519 -C "$EMAIL (gnubg release signing)" -f "$KEY" -N ""
+  # Prefer an EXISTING key: --key <path> wins; else autodetect a public key
+  # in ~/.ssh. Generate a dedicated key ONLY if nothing usable is found.
+  KEY=""
+  if [ -n "$KEYARG" ]; then
+    # accept either the private or the .pub path; normalise to private stem
+    case "$KEYARG" in *.pub) KEY="${KEYARG%.pub}" ;; *) KEY="$KEYARG" ;; esac
+    [ -f "$KEY.pub" ] || { echo "no public key at $KEY.pub"; exit 1; }
+    say "using your key: $KEY.pub"
   else
-    say "reusing existing SSH key $KEY"
+    for cand in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ecdsa" \
+                "$HOME/.ssh/id_rsa" "$HOME/.ssh/gnubg_signing"; do
+      if [ -f "$cand.pub" ]; then KEY="$cand"; break; fi
+    done
+    if [ -n "$KEY" ]; then
+      say "found an existing SSH key -- using $KEY.pub"
+      echo "  (pass --key <path> to choose a different one)"
+    else
+      KEY="$HOME/.ssh/gnubg_signing"
+      say "no existing SSH key found -- creating $KEY"
+      ssh-keygen -t ed25519 -C "$EMAIL (gnubg release signing)" -f "$KEY" -N ""
+    fi
   fi
   ALLOWED="$HOME/.ssh/gnubg_allowed_signers"
   printf '%s %s\n' "$EMAIL" "$(cat "$KEY.pub")" > "$ALLOWED"
