@@ -180,3 +180,7 @@ keystore.properties
 # Phase D raw LLM drafts -- never committed (plan §4.D). Curation
 # (output/curated/) IS committed, so only raw/ is ignored.
 tools/harvest/output/raw/
+
+# Python bytecode from the harvest/pilot tooling
+__pycache__/
+*.pyc
