@@ -21,10 +21,10 @@ Builds:
     versionCode: 12
     commit: v0.21.2
     sudo:
-      # Provision the GLib source archive during the NON-isolated prebuild
-      # phase (the build phase itself is network-isolated). F-Droid fetches
-      # and the sha256 below verifies it; the native build script then finds
-      # the pre-placed archive instead of reaching the network.
+      # install the native-build toolchain F-Droid's buildserver lacks, and
+      # provision the GLib source archive (build phase is network-isolated)
+      - apt-get update
+      - apt-get install -y meson ninja-build cmake patch file
       - curl -L -o /tmp/glib-2.88.1.tar.xz
           https://download.gnome.org/sources/glib/2.88/glib-2.88.1.tar.xz
       - echo "51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e  /tmp/glib-2.88.1.tar.xz" | sha256sum -c -

@@ -38,7 +38,8 @@ find_sdk_root() {
     do
         [ -n "$candidate" ] || continue
 
-        if [ -d "$candidate/ndk/$NDK_VERSION" ]; then
+        if [ -d "$candidate/ndk/$NDK_VERSION" ] || \
+           [ -n "$(find "$candidate/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -n1)" ]; then
             printf '%s\n' "$candidate"
             return 0
         fi
@@ -66,9 +67,19 @@ command -v ninja >/dev/null 2>&1 ||
     die "ninja is required"
 
 SDK_ROOT="$(find_sdk_root)" ||
-    die "Android SDK with NDK $NDK_VERSION not found"
+    die "Android SDK with NDK not found (set ANDROID_SDK_ROOT or ANDROID_HOME)"
 
-NDK_ROOT="$SDK_ROOT/ndk/$NDK_VERSION"
+if [ -n "${ANDROID_NDK_HOME:-}" ] && [ -d "${ANDROID_NDK_HOME}" ]; then
+    NDK_ROOT="$ANDROID_NDK_HOME"
+elif [ -n "${ANDROID_NDK_ROOT:-}" ] && [ -d "${ANDROID_NDK_ROOT}" ]; then
+    NDK_ROOT="$ANDROID_NDK_ROOT"
+elif [ -d "$SDK_ROOT/ndk/$NDK_VERSION" ]; then
+    NDK_ROOT="$SDK_ROOT/ndk/$NDK_VERSION"
+else
+    NDK_ROOT="$(find "$SDK_ROOT/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -n1)"
+fi
+[ -n "$NDK_ROOT" ] && [ -d "$NDK_ROOT" ] ||
+    die "Android NDK not found under $SDK_ROOT/ndk (set ANDROID_NDK_HOME)"
 HOST_TAG="linux-x86_64"
 TOOLCHAIN_BIN="$NDK_ROOT/toolchains/llvm/prebuilt/$HOST_TAG/bin"
 

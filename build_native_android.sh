@@ -32,7 +32,10 @@ find_sdk_root() {
     do
         [ -n "$candidate" ] || continue
 
-        if [ -d "$candidate/ndk/$NDK_VERSION" ]; then
+        # accept the SDK if it has the pinned NDK OR any NDK at all (F-Droid
+        # installs an r27 point release whose version string may differ)
+        if [ -d "$candidate/ndk/$NDK_VERSION" ] || \
+           [ -n "$(find "$candidate/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -n1)" ]; then
             printf '%s\n' "$candidate"
             return 0
         fi
@@ -47,10 +50,31 @@ command -v cmake >/dev/null 2>&1 ||
 command -v file >/dev/null 2>&1 ||
     die "file is required"
 
-SDK_ROOT="$(find_sdk_root)" ||
-    die "Android SDK with NDK $NDK_VERSION not found"
+find_ndk_root() {
+    # 1. explicit env (F-Droid sets ANDROID_NDK_HOME / ANDROID_NDK_ROOT)
+    for candidate in "${ANDROID_NDK_HOME:-}" "${ANDROID_NDK_ROOT:-}"; do
+        [ -n "$candidate" ] && [ -d "$candidate" ] || continue
+        printf '%s\n' "$candidate"; return 0
+    done
+    # 2. the exact pinned version under the SDK
+    if [ -d "$SDK_ROOT/ndk/$NDK_VERSION" ]; then
+        printf '%s\n' "$SDK_ROOT/ndk/$NDK_VERSION"; return 0
+    fi
+    # 3. any installed NDK under the SDK (F-Droid installs an r27 point
+    #    release whose exact version string need not match NDK_VERSION)
+    if [ -d "$SDK_ROOT/ndk" ]; then
+        local d
+        d="$(find "$SDK_ROOT/ndk" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n1)"
+        [ -n "$d" ] && { printf '%s\n' "$d"; return 0; }
+    fi
+    return 1
+}
 
-NDK_ROOT="$SDK_ROOT/ndk/$NDK_VERSION"
+SDK_ROOT="$(find_sdk_root)" ||
+    die "Android SDK with NDK not found (set ANDROID_SDK_ROOT or ANDROID_HOME)"
+
+NDK_ROOT="$(find_ndk_root)" ||
+    die "Android NDK not found under $SDK_ROOT/ndk (set ANDROID_NDK_HOME)"
 TOOLCHAIN="$NDK_ROOT/build/cmake/android.toolchain.cmake"
 
 [ -f "$TOOLCHAIN" ] ||
