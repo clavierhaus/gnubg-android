@@ -17,9 +17,9 @@ RepoType: git
 Repo: https://github.com/clavierhaus/gnubg-android.git
 
 Builds:
-  - versionName: 0.21.2
-    versionCode: 12
-    commit: v0.21.2
+  - versionName: 0.21.3
+    versionCode: 13
+    commit: v0.21.3
     sudo:
       # install the native-build toolchain F-Droid's buildserver lacks, and
       # provision the GLib source archive (build phase is network-isolated)
@@ -46,5 +46,5 @@ AllowedAPKSigningKeys: []
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.21.2
-CurrentVersionCode: 12
+CurrentVersion: 0.21.3
+CurrentVersionCode: 13
