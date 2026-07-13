@@ -31,13 +31,13 @@ Builds:
     prebuild:
       # place the provisioned archive at the repo root -- build_glib_android.sh
       # checks $PROJECT_ROOT/glib-2.88.1.tar.xz first and uses it offline
-      - cp /tmp/glib-2.88.1.tar.xz .
+      - cp /tmp/glib-2.88.1.tar.xz ../../
     output: gnubg-app/app/build/outputs/apk/release/app-release-unsigned.apk
     srclibs: []
     ndk: r27
     build:
       # build glib + the gnubg engine from source (offline: archive is present)
-      - ./build_native_android.sh
+      - cd ../../ && ./build_native_android.sh
     gradle:
       - yes
     subdir: gnubg-app/app
