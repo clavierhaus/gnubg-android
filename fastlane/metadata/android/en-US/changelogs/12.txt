@@ -1,0 +1,1 @@
+Adds a one-tap bug report (Settings > Report): copies app version, device, and the exact position as a GNU Backgammon ID to the clipboard for pasting into a GitHub issue. Fixes the end-of-match message being clipped to "You win the".

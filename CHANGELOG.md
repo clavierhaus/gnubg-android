@@ -26,6 +26,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.21.2] -- 2026-07-13
+
 ### Fixed
 - **"You win the match!" is no longer clipped to "You win the".** The result
   label allowed only one line in the narrow game rail, truncating any message
