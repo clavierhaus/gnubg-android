@@ -387,6 +387,23 @@ Notes:
     dependency at play time defeats the offline invariant; user data
     (their moves, their positions) would leave the device.
 
+## 8b. Mechanism boundary: signatures cover contact only (2026-07-12)
+
+Established by measurement while attempting a race-wastage entry. gnubg
+evaluates pure races with CalculateRaceInputs (eval.c:1294) -- a distinct,
+unnamed occupancy/men-off/crossover input set -- NOT the I_* contact inputs
+the signatures speak. positionFeatures exposes only CalculateHalfInputs, so
+a race position yields contact-net noise, not signal (verified: at equal
+pips, a buried vs efficient checker moves only blockade-relative inputs that
+no longer mean anything). Consequences:
+  - The signature corpus covers CONTACT positions. This is a mechanism
+    boundary, not a coverage gap.
+  - Race and bear-off errors need an EQUITY-GAP coach (compare gnubg's own
+    equity between played and best), a separate feature -- deferred.
+  - Cube errors are already handled outside signatures (the coach cube
+    branch shows gnubg's cube verdict directly).
+Full map: docs/INSIGHT_COVERAGE.md.
+
 ## 9. Next actions (no code yet -- maintainer sign-off)
 
   1. Maintainer reviews and edits this doc.
