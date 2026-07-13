@@ -32,6 +32,11 @@ the engine, or stopped hiding what the engine already knew.
 - **Release APKs now ship a SHA256 checksum.** `release.sh` publishes an
   `app-debug.apk.sha256` sidecar with every release; verify a download with
   `sha256sum -c app-debug.apk.sha256`.
+- **Release tags are signed, fire-and-forget.** `tools/setup_signing.sh`
+  configures GPG (or `--ssh`) signing once; every subsequent release tag is
+  signed automatically and verifiable with `git tag -v <tag>`. See
+  docs/RELEASE_SIGNING.md. `tools/backfill_checksums.sh` attaches checksums
+  to previously published releases.
 
 ### Fixed
 - **"Cube not available" is honoured.** When gnubg classifies a position as

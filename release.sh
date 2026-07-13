@@ -164,7 +164,20 @@ if [ "$DRY" -eq 1 ]; then
 fi
 
 printf '%stagging %s...%s\n' "$B" "$TAG" "$X"
-git tag -a "$TAG" -m "GNU Backgammon for Android $VNAME"
+# Signed tag when git is configured to sign (tag.gpgSign=true and a
+# user.signingKey / GPG default is set up -- see docs/RELEASE_SIGNING.md and
+# tools/setup_signing.sh). This is fire-and-forget: once configured, EVERY
+# release tag is signed with no extra flag here. If signing is not set up,
+# fall back to a plain annotated tag and warn, so a release is never blocked.
+if [ "$(git config --bool tag.gpgSign 2>/dev/null)" = "true" ] \
+   && { git config user.signingKey >/dev/null 2>&1 || gpg --list-secret-keys >/dev/null 2>&1; }; then
+  git tag -s "$TAG" -m "GNU Backgammon for Android $VNAME" \
+    || die "signed tag failed -- key set up but signing errored (check: git config user.signingKey; gpg --list-secret-keys)"
+  ok "signed tag created"
+else
+  git tag -a "$TAG" -m "GNU Backgammon for Android $VNAME"
+  warn "tag is UNSIGNED -- run tools/setup_signing.sh once to enable signing"
+fi
 git push origin "$TAG"
 ok "tag pushed"
 
