@@ -1,0 +1,36 @@
+GNU Backgammon for Android brings the real GNU Backgammon engine to a modern touch interface.
+
+The application works entirely offline and contains no advertising, analytics or proprietary online services.
+
+Play
+
+Play complete matches against GNU Backgammon at seven strength levels, from Beginner to Grandmaster. Match play includes the doubling cube, resignations, Crawford, Jacoby, automatic doubles, beavers and selectable match-equity tables.
+
+Train
+
+Play with the Coach enabled and have GNU Backgammon assess each move. The application shows whether a move was best, acceptable or an error, together with stronger alternatives and their equity differences.
+
+Analyse
+
+Set up a position directly on the board or paste a GNU Backgammon Position ID, Match ID or XGID. With dice entered, GNU Backgammon ranks the available checker plays. Without dice, it analyses the cube decision.
+
+Review
+
+Save matches in GNU Backgammon's SGF format and step through them by game and move. Review the move played, GNU Backgammon's preferred move, the equity cost and the engine's assessment.
+
+GNU Backgammon remains the sole authority for game rules, legal moves, cube decisions and analysis. The Android interface displays engine state and sends explicit user actions to the engine; it does not replace the engine with separate Android-side backgammon logic.
+
+Features include:
+
+* Complete offline operation
+* Seven opponent-strength levels
+* Full match and doubling-cube play
+* Live move assessment
+* Position editing and analysis
+* GNU Backgammon ID and XGID input
+* SGF match saving and review
+* Multiple board themes
+* Phone and tablet layouts
+* Tap and drag input
+
+Requires Android 12 or newer and a 64-bit ARM device.

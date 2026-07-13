@@ -6,7 +6,7 @@ A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/)
   <img src="docs/screenshots/hub.png" width="88%" alt="Home hub — Play, Train, Analyse, Review">
 </p>
 
-> **Status: 0.20.1.** Four modes — **Play, Train, Analyse, Review** — are built and working, and the core is stable. The active frontier is deeper analysis reporting and online play. See the [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
+> **Status: 0.21.1.** Four modes — **Play, Train, Analyse, Review** — are built and working, and the core is stable. The active frontier is deeper analysis reporting and online play. See the [Roadmap](#roadmap) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What it does
 
@@ -42,13 +42,36 @@ The board is drawn from a single geometry computed once from the screen size, so
 
 ## Building
 
-Requirements: the Android SDK with the NDK installed (the native engine is compiled with CMake via the NDK), JDK 17, and a device or emulator running Android 12+ (arm64-v8a). A standard debug build compiles the engine and the app together:
+Requirements:
 
+- Android SDK with NDK `27.0.11718014`
+- JDK 21
+- CMake, Meson and Ninja
+- curl, patch and standard Unix build tools
+- Android 12 or newer on an ARM64 device
+
+Build the pinned GLib dependency and GNU Backgammon engine first, then build
+the Android application:
+
+    ./build_native_android.sh
     cd gnubg-app
     ./gradlew assembleDebug
-    adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-The native engine (`engine-core/` + `jni-bridge/`) builds as part of the Gradle build through CMake — there is no separate engine step and no submodules to initialise. Every source the native build needs is tracked here, so the project builds from a clean clone.
+For an unsigned distributor release:
+
+    ./build_native_android.sh
+    cd gnubg-app
+    ./gradlew assembleRelease
+
+`build_native_android.sh` downloads the official GLib 2.88.1 source archive,
+verifies its SHA-256 checksum, cross-compiles it with the Android NDK, builds
+`engine-core/` and `jni-bridge/`, and places the resulting ARM64 shared
+libraries in the Android `jniLibs` directory.
+
+No compiled engine or GLib binaries are stored in Git. A clean clone can
+rebuild every native component from the tracked source and the pinned,
+checksum-verified GLib source archive.
+
 
 ## Repository layout
 

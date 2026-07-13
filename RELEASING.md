@@ -97,3 +97,11 @@ of them, not a duplicate.
 It fails if any file the Android build compiles or includes is gitignored -- the
 mistake that made fresh clones unbuildable more than once. A release must not go
 out while it fails.
+
+## Release signing and third-party distribution
+
+When `gnubg-app/keystore.properties` is present, `assembleRelease` produces a release signed with the Clavierhaus release key.
+
+When `gnubg-app/keystore.properties` is absent, `assembleRelease` intentionally produces an unsigned release APK. This is the expected configuration for clean-clone verification and third-party distributors such as F-Droid, which build the application from source and apply their own signing key.
+
+The normal Android debug build remains debug-signed by the Android build tools and is unaffected by this release configuration.

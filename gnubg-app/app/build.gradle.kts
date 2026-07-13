@@ -7,11 +7,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Release signing. Secrets live in keystore.properties (gitignored), never in
-// this file and never in git. Create it from keystore.properties.example and
-// point it at your keystore. If it is absent -- a fresh clone, CI without the
-// key -- the release build falls back to the debug signing key so the APK still
-// installs; it simply is not YOUR published signature.
+// Release signing.
+//
+// Secrets live in keystore.properties, which is gitignored. When that file is
+// available, local release builds are signed with the project's release key.
+// In a clean clone, the release APK remains unsigned so that distributors such
+// as F-Droid can apply their own signature.
+
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
@@ -28,17 +30,31 @@ android {
         applicationId = "com.clavierhaus.gnubg"
         minSdk = 31
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.21.0"
+        versionCode = 11
+        versionName = "0.21.1"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
+                storeFile = file(
+                    keystoreProperties.getProperty("storeFile")
+                )
+                storePassword = keystoreProperties.getProperty(
+                    "storePassword"
+                )
                 keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+                keyPassword = keystoreProperties.getProperty(
+                    "keyPassword"
+                )
             }
         }
     }
@@ -46,28 +62,11 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            // A signed release APK installs; an unsigned one does not. With a
-            // keystore, sign with it; without, fall back to the debug key so a
-            // clone still produces an installable APK.
-            signingConfig = if (hasReleaseKey) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildFeatures {
-        compose = true
     }
 }
 
