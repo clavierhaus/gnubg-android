@@ -31,6 +31,7 @@ filled with more entries.
 | hit.declined | passed up a hit | contact |
 | backgame.timing | burned the backgame's timing | contact (2026-07-13) |
 | timing.hold.crunch | crunched the holding game's timing | contact (2026-07-13) |
+| blitz.point.missed | left the blitz point unmade | contact (2026-07-13) |
 
 Note the two "race" entries are contact-boundary entries: they fire while
 contact still exists (the decision to break it / run through it), not in a
@@ -57,8 +58,6 @@ pure race.
 These DO have contact-input signals; they are candidate entries 11+ and
 need the same pilot->signature->positions->phrase loop as the ten:
 
-- **blitz.point.missed** -- declined to make a home-board point during an
-  attack (I_ENTER2 / opponent-on-bar family, related to close.entry).
 - **prime.extend** -- had a prime and failed to extend/prime the last gap.
 - **duplication / diversification** -- number-duplication when leaving
   shots (may be too fine for a single I_* signal; pilot decides).

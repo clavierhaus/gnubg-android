@@ -114,6 +114,18 @@ SIGNATURES = {
              "min_abs": 0.02, "weight": 0.5},
         ],
     },
+    "blitz.point.missed": {
+        "terms": [
+            {"term": "I_ENTER2", "side": "opp", "direction": "up",
+             "min_abs": 0.10, "weight": 1.5},
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "up",
+             "min_abs": 0.10, "weight": 1.0},
+            {"term": "I_ENTER", "side": "opp", "direction": "up",
+             "min_abs": 0.10, "weight": 1.0},
+            {"term": "PipCount.opp", "side": "", "direction": "up",
+             "min_abs": 3.0, "weight": 1.0},
+        ],
+    },
     "timing.hold.crunch": {
         "terms": [
             # context: a HOLDING game -- exactly one rear anchor, both boards

@@ -71,6 +71,12 @@ RULES:
 - Plain language a casual player understands; the numbers justify the phrase but do not appear in it. "You broke a 5-prime for a play that gains little" -- never "loses 0.081".
 - Do not quote or closely paraphrase any backgammon book or author.
 
+POLARITY -- read carefully: phrase_flag describes the MISTAKE the player
+made (what the PLAYED position shows), never the good play. Example: for a
+missed home-board point, flag = "Your board stayed open with a checker on
+the bar", NOT "Making a home point traps the checker" -- that is the
+praise. Two harvest runs inverted this; do not.
+
 OUTPUT FORMAT (JSON, nothing else):
 {
   "phrase_flag": "The phrase shown when the player's move fits this mistake pattern (or null if this entry praises)",

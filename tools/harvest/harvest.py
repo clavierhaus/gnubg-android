@@ -46,6 +46,7 @@ ENTRY_META = {
     "race.escape.window": ("Escape rolls are a resource; don't spend the window doing nothing.", "race"),
     "backgame.timing": ("A backgame lives or dies on timing.", "board"),
     "timing.hold.crunch": ("A holding game survives on its timing.", "board"),
+    "blitz.point.missed": ("When the blitz is on, points are made on heads.", "threat"),
 }
 
 

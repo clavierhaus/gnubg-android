@@ -297,3 +297,13 @@ holding a spare on the 14 measured NEGATIVE timing delta -- excluded on
 evidence. 6 pairs verified; matcher 81/81 after the containment partition
 was encoded on BOTH sides (without it, prime.break.5 stole the hold pairs
 AND hold stole the dissolution pairs).
+
+**blitz.point.missed** — When the blitz is on, points are made on heads. (ADDED 2026-07-13, backlog entry 13)
+signature (MEASURED 2026-07-13): opp I_ENTER2 up · opp I_BACK_CHEQUER up
+(min 0.10 -- deep-hit deltas are small; the 2-point combos failed this gate
+honestly and were dropped) · opp I_ENTER up · opp PipCount up (min 3)
+bands: doubtful, bad
+note: the hit-and-make conjunction isolates it from hit.declined (whose
+0.30 gate blocks here) and board.close.entry (on-bar-both range blocks).
+4 pairs; matcher 85/85. Pilot board had 14 opp checkers -- the generator's
+15-gate caught its own author.

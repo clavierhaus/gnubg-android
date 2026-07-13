@@ -268,7 +268,27 @@ def timing_hold_pairs():
                 {"anchor": a, "burned_to": low, "held_at": high}
 
 
+def blitz_point_pairs():
+    # Their blot sits DEEP in my home board; best = the point made ON it
+    # (hit + make from the 8-spares); played = the same builders spent
+    # quietly while the blot stands.
+    # 3 on the 10/11 stack: the pilot board had 14 opp checkers and the
+    # 15-gate rejected the whole template -- caught by the generator itself.
+    opp_sets = ({18: 5, 20: 3, 22: 3, 10: 3},
+                {17: 5, 19: 3, 22: 3, 11: 3})
+    for bp in (4, 3, 2):
+        for oi, opp_base in enumerate(opp_sets):
+            opp_pl = {**opp_base, bp: 1}
+            me_pl = {6: 2, 5: 2, 8: 4, 13: 3, 24: 2, 9: 2}
+            played = board(me=me_pl, opp=opp_pl)
+            me_be = {6: 2, 5: 2, 8: 2, 13: 3, 24: 2, 9: 2, bp: 2}
+            best = board(me=me_be, opp=opp_base, opp_bar=1)
+            yield f"b{bp}o{oi}", played, best, \
+                {"blot_on": bp, "opp_variant": oi}
+
+
 GENERATORS = {
+    "blitz.point.missed": blitz_point_pairs,
     "timing.hold.crunch": timing_hold_pairs,
     "backgame.timing": backgame_timing_pairs,
     "prime.break.5": lambda: prime_pairs(False),
