@@ -1,0 +1,50 @@
+# F-Droid build metadata for GNU Backgammon for Android.
+# This is the reference copy; the authoritative file lives in the
+# maintainer's fdroiddata fork as metadata/com.clavierhaus.gnubg.yml.
+# See docs/FDROID_SUBMISSION.md for the reviewer notes.
+
+Categories:
+  - Games
+License: GPL-3.0-or-later
+AuthorName: clavierhaus
+AuthorEmail: gnubg@clavierhaus.at
+WebSite: https://github.com/clavierhaus/gnubg-android
+SourceCode: https://github.com/clavierhaus/gnubg-android
+IssueTracker: https://github.com/clavierhaus/gnubg-android/issues
+Changelog: https://github.com/clavierhaus/gnubg-android/blob/main/CHANGELOG.md
+
+RepoType: git
+Repo: https://github.com/clavierhaus/gnubg-android.git
+
+Builds:
+  - versionName: 0.21.2
+    versionCode: 12
+    commit: v0.21.2
+    sudo:
+      # Provision the GLib source archive during the NON-isolated prebuild
+      # phase (the build phase itself is network-isolated). F-Droid fetches
+      # and the sha256 below verifies it; the native build script then finds
+      # the pre-placed archive instead of reaching the network.
+      - curl -L -o /build/glib-2.88.1.tar.xz
+          https://download.gnome.org/sources/glib/2.88/glib-2.88.1.tar.xz
+      - echo "51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e  /build/glib-2.88.1.tar.xz" | sha256sum -c -
+    prebuild:
+      # place the provisioned archive at the repo root -- build_glib_android.sh
+      # checks $PROJECT_ROOT/glib-2.88.1.tar.xz first and uses it offline
+      - cp /build/glib-2.88.1.tar.xz .
+    output: gnubg-app/app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs: []
+    ndk: r27
+    build:
+      # build glib + the gnubg engine from source (offline: archive is present)
+      - ./build_native_android.sh
+    gradle:
+      - yes
+    subdir: gnubg-app/app
+
+AllowedAPKSigningKeys: []
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 0.21.2
+CurrentVersionCode: 12

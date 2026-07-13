@@ -78,12 +78,25 @@ redistributable. (If a reviewer treats bundled trained weights as needing a
 build-from-training story, note that gnubg itself ships these as data, not
 as something rebuilt per release — upstream precedent.)
 
-## The build recipe (next artifact)
+## The build recipe (DONE — fdroid/com.clavierhaus.gnubg.yml)
 
-The fdroiddata metadata YAML must invoke the from-source native build before
-the gradle assemble. Draft against build_native_android.sh (pinned NDK
-27.0.11718014, arm64-v8a) — that is the next document to produce. F-Droid
-builds one APK per native ABI (arm64-v8a here).
+Reference recipe committed at fdroid/com.clavierhaus.gnubg.yml (the
+authoritative copy lives in the maintainer's fdroiddata fork). Key point,
+the one thing that would otherwise fail F-Droid's isolated build:
+
+- build_glib_android.sh fetched GLib over the network (download.gnome.org).
+  F-Droid's build phase is network-isolated, so this is now offline-aware:
+  the script prefers a PRE-PROVIDED archive at the repo root and only curls
+  as a local-dev fallback (verified: given the archive, the selection loop
+  never reaches curl). The recipe provisions + sha256-verifies the archive
+  in the non-isolated `sudo` prebuild phase, then copies it to the repo root
+  where the script finds it.
+
+Verified in the assistant sandbox: script syntax, and the offline
+archive-selection logic. NOT verifiable here (no NDK/SDK/meson): the full
+native build and the gradle assemble — those must be proven in F-Droid's
+own buildserver Docker image (`fdroid build com.clavierhaus.gnubg`) before
+opening the MR. That local `fdroid build` is the real go/no-go gate.
 
 ## Submission steps (maintainer, on GitLab)
 

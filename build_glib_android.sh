@@ -99,6 +99,26 @@ echo
 echo "==> Fetching official GLib source archive"
 
 if [ ! -f "$ARCHIVE_PATH" ]; then
+    # F-Droid's build server is network-isolated: it provisions the archive
+    # (SHA256 declared in the recipe) during the non-isolated prebuild phase.
+    # Prefer any pre-provided copy; only reach the network for local builds.
+    for provided in \
+        "$PROJECT_ROOT/$GLIB_ARCHIVE" \
+        "${GLIB_ARCHIVE_DIR:-}/$GLIB_ARCHIVE" \
+        "$PROJECT_ROOT/glib-src/$GLIB_ARCHIVE"
+    do
+        if [ -n "$provided" ] && [ -f "$provided" ]; then
+            echo "==> Using pre-provided archive: $provided"
+            mkdir -p "$DEPS_DIR"
+            cp "$provided" "$ARCHIVE_PATH"
+            break
+        fi
+    done
+fi
+
+if [ ! -f "$ARCHIVE_PATH" ]; then
+    command -v curl >/dev/null 2>&1 ||
+        die "GLib archive not pre-provided and curl unavailable (offline build?)"
     curl \
         --fail \
         --location \
