@@ -1,0 +1,1 @@
+Prepared the application for reproducible third-party distribution and F-Droid submission. Release builds no longer fall back to debug signing. Added upstream store metadata, screenshots and release documentation.

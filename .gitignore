@@ -58,6 +58,7 @@ engine-core/gnubgmodule.*
 engine-core/gnubgstock.*
 engine-core/render*.c
 engine-core/render*.h
+!engine-core/render.h
 engine-core/sound.c
 engine-core/html*.c
 engine-core/latex.c
@@ -184,3 +185,5 @@ tools/harvest/output/raw/
 # Python bytecode from the harvest/pilot tooling
 __pycache__/
 *.pyc
+.deps/
+gnubg-app/app/src/main/jniLibs/

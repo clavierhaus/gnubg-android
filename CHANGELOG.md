@@ -11,6 +11,19 @@ One rule underlies every entry: GNU Backgammon is the sole authority for game
 logic and analysis. "Fixed" almost always means the app stopped disagreeing with
 the engine, or stopped hiding what the engine already knew.
 
+## [0.21.1] -- 2026-07-13
+
+### Distribution
+
+- Added Fastlane-compatible F-Droid store metadata.
+- Added upstream application screenshots and icon for F-Droid.
+- Release builds without `keystore.properties` are now left unsigned instead of falling back to the Android debug key.
+- Documented the F-Droid-compatible release process.
+
+### Documentation
+
+- Updated the README release status to 0.21.1.
+
 ## [Unreleased]
 
 ## [0.21.0] -- 2026-07-13

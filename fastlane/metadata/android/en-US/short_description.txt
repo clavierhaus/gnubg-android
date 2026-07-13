@@ -1,0 +1,1 @@
+Play, train and analyse with the GNU Backgammon engine
