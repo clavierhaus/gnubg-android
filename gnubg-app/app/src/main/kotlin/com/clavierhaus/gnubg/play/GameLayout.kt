@@ -159,8 +159,14 @@ fun GameLayout(
                                         gameState.nPoints >= 2 -> "Engine wins Gammon"
                                         else -> "Engine wins"
                                     }
+                                    // Up to two lines: "You win the match!" wraps
+                                    // in this narrow rail, and maxLines=1 was
+                                    // clipping it to "You win the". Two lines of
+                                    // 14sp stays compact enough not to push the
+                                    // button row off the non-scrolling pane.
                                     Text(resultText, color = Color.White, fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold, maxLines = 1,
+                                        fontWeight = FontWeight.Bold, maxLines = 2,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     // New match / Home live in the hoisted row below,
                                     // the same place as in every other phase. "Exit" is

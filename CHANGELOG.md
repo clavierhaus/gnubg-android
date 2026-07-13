@@ -26,6 +26,12 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Fixed
+- **"You win the match!" is no longer clipped to "You win the".** The result
+  label allowed only one line in the narrow game rail, truncating any message
+  that wrapped -- including the Gammon/Backgammon wins. It now uses up to two
+  lines.
+
 ### Added
 - **Report a problem.** A new Settings tab (second, after Tournament) with a
   single button: Generate bug report copies a paste-ready diagnostic to the
