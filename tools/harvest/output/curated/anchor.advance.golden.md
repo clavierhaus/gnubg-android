@@ -18,3 +18,10 @@ SIGNAL MISMATCH rejections: a19f1/a19f2/a21f1/a21f2/a20f2 narrate
 'retreating off the golden point' -- no retreat exists in either board; the
 played position simply never made the point. The deltas exposed the
 hallucination (criterion 3). Only the a20f1 draft read the pair correctly.
+
+## Amendment (2026-07-13)
+best_in narrowed [0.50,1.0] -> [0.80,0.87]: the wide range fired the GOLDEN
+phrase on 21/22-point advances (wrong words). Those advances now belong to
+anchor.advance.mid; the 19-advance (their 6-point, value 1.0) is
+deliberately uncovered rather than mislabeled. Generator pairs 6 -> 2 (the
+20-point fillers), both verified.

@@ -32,6 +32,7 @@ filled with more entries.
 | backgame.timing | burned the backgame's timing | contact (2026-07-13) |
 | timing.hold.crunch | crunched the holding game's timing | contact (2026-07-13) |
 | blitz.point.missed | left the blitz point unmade | contact (2026-07-13) |
+| anchor.advance.mid | declined a 21/22-point anchor advance | contact (2026-07-13) |
 
 Note the two "race" entries are contact-boundary entries: they fire while
 contact still exists (the decision to break it / run through it), not in a
@@ -61,8 +62,6 @@ need the same pilot->signature->positions->phrase loop as the ten:
 - **prime.extend** -- had a prime and failed to extend/prime the last gap.
 - **duplication / diversification** -- number-duplication when leaving
   shots (may be too fine for a single I_* signal; pilot decides).
-- **anchor.advance.mid** -- advanced-anchor jumps other than the golden
-  point (I_FORWARD_ANCHOR at other zone values).
 
 ## Verdict
 

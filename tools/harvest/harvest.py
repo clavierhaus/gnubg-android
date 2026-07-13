@@ -38,6 +38,7 @@ ENTRY_META = {
     "prime.contain.lost": ("Don't let the trapped checker out for free.", "board"),
     "anchor.surrender.back": ("A back anchor is shelter; don't leave it without a reason.", "board"),
     "anchor.advance.golden": ("The 20-point anchor is worth fighting for.", "board"),
+    "anchor.advance.mid": ("An advanced anchor beats a deep one.", "board"),
     "board.close.entry": ("Every home point you make keeps the hit man out longer.", "board"),
     "blot.shot.given": ("Count the shots before you leave the blot.", "threat"),
     "blot.double.given": ("One blot is a risk; two in range is a plan for disaster.", "threat"),

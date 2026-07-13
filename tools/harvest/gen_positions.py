@@ -182,8 +182,20 @@ def anchor_surrender_pairs():
         yield f"a{ap}", played, best, {"anchor": ap, "split_to": [ap, s2]}
 
 
+def anchor_mid_pairs():
+    # advances into the middle band (their 4- and 3-points); opp home points
+    # chosen to avoid the anchor targets
+    for ap in (21, 22):
+        for filler in ({13: 5}, {13: 3, 11: 2}):
+            base = {5: 2, 6: 2, 8: 4}
+            opp = {12: 5, 17: 3, 19: 3, 23: 2, 18: 2}
+            played = board(me={**base, **filler, 24: 2}, opp=opp)
+            best = board(me={**base, **filler, ap: 2}, opp=opp)
+            yield f"a{ap}f{len(filler)}", played, best, {"anchor": ap}
+
+
 def anchor_golden_pairs():
-    for ap in (19, 20, 21):
+    for ap in (20,):
         for filler in ({13: 5}, {13: 3, 11: 2}):
             base = {5: 2, 6: 2, 8: 4}
             opp = {12: 5, 17: 3, 22: 3, 23: 2, 18: 2}
@@ -298,6 +310,7 @@ GENERATORS = {
     "blot.double.given": blot_double_pairs,
     "anchor.surrender.back": anchor_surrender_pairs,
     "anchor.advance.golden": anchor_golden_pairs,
+    "anchor.advance.mid": anchor_mid_pairs,
     "race.break.ahead": race_break_pairs,
     "race.escape.window": race_escape_pairs,
     "hit.declined": hit_pairs,

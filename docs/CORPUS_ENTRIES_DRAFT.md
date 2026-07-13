@@ -307,3 +307,13 @@ note: the hit-and-make conjunction isolates it from hit.declined (whose
 0.30 gate blocks here) and board.close.entry (on-bar-both range blocks).
 4 pairs; matcher 85/85. Pilot board had 14 opp checkers -- the generator's
 15-gate caught its own author.
+
+**anchor.advance.mid** — An advanced anchor beats a deep one. (ADDED 2026-07-13, backlog entry 14)
+signature (MEASURED 2026-07-13): me I_FORWARD_ANCHOR up (min 0.25), played
+in [0.01,0.40], best in [0.45,0.70] -- the 21/22-point band, measured
+0.667/0.500. This entry is a PRECISION SPLIT: golden's old [0.5,1.0] range
+fired the golden phrase on these advances (wrong words); golden is now
+[0.80,0.87] (the 20 exactly) and the 19-advance is deliberately uncovered.
+bands: doubtful
+note: 4 pairs; matcher 85/85 with full golden/mid mutual isolation. First
+harvest under the polarity-fixed prompt -- all four flags correct.

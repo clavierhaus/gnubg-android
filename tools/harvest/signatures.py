@@ -88,9 +88,21 @@ SIGNATURES = {
     },
     "anchor.advance.golden": {
         "terms": [
+            # best_in narrowed to THE golden point (0.833) -- the earlier
+            # [0.5,1.0] fired the golden phrase on 21/22-point advances:
+            # wrong words. Those now belong to anchor.advance.mid; the
+            # 19-advance (their 6-point, 1.0) is deliberately uncovered
+            # rather than mislabeled.
             {"term": "I_FORWARD_ANCHOR", "side": "me", "direction": "up",
              "min_abs": 0.30, "weight": 1.0,
-             "played_in": [0.01, 0.40], "best_in": [0.50, 1.0]},
+             "played_in": [0.01, 0.40], "best_in": [0.80, 0.87]},
+        ],
+    },
+    "anchor.advance.mid": {
+        "terms": [
+            {"term": "I_FORWARD_ANCHOR", "side": "me", "direction": "up",
+             "min_abs": 0.25, "weight": 1.0,
+             "played_in": [0.01, 0.40], "best_in": [0.45, 0.70]},
         ],
     },
     "race.break.ahead": {
