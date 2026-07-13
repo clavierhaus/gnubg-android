@@ -1,22 +1,36 @@
-## GNU Backgammon for Android 0.20.1
+## GNU Backgammon for Android 0.21.0
 
-A cosmetic follow-up to 0.20.0. Two small user-visible changes, no engine
-changes.
+The coach learns to speak. When gnubg flags a move in Train with the Coach,
+the Why area now explains it: up to two short teaching phrases, each tagged
+Race / Board / Threat, matched against gnubg's own position-feature deltas
+between the played move and the best. Fourteen patterns ship -- primes,
+anchors, blots, hits, blitzes, timing, races -- every signature measured
+against the engine, every phrase maintainer-authored. When no pattern fits,
+the coach stays silent rather than reaching.
 
 ### Added
-- **Publisher mark on the hub.** "clavierhaus.at" now reads in the top-right
-  corner, symmetric with the settings gear on the top-left, in the same DejaVu
-  Serif as the title and menu entries. "vie" is set in GNU orange — the Vienna
-  pun the company name carries — the rest in the hub's off-white.
+- **The insight layer** (the headline above). Silence is a feature: phrases
+  appear only when the measured signature clears its gates.
+- **XG-grade cube analysis in Analyse Position**: winning-chance table for
+  both sides, cubeless and cubeful equity, the three action equities with
+  deltas from optimal, a Rollout button (144 games, cubeful,
+  variance-reduced, with confidence figures), and the match equity table
+  named. Changing the MET recomputes a shown result on the spot.
+- **The Analyse result stands alone**: after Analyse the entry controls
+  give way to the result; Back returns to entry.
 
 ### Fixed
-- **Coach move-list chip labels are now visible.** The "P" identifier on the
-  player's move row and "1", "2", "3" on gnubg's better alternatives drew as
-  coloured pills with no letters on every device since the coach shipped. The
-  strings were in the source, but the 30dp chip slot squeezed the compact
-  button's inner text constraint (30 − 19 − 19 dp of padding) to zero width, so
-  the glyph measured to zero and never rasterised. Replaced with a fixed-size
-  26dp circular identifier chip whose size makes that failure mode
-  unrepresentable; matches the visual grammar of the score-tag badge.
+- "Cube not available" is honoured -- no decision rows when gnubg says
+  there is no cube decision for the roller.
+- Match-equity-table changes re-derive a shown result instead of leaving
+  stale numbers beside a live label.
 
-**Verifying this download:** each release attaches `app-debug.apk.sha256`. After downloading both, run `sha256sum -c app-debug.apk.sha256` in the download directory (macOS: `shasum -a 256 -c`); it prints `OK` when the APK is intact.
+### Security
+- Every release now ships a SHA256 checksum sidecar (`sha256sum -c
+  app-debug.apk.sha256` to verify), and release tags are signed
+  (`git tag -v v0.21.0`). This is the first signed release.
+
+**Verifying this download:** each release attaches `app-debug.apk.sha256`.
+After downloading both, run `sha256sum -c app-debug.apk.sha256` in the
+download directory (macOS: `shasum -a 256 -c`); it prints `OK` when the APK
+is intact.

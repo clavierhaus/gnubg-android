@@ -13,6 +13,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.21.0] -- 2026-07-13
+
 ### Added
 - **The Coach explains itself.** The "Why" area now speaks: when gnubg flags
   a move, up to two short teaching phrases appear, each tagged Race / Board /
