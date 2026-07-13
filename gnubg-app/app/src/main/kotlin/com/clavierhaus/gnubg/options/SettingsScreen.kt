@@ -31,8 +31,17 @@ import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GameSettings
 import com.clavierhaus.gnubg.engine.MatchEquityTable
 import com.clavierhaus.gnubg.engine.GameViewModel
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Build
+import android.widget.Toast
+import androidx.compose.material3.Button
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.clavierhaus.gnubg.Engine
 
-enum class SettingsTab { GAME, BOARD, ENGINE, ANALYSIS, EXPERT }
+enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, EXPERT }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
@@ -86,6 +95,7 @@ fun SettingsScreen(
             ) {
                 when (activeTab) {
                     SettingsTab.GAME -> GameSettingsTab(settings, viewModel)
+                    SettingsTab.REPORT -> ReportSettingsTab()
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
                     SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
                     SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
@@ -144,6 +154,7 @@ private fun SettingsTabs(
         SettingsTab.values().forEach { tab ->
             val label = when (tab) {
                 SettingsTab.GAME -> "Tournament"
+                SettingsTab.REPORT -> "Report"
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.ENGINE -> "Engine"
                 SettingsTab.ANALYSIS -> "Analysis"
@@ -390,6 +401,104 @@ private fun AboutLicenseSection() {
             Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = pal.uiTextSecondary, fontSize = 12.sp)
         }
     }
+}
+
+@Composable
+private fun ReportSettingsTab() {
+    val context = LocalContext.current
+
+    // Leave no clutter: clear any diagnostic scratch on entering this tab,
+    // so nothing from a previous session lingers on disk.
+    LaunchedEffect(Unit) { purgeReportCache(context) }
+
+    SettingsSection("Report a problem") {
+        Text(
+            "Something went wrong? Tap below to copy a diagnostic report to the " +
+            "clipboard -- app version, your device, and the exact game position " +
+            "(as a GNU Backgammon ID). Paste it into a GitHub issue at " +
+            "github.com/clavierhaus/gnubg-android/issues so it can be reproduced. " +
+            "Nothing is sent automatically; the report is only what you paste.",
+            color = LocalBoardPalette.current.uiTextSecondary,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        Button(
+            onClick = {
+                val report = buildBugReport(context)
+                val cb = context.getSystemService(Context.CLIPBOARD_SERVICE)
+                        as ClipboardManager
+                cb.setPrimaryClip(ClipData.newPlainText("gnubg bug report", report))
+                Toast.makeText(context,
+                    "Report copied -- paste it into a GitHub issue",
+                    Toast.LENGTH_LONG).show()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Generate bug report")
+        }
+    }
+}
+
+/** Assemble a paste-ready diagnostic report. No file leaves the device; the
+ *  user chooses where to paste. The position ID lets anyone reconstruct the
+ *  exact board -- the one thing a backgammon bug report cannot do without. */
+private fun buildBugReport(context: Context): String {
+    val sb = StringBuilder()
+    sb.append("GNU Backgammon for Android -- bug report\n")
+    sb.append("========================================\n\n")
+    try {
+        val pi = context.packageManager.getPackageInfo(context.packageName, 0)
+        val code = if (Build.VERSION.SDK_INT >= 28)
+            pi.longVersionCode else @Suppress("DEPRECATION") pi.versionCode.toLong()
+        sb.append("App: ").append(pi.versionName)
+          .append(" (code ").append(code).append(")\n")
+    } catch (e: Throwable) {
+        sb.append("App: (version unavailable)\n")
+    }
+    sb.append("Android: ").append(Build.VERSION.RELEASE)
+      .append(" (API ").append(Build.VERSION.SDK_INT).append(")\n")
+    sb.append("Device: ").append(Build.MANUFACTURER).append(" ")
+      .append(Build.MODEL).append("\n\n")
+
+    sb.append("--- Position ---\n")
+    try {
+        val ids = Engine.currentIds()
+        if (ids != null && ids.isNotEmpty()) {
+            for (id in ids) sb.append(id).append("\n")
+        } else {
+            sb.append("(no active position)\n")
+        }
+    } catch (e: Throwable) {
+        sb.append("(position unavailable: ").append(e.message).append(")\n")
+    }
+
+    sb.append("\n--- Match state ---\n")
+    try {
+        val d = Engine.getCubeDebugState()
+        // labels mirror the verb's documented field order
+        val f = listOf("gameState","turn","move","die0","die1","doubled",
+                       "cubeOwner","cube","crawford","cubeUse","score0",
+                       "score1","matchTo")
+        for (i in d.indices) {
+            if (i < f.size) sb.append(f[i]).append("=").append(d[i]).append("  ")
+        }
+        sb.append("\n")
+    } catch (e: Throwable) {
+        sb.append("(state unavailable: ").append(e.message).append(")\n")
+    }
+
+    sb.append("\n--- Describe what happened ---\n")
+    sb.append("(please add: what you expected, and what the app did instead)\n")
+    return sb.toString()
+}
+
+/** Delete any diagnostic scratch under the app cache. Called on tab entry and
+ *  cheap to call again -- the app leaves no report clutter between sessions. */
+private fun purgeReportCache(context: Context) {
+    try {
+        context.cacheDir.listFiles { f -> f.name.startsWith("bugreport") }
+            ?.forEach { it.delete() }
+    } catch (_: Throwable) { /* best-effort cleanup */ }
 }
 
 @Composable

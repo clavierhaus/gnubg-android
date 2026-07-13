@@ -26,6 +26,15 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Added
+- **Report a problem.** A new Settings tab (second, after Tournament) with a
+  single button: Generate bug report copies a paste-ready diagnostic to the
+  clipboard -- app version, device, Android version, and the exact position
+  as a GNU Backgammon ID plus the match state -- for pasting into a GitHub
+  issue. Nothing is sent automatically; the report is only what the user
+  pastes, and the diagnostic scratch is purged on tab entry so no clutter
+  survives a restart.
+
 ## [0.21.0] -- 2026-07-13
 
 ### Added
