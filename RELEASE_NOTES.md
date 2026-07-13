@@ -18,3 +18,5 @@ changes.
   the glyph measured to zero and never rasterised. Replaced with a fixed-size
   26dp circular identifier chip whose size makes that failure mode
   unrepresentable; matches the visual grammar of the score-tag badge.
+
+**Verifying this download:** each release attaches `app-debug.apk.sha256`. After downloading both, run `sha256sum -c app-debug.apk.sha256` in the download directory (macOS: `shasum -a 256 -c`); it prints `OK` when the APK is intact.

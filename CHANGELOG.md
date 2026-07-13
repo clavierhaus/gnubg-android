@@ -28,6 +28,11 @@ the engine, or stopped hiding what the engine already knew.
   whole cube verdict fits the pane without scrolling on every supported
   aspect ratio.
 
+### Security
+- **Release APKs now ship a SHA256 checksum.** `release.sh` publishes an
+  `app-debug.apk.sha256` sidecar with every release; verify a download with
+  `sha256sum -c app-debug.apk.sha256`.
+
 ### Fixed
 - **"Cube not available" is honoured.** When gnubg classifies a position as
   having no cube decision for the roller (opponent-owned cube, Crawford,

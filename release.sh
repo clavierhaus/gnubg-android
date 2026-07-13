@@ -139,11 +139,27 @@ case "$APK" in
   *unsigned*) die "APK is UNSIGNED ($APK) -- it will not install. Use the debug APK." ;;
 esac
 
+# --- 2b. checksum ------------------------------------------------------------
+# Publish a SHA256 sidecar so a downloader can verify the APK end-to-end.
+# Written next to the APK, as "<apk>.sha256" in the standard `sha256sum -c`
+# format (hash + two spaces + BASENAME, so `sha256sum -c` works from the
+# download dir). sha256sum on Linux, shasum -a 256 on macOS.
+if command -v sha256sum >/dev/null 2>&1; then
+  ( cd "$(dirname "$APK")" && sha256sum "$(basename "$APK")" > "$(basename "$APK").sha256" )
+elif command -v shasum >/dev/null 2>&1; then
+  ( cd "$(dirname "$APK")" && shasum -a 256 "$(basename "$APK")" > "$(basename "$APK").sha256" )
+else
+  die "no sha256sum or shasum found -- cannot checksum the release APK"
+fi
+APK_SHA="$APK.sha256"
+[ -s "$APK_SHA" ] || die "checksum file is empty: $APK_SHA"
+ok "SHA256: $(cut -d' ' -f1 "$APK_SHA")"
+
 # --- 3. tag + publish --------------------------------------------------------
 if [ "$DRY" -eq 1 ]; then
   hr; ok "DRY RUN -- would tag $TAG and publish:"
-  printf '    gh release create %s %s %s --title "%s" --notes-file %s\n' \
-    "$TAG" "${APK#$ROOT/}" "$PRERELEASE" "$VNAME" "$NOTES"
+  printf '    gh release create %s %s %s %s --title "%s" --notes-file %s\n' \
+    "$TAG" "${APK#$ROOT/}" "${APK_SHA#$ROOT/}" "$PRERELEASE" "$VNAME" "$NOTES"
   exit 0
 fi
 
@@ -155,7 +171,7 @@ ok "tag pushed"
 printf '%screating GitHub release...%s\n' "$B" "$X"
 TITLE="$(head -n1 "$NOTES" | sed 's/^#* *//')"
 [ -n "$TITLE" ] || TITLE="$VNAME"
-gh release create "$TAG" "$APK" $PRERELEASE \
+gh release create "$TAG" "$APK" "$APK_SHA" $PRERELEASE \
   --title "$TITLE" \
   --notes-file "$NOTES" \
   || die "gh release create failed"
