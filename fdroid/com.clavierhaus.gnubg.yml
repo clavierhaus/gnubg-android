@@ -25,13 +25,13 @@ Builds:
       # phase (the build phase itself is network-isolated). F-Droid fetches
       # and the sha256 below verifies it; the native build script then finds
       # the pre-placed archive instead of reaching the network.
-      - curl -L -o /build/glib-2.88.1.tar.xz
+      - curl -L -o /tmp/glib-2.88.1.tar.xz
           https://download.gnome.org/sources/glib/2.88/glib-2.88.1.tar.xz
-      - echo "51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e  /build/glib-2.88.1.tar.xz" | sha256sum -c -
+      - echo "51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e  /tmp/glib-2.88.1.tar.xz" | sha256sum -c -
     prebuild:
       # place the provisioned archive at the repo root -- build_glib_android.sh
       # checks $PROJECT_ROOT/glib-2.88.1.tar.xz first and uses it offline
-      - cp /build/glib-2.88.1.tar.xz .
+      - cp /tmp/glib-2.88.1.tar.xz .
     output: gnubg-app/app/build/outputs/apk/release/app-release-unsigned.apk
     srclibs: []
     ndk: r27
