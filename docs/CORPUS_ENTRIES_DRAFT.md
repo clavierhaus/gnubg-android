@@ -82,13 +82,14 @@ outcome. The phrase waits unless a composite (MOBILITY-per-checker?) earns
 its way in through a future pilot.
 
 **backgame.timing** — A backgame lives or dies on timing.
-signature (SOURCE-GROUNDED 2026-07-12, pair pending): precondition
-me I_BACKG > 0 (two-plus rear anchors, eval.c:1272 -- the backgame
-indicator) · me I_TIMING as the axis (the timing reserve, eval.c:816)
+signature (MEASURED 2026-07-13): context me I_BACKG > 0 on BOTH boards
+(the backgame precondition, constant at 0.25 across the pilot pair) · me
+I_TIMING up, min 0.10 (crushed 0.08 -> preserved 0.50 on the discovery
+pair; ~0.13 per burned builder at move scale)
 bands: bad, very bad
-note: both formerly-uncommented inputs are now defined in INPUT_DICTIONARY;
-the entry is speakable but its measurement pair is deferred -- backgame
-boards need the matcher's severity context to pick a meaningful pair.
+note: 12 generator pairs verified; matcher confusion 75/75 with COMPLETE
+isolation both ways -- the I_BACKG gate keeps it to genuine backgames and
+keeps everything else out.
 
 ## threat
 

@@ -231,7 +231,25 @@ def hit_pairs():
         yield f"h{hp}s{src}", played, best, {"hit_point": hp, "from": src}
 
 
+def backgame_timing_pairs():
+    # A live backgame: I hold two rear anchors; the opponent is ahead,
+    # bearing in AROUND my anchors (their home points fill the gaps between
+    # them). played = a builder burned deep (timing spent); best = the same
+    # builder held high (timing preserved). Anchors and opponent constant.
+    for a1, a2 in ((20, 22), (20, 24), (21, 23)):
+        # opponent home points: three of my 19..24 that are NOT my anchors
+        homes = [p for p in (19, 20, 21, 22, 23, 24) if p not in (a1, a2)][:3]
+        opp = {homes[0]: 3, homes[1]: 3, homes[2]: 2, 10: 3, 7: 4}
+        base = {a1: 2, a2: 2, 13: 4, 8: 3, 6: 2}
+        for low, high in ((5, 12), (4, 12), (3, 11), (5, 11)):
+            played = board(me={**base, low: 2}, opp=opp)
+            best = board(me={**base, high: 2}, opp=opp)
+            yield f"a{a1}-{a2}l{low}h{high}", played, best, \
+                {"anchors": [a1, a2], "burned_to": low, "held_at": high}
+
+
 GENERATORS = {
+    "backgame.timing": backgame_timing_pairs,
     "prime.break.5": lambda: prime_pairs(False),
     "prime.contain.lost": lambda: prime_pairs(True),
     "board.close.entry": close_entry_pairs,

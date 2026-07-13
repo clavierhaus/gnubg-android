@@ -113,6 +113,15 @@ SIGNATURES = {
              "min_abs": 0.02, "weight": 0.5},
         ],
     },
+    "backgame.timing": {
+        "terms": [
+            # context: it IS a backgame -- two-plus rear anchors, both boards
+            {"term": "I_BACKG", "side": "me", "direction": "any",
+             "played_in": [0.01, 5.0], "best_in": [0.01, 5.0], "weight": 0.5},
+            {"term": "I_TIMING", "side": "me", "direction": "up",
+             "min_abs": 0.10, "weight": 1.5},
+        ],
+    },
     "hit.declined": {
         "terms": [
             {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "up",

@@ -44,6 +44,7 @@ ENTRY_META = {
     "hit.declined": ("When the hit is right, take it -- pips on the bar are pips won.", "threat"),
     "race.break.ahead": ("Ahead in the race, break contact and run.", "race"),
     "race.escape.window": ("Escape rolls are a resource; don't spend the window doing nothing.", "race"),
+    "backgame.timing": ("A backgame lives or dies on timing.", "board"),
 }
 
 

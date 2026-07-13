@@ -29,6 +29,7 @@ filled with more entries.
 | race.break.ahead | stayed in contact with the lead | contact->race |
 | race.escape.window | didn't run the back checker | contact |
 | hit.declined | passed up a hit | contact |
+| backgame.timing | burned the backgame's timing | contact (2026-07-13) |
 
 Note the two "race" entries are contact-boundary entries: they fire while
 contact still exists (the decision to break it / run through it), not in a
@@ -57,8 +58,6 @@ need the same pilot->signature->positions->phrase loop as the ten:
 
 - **timing.hold.crunch** -- holding-game timing collapse (I_TIMING is
   characterized; needs a pair).
-- **backgame.timing** -- already drafted in CORPUS_ENTRIES_DRAFT, signature
-  source-grounded (I_BACKG + I_TIMING), pair deferred. Nearest to ready.
 - **blitz.point.missed** -- declined to make a home-board point during an
   attack (I_ENTER2 / opponent-on-bar family, related to close.entry).
 - **prime.extend** -- had a prime and failed to extend/prime the last gap.
