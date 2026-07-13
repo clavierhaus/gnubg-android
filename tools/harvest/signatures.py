@@ -33,7 +33,8 @@ SIGNATURES = {
             {"term": "I_BACKESCAPES", "side": "me", "direction": "down",
              "min_abs": 0.05, "weight": 1.0},
             {"term": "I_CONTAIN", "side": "me", "direction": "up",
-             "min_abs": 0.05, "max_abs": 0.30, "weight": 1.0},
+             "min_abs": 0.05, "max_abs": 0.30, "weight": 1.0,
+             "best_in": [0.85, 1.0]},
         ],
     },
     "prime.contain.lost": {
@@ -111,6 +112,21 @@ SIGNATURES = {
              "min_abs": 0.10, "weight": 1.0},
             {"term": "I_BREAK_CONTACT", "side": "me", "direction": "down",
              "min_abs": 0.02, "weight": 0.5},
+        ],
+    },
+    "timing.hold.crunch": {
+        "terms": [
+            # context: a HOLDING game -- exactly one rear anchor, both boards
+            # (I_BACKG1 and I_BACKG are mutually exclusive by eval.c:1272)
+            {"term": "I_BACKG1", "side": "me", "direction": "any",
+             "played_in": [0.01, 5.0], "best_in": [0.01, 5.0], "weight": 0.5},
+            # veto: a holding game is NOT a prime -- containment below the
+            # 0.85 partition that prime.break.5 requires above (measured:
+            # hold boards 0.58-0.67, prime boards 0.94)
+            {"term": "I_CONTAIN", "side": "me", "direction": "any",
+             "best_in": [0.0, 0.84], "weight": 0.0},
+            {"term": "I_TIMING", "side": "me", "direction": "up",
+             "min_abs": 0.10, "weight": 1.5},
         ],
     },
     "backgame.timing": {

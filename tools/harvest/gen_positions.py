@@ -248,7 +248,28 @@ def backgame_timing_pairs():
                 {"anchors": [a1, a2], "burned_to": low, "held_at": high}
 
 
+def timing_hold_pairs():
+    # A holding game: ONE rear anchor; opponent bearing in around it.
+    # played = a builder burned deep; best = the same builder held high.
+    # anchors must sit in gnubg's rear-anchor zone (my 19..24 = idx 18..23);
+    # 18 measured OUT of zone (I_BACKG1=0). Low/high combos are the ones the
+    # pilot measured POSITIVE on I_TIMING -- the (x,14) shape measured
+    # negative and is excluded on evidence, not theory.
+    for a in (19, 20, 21):
+        homes = [p for p in (19, 20, 21, 22, 23) if p != a][:3]
+        opp = {homes[0]: 3, homes[1]: 3, homes[2]: 2, 10: 3, 7: 4}
+        base = {a: 2, 13: 4, 8: 3, 6: 2, 12: 2}
+        for low, high in ((3, 11), (2, 11), (3, 12), (2, 12)):
+            if high in base or low in base:
+                continue
+            played = board(me={**base, low: 2}, opp=opp)
+            best = board(me={**base, high: 2}, opp=opp)
+            yield f"a{a}l{low}h{high}", played, best, \
+                {"anchor": a, "burned_to": low, "held_at": high}
+
+
 GENERATORS = {
+    "timing.hold.crunch": timing_hold_pairs,
     "backgame.timing": backgame_timing_pairs,
     "prime.break.5": lambda: prime_pairs(False),
     "prime.contain.lost": lambda: prime_pairs(True),

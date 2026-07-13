@@ -18,7 +18,11 @@
     "direction": "up",
     "min_abs": 0.05,
     "max_abs": 0.3,
-    "weight": 1.0
+    "weight": 1.0,
+    "best_in": [
+     0.85,
+     1.0
+    ]
    }
   ]
  },

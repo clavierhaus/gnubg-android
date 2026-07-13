@@ -45,6 +45,7 @@ ENTRY_META = {
     "race.break.ahead": ("Ahead in the race, break contact and run.", "race"),
     "race.escape.window": ("Escape rolls are a resource; don't spend the window doing nothing.", "race"),
     "backgame.timing": ("A backgame lives or dies on timing.", "board"),
+    "timing.hold.crunch": ("A holding game survives on its timing.", "board"),
 }
 
 

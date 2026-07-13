@@ -283,3 +283,17 @@ zero-weight context/veto terms. Remaining co-fires are physically true and
 occupy the second slot by design. The signatures in this file are therefore
 not only measured but DISCRIMINATING -- ready for Phase D harvest and the
 Kotlin matcher port.
+
+**timing.hold.crunch** — A holding game survives on its timing. (ADDED 2026-07-13, backlog entry 12)
+signature (MEASURED 2026-07-13): context me I_BACKG1 > 0 both boards ·
+veto me I_CONTAIN best in [0, 0.84] (the prime partition; prime.break.5
+requires >= 0.85 on the same axis) · me I_TIMING up (min 0.10; pilot 0.06 ->
+0.47, generator pairs +0.16)
+bands: doubtful, bad
+note: the holding-game mirror of backgame.timing; the two are isolated by
+gnubg's own BACKG/BACKG1 exclusivity. Measurement corrected two guesses:
+the 18-point is NOT in gnubg's rear-anchor zone (I_BACKG1 = 0 there), and
+holding a spare on the 14 measured NEGATIVE timing delta -- excluded on
+evidence. 6 pairs verified; matcher 81/81 after the containment partition
+was encoded on BOTH sides (without it, prime.break.5 stole the hold pairs
+AND hold stole the dissolution pairs).
