@@ -1,22 +1,23 @@
-## GNU Backgammon for Android 0.21.2
+## GNU Backgammon for Android 0.21.4
 
-A small maintenance release.
+### Changed
+- **Settings tidied for the first F-Droid release.** Removed all the unfinished
+  placeholder options that were showing as greyed-out "Later" rows -- they were
+  development notes, not user settings. What remains is only what actually
+  works.
+- **The GPL v3 license now has its own tab**, showing the complete license
+  text. This app is proudly free software, and the license it's released under
+  deserves the visibility.
+- **Release builds are signed** with the project's own release key (previously
+  the GitHub download was a debug build). This is also the foundation for
+  reproducible builds on F-Droid.
 
-### Added
-- **Report a problem.** A new tab in Settings (second, after Tournament)
-  with a single button: Generate bug report copies a paste-ready diagnostic
-  to the clipboard -- app version, device, Android version, and the exact
-  game position as a GNU Backgammon ID plus the match state. Paste it into a
-  GitHub issue so a problem can actually be reproduced. Nothing is sent
-  automatically; the report is only what you paste, and the diagnostic
-  scratch is cleared on entry so nothing lingers between sessions.
-
-### Fixed
-- The end-of-match message no longer clips to "You win the" -- it now shows
-  "You win the match!" in full (and likewise the Gammon and Backgammon win
-  messages, which the same one-line limit had been truncating).
-
-**Verifying this download:** each release attaches `app-debug.apk.sha256`.
-Run `sha256sum -c app-debug.apk.sha256` in the download directory (macOS:
+**Verifying this download:** the release attaches `app-release.apk.sha256`.
+Run `sha256sum -c app-release.apk.sha256` in the download directory (macOS:
 `shasum -a 256 -c`); it prints `OK` when the APK is intact. Release tags are
-signed -- `git tag -v v0.21.2`.
+signed -- `git tag -v v0.21.4`.
+
+Note: if you previously installed a build from GitHub, you may need to
+uninstall it first before installing this signed release (Android does not
+allow updating across different signing keys). Future updates will then apply
+normally.

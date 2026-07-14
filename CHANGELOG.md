@@ -26,6 +26,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.21.4] -- 2026-07-14
+
 ### Changed
 - **Settings cleaned for release.** All 32 "Later" placeholder rows removed
   from Settings (recorded in docs/SETTINGS_BACKLOG.md; each returns when

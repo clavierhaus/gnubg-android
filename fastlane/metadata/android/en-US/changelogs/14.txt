@@ -1,0 +1,1 @@
+Settings cleaned up for release: removed unfinished placeholder options, and the app's GPL-3.0 license now has its own tab showing the full license text. Release builds are now signed with the project's own key.
