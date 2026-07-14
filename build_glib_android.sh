@@ -234,7 +234,7 @@ endian = 'little'
 
 [built-in options]
 c_args = ['-DANDROID', '-fPIC', '-Os', '-ffile-prefix-map=$GLIB_SRC=/glib', '-ffile-prefix-map=$PROJECT_ROOT=.', '-ffile-prefix-map=$NDK_ROOT=/ndk', '-Wno-builtin-macro-redefined', '-D__DATE__=', '-D__TIME__=', '-D__TIMESTAMP__=']
-c_link_args = ['-fPIC']
+c_link_args = ['-fPIC', '-Wl,--build-id=none']
 
 [properties]
 sizeof_size_t = 8

@@ -102,12 +102,14 @@ echo "==> Configuring GNUbg native engine"
 
 rm -rf "$CMAKE_BUILD"
 
-# Reproducible-build flags: strip absolute build paths from the binary so the
-# same source yields the same bytes regardless of where it is built
-# (F-Droid builds under /home/vagrant, the maintainer under /home/erweitert).
-# -ffile-prefix-map rewrites both debug info and __FILE__; mapping the repo
-# root and the NDK root to fixed tokens removes the machine-specific paths.
+# Reproducible-build flags. Two distinct causes for non-deterministic .so:
+#  (1) embedded build paths -> -ffile-prefix-map (compiler)
+#  (2) the linker's .note.gnu.build-id, a per-link hash that makes EVERY .so
+#      differ even with identical object code -> --build-id=none (linker).
+# The build-id is why libz/libintl/libgirepository (which we do not compile)
+# also differed: the difference is applied at link time, uniformly.
 REPRO_CFLAGS="-ffile-prefix-map=$ROOT=. -ffile-prefix-map=$NDK_ROOT=/ndk -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__="
+REPRO_LDFLAGS="-Wl,--build-id=none"
 
 cmake \
     -S "$ROOT/jni-bridge" \
@@ -117,6 +119,7 @@ cmake \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_C_FLAGS="$REPRO_CFLAGS" \
     -DCMAKE_CXX_FLAGS="$REPRO_CFLAGS" \
+    -DCMAKE_SHARED_LINKER_FLAGS="$REPRO_LDFLAGS" \
     -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN"
 
 echo
