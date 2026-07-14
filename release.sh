@@ -10,14 +10,14 @@
 #  Usage (from anywhere in the repo):
 #      ./release.sh                 build from current build.gradle version, tag, publish
 #      ./release.sh --dry-run       do everything EXCEPT tag/push/publish
-#      ./release.sh --no-build      reuse the APK already built (skip build_and_deploy)
+#      ./release.sh --no-build      reuse the APK already built (skip the build)
 #      ./release.sh --prerelease    mark the GitHub release as a pre-release
 #
 #  What it does:
 #      1. Preflight: clean tree, on main, in sync, gh authed, tag is NEW,
 #         buildable-clone check passes, RELEASE_NOTES.md present.
 #      2. Read version from gnubg-app/app/build.gradle.kts (single source).
-#      3. Build the debug APK via ./build_and_deploy.sh (--no-build to skip).
+#      3. Build the signed release APK directly (--no-build to reuse existing).
 #      4. Tag vX.Y.Z (annotated) and push it.
 #      5. gh release create with the APK attached and RELEASE_NOTES.md as body.
 #
@@ -119,15 +119,41 @@ ok "gh authenticated as $ACTIVE_LOGIN"
 # --- 2. build ----------------------------------------------------------------
 if [ "$DO_BUILD" -eq 1 ]; then
   printf '%sbuilding signed release APK...%s\n' "$B" "$X"
-  # build_and_deploy handles the native lib; gradle produces the APK. No device
-  # needed -- we only want the artifact.
-  ./build_and_deploy.sh --native-only || die "native build failed"
+
+  # Native library, built directly here (no cross-script coupling): release
+  # needs only the .so plus a signed assembleRelease, and shelling into
+  # build_and_deploy.sh dragged in its debug/install path. Auto-discover the
+  # NDK toolchain rather than pin a version/home that drifts between machines.
+  CMAKE_BUILD="$ROOT/jni-bridge/build-android-arm64"
+  JNILIBS="$APP_DIR/app/src/main/jniLibs/arm64-v8a"
+  SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+  NDK_TOOLCHAIN=""
+  if [ -n "${ANDROID_NDK_HOME:-}" ] && [ -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" ]; then
+    NDK_TOOLCHAIN="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
+  elif [ -d "$SDK_ROOT/ndk" ]; then
+    ndk_dir="$(find "$SDK_ROOT/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -n1)"
+    [ -n "$ndk_dir" ] && NDK_TOOLCHAIN="$ndk_dir/build/cmake/android.toolchain.cmake"
+  fi
+  [ -n "$NDK_TOOLCHAIN" ] && [ -f "$NDK_TOOLCHAIN" ] \
+    || die "Android NDK toolchain not found (set ANDROID_NDK_HOME or ANDROID_SDK_ROOT)"
+
+  if [ ! -f "$CMAKE_BUILD/CMakeCache.txt" ]; then
+    cmake -B "$CMAKE_BUILD" \
+      -DANDROID_ABI=arm64-v8a \
+      -DANDROID_PLATFORM=android-23 \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_TOOLCHAIN_FILE="$NDK_TOOLCHAIN" \
+      "$ROOT/jni-bridge/" || die "cmake configure failed"
+  fi
+  cmake --build "$CMAKE_BUILD" || die "native build failed"
+  mkdir -p "$JNILIBS"
+  cp "$CMAKE_BUILD/libgnubg-engine.so" "$JNILIBS/libgnubg-engine.so" || die "copying .so failed"
+  ok "native library built"
+
+  # Signed release APK. keystore.properties (in gnubg-app/, the gradle root)
+  # supplies the signing config; without it gradle emits app-release-unsigned.apk
+  # and the guard below fails loudly.
   rm -rf "$APP_DIR/.gradle" "$APP_DIR/app/build"
-  # Release APK, signed with the project key from keystore.properties. This is
-  # both what users install from GitHub AND the artifact F-Droid's reproducible-
-  # build check compares against (declared as Binaries: in the fdroiddata
-  # recipe). It is byte-comparable to F-Droid's own from-source release build
-  # once both signatures are stripped.
   ( cd "$APP_DIR" && ./gradlew assembleRelease ) || die "gradle assembleRelease failed"
   ok "signed release APK built"
 else
@@ -138,7 +164,7 @@ fi
 # release APK means gradle did not find keystore.properties (it must live in
 # $APP_DIR/keystore.properties, the gradle root). Fail loudly rather than
 # publish an unsigned or unusable artifact.
-APK="$(find "$APP_DIR/app/build/outputs/apk/release" -name 'app-release.apk' 2>/dev/null | head -n1)"
+APK="$( { find "$APP_DIR/app/build/outputs/apk/release" -name 'app-release.apk' 2>/dev/null || true; } | head -n1)"
 if [ -z "$APK" ] || [ ! -f "$APK" ]; then
   die "no SIGNED release APK found (only app-release-unsigned.apk?). gradle did not pick up the signing key -- ensure $APP_DIR/keystore.properties exists with real storeFile/passwords (see RELEASING.md)."
 fi
