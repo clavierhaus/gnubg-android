@@ -7,7 +7,7 @@ An unsigned APK will not install. The release build needs a keystore.
     keytool -genkey -v -keystore ~/gnubg-release.jks \
         -keyalg RSA -keysize 2048 -validity 10000 -alias gnubg
 
-Then create `keystore.properties` in the repo root (it is gitignored) from
+Then create `keystore.properties` in `gnubg-app/` (the gradle root, gitignored) from
 `keystore.properties.example`, pointing `storeFile` at that `.jks` and filling in
 the passwords. Keep both the `.jks` and `keystore.properties` out of git and
 backed up somewhere safe: lose the key and you can never update the app under the

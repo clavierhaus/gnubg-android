@@ -123,15 +123,41 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # and let build_and_deploy handle the native lib. We only need the artifact.
   ./build_and_deploy.sh --native-only || die "native build failed"
   rm -rf "$APP_DIR/.gradle" "$APP_DIR/app/build"
+  # Debug APK: what most users sideload from GitHub (installs directly).
   ( cd "$APP_DIR" && ./gradlew assembleDebug ) || die "gradle assembleDebug failed"
-  ok "APK built"
+  # Release APK: signed with the project key from keystore.properties. This is
+  # the artifact F-Droid's reproducible-build check compares against (declared
+  # as Binaries: in the fdroiddata recipe). It is byte-comparable to F-Droid's
+  # own from-source release build once both signatures are stripped.
+  ( cd "$APP_DIR" && ./gradlew assembleRelease ) || die "gradle assembleRelease failed"
+  ok "APKs built (debug + release)"
 else
-  warn "skipping build (--no-build) -- using existing APK"
+  warn "skipping build (--no-build) -- using existing APKs"
 fi
 
 APK="$(find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null | head -n1)"
-[ -n "$APK" ] && [ -f "$APK" ] || die "no APK found -- build first (drop --no-build)"
-ok "APK: ${APK#$ROOT/}"
+[ -n "$APK" ] && [ -f "$APK" ] || die "no debug APK found -- build first (drop --no-build)"
+ok "debug APK: ${APK#$ROOT/}"
+
+# The release APK for F-Droid. It MUST be signed (not app-release-unsigned.apk):
+# an unsigned release APK means gradle did not find keystore.properties (it must
+# live in $APP_DIR/keystore.properties, the gradle root), and F-Droid's
+# reproducible-build match would be meaningless. Fail loudly rather than publish
+# an unsigned artifact as the reproducible-build reference.
+RAPK="$(find "$APP_DIR/app/build/outputs/apk/release" -name 'app-release.apk' 2>/dev/null | head -n1)"
+if [ -z "$RAPK" ] || [ ! -f "$RAPK" ]; then
+  die "no SIGNED release APK found (only app-release-unsigned.apk?). gradle did not pick up the signing key -- ensure $APP_DIR/keystore.properties exists with real storeFile/passwords (see RELEASING.md)."
+fi
+APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
+if [ -n "$APKSIGNER" ]; then
+  "$APKSIGNER" verify --print-certs "$RAPK" >/dev/null 2>&1 \
+    || die "release APK failed apksigner verify -- it is not correctly signed"
+  RCERT="$("$APKSIGNER" verify --print-certs "$RAPK" 2>/dev/null | sed -n 's/.*SHA-256 digest: //p' | head -n1)"
+  ok "release APK signed; signer SHA-256: ${RCERT:-unknown}"
+else
+  warn "apksigner not found -- skipping signature verification (install build-tools)"
+fi
+ok "release APK: ${RAPK#$ROOT/}"
 
 # a debug APK is signed with the debug key and installs; confirm it is not the
 # unsigned release artifact by mistake
@@ -153,13 +179,24 @@ else
 fi
 APK_SHA="$APK.sha256"
 [ -s "$APK_SHA" ] || die "checksum file is empty: $APK_SHA"
-ok "SHA256: $(cut -d' ' -f1 "$APK_SHA")"
+ok "debug SHA256: $(cut -d' ' -f1 "$APK_SHA")"
+
+# same sidecar for the signed release APK (F-Droid reproducible-build reference)
+if command -v sha256sum >/dev/null 2>&1; then
+  ( cd "$(dirname "$RAPK")" && sha256sum "$(basename "$RAPK")" > "$(basename "$RAPK").sha256" )
+else
+  ( cd "$(dirname "$RAPK")" && shasum -a 256 "$(basename "$RAPK")" > "$(basename "$RAPK").sha256" )
+fi
+RAPK_SHA="$RAPK.sha256"
+[ -s "$RAPK_SHA" ] || die "release checksum file is empty: $RAPK_SHA"
+ok "release SHA256: $(cut -d' ' -f1 "$RAPK_SHA")"
 
 # --- 3. tag + publish --------------------------------------------------------
 if [ "$DRY" -eq 1 ]; then
   hr; ok "DRY RUN -- would tag $TAG and publish:"
-  printf '    gh release create %s %s %s %s --title "%s" --notes-file %s\n' \
-    "$TAG" "${APK#$ROOT/}" "${APK_SHA#$ROOT/}" "$PRERELEASE" "$VNAME" "$NOTES"
+  printf '    gh release create %s %s %s %s %s %s --title "%s" --notes-file %s\n' \
+    "$TAG" "${APK#$ROOT/}" "${APK_SHA#$ROOT/}" "${RAPK#$ROOT/}" "${RAPK_SHA#$ROOT/}" \
+    "$PRERELEASE" "$VNAME" "$NOTES"
   exit 0
 fi
 
@@ -184,7 +221,7 @@ ok "tag pushed"
 printf '%screating GitHub release...%s\n' "$B" "$X"
 TITLE="$(head -n1 "$NOTES" | sed 's/^#* *//')"
 [ -n "$TITLE" ] || TITLE="$VNAME"
-gh release create "$TAG" "$APK" "$APK_SHA" $PRERELEASE \
+gh release create "$TAG" "$APK" "$APK_SHA" "$RAPK" "$RAPK_SHA" $PRERELEASE \
   --title "$TITLE" \
   --notes-file "$NOTES" \
   || die "gh release create failed"
