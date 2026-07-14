@@ -108,7 +108,6 @@ printf '%s\n' "${SUMMARY:-Bug fixes and improvements.}" \
 if [ -f "fdroid/$APPID.yml" ]; then
   sed -i -e "s/versionName: $CUR_NAME/versionName: $VERSION/" \
          -e "s/versionCode: $CUR_CODE/versionCode: $NEW_CODE/" \
-         -e "s/commit: v$CUR_NAME/commit: $TAG/" \
          -e "s/CurrentVersion: $CUR_NAME/CurrentVersion: $VERSION/" \
          -e "s/CurrentVersionCode: $CUR_CODE/CurrentVersionCode: $NEW_CODE/" \
          "fdroid/$APPID.yml"
@@ -122,6 +121,16 @@ ok "version bumped, pushed"
 ./release.sh || die "release.sh failed"
 ok "GitHub release $TAG published (placeholder reference APK)"
 
+# F-Droid review rule: commit: must be the full commit hash, never a tag name.
+TAG_SHA="$(git rev-list -n1 "$TAG")"
+[ -n "$TAG_SHA" ] || die "cannot resolve $TAG to a commit"
+if [ -f "fdroid/$APPID.yml" ]; then
+  sed -i "s/^    commit: .*/    commit: $TAG_SHA/" "fdroid/$APPID.yml"
+  git add "fdroid/$APPID.yml"
+  git commit -q -m "docs: sync reference recipe commit to $TAG ($TAG_SHA)" || true
+  git push -q origin main
+fi
+
 # --- 4. fdroiddata fork: recipe -> new version, push -> CI ----------------------
 cd "$FDROIDDATA"
 git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://gitlab.com/fdroid/fdroiddata.git
@@ -131,10 +140,11 @@ META="metadata/$APPID.yml"
 if [ ! -f "$META" ]; then
   # app not merged upstream yet: seed from the in-repo reference recipe
   cp "$ROOT/fdroid/$APPID.yml" "$META"
+  sed -i "s/^    commit: .*/    commit: $TAG_SHA/" "$META"
 else
   sed -i -e "s/versionName: .*/versionName: $VERSION/" \
          -e "s/versionCode: [0-9]*/versionCode: $NEW_CODE/" \
-         -e "s/commit: v[0-9.]*/commit: $TAG/" \
+         -e "s/^    commit: .*/    commit: $TAG_SHA/" \
          -e "s/CurrentVersion: [0-9.]*/CurrentVersion: $VERSION/" \
          -e "s/CurrentVersionCode: [0-9]*/CurrentVersionCode: $NEW_CODE/" \
          "$META"
