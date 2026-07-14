@@ -102,12 +102,21 @@ echo "==> Configuring GNUbg native engine"
 
 rm -rf "$CMAKE_BUILD"
 
+# Reproducible-build flags: strip absolute build paths from the binary so the
+# same source yields the same bytes regardless of where it is built
+# (F-Droid builds under /home/vagrant, the maintainer under /home/erweitert).
+# -ffile-prefix-map rewrites both debug info and __FILE__; mapping the repo
+# root and the NDK root to fixed tokens removes the machine-specific paths.
+REPRO_CFLAGS="-ffile-prefix-map=$ROOT=. -ffile-prefix-map=$NDK_ROOT=/ndk -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__="
+
 cmake \
     -S "$ROOT/jni-bridge" \
     -B "$CMAKE_BUILD" \
     -DANDROID_ABI="$ANDROID_ABI" \
     -DANDROID_PLATFORM="$ANDROID_PLATFORM" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_C_FLAGS="$REPRO_CFLAGS" \
+    -DCMAKE_CXX_FLAGS="$REPRO_CFLAGS" \
     -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN"
 
 echo
