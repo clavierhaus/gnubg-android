@@ -104,7 +104,9 @@ else
   warn "skipping build; using existing APK"
 fi
 
-[ -n "$APK" ] && [ -f "$APK" ] || die "no APK found -- build first"
+if [ "$DO_INSTALL" -eq 1 ]; then
+  [ -n "$APK" ] && [ -f "$APK" ] || die "no APK found -- build first"
+fi
 
 # --- 3. install + launch -----------------------------------------------------
 if [ "$DO_INSTALL" -eq 1 ]; then
