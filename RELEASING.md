@@ -105,3 +105,32 @@ When `gnubg-app/keystore.properties` is present, `assembleRelease` produces a re
 When `gnubg-app/keystore.properties` is absent, `assembleRelease` intentionally produces an unsigned release APK. This is the expected configuration for clean-clone verification and third-party distributors such as F-Droid, which build the application from source and apply their own signing key.
 
 The normal Android debug build remains debug-signed by the Android build tools and is unaffected by this release configuration.
+
+## One-command releases (GitHub + F-Droid): release_fdroid.sh
+
+For routine updates, `./release_fdroid.sh` runs the whole loop:
+
+    ./release_fdroid.sh                          # auto-bumps the patch version
+    ./release_fdroid.sh --version 0.22.0         # explicit version
+    ./release_fdroid.sh --summary "What changed" # fastlane changelog text
+    ./release_fdroid.sh --dry-run                # print the plan, change nothing
+
+It bumps versionName/versionCode, rolls CHANGELOG, writes the fastlane
+changelog, commits and pushes, runs release.sh (signed tag + GitHub release),
+updates the fdroiddata fork recipe and pushes it (triggering F-Droid's CI to
+build the app in THEIR environment), waits for the `fdroid build` job,
+downloads its unsigned APK artifact, signs it with the project key, and
+replaces the GitHub release APK with it.
+
+Why the last dance: local (Fedora) native builds never byte-match F-Droid's
+Debian buildserver (see docs/FDROID_SUBMISSION.md), so the reproducible-build
+reference APK must be F-Droid's own CI output, signed by the maintainer. The
+CI comparison therefore FAILS on the first pass of each release (it compares
+against the placeholder local APK) -- that failure is expected and the
+artifact it leaves behind is exactly what gets signed and published.
+Authoritative verification happens on F-Droid's buildserver when it picks up
+the new tag, by which time the reference is correct.
+
+Requires: gh authenticated, SSH push access to the gitlab fork, the
+fdroiddata clone at ~/fdroiddata (or FDROIDDATA=...), keystore.properties in
+gnubg-app/, and apksigner in the SDK build-tools.
