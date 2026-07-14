@@ -26,6 +26,14 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Changed
+- **Settings cleaned for release.** All 32 "Later" placeholder rows removed
+  from Settings (recorded in docs/SETTINGS_BACKLOG.md; each returns when
+  actually wired). Empty sections removed with them. The Expert tab is gone;
+  in its place a **License tab** shows the About block and the complete GNU
+  GPL v3 text (bundled COPYING asset) -- the license this app is proudly
+  released under deserves the visibility.
+
 ## [0.21.2] -- 2026-07-13
 
 ### Fixed

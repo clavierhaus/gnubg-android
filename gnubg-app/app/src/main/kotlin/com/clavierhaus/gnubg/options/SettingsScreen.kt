@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.clavierhaus.gnubg.Engine
 
-enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, EXPERT }
+enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, LICENSE }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
@@ -99,7 +100,7 @@ fun SettingsScreen(
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
                     SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
                     SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
-                    SettingsTab.EXPERT -> ExpertSettingsTab()
+                    SettingsTab.LICENSE -> LicenseSettingsTab()
                 }
             }
         }
@@ -158,7 +159,7 @@ private fun SettingsTabs(
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.ENGINE -> "Engine"
                 SettingsTab.ANALYSIS -> "Analysis"
-                SettingsTab.EXPERT -> "Expert"
+                SettingsTab.LICENSE -> "License"
             }
 
             Box(
@@ -268,25 +269,9 @@ private fun BoardSettingsTab(settings: GameSettings, vm: GameViewModel) {
         SettingsRow("Pip count", "Show pip counts in the bar") {
             Switch(settings.showPipCount, { vm.setShowPipCount(it) }, colors = switchColors)
         }
-        SettingsDivider()
-        DisabledSettingsRow("Move landing hints", "Currently always available by long-press")
     }
 
-    SettingsSection("Interaction") {
-        DisabledSettingsRow("Destination-stack tap helper", "Android-only candidate")
-        SettingsDivider()
-        DisabledSettingsRow("Dice swap gesture", "Currently available on the board surface")
-        SettingsDivider()
-        DisabledSettingsRow("Board orientation", "Future display preference")
-    }
 
-    SettingsSection("Accessibility / display") {
-        DisabledSettingsRow("Larger point numbers", "Android-only candidate")
-        SettingsDivider()
-        DisabledSettingsRow("High contrast checkers", "Android-only candidate")
-        SettingsDivider()
-        DisabledSettingsRow("Animation speed", "Android-only unless safely mapped")
-    }
 }
 
 @Composable
@@ -304,25 +289,7 @@ private fun EngineSettingsTab(settings: GameSettings, vm: GameViewModel) {
         }
     }
 
-    SettingsSection("Evaluation behaviour") {
-        DisabledSettingsRow("Evaluation depth", "GNUbg pendant: set evaluation plies ...")
-        SettingsDivider()
-        DisabledSettingsRow("Move filter", "GNUbg pendant: set evaluation movefilter ...")
-        SettingsDivider()
-        DisabledSettingsRow("Cube decision strength", "GNUbg pendant: set player ... cubedecision ...")
-        SettingsDivider()
-        DisabledSettingsRow("Plies / search depth", "Will be lifecycle-safe before activation")
-    }
 
-    SettingsSection("Rollout") {
-        DisabledSettingsRow("Rollout trials", "GNUbg pendant: set rollout trials ...")
-        SettingsDivider()
-        DisabledSettingsRow("Variance reduction / JSD", "GNUbg pendant: set rollout varredn/jsd ...")
-        SettingsDivider()
-        DisabledSettingsRow("Deterministic test mode", "GNUbg evaluation pendant to be audited")
-        SettingsDivider()
-        DisabledSettingsRow("Rollout seed", "GNUbg pendant: set rollout seed ...")
-    }
 }
 
 @Composable
@@ -335,10 +302,6 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
         SettingsRow("Hint", "Placeholder preference; board action comes later") {
             Switch(settings.hint, { vm.setHint(it) }, colors = switchColors)
         }
-        SettingsDivider()
-        DisabledSettingsRow("Warn before bad move", "GNUbg pendant: set warning / set tutor skill")
-        SettingsDivider()
-        DisabledSettingsRow("Explain move choice", "Future analysis output surface")
     }
 
     SettingsSection("Output") {
@@ -349,12 +312,6 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
         SettingsRow("Show MWC", "Presentation preference") {
             Switch(settings.showMWC, { vm.setShowMWC(it) }, colors = switchColors)
         }
-        SettingsDivider()
-        DisabledSettingsRow("Show cube action", "Future analysis output control")
-        SettingsDivider()
-        DisabledSettingsRow("Show best move", "Future analysis output control")
-        SettingsDivider()
-        DisabledSettingsRow("Show alternatives", "Future analysis output control")
     }
 
     SettingsSection("Thresholds") {
@@ -377,6 +334,30 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
             subtitle = "Local value; GNUbg command verified but quarantined",
             value = settings.thresholdVeryBad,
             onChange = vm::setThresholdVeryBad
+        )
+    }
+}
+
+@Composable
+private fun LicenseSettingsTab() {
+    AboutLicenseSection()
+
+    val context = LocalContext.current
+    val pal = LocalBoardPalette.current
+    // The complete license text, verbatim from COPYING, bundled as an asset.
+    // Released proudly under GPL-3.0-or-later; the full text earns its own tab.
+    val licenseText = remember {
+        runCatching {
+            context.assets.open("COPYING").bufferedReader().use { it.readText() }
+        }.getOrElse { "The full license text ships as COPYING with the source distribution." }
+    }
+    SettingsSection("GNU General Public License, version 3") {
+        Text(
+            licenseText,
+            color = pal.uiTextSecondary,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
         )
     }
 }
@@ -502,49 +483,6 @@ private fun purgeReportCache(context: Context) {
 }
 
 @Composable
-private fun ExpertSettingsTab() {
-    AboutLicenseSection()
-
-    SettingsSection("GNUbg command bridge") {
-        DisabledSettingsRow("Restricted command bridge", "Implemented, but not fired from live Settings")
-        SettingsDivider()
-        DisabledSettingsRow("Lifecycle-safe dispatch", "Required before command-backed Settings are re-enabled")
-        SettingsDivider()
-        DisabledSettingsRow("Capture GNUbg output", "Needed for show commands and diagnostics")
-    }
-
-    SettingsSection("Command grammar / diagnostics") {
-        DisabledSettingsRow("Show command allowlist", "Future diagnostic view")
-        SettingsDivider()
-        DisabledSettingsRow("Show current GNUbg settings", "Future read-only show-command surface")
-        SettingsDivider()
-        DisabledSettingsRow("Dry-run settings command", "Future safe parser test")
-        SettingsDivider()
-        DisabledSettingsRow("Command result log", "Future bridge diagnostics")
-    }
-
-    SettingsSection("Advanced engine configuration") {
-        DisabledSettingsRow("Raw evaluation plies", "GNUbg pendant: set evaluation plies ...")
-        SettingsDivider()
-        DisabledSettingsRow("Player chequerplay settings", "GNUbg pendant: set player ... chequerplay ...")
-        SettingsDivider()
-        DisabledSettingsRow("Player cube-decision settings", "GNUbg pendant: set player ... cubedecision ...")
-        SettingsDivider()
-        DisabledSettingsRow("Rollout seed / RNG", "GNUbg pendant: set rollout seed / rng ...")
-        SettingsDivider()
-        DisabledSettingsRow("Deterministic evaluation", "GNUbg evaluation pendant to be audited")
-    }
-
-    SettingsSection("Experimental / unsafe") {
-        DisabledSettingsRow("Direct set command execution", "Intentionally disabled")
-        SettingsDivider()
-        DisabledSettingsRow("Match/session command timing", "Unsafe until lifecycle-scoped")
-        SettingsDivider()
-        DisabledSettingsRow("Player setup timing", "Unsafe until match start sequencing is verified")
-    }
-}
-
-@Composable
 private fun SettingsSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
@@ -591,25 +529,6 @@ private fun SettingsRow(
     }
 }
 
-@Composable
-private fun DisabledSettingsRow(
-    title: String,
-    subtitle: String
-) {
-    val pal = LocalBoardPalette.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = pal.uiTextDisabled, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = pal.uiTextDisabled, fontSize = 12.sp)
-        }
-        Text("Later", color = pal.uiTextDisabled, fontSize = 12.sp)
-    }
-}
 
 @Composable
 private fun StepperRow(
