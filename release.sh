@@ -137,14 +137,16 @@ if [ "$DO_BUILD" -eq 1 ]; then
   [ -n "$NDK_TOOLCHAIN" ] && [ -f "$NDK_TOOLCHAIN" ] \
     || die "Android NDK toolchain not found (set ANDROID_NDK_HOME or ANDROID_SDK_ROOT)"
 
-  if [ ! -f "$CMAKE_BUILD/CMakeCache.txt" ]; then
-    cmake -B "$CMAKE_BUILD" \
-      -DANDROID_ABI=arm64-v8a \
-      -DANDROID_PLATFORM=android-23 \
-      -DCMAKE_BUILD_TYPE=Debug \
-      -DCMAKE_TOOLCHAIN_FILE="$NDK_TOOLCHAIN" \
-      "$ROOT/jni-bridge/" || die "cmake configure failed"
-  fi
+  # Always wipe and reconfigure: a cached CMakeCache.txt pins the NDK toolchain
+  # path, so reusing it after the NDK moves/changes fails with "not a full path
+  # to an existing compiler". A release must be clean and reproducible anyway.
+  rm -rf "$CMAKE_BUILD"
+  cmake -B "$CMAKE_BUILD" \
+    -DANDROID_ABI=arm64-v8a \
+    -DANDROID_PLATFORM=android-23 \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_TOOLCHAIN_FILE="$NDK_TOOLCHAIN" \
+    "$ROOT/jni-bridge/" || die "cmake configure failed"
   cmake --build "$CMAKE_BUILD" || die "native build failed"
   mkdir -p "$JNILIBS"
   cp "$CMAKE_BUILD/libgnubg-engine.so" "$JNILIBS/libgnubg-engine.so" || die "copying .so failed"
