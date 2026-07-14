@@ -1,50 +1,37 @@
-# F-Droid build metadata for GNU Backgammon for Android.
-# This is the reference copy; the authoritative file lives in the
-# maintainer's fdroiddata fork as metadata/com.clavierhaus.gnubg.yml.
-# See docs/FDROID_SUBMISSION.md for the reviewer notes.
-
 Categories:
-  - Games
+  - Board Game
 License: GPL-3.0-or-later
 AuthorName: clavierhaus
 AuthorEmail: gnubg@clavierhaus.at
-WebSite: https://github.com/clavierhaus/gnubg-android
 SourceCode: https://github.com/clavierhaus/gnubg-android
 IssueTracker: https://github.com/clavierhaus/gnubg-android/issues
 Changelog: https://github.com/clavierhaus/gnubg-android/blob/main/CHANGELOG.md
 
+AutoName: GNU Backgammon
+
 RepoType: git
 Repo: https://github.com/clavierhaus/gnubg-android.git
 
+Binaries: https://github.com/clavierhaus/gnubg-android/releases/download/v%v/app-release.apk
+
 Builds:
-  - versionName: 0.21.3
-    versionCode: 13
-    commit: v0.21.3
+  - versionName: 0.21.4
+    versionCode: 14
+    commit: v0.21.4
+    subdir: gnubg-app/app
     sudo:
-      # install the native-build toolchain F-Droid's buildserver lacks, and
-      # provision the GLib source archive (build phase is network-isolated)
       - apt-get update
-      - apt-get install -y meson ninja-build cmake patch file
-      - curl -L -o /tmp/glib-2.88.1.tar.xz
-          https://download.gnome.org/sources/glib/2.88/glib-2.88.1.tar.xz
-      - echo "51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e  /tmp/glib-2.88.1.tar.xz" | sha256sum -c -
-    prebuild:
-      # place the provisioned archive at the repo root -- build_glib_android.sh
-      # checks $PROJECT_ROOT/glib-2.88.1.tar.xz first and uses it offline
-      - cp /tmp/glib-2.88.1.tar.xz ../../
-    output: gnubg-app/app/build/outputs/apk/release/app-release-unsigned.apk
-    srclibs: []
-    ndk: r27
-    build:
-      # build glib + the gnubg engine from source (offline: archive is present)
-      - cd ../../ && ./build_native_android.sh
+      - apt-get install -y meson ninja-build cmake patch file xz-utils make
     gradle:
       - yes
-    subdir: gnubg-app/app
+    build:
+      - cd ../../
+      - ./build_native_android.sh
+    ndk: r27
 
-AllowedAPKSigningKeys: []
+AllowedAPKSigningKeys: 367c17e5719674d6c50511b6e41de8026cf762a63d065ed003775285333ab5e3
 
-AutoUpdateMode: Version v%v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.21.3
-CurrentVersionCode: 13
+CurrentVersion: 0.21.4
+CurrentVersionCode: 14
