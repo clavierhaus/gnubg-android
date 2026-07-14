@@ -97,10 +97,10 @@ if [ "$DO_APK" -eq 1 ]; then
   ok "wiped"
   printf '%sbuilding APK...%s\n' "$B" "$X"
   ( cd "$APP_DIR" && ./gradlew assembleDebug ) || die "gradle build failed."
-  APK="$(find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null | head -n1)"
+  APK="$( { find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null || true; } | head -n1)"
   ok "APK: ${APK#$ROOT/}"
-else
-  APK="$(find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null | head -n1)"
+elif [ "$DO_INSTALL" -eq 1 ]; then
+  APK="$( { find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null || true; } | head -n1)"
   warn "skipping build; using existing APK"
 fi
 
