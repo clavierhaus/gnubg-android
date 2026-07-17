@@ -20,9 +20,10 @@ pasted GNU BG ID / XGID import and analysis, and ID display/copy-out.
 
 ## Mechanics
 
-`main` mirrors public main. `plus` = main + ONE overlay commit re-enabling
-the fenced features (insight files restored, editor entry button restored).
-Routine: fetch public, merge into main, merge main into plus.
+`main` mirrors public main. `plus` = main + one overlay commit re-enabling
+the fenced features (CoachScreen+matcher+corpus restored; AnalyseScreen with
+the editor entry). Routine: fetch public, merge into main, merge main into
+plus; conflicts can only arise in the four overlay files.
 
 ## Before any Plus release (Play Store)
 
