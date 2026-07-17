@@ -8,8 +8,13 @@ publisher. They are trade and business identifiers of
 
   Clavierhaus Vienna GmbH, Austria (clavierhaus.at)
 
-protected under trade-name, business-identifier and unfair-competition law,
-independently of any trademark registration.
+Trade names are protected without any filing or registration in every country
+party to the Paris Convention (Article 8) -- including the entire EU -- and
+confusion-creating use of another's identifiers in commerce is additionally
+actionable within the EU under the Unfair Commercial Practices Directive
+(2005/29/EC, Art. 6(2)(a)) and the Misleading and Comparative Advertising
+Directive (2006/114/EC). This protection exists independently of any trade
+mark registration under Regulation (EU) 2017/1001, which remains reserved.
 
 "GNU Backgammon" and "GNU" are names of the GNU Project / Free Software
 Foundation. This project uses them nominatively, to state the true origin of
