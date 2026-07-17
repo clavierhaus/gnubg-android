@@ -40,7 +40,6 @@ import com.clavierhaus.gnubg.R
 fun HomeHubScreen(
     onPlay: () -> Unit,
     onCoach: () -> Unit,
-    onAnalysePosition: () -> Unit,
     onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
 ) {
@@ -148,7 +147,6 @@ fun HomeHubScreen(
             HomeHubEntry("Train with the Coach", onCoach)
             Spacer(modifier = Modifier.height(22.dp))
             // Second: the feature people still open XG Mobile for.
-            HomeHubEntry("Analyse Position", onAnalysePosition)
             Spacer(modifier = Modifier.height(22.dp))
             // Third, now that it exists.
             HomeHubEntry("Review Match", onReviewMatch)

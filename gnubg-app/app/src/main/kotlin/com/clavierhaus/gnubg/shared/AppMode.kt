@@ -5,7 +5,6 @@ enum class AppMode {
     HUB,
     PLAY,
     LEARN,
-    ANALYSE,
     REVIEW,
     OPTIONS
 }

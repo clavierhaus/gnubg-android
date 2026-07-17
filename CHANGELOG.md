@@ -27,6 +27,9 @@ the engine, or stopped hiding what the engine already knew.
 ## [Unreleased]
 
 ### Changed
+- The free-position analyser (board editor + GNU BG ID / XGID import) has been
+  withdrawn from this edition; it returns as part of the forthcoming Plus
+  edition. GNU BG ID display and copy-out during play are unchanged.
 - The coach now presents gnubg's evaluations directly (verdict, equity, rank,
   and the top alternatives). The experimental phrase-insight layer has been
   withdrawn from this edition.
