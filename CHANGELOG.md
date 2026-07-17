@@ -26,6 +26,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.22.0] -- 2026-07-17
+
 ### Changed
 - The board editor (free-position setup in Analyse) is withheld from this
   edition; it ships in the forthcoming Plus edition. Pasted GNU BG ID / XGID
