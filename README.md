@@ -16,7 +16,7 @@ A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/)
 
 **Train with the Coach** — Play gnubg with the engine judging each move. Every move gets one of three honest verdicts — best, fine-but-not-best (with what beat it), or flagged (with gnubg's severity and the equity it cost) — and a two-tap before/after explorer steps you through your move and gnubg's better ones on the board. In matches longer than a point the cube comes into play, and the Coach judges the doubles you offer, take, and drop. Every value on screen is gnubg's own; the app only renders it.
 
-**Analyse a position** — Build any position on the board (tap points and the bar to place checkers, tap the tray to clear) or paste a GNU BG ID or XGID from a forum, book, or another app. With dice set, gnubg ranks the chequer plays; with **no dice**, gnubg gives the cube decision — double / take / drop and the equities behind it, exactly as its desktop edit mode does. The GNU BG ID is shown and can be copied out. This is the feature most people open XG Mobile for — here it is free and runs on current Android.
+**Analyse a position** — Paste a GNU BG ID or XGID from a forum, book, or another app. With dice set, gnubg ranks the chequer plays; with **no dice**, gnubg gives the cube decision — double / take / drop and the equities behind it, exactly as its desktop edit mode does. The GNU BG ID is shown and can be copied out. Pasted-ID analysis is free and runs on current Android; building positions by hand on an editor board ships in the forthcoming **Plus edition**, together with the explanatory coaching layer.
 
 **Review a match** — Save a whole match to standard `.sgf` at any point through the Android file picker, then step through it game by game and move by move on gnubg's own board. At every move: what was played, what gnubg preferred, the equity cost, and gnubg's verdict (doubtful / bad / very bad). Navigation is gnubg's own game-record walk, not a re-derivation. Saved files open in desktop gnubg and Backgammon Studio.
 
@@ -100,7 +100,7 @@ The four modes are built and the core is solid. The frontier now:
 
 Two apps cover this ground for most players today. This port is free, open, offline, and does position setup, match save, and reviewed playback together, on gnubg's own engine:
 
-- **XG Mobile** has the position editor it is chiefly used for, but that editor is widely described as fiddly and the app has grown hard to install on current Android. This port's editor starts from an empty board — place what you have, the gnubg way — is free, and targets Android 12+.
+- **XG Mobile** has the position editor it is chiefly used for, but that editor is widely described as fiddly and the app has grown hard to install on current Android. This port analyses pasted IDs free on current Android; its position editor ships in the Plus edition.
 - **Backgammon NJ** shows a position's GNU BG ID, top moves, and cube decision during play, and its paid package steps through matches — but it has no position editor. This port both sets up positions *and* reads pasted GNU BG IDs, so a BGNJ user's IDs drop straight in.
 
 Neither is a criticism of strong apps; the point is that this one is free, open, offline, and covers setup, save, and review together on gnubg's own engine.

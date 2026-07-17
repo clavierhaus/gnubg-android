@@ -26,6 +26,14 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Changed
+- The board editor (free-position setup in Analyse) is withheld from this
+  edition; it ships in the forthcoming Plus edition. Pasted GNU BG ID / XGID
+  import and analysis remain fully available here.
+- The coach now presents gnubg's evaluations directly (verdict, equity, rank,
+  and the top alternatives). The experimental phrase-insight layer has been
+  withdrawn from this edition.
+
 ## [0.21.7] -- 2026-07-14
 
 ## [0.21.6] -- 2026-07-14

@@ -548,53 +548,6 @@ private fun MoveList(
     }
 }
 
-/** Placeholder for the verbose "Why" (docs/COMPANION.md). A quiet, reserved
- *  block so the panel's lower half is claimed now; the insight layer will fill
- *  it with a phrase matched to the feature delta. Deliberately minimal until
- *  then -- no faux content. */
-@Composable
-private fun WhyInsights(glance: CoachGlance) {
-    val pal = LocalBoardPalette.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val matcher = remember { InsightMatcher(context) }
-    var insights by remember { mutableStateOf<List<InsightMatcher.Insight>?>(null) }
-
-    // One computation per verdict: gnubg's ApplyMove derives both boards from
-    // the glance's pre-board (the array is the single source of truth), then
-    // the matcher scores the corpus against gnubg's own feature deltas.
-    LaunchedEffect(glance) {
-        insights = if (!matcher.available || !glance.flagged) emptyList()
-        else withContext(Dispatchers.Default) {
-            val skillWord = when (glance.skill) {
-                0 -> "very bad"; 1 -> "bad"; 2 -> "doubtful"; else -> ""
-            }
-            val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
-            val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
-            matcher.match(playedBoard, bestBoard, skillWord)
-        }
-    }
-
-    val list = insights
-    if (list.isNullOrEmpty()) return   // silence is the design: phrases or nothing
-    Text("Why", color = pal.uiTextSecondary, fontSize = 11.sp,
-        fontWeight = FontWeight.Bold)
-    Spacer(modifier = Modifier.height(4.dp))
-    for (ins in list) {
-        Row(verticalAlignment = Alignment.Top) {
-            Text(
-                when (ins.category) {
-                    "race" -> "Race"; "threat" -> "Threat"; else -> "Board"
-                },
-                color = pal.uiTextDisabled, fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(end = 6.dp, top = 1.dp)
-            )
-            Text(ins.phrase, color = Color.White, fontSize = 12.sp)
-        }
-        Spacer(modifier = Modifier.height(3.dp))
-    }
-}
-
 /** A score badge matching the tournament scoreboard: a circular avatar with
  *  the side's label inside (GNU / Player), and its points beside it. */
 @Composable
@@ -822,14 +775,8 @@ private fun CoachPanel(
                 }
             }
 
-            // The "Why" area: the insight layer (docs/COMPANION.md,
-            // CORPUS_HARVEST_PLAN). Up to two corpus phrases matched against
-            // gnubg's own feature deltas between the played and best boards;
-            // silence when nothing clears the gates.
-            if (glance != null && glance.rank > 0) {
-                Spacer(modifier = Modifier.height(14.dp))
-                WhyInsights(glance)
-            }
+            // Seam: the explanatory "Why" layer was withdrawn from this edition;
+            // the panel shows gnubg's evaluations plainly. (docs/COMPANION.md)
             } // end else (chequer verdict; cube verdict handled above)
         }
 
