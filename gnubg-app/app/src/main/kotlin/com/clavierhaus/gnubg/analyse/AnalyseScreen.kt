@@ -431,7 +431,7 @@ fun AnalyseScreen(
                     )
                 } else if (r == null) {
                     Text(
-                        "Paste a position to analyse, or set one up.",
+                        "Paste a position to analyse.",
                         color = pal.uiTextSecondary,
                         fontSize = 16.sp
                     )
