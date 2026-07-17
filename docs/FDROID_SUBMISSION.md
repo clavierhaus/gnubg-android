@@ -110,3 +110,8 @@ opening the MR. That local `fdroid build` is the real go/no-go gate.
 5. Reproducible builds are best-practice-not-required, but encouraged for
    new apps (can't be added later without breaking the signing key). Decide
    whether to enable now.
+
+Note (0.22.0): the coaching-insight corpus (insights_v0.json) and its
+matcher are no longer part of this application as of 0.22.0. The coach
+shows gnubg's own evaluations directly. Statements above about the corpus
+describe releases up to 0.21.7 only.
