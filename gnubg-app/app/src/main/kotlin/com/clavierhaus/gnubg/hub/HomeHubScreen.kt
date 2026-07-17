@@ -97,13 +97,13 @@ fun HomeHubScreen(
             )
         }
 
-        // "Clavierhaus Backgammon" -- the "vie" in the name set in GNU orange for
-        // Vienna, the pun the company name carries (transplanted here from the old
-        // corner mark). Palette unchanged: #F5A623 and #F5F5F5, DejaVu Serif.
+        // "Clavierhaus BackGammon" -- publisher name whole in GNU orange, the
+        // game in off-white with the camel-case BG echoing the CBG mark.
+        // Palette unchanged: #F5A623 and #F5F5F5, DejaVu Serif.
         BasicText(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = GnuOrange)) { append("C") }
-                withStyle(SpanStyle(color = GnuWhite)) { append("BG") }
+                withStyle(SpanStyle(color = GnuOrange)) { append("Clavierhaus") }
+                withStyle(SpanStyle(color = GnuWhite)) { append(" BackGammon") }
             },
             style = HomeTitleStyle,
             modifier = Modifier
