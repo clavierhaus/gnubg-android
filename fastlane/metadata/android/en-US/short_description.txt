@@ -1,1 +1,1 @@
-Play, train and analyse with the GNU Backgammon engine
+Play, train and analyse -- powered by the GNU Backgammon engine

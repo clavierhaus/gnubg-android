@@ -73,7 +73,7 @@ def main():
         "generated": datetime.date.today().isoformat(),
         "tier": worst_tier,
         "authors": ["clavierhaus <gnubg@clavierhaus.at>",
-                    "GNU Backgammon for Android contributors"],
+                    "Clavierhaus Backgammon contributors"],
         "acknowledgements": {
             "yairwein/backgammon-teacher": {
                 "license": "MIT",

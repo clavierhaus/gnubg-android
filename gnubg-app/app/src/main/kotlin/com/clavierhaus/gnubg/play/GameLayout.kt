@@ -609,8 +609,8 @@ private fun MatchSetupScreen(
                     .fillMaxWidth()
             ) {
             Text(
-                if (tutorMode) "GNU Backgammon Chequer-Play Tutor"
-                else "GNU Backgammon Tournament Match",
+                if (tutorMode) "Chequer-Play Tutor"
+                else "Tournament Match",
                 color = Color.White,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold

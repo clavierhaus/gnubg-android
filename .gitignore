@@ -187,3 +187,6 @@ __pycache__/
 *.pyc
 .deps/
 gnubg-app/app/src/main/jniLibs/
+
+# compiled pilot harness -- build locally via tools/pilot/build.sh
+tools/pilot/inputs_harness

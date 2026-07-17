@@ -1,4 +1,6 @@
-# GNU Backgammon for Android
+# Clavierhaus Backgammon
+
+*powered by GNU Backgammon*
 
 A faithful Android port of [GNU Backgammon](https://www.gnu.org/software/gnubg/) — the free, world-class backgammon engine. Not a re-implementation and not a stripped-down evaluator: the real gnubg engine runs under a modern touch interface, so the strength you play, the cube decisions, and the analysis you learn from are gnubg's own — checkable against the upstream source in this repository. All offline, all free, all open source.
 

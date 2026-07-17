@@ -367,8 +367,8 @@ private fun AboutLicenseSection() {
     val pal = LocalBoardPalette.current
     SettingsSection("About & License") {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
-            Text("GNU Backgammon for Android", color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text("A modified derivative of GNU Backgammon.", color = pal.uiTextSecondary, fontSize = 13.sp)
+            Text("Clavierhaus Backgammon", color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text("Powered by GNU Backgammon -- a modified derivative of the GNU Backgammon engine.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Text("This program is free software, licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
@@ -425,7 +425,7 @@ private fun ReportSettingsTab() {
  *  exact board -- the one thing a backgammon bug report cannot do without. */
 private fun buildBugReport(context: Context): String {
     val sb = StringBuilder()
-    sb.append("GNU Backgammon for Android -- bug report\n")
+    sb.append("Clavierhaus Backgammon -- bug report\n")
     sb.append("========================================\n\n")
     try {
         val pi = context.packageManager.getPackageInfo(context.packageName, 0)

@@ -97,14 +97,14 @@ fun HomeHubScreen(
             )
         }
 
-        // "GNU" orange, "Backgammon" off-white, DejaVu Serif -- the colours and face
-        // of ic_launcher_foreground.png, sampled from it rather than approximated:
-        // #F5A623 and #F5F5F5.
+        // "Clavierhaus Backgammon" -- the "vie" in the name set in GNU orange for
+        // Vienna, the pun the company name carries (transplanted here from the old
+        // corner mark). Palette unchanged: #F5A623 and #F5F5F5, DejaVu Serif.
         BasicText(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = GnuOrange)) { append("GNU") }
-                append(" ")
-                withStyle(SpanStyle(color = GnuWhite)) { append("Backgammon") }
+                withStyle(SpanStyle(color = GnuWhite)) { append("Cla") }
+                withStyle(SpanStyle(color = GnuOrange)) { append("vie") }
+                withStyle(SpanStyle(color = GnuWhite)) { append("rhaus Backgammon") }
             },
             style = HomeTitleStyle,
             modifier = Modifier
@@ -112,16 +112,14 @@ fun HomeHubScreen(
                 .padding(start = 48.dp, top = 66.dp)
         )
 
-        // Publisher attribution, top-right, symmetric with the settings gear on
-        // the top-left. Same face as the title and menu entries (DejaVu Serif),
-        // sized for a corner mark rather than a primary control (HomeSecondaryStyle,
-        // reserved for this). "vie" set in GNU orange for Vienna -- the pun the
-        // company name carries -- the rest in the hub's off-white.
+        // Engine attribution, top-right, symmetric with the settings gear on the
+        // top-left -- the role this corner previously gave the publisher, now that
+        // the publisher IS the title. "GNU" keeps its orange, as on the old title.
         BasicText(
             text = buildAnnotatedString {
-                append("cla")
-                withStyle(SpanStyle(color = GnuOrange)) { append("vie") }
-                append("rhaus.at")
+                append("powered by ")
+                withStyle(SpanStyle(color = GnuOrange)) { append("GNU") }
+                append(" Backgammon")
             },
             style = HomeSecondaryStyle,
             modifier = Modifier
