@@ -112,9 +112,9 @@ fun HomeHubScreen(
                 .padding(start = 48.dp, top = 66.dp)
         )
 
-        // Engine attribution, top-right, symmetric with the settings gear on the
-        // top-left -- the role this corner previously gave the publisher, now that
-        // the publisher IS the title. "GNU" keeps its orange, as on the old title.
+        // Engine attribution, bottom-right -- a colophon, where a book would put
+        // it, clear of the title block and menu. "GNU" keeps its orange, as on
+        // the old title.
         BasicText(
             text = buildAnnotatedString {
                 append("powered by ")
@@ -123,8 +123,8 @@ fun HomeHubScreen(
             },
             style = HomeSecondaryStyle,
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 48.dp, top = 18.dp)
+                .align(Alignment.BottomEnd)
+                .padding(end = 48.dp, bottom = 18.dp)
         )
 
         // padding, not offset. An offset composable keeps the layout slot its parent
