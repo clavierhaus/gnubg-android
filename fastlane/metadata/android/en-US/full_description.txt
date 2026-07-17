@@ -12,7 +12,7 @@ Play with the Coach enabled and have GNU Backgammon assess each move. The applic
 
 Analyse
 
-During play and training, GNU Backgammon evaluates every decision: verdict, equity, rank among the legal plays, and the top alternatives. Match analysis and reviewed playback are built in. (A free-position editor with GNU Backgammon ID and XGID import is in preparation as a separate Plus edition.)
+Set up a position directly on the board or paste a GNU Backgammon Position ID, Match ID or XGID. With dice entered, GNU Backgammon ranks the available checker plays. Without dice, it analyses the cube decision.
 
 Review
 
@@ -27,7 +27,7 @@ Features include:
 * Full match and doubling-cube play
 * Live move assessment
 * Position editing and analysis
-* GNU Backgammon ID display and copy-out
+* GNU Backgammon ID and XGID input
 * SGF match saving and review
 * Multiple board themes
 * Phone and tablet layouts
