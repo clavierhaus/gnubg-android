@@ -102,9 +102,8 @@ fun HomeHubScreen(
         // corner mark). Palette unchanged: #F5A623 and #F5F5F5, DejaVu Serif.
         BasicText(
             text = buildAnnotatedString {
-                withStyle(SpanStyle(color = GnuWhite)) { append("Cla") }
-                withStyle(SpanStyle(color = GnuOrange)) { append("vie") }
-                withStyle(SpanStyle(color = GnuWhite)) { append("rhaus Backgammon") }
+                withStyle(SpanStyle(color = GnuOrange)) { append("C") }
+                withStyle(SpanStyle(color = GnuWhite)) { append("BG") }
             },
             style = HomeTitleStyle,
             modifier = Modifier

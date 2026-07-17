@@ -1,4 +1,4 @@
-# Clavierhaus Backgammon
+# CBG -- Clavierhaus Backgammon
 
 *powered by GNU Backgammon*
 

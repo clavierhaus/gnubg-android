@@ -1,4 +1,4 @@
-Clavierhaus Backgammon brings the real GNU Backgammon engine to a modern touch interface.
+CBG (Clavierhaus Backgammon) brings the real GNU Backgammon engine to a modern touch interface.
 
 The application works entirely offline and contains no advertising, analytics or proprietary online services.
 
