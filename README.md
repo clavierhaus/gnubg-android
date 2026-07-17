@@ -118,3 +118,10 @@ This program is a modified derivative of **GNU Backgammon**, licensed under the 
 - Record of every divergence from upstream: [`PROVENANCE.md`](PROVENANCE.md)
 
 GNU Backgammon is Copyright © the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS; the per-file copyright notices in `engine-core/` retain the authoritative attribution. The Android front end, JNI bridge, and port integration are Copyright © 2025–2026 clavierhaus <gnubg@clavierhaus.at>. This program comes with ABSOLUTELY NO WARRANTY; it is free software, redistributable under the conditions of the GPL, and you have the right to the complete corresponding source code.
+
+## Trademarks
+
+The code is GPL; the identity is not. "CBG", "Clavierhaus BackGammon" and the
+CBG icon identify the official project of Clavierhaus Vienna GmbH. Forks and
+modified redistributions are welcome under the GPL and must ship under their
+own name and icon -- see [TRADEMARKS.md](TRADEMARKS.md).

@@ -1,5 +1,5 @@
-GNU Backgammon for Android (gnubg-android)
-==========================================
+CBG -- Clavierhaus BackGammon (gnubg-android)
+=============================================
 
 This program is a modified derivative work of GNU Backgammon.
 
@@ -73,3 +73,6 @@ threshold shape, and the prompt scaffolding of src/lib/llm/prompt.ts,
 including the rule "Only reference facts provided in the data. Never invent
 strategic facts." The full MIT notice is carried verbatim at the top of
 tools/harvest/prompt_template.py. Nothing MIT-origin ships in the APK.
+
+Project names and marks are governed separately from the GPL:
+see TRADEMARKS.md.

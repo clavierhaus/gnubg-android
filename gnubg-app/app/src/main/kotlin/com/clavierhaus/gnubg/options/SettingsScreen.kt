@@ -376,7 +376,7 @@ private fun AboutLicenseSection() {
             Spacer(modifier = Modifier.height(8.dp))
             Text("GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS. The Android port is Copyright (C) 2025-2026 clavierhaus.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Source, full license (COPYING), attribution (NOTICE), and modifications (PROVENANCE.md):", color = pal.uiTextSecondary, fontSize = 13.sp)
+            Text("Source, full license (COPYING), attribution (NOTICE), modifications (PROVENANCE.md), and trademark policy (TRADEMARKS.md):", color = pal.uiTextSecondary, fontSize = 13.sp)
             Text("https://github.com/clavierhaus/gnubg-android", color = pal.uiTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(4.dp))
             Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = pal.uiTextSecondary, fontSize = 12.sp)
