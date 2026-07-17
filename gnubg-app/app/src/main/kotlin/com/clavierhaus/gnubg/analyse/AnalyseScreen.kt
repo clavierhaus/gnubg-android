@@ -662,11 +662,10 @@ fun AnalyseScreen(
                         }
                     }
 
-                    GameButton(
-                        label = "Set up",
-                        color = pal.uiChipOff,
-                        enabled = !busy
-                    ) { beginEdit() }
+                    // Plus fence: the board editor (free-position setup via
+                    // beginEdit) ships in the Plus edition. Its single entry
+                    // point is withheld here; pasted-ID import and analysis
+                    // remain fully available in this edition.
                 }
 
                 val msg = status

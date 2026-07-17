@@ -12,7 +12,7 @@ Play with the Coach enabled and have GNU Backgammon assess each move. The applic
 
 Analyse
 
-Set up a position directly on the board or paste a GNU Backgammon Position ID, Match ID or XGID. With dice entered, GNU Backgammon ranks the available checker plays. Without dice, it analyses the cube decision.
+Paste a GNU Backgammon Position ID, Match ID or XGID -- from a forum, a book, or another app. With dice entered, GNU Backgammon ranks the available checker plays. Without dice, it analyses the cube decision. (Free-position setup on an editor board ships in the forthcoming Plus edition.)
 
 Review
 
