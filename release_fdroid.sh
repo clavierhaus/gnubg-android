@@ -147,6 +147,7 @@ else
          -e "s/^    commit: .*/    commit: $TAG_SHA/" \
          -e "s/CurrentVersion: [0-9.]*/CurrentVersion: $VERSION/" \
          -e "s/CurrentVersionCode: [0-9]*/CurrentVersionCode: $NEW_CODE/" \
+         -e "/^    disable:/d" \
          "$META"
 fi
 git add "$META"
