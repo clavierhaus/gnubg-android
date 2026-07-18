@@ -23,6 +23,9 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKey = keystorePropertiesFile.exists()
 
 android {
+    // Match the NDK the native libs are built with (recipe: r27); without
+    // this AGP defaults to 26.1.x and skips stripping with a warning.
+    ndkVersion = "27.0.12077973"
     namespace = "com.clavierhaus.gnubg"
     compileSdk = 35
 
