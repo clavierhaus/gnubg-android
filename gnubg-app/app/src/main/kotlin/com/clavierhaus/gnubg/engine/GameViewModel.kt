@@ -84,6 +84,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * payload (gnubg values only) the panel reads. */
     private val _coachCubeGlance = MutableStateFlow<IntArray?>(null)
     val coachCubeGlance: StateFlow<IntArray?> = _coachCubeGlance.asStateFlow()
+
+    /** GNU's answer to the PLAYER's double (coach only): null = none pending,
+     *  first = took (true) / dropped (false), second = points won on a drop.
+     *  A take is shown until the player commits their next action (wiped in
+     *  beginEngineWork, one rule); a drop is shown through GAME_OVER and
+     *  cleared with the acknowledged new game. */
+    private val _coachCubeAnswer = MutableStateFlow<Pair<Boolean, Int>?>(null)
+    val coachCubeAnswer: StateFlow<Pair<Boolean, Int>?> = _coachCubeAnswer.asStateFlow()
     // 0 no-double(roll), 1 doubled, 2 took, 3 dropped -- the action to carry
     // out on continue. -1 = nothing pending.
     private var pendingCubeAction: Int = -1
@@ -337,6 +345,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun newGame() {
+        // The GAME_OVER acknowledgment consumes any pending cube answer.
+        _coachCubeAnswer.value = null
         viewModelScope.launch(engineThread) {
             val matchLength = Engine.getMatchLength()
             // Match-over is gnubg decision, not a UI score comparison.
@@ -713,6 +723,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun beginEngineWork(kind: BusyKind) {
         _coachGlance.value = null
         _coachCubeGlance.value = null
+        _coachCubeAnswer.value = null
         pendingCubeAction = -1
         _busyKind.value = kind
         val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
@@ -959,7 +970,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else "offerDouble: engine took; play continues")
                 // Score delta is the uniform gnubg-authoritative end signal
                 // (survives NextTurn auto-advance); a drop changes the score.
-                settleFromEngine(result = gameResultFromScoreDelta(scoreBefore))
+                val res = gameResultFromScoreDelta(scoreBefore)
+                // Coach: GNU's answer to the player's double is part of the
+                // lesson -- surface it (take: visible until the next committed
+                // action; drop: through the GAME_OVER acknowledgment).
+                if (coachSession) {
+                    _coachCubeAnswer.value =
+                        if (res == null) Pair(true, 0) else Pair(false, res.second)
+                }
+                settleFromEngine(result = res)
             } catch (t: Throwable) {
                 android.util.Log.e("gnubg-vm", "offerDouble: failed", t)
                 settleFromEngine()
@@ -1190,6 +1209,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachGlance.value = null
         pendingCoachMove = null
         _coachCubeGlance.value = null
+        _coachCubeAnswer.value = null
         pendingCubeAction = -1
         _busyKind.value = BusyKind.NONE
         _liveEngineDice.value = null
@@ -1209,6 +1229,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _coachGlance.value = null
         pendingCoachMove = null
         _coachCubeGlance.value = null
+        _coachCubeAnswer.value = null
         pendingCubeAction = -1
         _busyKind.value = BusyKind.NONE
         _liveEngineDice.value = null

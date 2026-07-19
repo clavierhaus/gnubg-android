@@ -193,8 +193,12 @@ curl -sfL -o "$WORK/artifacts.zip" \
   "$GL_HOST/clavierhaus/gnubg-android/-/jobs/$JOB_ID/artifacts/download" \
   || die "artifact download failed (job $JOB_ID)"
 unzip -qo "$WORK/artifacts.zip" -d "$WORK"
+# On a verified pass the unsigned APK lands in unsigned/; when the comparison
+# fails (placeholder reference -- the normal first pass of every release) the
+# built APK is kept as tmp/<appid>_<code>.apk instead. Accept either.
 UNSIGNED="$(find "$WORK" -path "*unsigned*" -name "*.apk" | head -n1)"
-[ -n "$UNSIGNED" ] || die "no unsigned APK in CI artifacts"
+[ -n "$UNSIGNED" ] || UNSIGNED="$(find "$WORK" -path "*tmp*" -name "${APPID}_${NEW_CODE}.apk" | head -n1)"
+[ -n "$UNSIGNED" ] || die "no CI-built APK in artifacts (looked in unsigned/ and tmp/)"
 ok "CI-built APK: $(basename "$UNSIGNED")"
 
 KS_FILE="$(sed -n 's/^storeFile=//p' gnubg-app/keystore.properties)"
