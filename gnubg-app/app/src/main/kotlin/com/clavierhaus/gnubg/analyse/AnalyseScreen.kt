@@ -31,6 +31,7 @@ import com.clavierhaus.gnubg.play.LocalBoardPalette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.clavierhaus.gnubg.shared.PlusUi
 
 /*
  * Analyse Position.
@@ -662,9 +663,10 @@ fun AnalyseScreen(
                         }
                     }
 
+                    // Plus-only control: orange per the PlusUi convention.
                     GameButton(
                         label = "Set up",
-                        color = pal.uiChipOff,
+                        color = PlusUi.Interactive,
                         enabled = !busy
                     ) { beginEdit() }
                 }
