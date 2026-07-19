@@ -141,6 +141,12 @@ class InsightMatcher(context: Context) {
         val fired = ArrayList<Triple<Float, Int, Entry>>()
         var candidates = 0
         val misses = StringBuilder()
+        run {
+            val i = inputIndex["I_P1"]; val n = inputIndex.size
+            if (i != null) android.util.Log.i("gnubg-insight",
+                "SIDEPROBE I_P1 block0=%.3f block1=%.3f | pips0=%d pips1=%d | clsP=%d"
+                    .format(sp.feat[i], sp.feat[n + i], sp.pips[0], sp.pips[1], sp.clazz))
+        }
         for (e in entries) {
             if (skillWord.isNotEmpty() && skillWord !in e.severity) continue
             if (e.classPlayed != null && sp.clazz != e.classPlayed) continue
