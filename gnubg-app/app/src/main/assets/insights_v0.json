@@ -1,7 +1,7 @@
 {
  "version": 1,
  "corpus_license": "GPL-3.0-or-later",
- "generated": "2026-07-13",
+ "generated": "2026-07-19",
  "tier": "authored",
  "authors": [
   "clavierhaus <gnubg@clavierhaus.at>",
@@ -38,6 +38,10 @@
       "min_abs": 0.05,
       "max_abs": 0.3,
       "weight": 1.0,
+      "played_in": [
+       0.0,
+       0.8
+      ],
       "best_in": [
        0.85,
        1.0
@@ -48,6 +52,263 @@
    "severity_hint": [
     "doubtful",
     "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "bearoff.shot.left",
+   "principle": "Bear in without leaving the shot that loses a won race.",
+   "phrase_flag": "The race was already won; the blot you left in front of their anchor is the one roll that loses it.",
+   "phrase_praise": "Filled safely behind the anchor -- they hold their point and never get a shot.",
+   "category": "threat",
+   "signature": {
+    "class_played": 10,
+    "class_best": 10,
+    "terms": [
+     {
+      "term": "I_P1",
+      "side": "opp",
+      "direction": "down",
+      "min_abs": 0.04,
+      "weight": 1.5,
+      "played_in": [
+       0.05,
+       1.0
+      ],
+      "best_in": [
+       0.0,
+       0.02
+      ]
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       0.0,
+       0.4
+      ],
+      "best_in": [
+       0.0,
+       0.4
+      ],
+      "weight": 1.5
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad",
+    "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "prime.extend.missed",
+   "principle": "When the builders are ready, the fifth prime point is the play.",
+   "phrase_flag": "The builders were in place to stretch four prime points to five, and the fifth point went unmade.",
+   "phrase_praise": "Five points in a row -- the blockade closes another escape number.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_CONTAIN",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.06,
+      "weight": 1.5,
+      "played_in": [
+       0.82,
+       0.92
+      ],
+      "best_in": [
+       0.9,
+       1.0
+      ]
+     },
+     {
+      "term": "I_BACKESCAPES",
+      "side": "me",
+      "direction": "down",
+      "min_abs": 0.04,
+      "weight": 1.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "enter.fight.point",
+   "principle": "Enter making the advanced anchor, not splitting into the fight.",
+   "phrase_flag": "Entered splitting into their board: two loose checkers under fire where one advanced anchor could stand.",
+   "phrase_praise": "Entered making the advanced anchor -- a made point in their board instead of blots in the fight.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_FORWARD_ANCHOR",
+      "side": "me",
+      "direction": "down",
+      "min_abs": 0.3,
+      "weight": 2.0,
+      "played_in": [
+       1.0,
+       2.0
+      ],
+      "best_in": [
+       0.3,
+       0.7
+      ]
+     },
+     {
+      "term": "I_P1",
+      "side": "opp",
+      "direction": "down",
+      "min_abs": 0.03,
+      "weight": 1.0
+     },
+     {
+      "term": "I_BACK_ANCHOR",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       0.0,
+       0.6
+      ],
+      "best_in": [
+       0.0,
+       1.0
+      ],
+      "weight": 0.0
+     },
+     {
+      "term": "PipCount.opp",
+      "side": "",
+      "direction": "any",
+      "played_in": [
+       135,
+       160
+      ],
+      "best_in": [
+       135,
+       160
+      ],
+      "weight": 0.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "hit.loose.homeboard",
+   "principle": "A loose hit in your board without cover invites the return shot.",
+   "phrase_flag": "A loose hit in your own board with no cover -- they enter shooting, and the return shot undoes the hit.",
+   "phrase_praise": "Hit and covered -- the point is made, and they enter against a stronger board with nothing to shoot at.",
+   "category": "threat",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.95,
+       1.0
+      ],
+      "best_in": [
+       0.95,
+       1.0
+      ],
+      "weight": 1.5
+     },
+     {
+      "term": "I_P1",
+      "side": "opp",
+      "direction": "down",
+      "min_abs": 0.05,
+      "weight": 1.5,
+      "played_in": [
+       0.08,
+       1.0
+      ],
+      "best_in": [
+       0.0,
+       0.04
+      ]
+     },
+     {
+      "term": "I_ENTER",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.01,
+      "weight": 1.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad",
+    "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "contact.break.early",
+   "principle": "Far behind, the anchor is the game; don't break contact.",
+   "phrase_flag": "That far behind, the race is not your game -- the anchor was; running gives up the shot you were waiting for.",
+   "phrase_praise": "The anchor holds -- behind in the race, the holding game and its shot remain yours.",
+   "category": "race",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_BREAK_CONTACT",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.045,
+      "weight": 1.5,
+      "played_in": [
+       0.0,
+       0.25
+      ],
+      "best_in": [
+       0.12,
+       1.0
+      ]
+     },
+     {
+      "term": "I_BACK_ANCHOR",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.1,
+      "weight": 1.5
+     },
+     {
+      "term": "PipCount.opp",
+      "side": "",
+      "direction": "any",
+      "played_in": [
+       85,
+       130
+      ],
+      "best_in": [
+       85,
+       130
+      ],
+      "weight": 0.5
+     }
+    ]
+   },
+   "severity_hint": [
+    "bad",
+    "very bad"
    ],
    "tier": "authored"
   },
@@ -90,6 +351,20 @@
    "category": "board",
    "signature": {
     "terms": [
+     {
+      "term": "PipCount.opp",
+      "side": "",
+      "direction": "any",
+      "played_in": [
+       110,
+       135
+      ],
+      "best_in": [
+       110,
+       135
+      ],
+      "weight": 0.0
+     },
      {
       "term": "I_FORWARD_ANCHOR",
       "side": "me",
