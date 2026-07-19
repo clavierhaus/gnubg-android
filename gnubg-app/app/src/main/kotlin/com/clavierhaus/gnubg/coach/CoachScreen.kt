@@ -576,6 +576,12 @@ private fun WhyInsights(glance: CoachGlance) {
             }
             val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
             val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
+            android.util.Log.i("gnubg-insight",
+                "APPLYPROBE fpPre=" + com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard) +
+                " fpP=" + (if (playedBoard.isEmpty()) "EMPTY" else com.clavierhaus.gnubg.engine.GameViewModel.fpOf(playedBoard).toString()) +
+                " fpB=" + (if (bestBoard.isEmpty()) "EMPTY" else com.clavierhaus.gnubg.engine.GameViewModel.fpOf(bestBoard).toString()) +
+                " mvP=" + glance.playedMove.joinToString(",") +
+                " mvB=" + glance.bestMove.joinToString(","))
             // L3 (DELTA_NARRATOR_PLAYBOOK): the corpus speaks first; the
             // narrator only when no authored signature fires on a flagged move.
             val fromCorpus = matcher.match(playedBoard, bestBoard, skillWord)
