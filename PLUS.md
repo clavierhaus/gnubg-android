@@ -31,3 +31,14 @@ plus; conflicts can only arise in the four overlay files.
 - own release keystore (never the free key), Play App Signing enrollment
 - customer source access per TRADEMARKS.md + GPL section 6(d): full
   corresponding source incl. build scripts to binary recipients
+
+## Synchronisation law (no exceptions)
+
+Every change, revert, commit and push to the public FOSS repo is mirrored
+here IMMEDIATELY: run ./tools/plus/sync_from_foss.sh after every public
+mutation. plus-overlay.paths defines the ONLY paths permitted to differ
+between public main and the plus branch; tools/plus/check_foss_parity.sh
+audits all three invariants (main mirrors public exactly; plus contains
+every FOSS commit; zero content drift outside the manifest) and raises an
+alarm on the tiniest discrepancy. A red audit outranks all other work.
+

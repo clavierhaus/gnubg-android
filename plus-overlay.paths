@@ -1,0 +1,19 @@
+# The Plus overlay manifest: the ONLY paths permitted to differ between the
+# public FOSS main and this repo's plus branch. tools/plus/check_foss_parity.sh
+# alarms on any difference outside this list. One path or prefix per line.
+PLUS.md
+plus-overlay.paths
+plus_build_and_deploy.sh
+licenses/
+tools/plus/
+gnubg-app/app/build.gradle.kts
+gnubg-app/app/src/main/AndroidManifest.xml
+gnubg-app/app/src/main/assets/insights_v0.json
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/analyse/AnalyseScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/CoachScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/InsightMatcher.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/PlusUi.kt
+gnubg-app/app/src/main/res/font/allura_regular.ttf
+gnubg-app/app/src/main/res/drawable/ic_launcher_foreground.png
+gnubg-app/app/src/main/res/mipmap-
