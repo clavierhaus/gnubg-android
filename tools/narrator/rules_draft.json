@@ -96,7 +96,16 @@
    "direction": "up",
    "notable": 0.05,
    "sentence": "The best play stays in contact where your move runs."
+  },
+  {
+   "id": "threat.risk.accepted",
+   "category": "threat",
+   "term": "I_P1",
+   "side": "opp",
+   "direction": "up",
+   "notable": 0.15,
+   "sentence": "The best play accepts a shot yours avoids -- playing safe here gives up more than the risk does."
   }
  ],
- "adoption": "maintainer (clavierhaus), 2026-07-19: rule 7 reworded tense-neutral, rest as proposed"
+ "adoption": "maintainer (clavierhaus), 2026-07-19: rule 7 reworded tense-neutral, rest as proposed | amendment 1 (2026-07-19): threat.risk.accepted adopted as proposed (field gap, logcat 23:46)"
 }
