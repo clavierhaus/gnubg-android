@@ -25,6 +25,22 @@ import org.json.JSONObject
  */
 class InsightMatcher(context: Context) {
 
+    companion object {
+        /** eval.h:553 enum order -- the same table the pilot harness pins
+         *  with a _Static_assert against MORE_INPUTS. ONE frame truth for
+         *  the matcher and the DeltaNarrator (playbook L5). */
+        val INPUT_ORDER = listOf(
+            "I_OFF1", "I_OFF2", "I_OFF3",
+            "I_BREAK_CONTACT", "I_BACK_CHEQUER", "I_BACK_ANCHOR",
+            "I_FORWARD_ANCHOR", "I_PIPLOSS", "I_P1", "I_P2", "I_BACKESCAPES",
+            "I_ACONTAIN", "I_ACONTAIN2", "I_CONTAIN", "I_CONTAIN2",
+            "I_MOBILITY", "I_MOMENT2", "I_ENTER", "I_ENTER2",
+            "I_TIMING", "I_BACKBONE", "I_BACKG", "I_BACKG1",
+            "I_FREEPIP", "I_BACKRESCAPES"
+        )
+        const val MAX_FIRE = 2
+    }
+
     data class Insight(
         val id: String,
         val phrase: String,
@@ -50,15 +66,7 @@ class InsightMatcher(context: Context) {
     init {
         // eval.h:553 enum order -- the same table the pilot harness pins with
         // a _Static_assert against MORE_INPUTS.
-        val names = listOf(
-            "I_OFF1", "I_OFF2", "I_OFF3",
-            "I_BREAK_CONTACT", "I_BACK_CHEQUER", "I_BACK_ANCHOR",
-            "I_FORWARD_ANCHOR", "I_PIPLOSS", "I_P1", "I_P2", "I_BACKESCAPES",
-            "I_ACONTAIN", "I_ACONTAIN2", "I_CONTAIN", "I_CONTAIN2",
-            "I_MOBILITY", "I_MOMENT2", "I_ENTER", "I_ENTER2",
-            "I_TIMING", "I_BACKBONE", "I_BACKG", "I_BACKG1",
-            "I_FREEPIP", "I_BACKRESCAPES"
-        )
+        val names = INPUT_ORDER
         inputIndex = names.withIndex().associate { (i, n) -> n to i }
 
         val asset = context.assets.list("")?.let { files ->
@@ -200,7 +208,4 @@ class InsightMatcher(context: Context) {
         }
     }
 
-    companion object {
-        const val MAX_FIRE = 2
-    }
 }

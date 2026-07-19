@@ -562,6 +562,7 @@ private fun WhyInsights(glance: CoachGlance) {
     val pal = LocalBoardPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val matcher = remember { InsightMatcher(context) }
+    val narrator = remember { DeltaNarrator(context) }
     var insights by remember { mutableStateOf<List<InsightMatcher.Insight>?>(null) }
 
     // One computation per verdict: gnubg's ApplyMove derives both boards from
@@ -575,7 +576,14 @@ private fun WhyInsights(glance: CoachGlance) {
             }
             val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
             val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
-            matcher.match(playedBoard, bestBoard, skillWord)
+            // L3 (DELTA_NARRATOR_PLAYBOOK): the corpus speaks first; the
+            // narrator only when no authored signature fires on a flagged move.
+            val fromCorpus = matcher.match(playedBoard, bestBoard, skillWord)
+            when {
+                fromCorpus.isNotEmpty() -> fromCorpus
+                narrator.available -> narrator.narrate(playedBoard, bestBoard)
+                else -> emptyList()
+            }
         }
     }
 
