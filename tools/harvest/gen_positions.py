@@ -359,6 +359,42 @@ def break_early_pairs():
                board(me=base, opp=opp), {"runners": [r1, r2]})
 
 
+
+
+# ---------------------------------------------------------------- batch 3
+
+def double_hit_pairs():
+    for b2 in (11, 14, 16):
+        me_p = {6: 3, 8: 3, 13: 4, 5: 2, 24: 2, 9: 1}
+        opp_p = {b2: 1, 18: 4, 19: 3, 20: 4, 21: 2}
+        me_b = {6: 3, 8: 3, 13: 3, 5: 2, 24: 2, 9: 1, b2: 1}
+        opp_b = {18: 4, 19: 3, 20: 4, 21: 2}
+        yield (f"b{b2}", board(me=me_p, opp=opp_p, opp_bar=1),
+               board(me=me_b, opp=opp_b, opp_bar=2), {"second_blot": b2})
+
+
+def crunch_pairs():
+    opp = {18: 4, 19: 3, 20: 3, 21: 2, 22: 2}
+    # A: consecutive structure broken, point count kept (5-pt crunched to the 1)
+    yield ("consec", board(me={6: 3, 4: 2, 1: 2, 8: 3, 13: 3, 24: 2}, opp=opp, opp_bar=1),
+           board(me={6: 3, 5: 2, 4: 2, 8: 3, 9: 2, 13: 1, 24: 2}, opp=opp, opp_bar=1), {"var": "A"})
+    # The point-LOST variant proved statically identical to board.close.entry
+    # (ENTER2 quantum step both) -- to gnubg, "broke it" == "never made it";
+    # that wording waits. The entry is the pure structure crunch: point count
+    # kept, consecutiveness lost, ENTER2 flat as the fingerprint.
+    yield ("consec2", board(me={6: 4, 4: 2, 1: 2, 8: 3, 13: 2, 24: 2}, opp=opp, opp_bar=1),
+           board(me={6: 3, 5: 2, 4: 2, 8: 3, 13: 3, 24: 2}, opp=opp, opp_bar=1), {"var": "A2"})
+
+
+def deep_point_pairs():
+    opp = {3: 2, 12: 2, 18: 4, 19: 3, 20: 2, 21: 2}
+    for deep, front in ((2, 4), (1, 7)):
+        me_p = {6: 3, 5: 2, deep: 2, 8: 3, 13: 3, 24: 2}
+        me_b = {6: 3, 5: 2, front: 2, 8: 3, 13: 3, 24: 2}
+        yield (f"d{deep}f{front}", board(me=me_p, opp=opp),
+               board(me=me_b, opp=opp), {"deep": deep, "front": front})
+
+
 GENERATORS = {
     "blitz.point.missed": blitz_point_pairs,
     "timing.hold.crunch": timing_hold_pairs,
@@ -379,6 +415,9 @@ GENERATORS = {
     "enter.fight.point": enter_fight_pairs,
     "hit.loose.homeboard": loose_hit_pairs,
     "contact.break.early": break_early_pairs,
+    "hit.double.declined": double_hit_pairs,
+    "board.crunch.spared": crunch_pairs,
+    "point.deep.wasted": deep_point_pairs,
 }
 
 

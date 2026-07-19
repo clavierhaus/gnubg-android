@@ -40,6 +40,13 @@
     "direction": "up",
     "min_abs": 0.01,
     "weight": 1.0
+   },
+   {
+    "term": "I_ENTER2",
+    "side": "opp",
+    "direction": "up",
+    "min_abs": 0.15,
+    "weight": 0.5
    }
   ]
  },
@@ -109,7 +116,8 @@
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.0,
     "opp.I_P1": -0.472222,
-    "opp.I_ENTER": 0.156462
+    "opp.I_ENTER": 0.156462,
+    "opp.I_ENTER2": 0.194444
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -237,7 +245,8 @@
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.0,
     "opp.I_P1": -0.472222,
-    "opp.I_ENTER": 0.156462
+    "opp.I_ENTER": 0.156462,
+    "opp.I_ENTER2": 0.194444
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -365,7 +374,8 @@
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.0,
     "opp.I_P1": -0.472222,
-    "opp.I_ENTER": 0.183673
+    "opp.I_ENTER": 0.183673,
+    "opp.I_ENTER2": 0.194444
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -493,7 +503,8 @@
    "deltas": {
     "opp.I_BACK_CHEQUER": 0.0,
     "opp.I_P1": -0.472222,
-    "opp.I_ENTER": 0.183673
+    "opp.I_ENTER": 0.183673,
+    "opp.I_ENTER2": 0.194444
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,

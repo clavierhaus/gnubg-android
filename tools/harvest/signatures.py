@@ -233,6 +233,52 @@ SIGNATURES = {
              "played_in": [0.08, 1.0], "best_in": [0.0, 0.04]},
             {"term": "I_ENTER", "side": "opp", "direction": "up",
              "min_abs": 0.01, "weight": 1.0},
+            # the "homeboard" in the name, measured: covering the hit steps
+            # the quantized closure (+0.194); outfield double-hits stay flat
+            {"term": "I_ENTER2", "side": "opp", "direction": "up",
+             "min_abs": 0.15, "weight": 0.5},
+        ],
+    },
+    # ------------------------------------------------ batch 3 (2026-07-19)
+    "hit.double.declined": {
+        "terms": [
+            # the double-hit pip haul; floor calibrated by the b-t QA run
+            # (+11 measured on the shallow construction). Seam vs
+            # hit.declined set after measuring both clusters.
+            {"term": "PipCount.opp", "side": "", "direction": "up",
+             "min_abs": 10.0, "weight": 1.5},
+            {"term": "I_ENTER", "side": "opp", "direction": "up",
+             "min_abs": 0.03, "weight": 1.0},
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.95, 1.0], "best_in": [0.95, 1.0], "weight": 1.0},
+        ],
+    },
+    "board.crunch.spared": {
+        "terms": [
+            # measured 2026-07-19: the STRUCTURE crunch -- entry cost rises
+            {"term": "I_ENTER", "side": "opp", "direction": "up",
+             "min_abs": 0.05, "weight": 2.0},
+            # the fingerprint vs board.close.entry: point COUNT kept, so the
+            # quantized closure input stays flat (close.entry always steps)
+            {"term": "I_ENTER2", "side": "opp", "direction": "any",
+             "max_abs": 0.05, "weight": 0.5},
+            # defined at the bar: the opponent is entering against this board
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.95, 1.0], "best_in": [0.95, 1.0], "weight": 0.0},
+        ],
+    },
+    "point.deep.wasted": {
+        "terms": [
+            # measured 2026-07-19: deep-point boards read played 0.556-0.583,
+            # front-point best 0.694-0.806; prime.break.5 cannot fire here
+            # (its best_in floor 0.85 sits above this whole band)
+            {"term": "I_CONTAIN", "side": "me", "direction": "up",
+             "min_abs": 0.05, "weight": 1.5,
+             "played_in": [0.45, 0.62], "best_in": [0.65, 0.85]},
+            # separator vs timing.hold.crunch: this is an early-structure
+            # scenario, timing reserve still low (holding-crunch reads 0.49+)
+            {"term": "I_TIMING", "side": "me", "direction": "any",
+             "played_in": [0.0, 0.40], "best_in": [0.0, 1.0], "weight": 0.0},
         ],
     },
     "contact.break.early": {
