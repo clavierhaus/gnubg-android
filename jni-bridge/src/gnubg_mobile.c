@@ -469,20 +469,13 @@ int gnubg_mobile_get_board(int out_board[50]) {
 
 /* gnubg own position-feature inputs (eval.c CalculateHalfInputs), both sides.
  * Raw normalised; denormalisation deferred. board[0..24]=p0, [25..49]=p1.
- * FRAME (must match tools/pilot/inputs_harness.c, the instrument the corpus
- * was measured on): out[0..MORE_INPUTS-1] is the MOVER's half ("me"), taken
- * as CalculateHalfInputs(anBoard[1], anBoard[0]) exactly as the harness's in0;
- * out[MORE_INPUTS..] is the opponent ("opp"). The previous order passed
- * anBoard[0] first, putting the wrong side in the "me" block -- every me/opp
- * gate in the insight matcher mismatched (field report: hit-family entries
- * never fired; opp.I_P1 read the mover's 0.861 instead of the opponent's
- * ~0.31). gnubg flips nothing; this facade did. Returns 2*MORE_INPUTS or -1. */
+ * out[0..MORE_INPUTS-1]=p0, [MORE_INPUTS..]=p1. Returns 2*MORE_INPUTS or -1. */
 int gnubg_mobile_position_features(const int board[50], float out[]) {
     TanBoard anBoard;
     if (!board || !out) return -1;
     facade_unpack_board(board, anBoard);
-    CalculateHalfInputs(anBoard[1], anBoard[0], out);                 /* me  */
-    CalculateHalfInputs(anBoard[0], anBoard[1], out + MORE_INPUTS);   /* opp */
+    CalculateHalfInputs(anBoard[0], anBoard[1], out);
+    CalculateHalfInputs(anBoard[1], anBoard[0], out + MORE_INPUTS);
     return 2 * MORE_INPUTS;
 }
 
