@@ -2,7 +2,8 @@
 Signature (measured; tools/harvest/signatures.py): opp I_ENTER up min 0.05 (w2.0) + I_ENTER2 flat (max_abs 0.05, the count-kept fingerprint) + opp-on-bar gate
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair
 (2 pairs), grounded in signature deltas plus deltas_all context.
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "take all").
 
 ## Source cross-check (2026-07-19, assistant-side per maintainer instruction)
 Principle verified against canon retrieved this session (Gammon Press lessons
@@ -13,7 +14,7 @@ docs/CORPUS_ENTRIES_DRAFT.md batch-3 note). No verbatim overlap with retrieved
 excerpts; distinctive-substring spot-check. gnubg remains the sole authority
 for position meaning (two-tier doctrine); sources verify words and framing.
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The board crunched onto dead points while a spare was free to carry the roll.
 - phrase_praise: The spare took the roll and the home board stands connected.
 
