@@ -31,6 +31,12 @@ plus; conflicts can only arise in the four overlay files.
 - own release keystore (never the free key), Play App Signing enrollment
 - customer source access per TRADEMARKS.md + GPL section 6(d): full
   corresponding source incl. build scripts to binary recipients
+- CONTACT YAIR WAINBERGER (yairwein/backgammon-teacher) before walking any
+  Play Store path: agreed covenant (correspondence, 2026-07) -- his MIT
+  material is used with his blessing against upstream give-back of whatever
+  benefits his project; the publication conversation is owed before launch.
+  License notice already carried verbatim in tools/harvest/prompt_template.py
+  and the corpus asset acknowledgements.
 
 ## Synchronisation law (no exceptions)
 
