@@ -1,0 +1,167 @@
+{
+ "entry": "opening.builder.wasted",
+ "provenance": "parametric",
+ "generated": "2026-07-19",
+ "verifier": "tools/pilot/inputs_harness",
+ "signature": {
+  "terms": [
+   {
+    "term": "I_P1",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.04,
+    "weight": 1.5
+   },
+   {
+    "term": "I_PIPLOSS",
+    "side": "opp",
+    "direction": "down",
+    "min_abs": 0.02,
+    "weight": 1.0
+   },
+   {
+    "term": "I_ENTER2",
+    "side": "me",
+    "direction": "any",
+    "played_in": [
+     0.2,
+     0.45
+    ],
+    "best_in": [
+     0.2,
+     0.45
+    ],
+    "weight": 0.0
+   }
+  ]
+ },
+ "pairs": [
+  {
+   "id": "slot",
+   "params": {
+    "var": 1
+   },
+   "played": [
+    0,
+    -2,
+    0,
+    0,
+    1,
+    0,
+    3,
+    0,
+    3,
+    0,
+    0,
+    1,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -5,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   "best": [
+    0,
+    -2,
+    0,
+    0,
+    0,
+    0,
+    5,
+    0,
+    3,
+    0,
+    0,
+    0,
+    -5,
+    5,
+    0,
+    0,
+    0,
+    -3,
+    0,
+    -5,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0
+   ],
+   "deltas": {
+    "opp.I_P1": -0.444444,
+    "opp.I_PIPLOSS": -0.74537,
+    "me.I_ENTER2": 0.0
+   },
+   "deltas_all": {
+    "me.I_OFF1": 0.0,
+    "me.I_OFF2": 0.0,
+    "me.I_OFF3": 0.0,
+    "me.I_BREAK_CONTACT": -0.017964,
+    "me.I_BACK_CHEQUER": 0.0,
+    "me.I_BACK_ANCHOR": 0.0,
+    "me.I_FORWARD_ANCHOR": 0.0,
+    "me.I_PIPLOSS": 0.0,
+    "me.I_P1": 0.0,
+    "me.I_P2": 0.0,
+    "me.I_BACKESCAPES": 0.0,
+    "me.I_ACONTAIN": 0.0,
+    "me.I_ACONTAIN2": 0.0,
+    "me.I_CONTAIN": 0.0,
+    "me.I_CONTAIN2": 0.0,
+    "me.I_MOBILITY": -0.045833,
+    "me.I_MOMENT2": 0.0,
+    "me.I_ENTER": 0.0,
+    "me.I_ENTER2": 0.0,
+    "me.I_TIMING": -0.03,
+    "me.I_BACKBONE": 0.0,
+    "me.I_BACKG": 0.0,
+    "me.I_BACKG1": 0.0,
+    "me.I_FREEPIP": 0.0,
+    "me.I_BACKRESCAPES": 0.0,
+    "opp.I_OFF1": 0.0,
+    "opp.I_OFF2": 0.0,
+    "opp.I_OFF3": 0.0,
+    "opp.I_BREAK_CONTACT": 0.0,
+    "opp.I_BACK_CHEQUER": 0.0,
+    "opp.I_BACK_ANCHOR": 0.0,
+    "opp.I_FORWARD_ANCHOR": 0.0,
+    "opp.I_PIPLOSS": -0.74537,
+    "opp.I_P1": -0.444444,
+    "opp.I_P2": 0.0,
+    "opp.I_BACKESCAPES": 0.0,
+    "opp.I_ACONTAIN": 0.0,
+    "opp.I_ACONTAIN2": 0.0,
+    "opp.I_CONTAIN": 0.0,
+    "opp.I_CONTAIN2": 0.0,
+    "opp.I_MOBILITY": 0.0,
+    "opp.I_MOMENT2": 0.0,
+    "opp.I_ENTER": 0.0,
+    "opp.I_ENTER2": 0.0,
+    "opp.I_TIMING": 0.0,
+    "opp.I_BACKBONE": 0.0,
+    "opp.I_BACKG": 0.0,
+    "opp.I_BACKG1": 0.0,
+    "opp.I_FREEPIP": 0.0,
+    "opp.I_BACKRESCAPES": 0.0,
+    "PipCount.me": -3.0,
+    "PipCount.opp": 0.0
+   },
+   "pips_played": [
+    170,
+    167
+   ],
+   "class_played": 10,
+   "class_best": 10
+  }
+ ]
+}

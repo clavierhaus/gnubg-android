@@ -387,3 +387,13 @@ of the future-rolls family. Both probes on record.
 First batch to clear the confusion gate with zero amendments: pre-build QA
 plus fingerprint-first signature design.
 
+## Batch 5 (2026-07-19, matcher 108/108): coverage push into the early/board zones
+  home.point.made.missed (board) Making an inner point vs leaving it. Separated
+                         from prime.contain by a flat escape signal.
+  opening.builder.wasted (board) Slotting early builders into shots vs safe.
+                         Gated to the opening by an unbuilt home board (I_ENTER2 ~0.31).
+Doctrine casualties this batch (gnubg statics silent): enter.stay.back
+(making the advanced anchor from the bar leaves I_FORWARD_ANCHOR unmoved),
+bearoff.gap.left and race.pip.wasted (pure-race, no structural signal -- the
+race/bearoff family remains uncatalogued, as established).
+
