@@ -58,7 +58,11 @@ CMAKE_BUILD="$ROOT/jni-bridge/build-android-arm64"
 JNILIBS="$ROOT/gnubg-app/app/src/main/jniLibs/arm64-v8a"
 NDK_TOOLCHAIN="/home/erweitert/android-sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake"
 APP_DIR="$ROOT/gnubg-app"
-APP_ID="com.clavierhaus.gnubg"
+# The edition truth lives in gradle; hardcoding it here once launched the
+# free app after installing the Plus build -- an entire debugging session
+# chased silence in the wrong edition. Read, never assume.
+APP_ID="$(sed -n 's/.*applicationId = "\([^"]*\)".*/\1/p' gnubg-app/app/build.gradle.kts | head -n1)"
+[ -n "$APP_ID" ] || APP_ID="com.clavierhaus.gnubg"
 
 hr
 printf '%sGNUbg - clean build and deploy%s\n' "$B" "$X"
