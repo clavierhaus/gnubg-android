@@ -1,38 +1,102 @@
 {
-  "version": 0,
-  "tier": "proposed",
-  "credit": "presentation taxonomy and no-invention rule: yairwein/backgammon-teacher (MIT)",
-  "rules": [
-    {"id": "threat.shots.given", "category": "threat",
-     "term": "I_P1", "side": "opp", "direction": "down", "notable": 0.08,
-     "sentence": "Your move gives them more shots than the best play does."},
-    {"id": "threat.hit.available", "category": "threat",
-     "term": "I_BACK_CHEQUER", "side": "opp", "direction": "up", "notable": 0.25,
-     "sentence": "The best play hits; yours lets their checker stand."},
-    {"id": "threat.entry.cost", "category": "threat",
-     "term": "I_ENTER", "side": "opp", "direction": "up", "notable": 0.08,
-     "sentence": "The best play makes their entry from the bar costlier."},
-    {"id": "board.point.closed", "category": "board",
-     "term": "I_ENTER2", "side": "opp", "direction": "up", "notable": 0.15,
-     "sentence": "The best play closes another home-board point against them."},
-    {"id": "board.blockade.tighter", "category": "board",
-     "term": "I_CONTAIN", "side": "me", "direction": "up", "notable": 0.08,
-     "sentence": "The best play tightens the blockade on their back checkers."},
-    {"id": "board.anchor.kept", "category": "board",
-     "term": "I_BACK_ANCHOR", "side": "me", "direction": "up", "notable": 0.20,
-     "sentence": "The best play keeps your rear point made; your move gives it up."},
-    {"id": "board.anchor.made", "category": "board",
-     "term": "I_FORWARD_ANCHOR", "side": "me", "direction": "down", "notable": 0.30,
-     "played_in": [1.0, 2.0],
-     "sentence": "The best play makes an anchor in their board; yours leaves you without one."},
-    {"id": "board.structure.connected", "category": "board",
-     "term": "I_BACKBONE", "side": "me", "direction": "up", "notable": 0.30,
-     "sentence": "The best play keeps your rear structure connected."},
-    {"id": "race.pips.taken", "category": "race",
-     "term": "PipCount.opp", "side": "", "direction": "up", "notable": 8.0,
-     "sentence": "The best play sends more of their pips back than yours does."},
-    {"id": "race.contact.held", "category": "race",
-     "term": "I_BREAK_CONTACT", "side": "me", "direction": "up", "notable": 0.05,
-     "sentence": "The best play stays in contact where your move runs."}
-  ]
+ "version": 0,
+ "tier": "authored",
+ "credit": "presentation taxonomy and no-invention rule: yairwein/backgammon-teacher (MIT)",
+ "rules": [
+  {
+   "id": "threat.shots.given",
+   "category": "threat",
+   "term": "I_P1",
+   "side": "opp",
+   "direction": "down",
+   "notable": 0.08,
+   "sentence": "Your move gives them more shots than the best play does."
+  },
+  {
+   "id": "threat.hit.available",
+   "category": "threat",
+   "term": "I_BACK_CHEQUER",
+   "side": "opp",
+   "direction": "up",
+   "notable": 0.25,
+   "sentence": "The best play hits; yours lets their checker stand."
+  },
+  {
+   "id": "threat.entry.cost",
+   "category": "threat",
+   "term": "I_ENTER",
+   "side": "opp",
+   "direction": "up",
+   "notable": 0.08,
+   "sentence": "The best play makes their entry from the bar costlier."
+  },
+  {
+   "id": "board.point.closed",
+   "category": "board",
+   "term": "I_ENTER2",
+   "side": "opp",
+   "direction": "up",
+   "notable": 0.15,
+   "sentence": "The best play closes another home-board point against them."
+  },
+  {
+   "id": "board.blockade.tighter",
+   "category": "board",
+   "term": "I_CONTAIN",
+   "side": "me",
+   "direction": "up",
+   "notable": 0.08,
+   "sentence": "The best play tightens the blockade on their back checkers."
+  },
+  {
+   "id": "board.anchor.kept",
+   "category": "board",
+   "term": "I_BACK_ANCHOR",
+   "side": "me",
+   "direction": "up",
+   "notable": 0.2,
+   "sentence": "The best play keeps your rear point made; your move gives it up."
+  },
+  {
+   "id": "board.anchor.made",
+   "category": "board",
+   "term": "I_FORWARD_ANCHOR",
+   "side": "me",
+   "direction": "down",
+   "notable": 0.3,
+   "played_in": [
+    1.0,
+    2.0
+   ],
+   "sentence": "The best play holds an anchor in their board; yours stands without one."
+  },
+  {
+   "id": "board.structure.connected",
+   "category": "board",
+   "term": "I_BACKBONE",
+   "side": "me",
+   "direction": "up",
+   "notable": 0.3,
+   "sentence": "The best play keeps your rear structure connected."
+  },
+  {
+   "id": "race.pips.taken",
+   "category": "race",
+   "term": "PipCount.opp",
+   "side": "",
+   "direction": "up",
+   "notable": 8.0,
+   "sentence": "The best play sends more of their pips back than yours does."
+  },
+  {
+   "id": "race.contact.held",
+   "category": "race",
+   "term": "I_BREAK_CONTACT",
+   "side": "me",
+   "direction": "up",
+   "notable": 0.05,
+   "sentence": "The best play stays in contact where your move runs."
+  }
+ ],
+ "adoption": "maintainer (clavierhaus), 2026-07-19: rule 7 reworded tense-neutral, rest as proposed"
 }
