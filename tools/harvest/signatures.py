@@ -32,9 +32,10 @@ SIGNATURES = {
         "terms": [
             {"term": "I_BACKESCAPES", "side": "me", "direction": "down",
              "min_abs": 0.05, "weight": 1.0},
+            # played_in caps at the band seam vs prime.extend.missed
             {"term": "I_CONTAIN", "side": "me", "direction": "up",
              "min_abs": 0.05, "max_abs": 0.30, "weight": 1.0,
-             "best_in": [0.85, 1.0]},
+             "played_in": [0.0, 0.80], "best_in": [0.85, 1.0]},
         ],
     },
     "prime.contain.lost": {
@@ -77,6 +78,11 @@ SIGNATURES = {
     },
     "anchor.surrender.back": {
         "terms": [
+            # pip context (measured 2026-07-19): the surrender scenario lives
+            # around opp 119-125; separates from contact.break.early (103)
+            # and enter.fight.point (146). Provisional band, widen with pairs.
+            {"term": "PipCount.opp", "side": "", "direction": "any",
+             "played_in": [110, 135], "best_in": [110, 135], "weight": 0.0},
             {"term": "I_FORWARD_ANCHOR", "side": "me", "direction": "down",
              "min_abs": 0.30, "weight": 1.0,
              "played_in": [1.01, 2.0], "best_in": [0.01, 1.0]},
@@ -170,6 +176,79 @@ SIGNATURES = {
              "min_abs": 4.0, "weight": 1.5},
             {"term": "I_ENTER", "side": "opp", "direction": "up",
              "min_abs": 0.02, "weight": 1.0},
+        ],
+    },
+
+    # ------------------------------------------------ batch 2 (2026-07-19)
+    "bearoff.shot.left": {
+        "class_played": CLASS_CONTACT, "class_best": CLASS_CONTACT,
+        "terms": [
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.04, "weight": 1.5,
+             "played_in": [0.05, 1.0], "best_in": [0.0, 0.02]},
+            # separator from blot.*: my rearmost is already home-side
+            {"term": "I_BACK_CHEQUER", "side": "me", "direction": "any",
+             "played_in": [0.0, 0.40], "best_in": [0.0, 0.40], "weight": 1.5},
+        ],
+    },
+    "prime.extend.missed": {
+        "terms": [
+            # measured 2026-07-19: a real 4-prime already contains 0.80-0.86;
+            # the extension to five reads +0.08..0.14 -> gates set to reality
+            # band-split vs prime.break.5 (measured: break played 0.722-0.806,
+            # extend played 0.806-0.861): the 0.80-0.82 seam stays uncovered
+            {"term": "I_CONTAIN", "side": "me", "direction": "up",
+             "min_abs": 0.06, "weight": 1.5,
+             "played_in": [0.82, 0.92], "best_in": [0.90, 1.0]},
+            {"term": "I_BACKESCAPES", "side": "me", "direction": "down",
+             "min_abs": 0.04, "weight": 1.0},
+        ],
+    },
+    "enter.fight.point": {
+        "terms": [
+            # played split into the fight (no anchor in zone), best made it
+            {"term": "I_FORWARD_ANCHOR", "side": "me", "direction": "down",
+             "min_abs": 0.30, "weight": 2.0,
+             # measured: fight anchors 21/22 read 0.667/0.500
+             "played_in": [1.0, 2.0], "best_in": [0.30, 0.70]},
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.03, "weight": 1.0},
+            # separator vs anchor.surrender.back: here the played side has NO
+            # made rear anchor at all (rearmost made point is the midpoint)
+            {"term": "I_BACK_ANCHOR", "side": "me", "direction": "any",
+             "played_in": [0.0, 0.60], "best_in": [0.0, 1.0], "weight": 0.0},
+            # pip context (measured): near-level race ~146; separates from the
+            # surrender (119-125) and lost-race (103) siblings. Provisional.
+            {"term": "PipCount.opp", "side": "", "direction": "any",
+             "played_in": [135, 160], "best_in": [135, 160], "weight": 0.0},
+        ],
+    },
+    "hit.loose.homeboard": {
+        "terms": [
+            # both sides of the pair have the opponent on the bar
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.95, 1.0], "best_in": [0.95, 1.0], "weight": 1.5},
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.05, "weight": 1.5,
+             "played_in": [0.08, 1.0], "best_in": [0.0, 0.04]},
+            {"term": "I_ENTER", "side": "opp", "direction": "up",
+             "min_abs": 0.01, "weight": 1.0},
+        ],
+    },
+    "contact.break.early": {
+        "terms": [
+            # measured: holding reads 0.156, the break 0.09-0.10 -- small
+            # absolute values, the DELTA is the pattern
+            {"term": "I_BREAK_CONTACT", "side": "me", "direction": "up",
+             "min_abs": 0.045, "weight": 1.5,
+             "played_in": [0.0, 0.25], "best_in": [0.12, 1.0]},
+            # the run abandons the high anchor: rearmost made point collapses
+            # from the anchor to the midpoint (measured +0.29 best-played)
+            {"term": "I_BACK_ANCHOR", "side": "me", "direction": "up",
+             "min_abs": 0.10, "weight": 1.5},
+            # the race is long and the opponent clearly ahead: holding is the game
+            {"term": "PipCount.opp", "side": "", "direction": "any",
+             "played_in": [85, 130], "best_in": [85, 130], "weight": 0.5},
         ],
     },
 }
