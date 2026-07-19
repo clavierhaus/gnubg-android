@@ -1,0 +1,32 @@
+{
+ "entry": "enter.stay.back",
+ "provenance": "parametric",
+ "generated": "2026-07-19",
+ "verifier": "tools/pilot/inputs_harness",
+ "signature": {
+  "terms": [
+   {
+    "term": "I_FORWARD_ANCHOR",
+    "side": "me",
+    "direction": "down",
+    "min_abs": 0.3,
+    "weight": 2.0,
+    "played_in": [
+     1.0,
+     2.0
+    ],
+    "best_in": [
+     0.3,
+     0.85
+    ]
+   },
+   {
+    "term": "I_BACK_ANCHOR",
+    "side": "me",
+    "direction": "any",
+    "weight": 0.5
+   }
+  ]
+ },
+ "pairs": []
+}

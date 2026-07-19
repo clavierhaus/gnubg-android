@@ -416,6 +416,31 @@ def split_pairs():
         yield (f"s{s_}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"straggler": s_})
 
 
+
+
+# ---------------------------------------------------------------- batch 5
+
+def home_point_pairs():
+    opp = {1: 2, 19: 4, 17: 3, 12: 4, 23: 2}   # 15, disjoint from me
+    for pt in (5, 4):
+        spare = 10
+        me_p = {8: 4, 13: 4, 6: 3, 24: 2, spare: 2}
+        me_b = {8: 3, 13: 4, 6: 3, 24: 2, pt: 2, spare: 1}
+        yield (f"p{pt}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"point": pt})
+
+
+# enter.stay.back (2026-07-19): DROPPED -- making the advanced anchor from the
+# bar leaves I_FORWARD_ANCHOR unmoved (2.000->2.000); gnubg's statics do not
+# see this play. The phrase waits (two-tier doctrine).
+
+
+def opening_builder_pairs():
+    opp = {1: 2, 12: 5, 17: 3, 19: 5}
+    # played slots two loose builders; best keeps them back
+    yield ("slot", board(me={24: 2, 13: 5, 8: 3, 6: 3, 11: 1, 4: 1}, opp=opp),
+           board(me={24: 2, 13: 5, 8: 3, 6: 5}, opp=opp), {"var": 1})
+
+
 GENERATORS = {
     "blitz.point.missed": blitz_point_pairs,
     "timing.hold.crunch": timing_hold_pairs,
@@ -441,6 +466,8 @@ GENERATORS = {
     "point.deep.wasted": deep_point_pairs,
     "blot.cover.missed": cover_pairs,
     "anchor.split.straggler": split_pairs,
+    "home.point.made.missed": home_point_pairs,
+    "opening.builder.wasted": opening_builder_pairs,
 }
 
 

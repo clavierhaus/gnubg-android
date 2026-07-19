@@ -239,6 +239,36 @@ SIGNATURES = {
              "min_abs": 0.15, "weight": 0.5},
         ],
     },
+    # ------------------------------------------------ batch 5 (2026-07-19)
+    "home.point.made.missed": {
+        "terms": [
+            {"term": "I_ENTER2", "side": "opp", "direction": "up",
+             "min_abs": 0.10, "weight": 2.0},
+            {"term": "I_P1", "side": "opp", "direction": "any",
+             "weight": 0.5},
+            # separator vs prime.contain.lost: that is an escape/containment
+            # pattern (I_BACKESCAPES moves); point-making leaves it flat.
+            {"term": "I_BACKESCAPES", "side": "me", "direction": "any",
+             "max_abs": 0.03, "weight": 0.0},
+        ],
+    },
+    "opening.builder.wasted": {
+        "terms": [
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.04, "weight": 1.5},
+            {"term": "I_PIPLOSS", "side": "opp", "direction": "down",
+             "min_abs": 0.02, "weight": 1.0},
+            # specificity: the OPENING has no back anchor beyond the 24-start
+            # and my rear is undeveloped -- separates from blot.cover/shot
+            # (home-board work) and anchor.split (a broken anchor). Gate only.
+            # THE separator (measured): the opening has no home board yet --
+            # my own I_ENTER2 (board-closure) sits ~0.31, where blot.shot/
+            # blot.cover (points already made) read ~0.75. Gate to the low band.
+            {"term": "I_ENTER2", "side": "me", "direction": "any",
+             "played_in": [0.20, 0.45], "best_in": [0.20, 0.45], "weight": 0.0},
+        ],
+    },
+
     # ------------------------------------------------ batch 4 (2026-07-19)
     "blot.cover.missed": {
         "terms": [
