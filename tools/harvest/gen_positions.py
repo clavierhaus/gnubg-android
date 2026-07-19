@@ -395,6 +395,27 @@ def deep_point_pairs():
                board(me=me_b, opp=opp), {"deep": deep, "front": front})
 
 
+
+
+# ---------------------------------------------------------------- batch 4
+
+def cover_pairs():
+    opp = {3: 2, 18: 4, 19: 3, 20: 2, 21: 2, 22: 2}
+    for b in (4, 5):
+        other = 5 if b == 4 else 4
+        me_p = {6: 3, other: 2, b: 1, 8: 4, 13: 3, 24: 2}
+        me_b = {6: 3, other: 2, b: 2, 8: 4, 13: 2, 24: 2}
+        yield (f"b{b}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"blot": b})
+
+
+def split_pairs():
+    opp = {9: 2, 18: 4, 19: 3, 20: 2, 21: 2, 22: 2}
+    for s_ in (14, 15, 16):
+        me_p = {24: 1, s_: 1, 13: 4, 8: 3, 6: 4, 5: 2}
+        me_b = {24: 2, 13: 4, 8: 3, 6: 4, 5: 2}
+        yield (f"s{s_}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"straggler": s_})
+
+
 GENERATORS = {
     "blitz.point.missed": blitz_point_pairs,
     "timing.hold.crunch": timing_hold_pairs,
@@ -418,6 +439,8 @@ GENERATORS = {
     "hit.double.declined": double_hit_pairs,
     "board.crunch.spared": crunch_pairs,
     "point.deep.wasted": deep_point_pairs,
+    "blot.cover.missed": cover_pairs,
+    "anchor.split.straggler": split_pairs,
 }
 
 
