@@ -97,13 +97,21 @@ fun HomeHubScreen(
             )
         }
 
-        // "Clavierhaus BackGammon" -- publisher name whole in GNU orange, the
-        // game in off-white with the camel-case BG echoing the CBG mark.
-        // Palette unchanged: #F5A623 and #F5F5F5, DejaVu Serif.
+        // "Clavierhaus BackGammon Plus" -- publisher in GNU orange, the game in
+        // off-white (camel-case BG echoing the CBG mark), and the edition mark
+        // "Plus" in orange Allura script: the visible wall between editions.
         BasicText(
             text = buildAnnotatedString {
                 withStyle(SpanStyle(color = GnuOrange)) { append("Clavierhaus") }
                 withStyle(SpanStyle(color = GnuWhite)) { append(" BackGammon") }
+                withStyle(
+                    SpanStyle(
+                        color = GnuOrange,
+                        fontFamily = AlluraScript,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 48.sp
+                    )
+                ) { append("  Plus") }
             },
             style = HomeTitleStyle,
             modifier = Modifier
@@ -200,6 +208,11 @@ private val HomeShadow = Shadow(
     offset = Offset(HOME_SHADOW_OFFSET_PX, HOME_SHADOW_OFFSET_PX),
     blurRadius = HOME_SHADOW_BLUR_PX
 )
+
+// Plus edition: the scripted "Plus" in the hub title. Allura (SIL OFL,
+// licenses/Allura-OFL.txt) -- elegant handwriting against the serif brand
+// face. Scripts run optically small, hence the enlarged span size below.
+private val AlluraScript = FontFamily(Font(R.font.allura_regular))
 
 private val HomeTitleStyle = TextStyle(
     fontFamily = DejaVuSerif,
