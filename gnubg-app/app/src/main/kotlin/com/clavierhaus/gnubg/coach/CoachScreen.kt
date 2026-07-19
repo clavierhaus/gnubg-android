@@ -212,6 +212,7 @@ fun CoachScreen(
     val rawGlance by viewModel.coachGlance.collectAsState()
     // Cube glance (M4): present whenever a cube decision is under review.
     val rawCubeGlance by viewModel.coachCubeGlance.collectAsState()
+    val cubeAnswer by viewModel.coachCubeAnswer.collectAsState()
     val cubeGlance = rawCubeGlance?.let { decodeCube(it) }
     val busyKind by viewModel.busyKind.collectAsState()
 
@@ -434,6 +435,7 @@ fun CoachScreen(
                 CoachPanel(
                     glance = glance,
                     cubeGlance = cubeGlance,
+                    cubeAnswer = cubeAnswer,
                     phase = gameState.phase,
                     winner = gameState.winner,
                     canDouble = gameState.canDouble,
@@ -573,6 +575,7 @@ private fun ScoreTag(label: String, badgeColor: Color, points: Int) {
 private fun CoachPanel(
     glance: CoachGlance?,
     cubeGlance: CubeGlance?,
+    cubeAnswer: Pair<Boolean, Int>?,
     phase: GamePhase,
     winner: Int,
     canDouble: Boolean,
@@ -625,6 +628,17 @@ private fun CoachPanel(
 
             when {
                 phase == GamePhase.GAME_OVER -> {
+                    // A game ended by GNU dropping the player's cube says so --
+                    // the score already moved; this names the cause, and the
+                    // "New game" button below remains the acknowledgment.
+                    if (cubeAnswer?.first == false) {
+                        Text(
+                            "GNU rejects the cube.",
+                            color = Color.White, fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
                     Text(
                         if (winner == 0) "You win the game." else "GNU wins the game.",
                         color = Color.White, fontSize = 14.sp
@@ -679,6 +693,16 @@ private fun CoachPanel(
                     // tappable before you roll, but nothing said so (field
                     // report: "cube doesn't react" -- it does, but only at this
                     // moment, and the player had already moved). Surface it.
+                    // GNU's acceptance of the player's double is part of the
+                    // lesson: say it, right where the next roll is prompted.
+                    if (cubeAnswer?.first == true) {
+                        Text(
+                            "GNU takes the cube.",
+                            color = Color.White, fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
                     Text(
                         if (canDouble) "Your turn. Roll, or tap the cube to double."
                         else "Your turn. Tap Roll.",
