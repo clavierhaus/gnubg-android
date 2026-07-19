@@ -130,7 +130,9 @@ class InsightMatcher(context: Context) {
         if (t.term == "PipCount.opp") return s.pips[0].toFloat()  // side 0 = opp
         val i = inputIndex[t.term] ?: return 0f
         val n = inputIndex.size
-        return if (t.side == "me") s.feat[n + i] else s.feat[i]
+        // me = first block (the mover), opp = second -- the facade now
+        // matches the harness frame the corpus was measured on.
+        return if (t.side == "me") s.feat[i] else s.feat[n + i]
     }
 
     /** Both boards mover-frame board[50], as the coach glance provides. */
