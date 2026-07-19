@@ -3,7 +3,8 @@ Signature (measured; tools/harvest/signatures.py): me I_CONTAIN up (min 0.06), p
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair
 (2 pairs), written against signature deltas plus the full-vector context
 section (deltas_all).
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "take them all").
 
 ## Source cross-check (2026-07-19, assistant-side per maintainer instruction)
 Principle verified against public sources; vocabulary aligned to standard use
@@ -15,7 +16,7 @@ gnubg's certification of the position pair is untouched by this check
 
 Canon note: Five-prime extension is uncontroversial canon; phrase asserts the missed structural gain only.
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The builders were in place to stretch four prime points to five, and the fifth point went unmade.
 - phrase_praise: Five points in a row -- the blockade closes another escape number.
 

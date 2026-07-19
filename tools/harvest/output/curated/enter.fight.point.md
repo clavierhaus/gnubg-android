@@ -3,7 +3,8 @@ Signature (measured; tools/harvest/signatures.py): me I_FORWARD_ANCHOR down from
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair
 (2 pairs), written against signature deltas plus the full-vector context
 section (deltas_all).
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "take them all").
 
 ## Source cross-check (2026-07-19, assistant-side per maintainer instruction)
 Principle verified against public sources; vocabulary aligned to standard use
@@ -15,7 +16,7 @@ gnubg's certification of the position pair is untouched by this check
 
 Canon note: Robertie, lesson 29: a play that makes one of the best anchors is likely better than looser alternatives; 'advanced anchor' is the standard term (adopted over the working name 'fight anchor').
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: Entered splitting into their board: two loose checkers under fire where one advanced anchor could stand.
 - phrase_praise: Entered making the advanced anchor -- a made point in their board instead of blots in the fight.
 

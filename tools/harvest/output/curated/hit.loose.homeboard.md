@@ -3,7 +3,8 @@ Signature (measured; tools/harvest/signatures.py): opp on the bar on BOTH sides 
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair
 (4 pairs), written against signature deltas plus the full-vector context
 section (deltas_all).
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "take them all").
 
 ## Source cross-check (2026-07-19, assistant-side per maintainer instruction)
 Principle verified against public sources; vocabulary aligned to standard use
@@ -15,7 +16,7 @@ gnubg's certification of the position pair is untouched by this check
 
 Canon note: Robertie, lessons 15/29: a home-board loose hit needs a key point or a required tempo; structure is what makes hits tolerable -- the praise variant is exactly the hit-and-cover case.
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: A loose hit in your own board with no cover -- they enter shooting, and the return shot undoes the hit.
 - phrase_praise: Hit and covered -- the point is made, and they enter against a stronger board with nothing to shoot at.
 
