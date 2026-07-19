@@ -114,6 +114,8 @@ class InsightMatcher(context: Context) {
             }
             out
         }
+        android.util.Log.i("gnubg-insight",
+            "loaded asset=" + (asset ?: "NONE") + " entries=" + entries.size)
     }
 
     val available: Boolean get() = entries.isNotEmpty()
@@ -137,30 +139,34 @@ class InsightMatcher(context: Context) {
         val sp = Snap(played)
         val sb = Snap(best)
         val fired = ArrayList<Triple<Float, Int, Entry>>()
+        var candidates = 0
+        val misses = StringBuilder()
         for (e in entries) {
             if (skillWord.isNotEmpty() && skillWord !in e.severity) continue
             if (e.classPlayed != null && sp.clazz != e.classPlayed) continue
             if (e.classBest != null && sb.clazz != e.classBest) continue
+            candidates++
             var total = 0f
             var pass = true
             for (t in e.terms) {
                 val vp = value(sp, t)
                 val vb = value(sb, t)
                 val d = vb - vp
+                var failedGate: String? = null
                 when (t.direction) {
-                    "up" -> if (d < t.minAbs) { pass = false; break }
-                    "down" -> if (d > -t.minAbs) { pass = false; break }
+                    "up" -> if (d < t.minAbs) failedGate = "up"
+                    "down" -> if (d > -t.minAbs) failedGate = "down"
                     // "any": context term, range/max gates only
                 }
-                if (t.maxAbs != null && kotlin.math.abs(d) > t.maxAbs) {
-                    pass = false; break
-                }
-                if (t.playedIn != null &&
-                    (vp < t.playedIn.first || vp > t.playedIn.second)) {
-                    pass = false; break
-                }
-                if (t.bestIn != null &&
-                    (vb < t.bestIn.first || vb > t.bestIn.second)) {
+                if (failedGate == null && t.maxAbs != null &&
+                    kotlin.math.abs(d) > t.maxAbs) failedGate = "max"
+                if (failedGate == null && t.playedIn != null &&
+                    (vp < t.playedIn.first || vp > t.playedIn.second)) failedGate = "pIn"
+                if (failedGate == null && t.bestIn != null &&
+                    (vb < t.bestIn.first || vb > t.bestIn.second)) failedGate = "bIn"
+                if (failedGate != null) {
+                    misses.append("%s[%s.%s %s vp=%.3f vb=%.3f d=%.3f] ".format(
+                        e.id, t.side, t.term, failedGate, vp, vb, d))
                     pass = false; break
                 }
                 if (t.weight > 0f) {
@@ -171,6 +177,14 @@ class InsightMatcher(context: Context) {
             }
             if (pass && total > 0f) fired.add(Triple(total, e.terms.size, e))
         }
+        android.util.Log.i("gnubg-insight",
+            "match skill=" + skillWord +
+            " pipsP=" + sp.pips.joinToString("/") +
+            " pipsB=" + sb.pips.joinToString("/") +
+            " clsP=" + sp.clazz + " featN=" + sp.feat.size +
+            " cand=" + candidates + " fired=" + fired.size)
+        if (fired.isEmpty() && candidates > 0)
+            android.util.Log.i("gnubg-insight", "misses: " + misses.toString().take(900))
         fired.sortWith(compareByDescending<Triple<Float, Int, Entry>> { it.first }
             .thenByDescending { it.second }
             .thenBy { it.third.id })
