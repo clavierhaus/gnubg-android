@@ -39,7 +39,8 @@ fills what tier 1 left open and can never contradict tier 1 output. The
 earlier "cross-check" idea (running b-t's extractor beside gnubg) is
 retracted under this doctrine: a cross-check is a second authority.
 
-Where neither tier speaks: silence.
+Where neither tier speaks: silence. Tier 2's speaking implementation is
+governed by docs/DELTA_NARRATOR_PLAYBOOK.md (binding, 2026-07-19).
 
 ## 1. What is taken and what is not from yairwein/backgammon-teacher
 
