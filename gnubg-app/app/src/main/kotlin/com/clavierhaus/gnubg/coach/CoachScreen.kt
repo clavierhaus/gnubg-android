@@ -49,6 +49,7 @@ import com.clavierhaus.gnubg.engine.GameViewModel
 import com.clavierhaus.gnubg.play.BackgammonBoard
 import com.clavierhaus.gnubg.play.BoardPalettes
 import com.clavierhaus.gnubg.play.GameButton
+import com.clavierhaus.gnubg.play.GameplayDecisions
 import com.clavierhaus.gnubg.play.LocalBoardPalette
 import androidx.compose.runtime.CompositionLocalProvider
 
@@ -433,6 +434,7 @@ fun CoachScreen(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 CoachPanel(
+                    viewModel = viewModel,
                     glance = glance,
                     cubeGlance = cubeGlance,
                     cubeAnswer = cubeAnswer,
@@ -441,6 +443,7 @@ fun CoachScreen(
                     canDouble = gameState.canDouble,
                     busy = busyKind,
                     cubeValue = gameState.cubeValue,
+                    resignation = gameState.resignation,
                     onTake = { viewModel.acceptDouble() },
                     onDrop = { viewModel.dropDouble() },
                     humanScore = gameState.humanScore,
@@ -573,6 +576,7 @@ private fun ScoreTag(label: String, badgeColor: Color, points: Int) {
 
 @Composable
 private fun CoachPanel(
+    viewModel: GameViewModel,
     glance: CoachGlance?,
     cubeGlance: CubeGlance?,
     cubeAnswer: Pair<Boolean, Int>?,
@@ -581,6 +585,7 @@ private fun CoachPanel(
     canDouble: Boolean,
     busy: BusyKind,
     cubeValue: Int,
+    resignation: Int,
     onTake: () -> Unit,
     onDrop: () -> Unit,
     humanScore: Int,
@@ -627,6 +632,18 @@ private fun CoachPanel(
             Spacer(modifier = Modifier.height(10.dp))
 
             when {
+                phase == GamePhase.RESIGNATION_OFFERED -> {
+                    // Blocking gameplay decision -- rendered from the shared
+                    // GameplayDecisions so the coach rail can never omit it
+                    // again (the softlock that motivated this refactor).
+                    GameplayDecisions(
+                        viewModel = viewModel,
+                        phase = GamePhase.RESIGNATION_OFFERED,
+                        resignation = resignation,
+                        cubeValue = cubeValue
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 phase == GamePhase.GAME_OVER -> {
                     // A game ended by GNU dropping the player's cube says so --
                     // the score already moved; this names the cause, and the
