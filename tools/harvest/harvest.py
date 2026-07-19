@@ -35,6 +35,11 @@ RAWDIR = REPO / "tools/harvest/output/raw"
 # Principle and category per entry, from docs/CORPUS_ENTRIES_DRAFT.md.
 ENTRY_META = {
     "prime.break.5": ("A 5-prime is worth holding.", "board"),
+    "bearoff.shot.left": ("Bear in without leaving the shot that loses a won race.", "threat"),
+    "prime.extend.missed": ("When the builders are ready, the fifth prime point is the play.", "board"),
+    "enter.fight.point": ("Enter making the advanced anchor, not splitting into the fight.", "board"),
+    "hit.loose.homeboard": ("A loose hit in your board without cover invites the return shot.", "threat"),
+    "contact.break.early": ("Far behind, the anchor is the game; don't break contact.", "race"),
     "prime.contain.lost": ("Don't let the trapped checker out for free.", "board"),
     "anchor.surrender.back": ("A back anchor is shelter; don't leave it without a reason.", "board"),
     "anchor.advance.golden": ("The 20-point anchor is worth fighting for.", "board"),
