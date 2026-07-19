@@ -34,6 +34,8 @@ SEVERITY = {                       # gnubg skill bands per entry, from the draft
     "hit.double.declined": ["doubtful", "bad", "very bad"],
     "board.crunch.spared": ["doubtful", "bad"],
     "point.deep.wasted": ["doubtful", "bad"],
+    "blot.cover.missed": ["doubtful", "bad"],
+    "anchor.split.straggler": ["doubtful", "bad", "very bad"],
     "anchor.advance.golden": ["doubtful"],
     "race.break.ahead": ["doubtful", "bad"],
     "race.escape.window": ["doubtful", "bad"],
