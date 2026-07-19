@@ -454,6 +454,95 @@
    "tier": "authored"
   },
   {
+   "id": "blot.cover.missed",
+   "principle": "A builder wants covering; a covered builder is a point.",
+   "phrase_flag": "The blot on the point was a builder waiting for cover; left alone it is only a target.",
+   "phrase_praise": "Covered -- the builder became a point, and the anchor has nothing to shoot at.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_P1",
+      "side": "opp",
+      "direction": "down",
+      "min_abs": 0.04,
+      "weight": 1.5
+     },
+     {
+      "term": "I_ENTER2",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.15,
+      "weight": 1.5
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.8,
+       0.94
+      ],
+      "best_in": [
+       0.8,
+       0.94
+      ],
+      "weight": 0.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "anchor.split.straggler",
+   "principle": "Keep the anchor whole; a split anchor shelters no one.",
+   "phrase_flag": "Running one checker off the anchor buys the worst of both: a straggler under fire and no shelter behind it.",
+   "phrase_praise": "The anchor stays whole -- no stragglers, no shots, the shelter holds.",
+   "category": "threat",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_BACK_ANCHOR",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.25,
+      "weight": 1.5
+     },
+     {
+      "term": "I_P1",
+      "side": "opp",
+      "direction": "down",
+      "min_abs": 0.04,
+      "weight": 1.0
+     },
+     {
+      "term": "I_FORWARD_ANCHOR",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       1.0,
+       2.0
+      ],
+      "best_in": [
+       0.1,
+       0.25
+      ],
+      "weight": 0.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad",
+    "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
    "id": "prime.contain.lost",
    "principle": "Don't let the trapped checker out for free.",
    "phrase_flag": "You let the trapped checker out for nothing.",
