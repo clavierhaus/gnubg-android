@@ -3,7 +3,8 @@ Signature (measured; tools/harvest/signatures.py): opp I_P1 down (min 0.04), pla
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair
 (4 pairs), written against signature deltas plus the full-vector context
 section (deltas_all).
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "take them all").
 
 ## Source cross-check (2026-07-19, assistant-side per maintainer instruction)
 Principle verified against public sources; vocabulary aligned to standard use
@@ -15,7 +16,7 @@ gnubg's certification of the position pair is untouched by this check
 
 Canon note: Bearing in against an anchor: standard canon is to clear and fill without leaving a shot (Gammon Press lesson 9: most of the trailing side's wins come from a left shot).
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The race was already won; the blot you left in front of their anchor is the one roll that loses it.
 - phrase_praise: Filled safely behind the anchor -- they hold their point and never get a shot.
 
