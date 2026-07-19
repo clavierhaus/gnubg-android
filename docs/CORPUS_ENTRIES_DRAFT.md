@@ -347,3 +347,25 @@ The anchor family (surrender.back / enter.fight / contact.break.early) is
 one gnubg static pattern split by pip context; the PipCount.opp bands are
 provisional generator-measured values, to be widened as pair diversity grows.
 
+## Batch 3 (approved 2026-07-19 after b-t QA cross-run; measured same day, matcher 101/101)
+
+  hit.double.declined  (threat) A double hit was available; a single or none
+                       was played. Partitioned from hit.declined structurally
+                       (bar-state gates: board-to-bar vs bar-to-bar).
+  board.crunch.spared  (board)  The STRUCTURE crunch: point count kept,
+                       consecutiveness lost, while a spare was free.
+                       Fingerprint: I_ENTER2 flat (close.entry always steps).
+  point.deep.wasted    (board)  Made the deep point early while the blockade
+                       wanted the front. Separators: low I_CONTAIN bands vs
+                       the prime family; I_TIMING band vs timing.hold.crunch.
+
+Waiting-list additions, per doctrine (statics carry no history):
+  - the point-LOST crunch wording ("you broke it") == board.close.entry's
+    pattern to gnubg; covered by that entry's phrase, the distinct wording waits.
+  - race.bearin.waste re-confirmed dead: I_FREEPIP tracks pips, not
+    distribution (pip-equal probe, second proof).
+
+QA precedent set this batch: proposed scenarios cross-run through
+yairwein/backgammon-teacher's extractor BEFORE building (tier-2 framing
+check; gnubg remains the referee). Banked two calibrations pre-build.
+
