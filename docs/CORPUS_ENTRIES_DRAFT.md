@@ -317,3 +317,33 @@ fired the golden phrase on these advances (wrong words); golden is now
 bands: doubtful
 note: 4 pairs; matcher 85/85 with full golden/mid mutual isolation. First
 harvest under the polarity-fixed prompt -- all four flags correct.
+
+## Batch 2 (approved 2026-07-19; measured same day, matcher 94/94)
+
+Five live entries, signatures in tools/harvest/signatures.py, pairs
+harness-verified, confusion-clean against all of batch 1:
+
+  bearoff.shot.left    (threat) A shot left during the contact bear-in when a
+                       safe fill existed. Separator: rearmost already home.
+  prime.extend.missed  (board)  Builders were placed to grow the four-prime to
+                       five and went elsewhere. Band-split vs prime.break.5 at
+                       played I_CONTAIN 0.80/0.82; the seam stays uncovered
+                       (statics cannot tell "broke" from "never made" there).
+  enter.fight.point    (board)  Entered splitting into the fight instead of
+                       making the anchor. Family separator: PipCount.opp band
+                       (near-level race ~146).
+  hit.loose.homeboard  (threat) A loose hit in the home board without cover,
+                       return shots invited. Separator: opponent on the bar on
+                       both sides of the pair.
+  contact.break.early  (race)   Broke contact while far behind, when holding
+                       was the game. Family separator: PipCount.opp ~103 plus
+                       the collapsed rear anchor.
+
+One casualty, per the two-tier doctrine: race.bearin.waste -- gnubg's static
+inputs show no stack-vs-distribute signal in a pure race (I_MOBILITY
+identical across the pair). The phrase waits.
+
+The anchor family (surrender.back / enter.fight / contact.break.early) is
+one gnubg static pattern split by pip context; the PipCount.opp bands are
+provisional generator-measured values, to be widened as pair diversity grows.
+

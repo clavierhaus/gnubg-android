@@ -131,5 +131,30 @@ def build_user_prompt(entry_id, principle, category, pair, signature):
         feat.append("- %s (%s): best - played = %+0.3f -- %s"
                     % (t["term"], _side_label(t["side"]), d, meaning))
     sections.append("## gnubg feature deltas (the measured signature)\n" + "\n".join(feat))
+    # Context: the OTHER gnubg inputs that moved. Same tier-1 source, shown so
+    # the draft is grounded in the whole position, not a keyhole (the
+    # documented "retreat" hallucination came from under-context). Threshold
+    # shape after b-t's getNotableThreshold, values ours (normalised inputs).
+    dall = pair.get("deltas_all")
+    if dall:
+        sig_keys = {("PipCount.opp" if t["term"] == "PipCount.opp"
+                     else "%s.%s" % (t["side"], t["term"])) for t in signature["terms"]}
+        ctx = []
+        for key, d in sorted(dall.items(), key=lambda kv: -abs(kv[1])):
+            if key in sig_keys:
+                continue
+            thr = 5.0 if key.startswith("PipCount") else 0.10
+            if abs(d) < thr:
+                continue
+            term = key.split(".", 1)[1] if "." in key and not key.startswith("PipCount") else key
+            side = key.split(".", 1)[0] if not key.startswith("PipCount") else ""
+            meaning = INPUT_MEANING.get(term, "")
+            ctx.append("- %s (%s): best - played = %+0.3f%s"
+                       % (term, _side_label(side) if side in ("me","opp") else "pip count",
+                          d, (" -- " + meaning) if meaning else ""))
+            if len(ctx) >= 8:
+                break
+        if ctx:
+            sections.append("## Other notable gnubg deltas (context, not the target)\n" + "\n".join(ctx))
     sections.append("## Task\nDraft the phrase(s) for this entry per the output format.")
     return "\n\n".join(sections)

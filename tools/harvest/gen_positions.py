@@ -299,6 +299,66 @@ def blitz_point_pairs():
                 {"blot_on": bp, "opp_variant": oi}
 
 
+
+
+# ---------------------------------------------------------------- batch 2
+
+def bearin_shot_pairs():
+    for a in (1, 2):
+        base = ({2: 3, 3: 3, 4: 3, 5: 2, 8: 3} if a == 1
+                else {1: 2, 3: 3, 4: 3, 5: 3, 8: 3})
+    # blot on an empty bear-in point within direct range of the deep anchor
+        for b in (6, 7):
+            me_p = dict(base); me_p[b] = 1
+            me_b = dict(base); me_b[3] += 1
+            opp = {a: 2, 19: 3, 20: 3, 21: 3, 22: 2, 23: 2}
+            yield f"a{a}b{b}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"anchor": a, "blot": b}
+
+
+def prime_extend_pairs():
+    for back in (1, 2):
+        for builders in ((9, 13), (10, 13)):
+            b1, b2 = builders
+            me_p = {4: 2, 5: 2, 6: 3, 7: 2, b1: 2, b2: 4}
+            me_b = {4: 2, 5: 2, 6: 3, 7: 2, 8: 2, b1: 1, b2: 3}
+            opp = {back: 2, 18: 4, 19: 3, 21: 2, 22: 2, 24: 2}
+            yield (f"k{back}b{b1}", board(me=me_p, opp=opp),
+                   board(me=me_b, opp=opp), {"back": back, "builders": builders})
+
+
+def enter_fight_pairs():
+    for a in (21, 22, 23):
+        me_common = {13: 4, 8: 3, 6: 4, 5: 2}
+        me_p = dict(me_common); me_p[24] = 1; me_p[a] = 1
+        me_b = dict(me_common); me_b[a] = 2
+        opp = {4: 2, 12: 3, 17: 2, 18: 3, 19: 3, 20: 2}
+        yield f"a{a}", board(me=me_p, opp=opp), board(me=me_b, opp=opp), {"anchor": a}
+
+
+def loose_hit_pairs():
+    for h in (3, 4):
+        for rear in (24, 23):
+            me_p = {6: 3, 8: 3, 13: 4, rear: 2, 5: 2, h: 1}
+            me_b = {6: 2, 8: 3, 13: 4, rear: 2, 5: 2, h: 2}
+            opp = {1: 2, 18: 4, 19: 3, 20: 3, 21: 2}
+            yield (f"h{h}r{rear}", board(me=me_p, opp=opp, opp_bar=1),
+                   board(me=me_b, opp=opp, opp_bar=1), {"hit": h, "rear": rear})
+
+
+# race.bearin.waste (2026-07-19): DROPPED -- gnubg's static inputs show no
+# signal for stack-vs-distribute in a pure race (I_MOBILITY identical across
+# the pair). Under the two-tier doctrine the phrase waits.
+
+
+def break_early_pairs():
+    base = {20: 2, 13: 4, 8: 3, 6: 4, 5: 2}
+    opp = {12: 2, 17: 3, 18: 3, 19: 3, 21: 2, 22: 2}
+    for r1, r2 in ((16, 14), (16, 15), (15, 14)):
+        me_p = {r1: 1, r2: 1, 13: 4, 8: 3, 6: 4, 5: 2}
+        yield (f"r{r1}-{r2}", board(me=me_p, opp=opp),
+               board(me=base, opp=opp), {"runners": [r1, r2]})
+
+
 GENERATORS = {
     "blitz.point.missed": blitz_point_pairs,
     "timing.hold.crunch": timing_hold_pairs,
@@ -314,6 +374,11 @@ GENERATORS = {
     "race.break.ahead": race_break_pairs,
     "race.escape.window": race_escape_pairs,
     "hit.declined": hit_pairs,
+    "bearoff.shot.left": bearin_shot_pairs,
+    "prime.extend.missed": prime_extend_pairs,
+    "enter.fight.point": enter_fight_pairs,
+    "hit.loose.homeboard": loose_hit_pairs,
+    "contact.break.early": break_early_pairs,
 }
 
 
@@ -336,9 +401,19 @@ def main():
             deltas = verify(sig, pl, be)
             if deltas is None:
                 continue
+            # Tier-1 context in full: every gnubg input's delta, not only the
+            # signature's terms. The prompt shows non-signature movers as
+            # context (b-t's fuller-grounding lesson); gnubg remains the sole
+            # source -- this is more of tier 1, never a second authority.
+            dall = {}
+            for side in ("me", "opp"):
+                for k in pl[side]:
+                    dall["%s.%s" % (side, k)] = round(be[side][k] - pl[side][k], 6)
+            dall["PipCount.me"] = float(be["pips"][0] - pl["pips"][0])
+            dall["PipCount.opp"] = float(be["pips"][1] - pl["pips"][1])
             kept.append({"id": pid, "params": params,
                          "played": played_v, "best": best_v,
-                         "deltas": deltas,
+                         "deltas": deltas, "deltas_all": dall,
                          "pips_played": pl["pips"], "class_played": pl["class"],
                          "class_best": be["class"]})
         doc = {"entry": entry, "provenance": "parametric", "generated": today,
