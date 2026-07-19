@@ -22,6 +22,25 @@ this decision by name and commits to immediately pulling all GFDL-derived
 content from the project should the answer contradict it. Nothing in Phase A
 or B touches manual text, so no work is gated on the reply.
 
+## 0-bis. The two tiers (maintainer doctrine, 2026-07-19)
+
+Tier 1 -- gnubg. Every decision gnubg makes -- evaluations, equities, move
+rankings, skill bands, feature inputs, position classes -- is final. It is
+the bible of this pipeline. Nothing in this tooling, and nothing borrowed
+from any other project, ever overrules, reweights, second-guesses, or runs
+BESIDE it as a parallel authority. There is no alternative to a gnubg
+decision; the word does not apply.
+
+Tier 2 -- the residue. Where gnubg supplies numbers but no words, or where
+a corner case falls through gnubg's decision matrix entirely, further
+decision making may be built on proven models (yairwein/backgammon-teacher
+is the reference). Tier 2 is subordinate by construction: it phrases or
+fills what tier 1 left open and can never contradict tier 1 output. The
+earlier "cross-check" idea (running b-t's extractor beside gnubg) is
+retracted under this doctrine: a cross-check is a second authority.
+
+Where neither tier speaks: silence.
+
 ## 1. What is taken and what is not from yairwein/backgammon-teacher
 
 Verified this session against the actual repo (LICENSE, src/lib/*). MIT
