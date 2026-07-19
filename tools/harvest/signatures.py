@@ -239,6 +239,35 @@ SIGNATURES = {
              "min_abs": 0.15, "weight": 0.5},
         ],
     },
+    # ------------------------------------------------ batch 4 (2026-07-19)
+    "blot.cover.missed": {
+        "terms": [
+            # the anchor's shots at the home blot vanish when covered
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.04, "weight": 1.5},
+            # the point-made quantum: separates from blot.shot.given (its
+            # safety play leaves closure flat). Shooter anchor placed at the
+            # 3-point so board.close.entry's bar-gate (>=0.95) stays shut.
+            {"term": "I_ENTER2", "side": "opp", "direction": "up",
+             "min_abs": 0.15, "weight": 1.5},
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.80, 0.94], "best_in": [0.80, 0.94], "weight": 0.0},
+        ],
+    },
+    "anchor.split.straggler": {
+        "terms": [
+            # the kept 24-anchor vs the collapsed rear (played rearmost = mid)
+            {"term": "I_BACK_ANCHOR", "side": "me", "direction": "up",
+             "min_abs": 0.25, "weight": 1.5},
+            {"term": "I_P1", "side": "opp", "direction": "down",
+             "min_abs": 0.04, "weight": 1.0},
+            # family separator: the DEEP anchor band (0.167) -- surrender
+            # [0.5,0.833] and enter.fight [0.30,0.70] live elsewhere
+            {"term": "I_FORWARD_ANCHOR", "side": "me", "direction": "any",
+             "played_in": [1.0, 2.0], "best_in": [0.10, 0.25], "weight": 0.0},
+        ],
+    },
+
     # ------------------------------------------------ batch 3 (2026-07-19)
     "hit.double.declined": {
         "terms": [

@@ -369,3 +369,21 @@ QA precedent set this batch: proposed scenarios cross-run through
 yairwein/backgammon-teacher's extractor BEFORE building (tier-2 framing
 check; gnubg remains the referee). Banked two calibrations pre-build.
 
+## Batch 4 (proposed with pre-build b-t QA; approved and measured 2026-07-19, matcher 106/106 first pass)
+
+  blot.cover.missed      (board)  The home blot was a builder; covering makes
+                         the point. Fingerprints: ENTER2 quantum (vs
+                         blot.shot.given flat) + shooter anchor at the
+                         3-point keeps board.close.entry's bar-gate shut.
+  anchor.split.straggler (threat) Running one off the anchor: straggler under
+                         fire, shelter gone. Deep-anchor FA band [0.10,0.25]
+                         separates the whole anchor family cleanly.
+
+Waiting-list addition: midpoint.stranded -- the bridge value of the midpoint
+lives in future rolls; b-t sees nothing structural, gnubg's I_BACKBONE runs
+contrary (-0.045) with only whispered MOBILITY/TIMING (+0.08). Third member
+of the future-rolls family. Both probes on record.
+
+First batch to clear the confusion gate with zero amendments: pre-build QA
+plus fingerprint-first signature design.
+
