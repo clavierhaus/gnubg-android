@@ -43,6 +43,8 @@ ENTRY_META = {
     "hit.double.declined": ("When both blots are in reach, hit both.", "threat"),
     "board.crunch.spared": ("Never crunch the board while a spare can carry the roll.", "board"),
     "point.deep.wasted": ("Build the blockade from the front; the deep point can wait.", "board"),
+    "blot.cover.missed": ("A builder wants covering; a covered builder is a point.", "board"),
+    "anchor.split.straggler": ("Keep the anchor whole; a split anchor shelters no one.", "threat"),
     "prime.contain.lost": ("Don't let the trapped checker out for free.", "board"),
     "anchor.surrender.back": ("A back anchor is shelter; don't leave it without a reason.", "board"),
     "anchor.advance.golden": ("The 20-point anchor is worth fighting for.", "board"),

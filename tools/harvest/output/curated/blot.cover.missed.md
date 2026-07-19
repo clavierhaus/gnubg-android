@@ -1,7 +1,8 @@
 # Curated: blot.cover.missed
 Signature (measured; tools/harvest/signatures.py): opp I_P1 down min 0.04 + opp I_ENTER2 up min 0.15 (the point quantum) + shooter-anchor band gate [0.80,0.94] keeping close.entry's bar-gate shut
 Drafts: claude-fable-5 in-session, run 2026-07-19, one draft per verified pair.
-Status of the final phrase: **PROPOSED** -- awaiting maintainer adoption.
+Status of the final phrase: **AUTHORED** -- adopted as written by the
+maintainer (clavierhaus, 2026-07-19, "Finish up").
 
 ## Source cross-check (2026-07-19, assistant-side)
 Principle bedrock (anchor canon per this session's retrieved holding-game and
@@ -11,7 +12,7 @@ Scenario framing cross-verified through backgammon-teacher's extractor BEFORE
 build (documented in CORPUS_ENTRIES_DRAFT batch-4 note). No verbatim overlap
 with retrieved excerpts. gnubg sole authority for position meaning.
 
-## Proposed final phrases (tier: proposed)
+## Proposed final phrases (tier: authored)
 - phrase_flag: The blot on the point was a builder waiting for cover; left alone it is only a target.
 - phrase_praise: Covered -- the builder became a point, and the anchor has nothing to shoot at.
 
