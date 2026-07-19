@@ -250,6 +250,13 @@
       "direction": "up",
       "min_abs": 0.01,
       "weight": 1.0
+     },
+     {
+      "term": "I_ENTER2",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.15,
+      "weight": 0.5
      }
     ]
    },
@@ -309,6 +316,140 @@
    "severity_hint": [
     "bad",
     "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "hit.double.declined",
+   "principle": "When both blots are in reach, hit both.",
+   "phrase_flag": "Both blots were in reach; hitting one leaves the other standing and half the punishment unspent.",
+   "phrase_praise": "Two checkers on the bar -- their next rolls belong to re-entering, not to the game.",
+   "category": "threat",
+   "signature": {
+    "terms": [
+     {
+      "term": "PipCount.opp",
+      "side": "",
+      "direction": "up",
+      "min_abs": 10.0,
+      "weight": 1.5
+     },
+     {
+      "term": "I_ENTER",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.03,
+      "weight": 1.0
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.95,
+       1.0
+      ],
+      "best_in": [
+       0.95,
+       1.0
+      ],
+      "weight": 1.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad",
+    "very bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "board.crunch.spared",
+   "principle": "Never crunch the board while a spare can carry the roll.",
+   "phrase_flag": "The board crunched onto dead points while a spare was free to carry the roll.",
+   "phrase_praise": "The spare took the roll and the home board stands connected.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_ENTER",
+      "side": "opp",
+      "direction": "up",
+      "min_abs": 0.05,
+      "weight": 2.0
+     },
+     {
+      "term": "I_ENTER2",
+      "side": "opp",
+      "direction": "any",
+      "max_abs": 0.05,
+      "weight": 0.5
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.95,
+       1.0
+      ],
+      "best_in": [
+       0.95,
+       1.0
+      ],
+      "weight": 0.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
+   ],
+   "tier": "authored"
+  },
+  {
+   "id": "point.deep.wasted",
+   "principle": "Build the blockade from the front; the deep point can wait.",
+   "phrase_flag": "The deep point is a dead point this early; the blockade wanted building from the front.",
+   "phrase_praise": "The front point extends the block -- the trapped checkers feel it at once.",
+   "category": "board",
+   "signature": {
+    "terms": [
+     {
+      "term": "I_CONTAIN",
+      "side": "me",
+      "direction": "up",
+      "min_abs": 0.05,
+      "weight": 1.5,
+      "played_in": [
+       0.45,
+       0.62
+      ],
+      "best_in": [
+       0.65,
+       0.85
+      ]
+     },
+     {
+      "term": "I_TIMING",
+      "side": "me",
+      "direction": "any",
+      "played_in": [
+       0.0,
+       0.4
+      ],
+      "best_in": [
+       0.0,
+       1.0
+      ],
+      "weight": 0.0
+     }
+    ]
+   },
+   "severity_hint": [
+    "doubtful",
+    "bad"
    ],
    "tier": "authored"
   },
