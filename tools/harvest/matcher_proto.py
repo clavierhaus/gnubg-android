@@ -25,6 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from harvest import ENTRY_META
 from signatures import SIGNATURES
 
 REPO = Path(__file__).resolve().parents[2]
@@ -119,7 +120,17 @@ def main():
             scores = sorted(((score(s, None, pl, be), len(s["terms"]), e)
                              for e, s in sigs.items()), reverse=True)
             scores = [(sc, e) for sc, _n, e in scores]
-            firing = [(sc, e) for sc, e in scores if sc > 0.0][:MAX_FIRE]
+            # Envelope law (one line per category, corpus discipline): the
+            # strongest entry per category survives, then the top MAX_FIRE.
+            # Field defect 2026-07-20 00:09: two "threat" lines stacked.
+            best_cat = {}
+            for sc, e in scores:
+                if sc <= 0.0:
+                    continue
+                cat = ENTRY_META[e][1] if e in ENTRY_META else "?"
+                if cat not in best_cat or sc > best_cat[cat][0]:
+                    best_cat[cat] = (sc, e)
+            firing = sorted(best_cat.values(), reverse=True)[:MAX_FIRE]
             for _, e in firing:
                 confusion[own][e] += 1
             if not firing:
