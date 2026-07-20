@@ -26,8 +26,9 @@ unless you're tracing why something is the way it is.
 - `VERBOSE_COACHING_DESIGN.md` — the canonical, complete design of verbose
   coaching mode: the epistemic-honesty threshold, every discarded approach
   with its reason, the three explanatory layers, amendment 2's comparative
-  rules, and the reproducible evidence-corpus method. Read this first before
-  touching coach mode.
+  rules, the reproducible evidence-corpus method, and the honesty curve (the
+  corpus as a verbosity-calibration instrument, not just a rule factory).
+  Read this first before touching coach mode.
 - `INSIGHT_JOURNEY_AND_ARCHITECTURE.md` — the shorter journey narrative and
   the runtime map; a companion to the design doc above.
 - `INPUT_DICTIONARY.md` — the measured meaning and side of each gnubg neural
