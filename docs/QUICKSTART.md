@@ -102,26 +102,43 @@ Then you play. After each of your moves, gnubg judges it and the game pauses so
 you can study the verdict — **GNU waits for you**. You'll see one of three
 honest verdicts:
 
+## The right-hand panel — reading the Coach's verdict
+
+Everything the Coach tells you appears on the **right-hand side of the board**,
+and it rewards a moment's explanation because its most useful feature is not
+obvious at first glance.
+
+At the top is the **verdict** on the move you just played — one of three honest
+outcomes:
+
 - **The best move** — you found gnubg's top choice.
 - **Fine, Nth of M** — a reasonable move, with what would have been better.
 - **A flagged move** — gnubg's severity (doubtful, bad, very bad) and the exact
   equity it cost.
 
-**Study the alternatives — the two-tap toggle.** Below the verdict is a fixed
-list of gnubg's top five moves for the position, ranked best-first. Your own
-move is marked **P** in red **in its place in the ranking** — so if you played
-the fourth-best move, P sits at the fourth row, not the top. Each row shows how
-much it gains or loses against your move. Tap any one of them:
+Below the verdict is a **list of five rows**: gnubg's top five moves for this
+position, ranked best-first, with your own move marked **P** in red **in its
+place in the ranking** — so if you played the fourth-best move, P sits at the
+fourth row, not the top. Each row shows how much that move gains or loses
+against yours.
 
-- **First tap** shows the **decision point** — the position before the move,
-  with the dice, no arrows. This is the same starting picture for every entry
-  in the list, so you're always comparing like with like.
-- **Second tap** shows the **result** of that move — where the checkers end up,
-  with **green arrows** pointing to the destinations they occupy.
-- **Tap again** to flip back.
+**Here is the part people miss: those five rows are buttons.** They look like a
+read-out, but each one is tappable, and tapping is how you *see* the difference
+on the board rather than just read the notation. This is the Coach's real
+teaching tool, and it's worth learning the two-tap rhythm:
 
-So you can hold your move and gnubg's best move against the identical starting
-position and see, arrow by arrow, how they differ.
+- **First tap on a row** shows that move's **decision point** — the position
+  *before* the move, with the dice, no arrows. Crucially this is the *same*
+  starting picture for every row, so you're always comparing like with like.
+- **Second tap on the same row** shows the **result** — where those checkers
+  end up, with **green arrows** pointing to each destination.
+- **Tap once more** to flip back to the decision point.
+
+So the way to actually compare is: tap **P** twice to watch your own move play
+out in green arrows, then tap **row 1** twice to watch gnubg's best move play
+out from the identical start. Arrow by arrow, you see exactly how the best play
+differs from yours. Until you tap, nothing on the board moves — the rows are an
+invitation, and most of the Coach's value is behind them.
 
 **Continue** by tapping **GNU's turn** — the button on the board's left half,
 the mirror of your Roll. Only then does gnubg receive your move and reply. The
