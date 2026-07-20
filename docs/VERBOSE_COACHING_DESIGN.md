@@ -348,6 +348,59 @@ measurement output. This is the GPL-clean, reproducible-noise corpus the
 methodology requires.
 
 
+### 5.4 Sampling method and first measured curves
+
+The quorum predicate for a candidate set is: does exactly one of the fixed
+top-five candidates differ from the rest on a given structural axis? That is
+the checkable claim ("yours alone leaves a blot", "every play but one breaks
+contact"). The yield of a predicate, per severity band, is the fraction of
+candidate sets in which it holds -- the honesty curve for that predicate.
+
+Severity is the equity gap between the best and second-best candidate: a proxy
+for how much a plausible error costs at this position, and therefore the axis
+along which the epistemic-honesty threshold is expected to appear.
+
+Sampling runs deterministic self-play across several noise levels. Noise
+perturbs only WHICH positions self-play visits (deterministic per board, so
+reproducible from source per section 5.2); candidate measurement always runs
+at clean 0-ply, so equities and severity bands stay authoritative. At each
+position all 21 distinct rolls are enumerated, for density.
+
+First measured curves, over 3750 candidate-sets (four noise configs from the
+standard opening), yield rising left-to-right with severity where a real
+explanatory axis exists:
+
+    predicate         0.00-0.02  0.02-0.06  0.06-0.12   0.12+
+    on.bar               4.5%       8.7%      11.2%     16.5%   rule candidate
+    blot.opp.home        2.6%       5.8%       8.0%      8.0%   rule candidate
+    contact.kept         1.5%       2.0%       2.0%      2.9%   rejected
+    anchor.held          0.0%       0.0%       0.0%      0.0%   dead axis
+    home.board.4pt       0.0%       0.0%       0.0%      0.0%   dead axis
+
+The reading, which is the method working as intended:
+- on.bar rises steeply and holds high yield at blunder severity: a robust
+  rule candidate.
+- blot.opp.home rises then plateaus at serious severity -- a rule candidate,
+  with the plateau recorded honestly rather than smoothed away.
+- contact.kept fires but does not track severity: it would speak equally on
+  trivial and serious decisions, violating the honesty threshold, so it is
+  rejected. A predicate that fires is not thereby a rule.
+- anchor.held and home.board.4pt fire zero times across all 3750 sets: dead
+  quorum axes (the property is true of all candidates or none, so never of
+  exactly one). Measured over multiple lines, this is genuine deadness, not
+  undersampling.
+
+Three of five predicates ruled out by measurement, none by opinion. This is
+the honesty curve distinguishing rule candidates from dead axes from honesty-
+violating axes -- the discipline section 6 describes, exercised.
+
+Two limits are on the record. The configs vary the line through noise but all
+start from the standard opening; a real opening-move bank is the remaining
+sampling breadth. And these curves measure yield alone; adoption additionally
+requires the reference-authority agreement of section 4.3, not yet measured.
+No predicate is adopted on these numbers.
+
+
 ## 6. The corpus as a verbosity-calibration instrument
 
 The pipeline of section 5 is usually described as a factory for quorum rules.
@@ -476,11 +529,29 @@ honest analysis tool; the paid edition adds the words.
 - Narrator tier: 11 rules, phases A-D complete and device-verified. It speaks
   on an uncatalogued flagged move, stays silent when the corpus fires, and
   shows nothing on an unflagged move -- all confirmed on device.
-- Amendment 2: phase A' complete (QUORUMPROBE instrument live and, since the
-  stale-native-build fix, producing clean data; rules and phrase bank drafted
-  at tier proposed). Blocked at B' (maintainer adoption) pending the
-  reproducible evidence corpus of section 5, which supersedes the biased
-  play-session method. C' (bake + composer) and D' (device verification) not
-  started.
-- The reproducible harness of section 5 is designed (this document) and not
-  yet built.
+- Amendment 2, phase A': complete. The reproducible harness of section 5 is
+  BUILT (tools/narrator/quorum/), not merely designed:
+  - Step 1 (candidate generation): quorum_harness.c compiles this repo's
+    eval.c + the real neural net and calls FindnSaveBestMoves host-side.
+    Verified against gnubg's known best (opening 3-1 -> 8/5 6/5 at -0.071).
+  - Steps 2-3 (self-play + yield): yield_harness.c walks deterministic
+    self-play, enumerates all 21 rolls per position for density, and measures
+    the honesty curve -- yield per severity band per quorum predicate -- over
+    multiple deterministic-noise configs (section 5.4).
+- First measured honesty curves (section 5.4) already discriminate: of five
+  drafted quorum predicates, TWO are rule candidates whose yield rises with
+  severity (on.bar, blot.opp.home) and THREE are ruled out by measurement
+  (contact.kept: no severity trend; anchor.held and home.board.4pt: dead
+  axes, fired zero across 3750 candidate-sets). No maintainer guess made the
+  cut -- the curve did.
+- Blocked at B' (adoption by reference-authority agreement, section 4.3)
+  pending two remaining pieces of the evidence, both bounded additions to the
+  working harness:
+  1. The authority layer: each surviving predicate's agreement rate measured
+     at the verdict's 0-ply vs a higher reference ply -- the number the
+     pre-registered adoption threshold tests against.
+  2. Full sampling breadth: a real opening-move bank (current configs vary the
+     line via noise but all start from the standard opening).
+- C' (bake + Kotlin composer) and D' (device verification) not started; they
+  cannot start until B' adopts, because there is nothing to bake or compose
+  until the evidence licenses which predicates clear threshold.
