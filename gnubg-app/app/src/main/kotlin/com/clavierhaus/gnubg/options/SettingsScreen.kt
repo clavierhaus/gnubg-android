@@ -42,7 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.clavierhaus.gnubg.Engine
 
-enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, LICENSE }
+enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, ABOUT, LICENSE }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
@@ -100,6 +100,7 @@ fun SettingsScreen(
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
                     SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
                     SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
+                    SettingsTab.ABOUT -> AboutSettingsTab()
                     SettingsTab.LICENSE -> LicenseSettingsTab()
                 }
             }
@@ -159,6 +160,7 @@ private fun SettingsTabs(
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.ENGINE -> "Engine"
                 SettingsTab.ANALYSIS -> "Analysis"
+                SettingsTab.ABOUT -> "About"
                 SettingsTab.LICENSE -> "License"
             }
 
@@ -340,8 +342,6 @@ private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) 
 
 @Composable
 private fun LicenseSettingsTab() {
-    AboutLicenseSection()
-
     val context = LocalContext.current
     val pal = LocalBoardPalette.current
     // The complete license text, verbatim from COPYING, bundled as an asset.
@@ -363,24 +363,18 @@ private fun LicenseSettingsTab() {
 }
 
 @Composable
-private fun AboutLicenseSection() {
+private fun AboutSettingsTab() {
     val pal = LocalBoardPalette.current
-    SettingsSection("About & License") {
+    SettingsSection("About") {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
             Text("CBG -- Clavierhaus Backgammon", color = pal.uiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Text("Powered by GNU Backgammon -- a modified derivative of the GNU Backgammon engine.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("This program is free software, licensed under the GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).", color = pal.uiTextSecondary, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("It comes with ABSOLUTELY NO WARRANTY. You may redistribute it under the conditions of the GPL. You have the right to the complete corresponding source code.", color = pal.uiTextSecondary, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(8.dp))
             Text("GNU Backgammon is Copyright (C) the Free Software Foundation, Inc. and the GNU Backgammon AUTHORS. The Android port is Copyright (C) 2025-2026 clavierhaus.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Source, full license (COPYING), attribution (NOTICE), modifications (PROVENANCE.md), and trademark policy (TRADEMARKS.md):", color = pal.uiTextSecondary, fontSize = 13.sp)
+            Text("Source, attribution (NOTICE), modifications (PROVENANCE.md), and trademark policy (TRADEMARKS.md). Full license in the License tab.", color = pal.uiTextSecondary, fontSize = 13.sp)
             Text("https://github.com/clavierhaus/gnubg-android", color = pal.uiTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = pal.uiTextSecondary, fontSize = 12.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 "Build ${com.clavierhaus.gnubg.BuildConfig.VERSION_NAME} (${com.clavierhaus.gnubg.BuildConfig.VERSION_CODE}) \u00b7 " +
                     "${com.clavierhaus.gnubg.BuildConfig.GIT_COMMIT} \u00b7 " +
