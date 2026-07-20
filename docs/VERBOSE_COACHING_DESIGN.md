@@ -401,23 +401,54 @@ stronger, blot.opp.home's plateau removed, contact.kept weaker), which is why
 representativeness is a correctness concern and not a formality -- it sharpened
 the truth.
 
-Reference-authority agreement (section 4.3), measured at 2-ply over the bank
-(subsampled for tractability -- 2-ply is ~56x the 0-ply cost, and the
-agreement rate converges on ~1500 fires):
+### 5.5 The null baseline, and a negative result
 
-    predicate         0-ply fires   authority-confirmed   agreement
-    blot.opp.home         555              517             93.2%
-    on.bar                953              855             89.7%
+A yield curve that rises with severity identifies a rule CANDIDATE, but not a
+valid rule. To test validity without maintainer bias, a NULL baseline was
+introduced: structure-free predicates with no backgammon meaning (parity of
+checkers on odd points; "point 13 occupied"), run through the identical test.
+A real predicate must beat the null; if it does not, the metric or the
+predicate is worthless. The null was decisive, twice.
 
-Both surviving candidates are depth-robust: when 0-ply says the axis isolates
-exactly one candidate, the 2-ply authority agrees about nine times in ten.
-The adoption evidence table (yield-by-severity plus authority-agreement) now
-exists for each surviving predicate.
+First, an agreement metric was tried -- "when the quorum fires at 0-ply, does
+the same predicate still fire at a higher authority ply?" The real predicates
+scored 89.7% (on.bar) and 93.2% (blot.opp.home) -- but NULL.parity scored
+91.2%, between them. The metric only measured candidate-set stability under
+depth (the top-five barely changes between plies for any predicate), not
+explanatory validity. It was discarded.
 
-Still evidence, not adoption. Under section 4.3 adoption requires the
-maintainer's threshold, PRE-REGISTERED before these numbers are read, applied
-mechanically -- the data then selects the survivors, no hand-picking. No
-predicate is adopted on these numbers by the act of measuring them.
+The corrected metric measures equity ALIGNMENT: when a predicate isolates one
+candidate, is that candidate systematically the best or the worst at the
+authority ply? A genuine explanatory axis skews (the isolated move is reliably
+the error, or reliably the fix); a meaningless axis lands the isolated
+candidate uniformly across ranks (mean rank fraction ~0.5). Measured at 2-ply:
+
+    predicate         fires   mean-rank   alignment
+    on.bar             906      0.46         8.4%
+    blot.opp.home      531      0.46         3.8%
+    NULL.parity        687      0.44        10.9%   (higher than both)
+
+The result is negative and is recorded as such. The candidate that on.bar or
+blot.opp.home singles out is not the one gnubg's equity systematically rewards
+or punishes -- its mean rank is essentially central, and the null predicate is
+at least as aligned. The severity-rising yield was real but measured the wrong
+thing: hard positions simply contain more on-bar and blot events, not that the
+on-bar or blot move is the mistake.
+
+Honest conclusion: none of the five drafted quorum predicates has demonstrated
+explanatory validity under a metric a null predicate cannot fake. No predicate
+is adopted. This is the method being allowed to return a negative result --
+the property that separates it from the field's recurring overselling. The
+instrument works; these particular predicates do not, and saying so plainly is
+the point.
+
+What this leaves open, honestly: the quorum FORM may still be sound with
+better predicates (ones defined to isolate the equity-relevant candidate by
+construction, rather than a structural feature that happens to correlate
+weakly), or the two-board pairwise narrator may simply be the honest ceiling
+for comparative explanation. Which of these is true is the next question the
+instrument is positioned to answer -- and it will answer it against the null,
+not against hope.
 
 
 ## 6. The corpus as a verbosity-calibration instrument
@@ -557,20 +588,19 @@ honest analysis tool; the paid edition adds the words.
     self-play, enumerates all 21 rolls per position for density, and measures
     the honesty curve -- yield per severity band per quorum predicate -- over
     multiple deterministic-noise configs (section 5.4).
-- First measured honesty curves (section 5.4) already discriminate: of five
-  drafted quorum predicates, TWO are rule candidates whose yield rises with
-  severity (on.bar, blot.opp.home) and THREE are ruled out by measurement
-  (contact.kept: no severity trend; anchor.held and home.board.4pt: dead
-  axes, fired zero across 3750 candidate-sets). No maintainer guess made the
-  cut -- the curve did.
-- Blocked at B' (adoption by reference-authority agreement, section 4.3)
-  pending two remaining pieces of the evidence, both bounded additions to the
-  working harness:
-  1. The authority layer: each surviving predicate's agreement rate measured
-     at the verdict's 0-ply vs a higher reference ply -- the number the
-     pre-registered adoption threshold tests against.
-  2. Full sampling breadth: a real opening-move bank (current configs vary the
-     line via noise but all start from the standard opening).
-- C' (bake + Kotlin composer) and D' (device verification) not started; they
-  cannot start until B' adopts, because there is nothing to bake or compose
-  until the evidence licenses which predicates clear threshold.
+- Honesty curves (section 5.4) discriminated on yield, then a NULL baseline
+  (section 5.5) overturned the positive reading: under an equity-alignment
+  metric a null predicate cannot fake, NONE of the five drafted predicates
+  shows explanatory validity (the isolated candidate is not systematically the
+  equity error; NULL.parity is at least as aligned). The method returned a
+  negative result and it is recorded as such.
+- B' (adoption) reached and returned EMPTY: no predicate cleared, because none
+  showed equity alignment above the null. The opening bank (engine-derived,
+  license-clean) and the authority layer are both built; they produced a
+  negative verdict, which is a valid outcome of the pipeline, not a gap in it.
+- Next question (section 5.5): whether the quorum FORM survives with predicates
+  defined to isolate the equity-relevant candidate by construction, or whether
+  the pairwise narrator is the honest ceiling for comparative explanation. The
+  instrument (yield + null-tested alignment) is positioned to answer it.
+- C' (bake + composer) and D' (device verification) not reached; there is
+  nothing to bake, and honestly may not be, for the quorum tier.
