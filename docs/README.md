@@ -23,10 +23,13 @@ unless you're tracing why something is the way it is.
   undo snapshots, the cube path, the terminal-state (GAME_OVER) latch.
 - `THREADING.md` / `MULTICORE_ANALYSIS.md` — the single engine thread, the
   projection contract, parallel analysis.
-- `INSIGHT_JOURNEY_AND_ARCHITECTURE.md` — the coach "Why" system end to end:
-  the two-tier doctrine, what was taken from and rejected of
-  backgammon-teacher, the corpus/narrator design, and the build-coherence
-  lesson. Read this before touching coach mode.
+- `VERBOSE_COACHING_DESIGN.md` — the canonical, complete design of verbose
+  coaching mode: the epistemic-honesty threshold, every discarded approach
+  with its reason, the three explanatory layers, amendment 2's comparative
+  rules, and the reproducible evidence-corpus method. Read this first before
+  touching coach mode.
+- `INSIGHT_JOURNEY_AND_ARCHITECTURE.md` — the shorter journey narrative and
+  the runtime map; a companion to the design doc above.
 - `INPUT_DICTIONARY.md` — the measured meaning and side of each gnubg neural
   input (I_*). The reference for any signature or delta work.
 - `ARCHITECTURE_ANALYSE_MODE.md` — the Analyse-mode design.
