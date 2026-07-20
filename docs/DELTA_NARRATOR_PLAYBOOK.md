@@ -82,3 +82,31 @@ Field misfires are amended by the phase-A process in miniature: reproduce,
 measure on the harness, adjust the rule, re-run proto + cross-check,
 maintainer re-adopts changed wording. Hot-patching thresholds from theory
 is forbidden.
+
+## 4. Amendment 2 (2026-07-20, maintainer decision): comparative rules v1
+
+Scope: the narrator gains QUORUM predicates evaluated over the FIXED top-K
+candidate list (K = COACH_K = 5) that the verdict already packs -- claims
+quantified over a closed, on-screen set ("every better play...", "yours is
+the only one that...", "all five candidates..."). Such claims are checkable
+by the player against the visible rows, which is the strongest grounding
+the narrator can offer.
+
+Additions to the laws' application:
+- L1 extended: a comparative sentence must be derivable from the candidate
+  boards' gnubg values alone; the quantifier must be literally true over
+  the packed set (never "most", never "usually").
+- L4 extended -- THE PHRASE BANK: natural-language material lives in a
+  seeded, LIMITED, maintainer-adopted store (a baked JSON blob, versioned
+  and tiered exactly like the rules; a database adds machinery without
+  benefit at this size and is rejected). The composer may only emit
+  sentences assembled from adopted bank entries. No free text in code.
+- L5 applied: quorum thresholds and rule triggers are measured on DEVICE
+  (QUORUMPROBE logging over real play), because bench pairs carry only two
+  boards; the field is the instrument for candidate-set statistics. No
+  quorum rule ships before its probe evidence is reviewed.
+
+Phase order for this amendment: A' probe instrumentation + drafts (bank,
+rules, proto) -> B' maintainer adoption -> C' bake + Kotlin composer ->
+D' device verification. Identical discipline, new instrument.
+

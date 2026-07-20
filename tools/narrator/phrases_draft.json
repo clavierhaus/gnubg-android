@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "tier": "proposed",
+  "note": "The LIMITED natural-language seed for the comparative composer. Subjects name gnubg inputs in plain words (INPUT_DICTIONARY meanings); frames quantify over the fixed candidate list. The composer assembles sentence = frame(subject phrases); nothing outside this bank can be said.",
+  "subjects": {
+    "opp.I_P1":        {"noun": "their shots at you",        "better": "cuts them",          "worse": "leaves them standing"},
+    "opp.I_ENTER":     {"noun": "their entry from the bar",  "better": "makes it costlier",  "worse": "leaves it cheap"},
+    "opp.I_ENTER2":    {"noun": "your home board",           "better": "closes another point", "worse": "leaves it open"},
+    "me.I_CONTAIN":    {"noun": "the blockade",              "better": "tightens it",        "worse": "loosens it"},
+    "me.I_BACK_ANCHOR":{"noun": "your rear point",           "better": "keeps it made",      "worse": "gives it up"},
+    "me.I_FORWARD_ANCHOR":{"noun": "an anchor in their board","better": "holds one",         "worse": "stands without one"},
+    "me.I_BREAK_CONTACT":{"noun": "contact",                 "better": "keeps it",           "worse": "breaks away"},
+    "PipCount.opp":    {"noun": "their pip count",           "better": "sends more back",    "worse": "lets them keep it"}
+  },
+  "frames": {
+    "all_better":   "Every better play here {better_verb}; yours {worse_verb}.",
+    "only_played":  "Of these five, only your move {worse_verb} -- the rest {better_verb}.",
+    "best_alone":   "The best play alone {better_verb}; every other candidate, yours included, {worse_verb}.",
+    "all_shown":    "All five candidates {shared_verb} -- the better ones pay for it elsewhere."
+  }
+}
