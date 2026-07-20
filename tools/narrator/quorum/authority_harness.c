@@ -70,13 +70,24 @@ int main(int argc, char **argv){
     TanBoard open; memset(open,0,sizeof(open));
     int od[26]={0,-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0};
     for(int i=0;i<24;i++){int v=od[i+1]; if(v>0)open[0][i]=v; else if(v<0)open[1][23-i]=-v;}
-    float noises[]={0.0f,0.020f,0.040f}; int NN=3;
+
+    /* opening bank: 15 rolls x gnubg top-3 replies -- engine-derived, license-clean */
+    int opens[15][2]={{6,5},{6,4},{6,3},{6,2},{6,1},{5,4},{5,3},{5,2},{5,1},{4,3},{4,2},{4,1},{3,2},{3,1},{2,1}};
+    const int TOPN=1; TanBoard bank[15*TOPN]; int nbank=0;  /* top-1 reply: 15 lines, enough for a converging agreement rate at 2-ply */
+    for(int o=0;o<15;o++){
+        movelist ml;
+        if(FindnSaveBestMoves(&ml,opens[o][0],opens[o][1],(ConstTanBoard)open,NULL,TRUE,0.0f,&ci,&ec0,aamf)<0) continue;
+        int k=ml.cMoves<TOPN?ml.cMoves:TOPN;
+        for(int i=0;i<k;i++){ TanBoard nb; memcpy(nb,open,sizeof(TanBoard)); ApplyMove(nb,ml.amMoves[i].anMove,FALSE); SwapSides(nb); memcpy(bank[nbank++],nb,sizeof(TanBoard)); }
+    }
+    float noises[]={0.0f}; int NN=1;  /* agreement is depth-robustness, not line-diversity; one clean config */
 
     long fired0[NPRED]={0}, confirmed[NPRED]={0};
 
+    for(int linen=0; linen<nbank; linen++)
     for(int n=0;n<NN;n++){
         evalcontext ecPlay = { .fCubeful=FALSE,.nPlies=0,.fUsePrune=FALSE,.fDeterministic=TRUE,.rNoise=noises[n] };
-        TanBoard b; memcpy(b,open,sizeof(TanBoard));
+        TanBoard b; memcpy(b,bank[linen],sizeof(TanBoard));
         for(int h=0;h<hm;h++){
             for(int d0=1;d0<=6;d0++) for(int d1=d0;d1<=6;d1++){
                 movelist ml0;
@@ -99,7 +110,7 @@ int main(int argc, char **argv){
         }
     }
 
-    printf("# reference-authority agreement: authority=%d-ply, %d noise configs x %d halfmoves\n", auth, NN, hm);
+    printf("# reference-authority agreement: authority=%d-ply, %d opening lines x %d noise configs x %d halfmoves\n", auth, nbank, NN, hm);
     printf("# agreement = P(quorum fires at authority ply | fires at 0-ply) -- is the claim depth-robust?\n");
     printf("%-16s %10s %12s %10s\n","predicate","0ply_fires","auth_conf","agreement");
     for(int p=0;p<NPRED;p++){
