@@ -111,13 +111,27 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
     // ABOVE the played move are its better alternatives. Up to three.
     val eqPlayed = Float.fromBits(v[2])
     val k = v[85].coerceIn(0, 5)
+    val playedRank = v[0]
+    // Exactly five rows, always, including the player's move (maintainer:
+    // consistent screen estate). If the played move is among the top five it
+    // is marked P in its own rank slot. If it ranks OUTSIDE the top five, the
+    // fifth-best candidate is dropped and the player's move takes the fifth
+    // row -- so the reader always sees the four strongest plays plus their own,
+    // never a sixth appended row.
+    val playedInTop = playedRank < k
+    val slots = if (playedInTop) k else maxOf(minOf(k, 5) - 1, 0)   // leave room for P, never negative
     val alts = buildList {
-        for (i in 0 until k) {
+        for (i in 0 until slots) {
             val base = 86 + i * 16
             val mv = IntArray(8) { j -> v[base + j] }
             val eq = Float.fromBits(v[base + 8])
             add(CoachAlt(mv, Engine.formatMove(preBoard, mv), eq - eqPlayed,
-                         rank = i, isPlayed = (i == v[0])))
+                         rank = i, isPlayed = (i == playedRank)))
+        }
+        if (!playedInTop) {
+            // The player's move takes the fifth row, with its true rank.
+            add(CoachAlt(played, Engine.formatMove(preBoard, played),
+                0f, rank = playedRank, isPlayed = true))
         }
     }
     return CoachGlance(
@@ -269,7 +283,6 @@ fun CoachScreen(
     }
     val selectedMove = glance?.let { g ->
         when {
-            selectedAlt == -2 -> g.playedMove          // appended P row
             selectedAlt in g.alts.indices -> g.alts[selectedAlt].anMove
             else -> null
         }
@@ -544,22 +557,6 @@ private fun MoveList(
                 if (alt.isPlayed) alt.notation
                 else "${alt.notation}  ${"%+.3f".format(alt.gain)}",
                 color = if (selectedAlt == i) Color.White else pal.uiTextSecondary,
-                fontSize = 12.sp
-            )
-        }
-    }
-    if (glance.alts.none { it.isPlayed }) {
-        Spacer(modifier = Modifier.height(3.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IdentChip(
-                label = "P",
-                color = if (selectedAlt == -2) pal.uiActionNegative
-                        else pal.uiActionNegative.copy(alpha = 0.45f)
-            ) { onSelectAlt(-2) }
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                glance.playedNotation,
-                color = if (selectedAlt == -2) Color.White else pal.uiTextSecondary,
                 fontSize = 12.sp
             )
         }
