@@ -345,7 +345,97 @@ measurement output. This is the GPL-clean, reproducible-noise corpus the
 methodology requires.
 
 
-## 6. Runtime architecture (one judged move)
+## 6. The corpus as a verbosity-calibration instrument
+
+The pipeline of section 5 is usually described as a factory for quorum rules.
+That undersells it. Run across a large, representative, reproducible corpus,
+the same measurement produces something more fundamental than a rule list: an
+empirical map of *where honest explanation is possible at all*. The rules are
+a byproduct; the map is the result.
+
+### 6.1 The honesty curve
+
+For every position in the corpus we can ask, at each blunder-severity band and
+for each position class: does a checkable statement exist -- one confirmed by
+the higher-authority gnubg evaluation (section 5, Step 4) -- and if so, of
+what kind? Aggregated, this yields a **measured curve**: the fraction of
+positions, per class and severity, that admit a truthful verbal explanation.
+
+This is the empirical form of the epistemic-honesty threshold that the rest of
+this document asserts philosophically ("explain blunders, stay silent at the
+0.00x scale"). The corpus turns the assertion into a measurement. We stop
+claiming where explanation is possible and start showing it.
+
+### 6.2 What the curve is for
+
+Three uses, each of which sharpens verbosity in a way a rule list cannot:
+
+- **It distinguishes honest silence from a coverage hole.** Today, a blank
+  Why on a flagged move is ambiguous: nothing true to say, or a rule not yet
+  written? The curve resolves it. If a position class yields a confirmed
+  statement in most of its positions and we are silent, that is a hole worth
+  filling. If it yields one rarely, silence is correct and authoring more
+  rules would only manufacture the hallucinations the whole design exists to
+  avoid. **The curve tells us when to stop writing rules** -- a discipline
+  otherwise supplied by gut.
+
+- **It makes verbosity a calibrated setting, not a taste.** The Plus feature
+  was always "insight/verbosity coaching", but verbosity has been treated as
+  binary (speak / silent). The curve lets verbosity mean a *threshold on the
+  honesty curve*: a terse coach speaks only where authority agreement is near
+  total; a fuller coach speaks wherever a statement is confirmed more often
+  than not. The user-facing control then does not mean "how much text" -- it
+  means **how certain the coach must be before it tells you why**. That is a
+  defensible, measured meaning for a verbosity control, and it falls directly
+  out of the reference-authority agreement metric of Step 4.
+
+- **It separates rule gaps from vocabulary gaps.** The race/bearoff family
+  dies on measured silence (section 2.4) because gnubg's static I_* inputs do
+  not carry the distinction. The curve makes this systematic: rank position
+  classes by honest-statement yield, and the low-yield classes are not rule
+  gaps but *vocabulary* gaps -- places the engine's own static inputs are
+  blind. That is a research finding about the engine's expressiveness, and it
+  says precisely where a future signal (a history-aware feature, a rollout-
+  derived quantity) would buy new honest speech and where it would not.
+
+### 6.3 Why this matters beyond the app
+
+The "why do bots play this way, in words" problem is roughly twenty-five years
+old and has no accepted solution. It also has no published, systematic design
+that resists overselling -- the field's recurring failure mode is the
+confident promise ("the solution is coming very soon") that cannot show its
+own limits. A method whose central artifact is a map of *where it stays
+silent* is the structural opposite of that promise. It does not claim to
+explain every move; it measures, and discloses, exactly how much it can
+honestly explain, and refuses the rest.
+
+This is deliberately not a claim to have solved the problem. It is a claim to
+have a reproducible, disclosable, non-hallucinating design that iterates
+toward a passable partial solution and documents its own boundary. That
+distinction -- iterating honestly toward "passable" versus announcing
+"solved" -- is the entire posture of this project, and it is what someone who
+looks past the marketing will find here.
+
+### 6.4 Consequence for Step 3
+
+Because the honesty curve, not the rule list, is the real output, the
+measurement stage (section 5.3, Step 3) must emit more than quorum-predicate
+agreement. It must also emit, per position class and per severity band, the
+yield statistics the curve is built from: how many positions admit a
+confirmed statement, of which kinds, and how many admit none. This is a small
+addition specified now and an expensive one to retrofit later, so it is part
+of Step 3 from the outset.
+
+A standing caution governs all of the above: the curve is only as trustworthy
+as the corpus is representative. Determinism (section 5.2) buys
+reproducibility, not representativeness. A biased sampling distribution yields
+a biased honesty curve and would calibrate verbosity to a distorted map.
+Getting the sampling right -- game phases and noise levels spanning real skill
+-- is prerequisite to reading any calibration conclusion from the corpus, and
+is treated as a first-class correctness concern, not a tuning detail.
+
+
+## 7. Runtime architecture (one judged move)
 
 When the player commits a move in coaching mode:
 1. gnubg evaluates and ranks; the verdict packs the played move's rank, the
@@ -363,7 +453,7 @@ When the player commits a move in coaching mode:
 Silence at step 5 is correct behaviour, not a gap.
 
 
-## 7. The FOSS / Plus boundary
+## 8. The FOSS / Plus boundary
 
 FOSS ships: the engine, the coach verdict (rank, equity cost, classification),
 the fixed five-candidate list with the before/after board toggle, and all of
@@ -377,7 +467,7 @@ The boundary is content, not capability: the free edition is a complete,
 honest analysis tool; the paid edition adds the words.
 
 
-## 8. Status and open items (2026-07-20)
+## 9. Status and open items (2026-07-20)
 
 - Corpus tier: 24 entries, device-verified, live in Plus.
 - Narrator tier: 11 rules, phases A-D complete and device-verified. It speaks
