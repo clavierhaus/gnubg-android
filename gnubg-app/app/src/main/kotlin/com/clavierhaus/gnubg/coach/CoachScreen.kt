@@ -69,12 +69,17 @@ import androidx.compose.runtime.CompositionLocalProvider
  */
 
 /** Decoded gnubg coach verdict -- layout documented at Engine.coachVerdict. */
-/** One of gnubg's better alternatives: its move, notation, and how much it
- *  gains over the played move (gnubg equities, subtracted for display). */
+/** One row of the FIXED candidate list: the top-K moves gnubg packed
+ *  (COACH_K = 5), some better and some worse than the played move. The
+ *  played move is marked in place when it ranks inside the K; otherwise it
+ *  renders as an appended P row. A constant-size list, per maintainer
+ *  decision 2026-07-20: the count no longer breathes with the rank. */
 private data class CoachAlt(
     val anMove: IntArray,
     val notation: String,
-    val gain: Float
+    val gain: Float,       // eq - eqPlayed: positive = better than played
+    val rank: Int,         // gnubg rank, 0 = best
+    val isPlayed: Boolean
 )
 
 private data class CoachGlance(
@@ -90,7 +95,7 @@ private data class CoachGlance(
     val preBoard: IntArray,      // the pre-move board[50] from the glance --
                                  // the matcher derives played/best boards from
                                  // it via gnubg's own ApplyMove (single source)
-    val alts: List<CoachAlt>     // better-than-played candidates, best first, <= 3
+    val alts: List<CoachAlt>     // the fixed top-K candidate rows (K <= 5)
 ) {
     val loss: Float get() = eqBest - eqPlayed
     val flagged: Boolean get() = skill != 3
@@ -107,12 +112,12 @@ private fun decodeGlance(v: IntArray): CoachGlance? {
     val eqPlayed = Float.fromBits(v[2])
     val k = v[85].coerceIn(0, 5)
     val alts = buildList {
-        val better = minOf(v[0], k, 3)
-        for (i in 0 until better) {
+        for (i in 0 until k) {
             val base = 86 + i * 16
             val mv = IntArray(8) { j -> v[base + j] }
             val eq = Float.fromBits(v[base + 8])
-            add(CoachAlt(mv, Engine.formatMove(preBoard, mv), eq - eqPlayed))
+            add(CoachAlt(mv, Engine.formatMove(preBoard, mv), eq - eqPlayed,
+                         rank = i, isPlayed = (i == v[0])))
         }
     }
     return CoachGlance(
@@ -264,8 +269,8 @@ fun CoachScreen(
     }
     val selectedMove = glance?.let { g ->
         when {
-            selectedAlt == 0 -> g.playedMove
-            selectedAlt in 1..g.alts.size -> g.alts[selectedAlt - 1].anMove
+            selectedAlt == -2 -> g.playedMove          // appended P row
+            selectedAlt in g.alts.indices -> g.alts[selectedAlt].anMove
             else -> null
         }
     }
@@ -522,31 +527,39 @@ private fun MoveList(
     // design: visually apart from the numbered, rank-ordered suggestions).
     // Rows are full-width and left-anchored so every chip sits in one
     // vertical column flush to the board's right-hand side.
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IdentChip(
-            label = "P",
-            color = if (selectedAlt == 0) pal.uiActionNegative
-                    else pal.uiActionNegative.copy(alpha = 0.45f)
-        ) { onSelectAlt(0) }
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            glance.playedNotation,
-            color = if (selectedAlt == 0) Color.White else pal.uiTextSecondary,
-            fontSize = 12.sp
-        )
-    }
-
     glance.alts.forEachIndexed { i, alt ->
+        if (i > 0) Spacer(modifier = Modifier.height(3.dp))
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IdentChip(
+                label = if (alt.isPlayed) "P" else "${alt.rank + 1}",
+                color = when {
+                    alt.isPlayed && selectedAlt == i -> pal.uiActionNegative
+                    alt.isPlayed -> pal.uiActionNegative.copy(alpha = 0.45f)
+                    selectedAlt == i -> pal.uiChipOn
+                    else -> pal.uiChipOff
+                }
+            ) { onSelectAlt(i) }
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                if (alt.isPlayed) alt.notation
+                else "${alt.notation}  ${"%+.3f".format(alt.gain)}",
+                color = if (selectedAlt == i) Color.White else pal.uiTextSecondary,
+                fontSize = 12.sp
+            )
+        }
+    }
+    if (glance.alts.none { it.isPlayed }) {
         Spacer(modifier = Modifier.height(3.dp))
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IdentChip(
-                label = "${i + 1}",
-                color = if (selectedAlt == i + 1) pal.uiChipOn else pal.uiChipOff
-            ) { onSelectAlt(i + 1) }
+                label = "P",
+                color = if (selectedAlt == -2) pal.uiActionNegative
+                        else pal.uiActionNegative.copy(alpha = 0.45f)
+            ) { onSelectAlt(-2) }
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                "${alt.notation}  ${"%+.3f".format(alt.gain)}",
-                color = if (selectedAlt == i + 1) Color.White else pal.uiTextSecondary,
+                glance.playedNotation,
+                color = if (selectedAlt == -2) Color.White else pal.uiTextSecondary,
                 fontSize = 12.sp
             )
         }
