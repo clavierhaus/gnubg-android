@@ -380,6 +380,15 @@ private fun AboutLicenseSection() {
             Text("https://github.com/clavierhaus/gnubg-android", color = pal.uiTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(4.dp))
             Text("The full GNU GPL v3 is included in the file COPYING and at https://www.gnu.org/licenses/gpl-3.0.html", color = pal.uiTextSecondary, fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Build ${com.clavierhaus.gnubg.BuildConfig.VERSION_NAME} (${com.clavierhaus.gnubg.BuildConfig.VERSION_CODE}) \u00b7 " +
+                    "${com.clavierhaus.gnubg.BuildConfig.GIT_COMMIT} \u00b7 " +
+                    com.clavierhaus.gnubg.BuildConfig.BUILD_STAMP_UTC,
+                color = pal.uiTextSecondary,
+                fontSize = 11.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+            )
         }
     }
 }

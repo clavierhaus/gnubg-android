@@ -1,5 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 
 plugins {
     alias(libs.plugins.android.application)
@@ -22,6 +25,19 @@ val keystoreProperties = Properties().apply {
 }
 val hasReleaseKey = keystorePropertiesFile.exists()
 
+// Build stamp read from git at configure time, so it can never drift from the
+// binary (field lesson 2026-07-20: a device ran a build the repo no longer
+// had; a visible stamp turns that from forensics into a glance).
+fun gitOut(vararg args: String): String = try {
+    val p = ProcessBuilder(listOf("git", *args)).redirectErrorStream(true).start()
+    p.inputStream.bufferedReader().readText().trim().also { p.waitFor() }
+} catch (e: Exception) { "" }
+val gitCommit = gitOut("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
+val gitDirty = gitOut("status", "--porcelain").isNotEmpty()
+val buildStampUtc = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'").apply {
+    timeZone = TimeZone.getTimeZone("UTC")
+}.format(Date())
+
 android {
     // Match the NDK the native libs are built with (recipe: r27); without
     // this AGP defaults to 26.1.x and skips stripping with a warning.
@@ -38,6 +54,12 @@ android {
         ndk {
             abiFilters += "arm64-v8a"
         }
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit${if (gitDirty) "+dirty" else ""}\"")
+        buildConfigField("String", "BUILD_STAMP_UTC", "\"$buildStampUtc\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {
