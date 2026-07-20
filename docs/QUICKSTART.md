@@ -35,12 +35,13 @@ checker; the app plays one die from there (it tries your dice in order). Tap
 again to play the second die. The engine decides at each tap whether that
 sub-move is legal — if nothing happens, that die can't be played from there.
 
-**Tap the destination directly — the shortcut worth knowing.** Instead of
-walking a checker die-by-die, tap an **empty point you want to land on**. If
-some combination of your dice reaches it, the app makes the whole move at once.
-This is the fast way to **make a point**: tap the empty point you want to
-occupy and, when both dice can land there, two checkers slide in together. No
-need to move each checker separately.
+**Tap the destination to land two checkers at once — the shortcut worth
+knowing.** When both of your dice can reach the same empty point — each from a
+point where you already have a checker — tap that point, and both checkers
+slide in together in a single move. It's the fast way to **make a point** when
+the roll allows it: no need to move each checker separately. This shortcut is
+specifically for that two-checkers-onto-one-point case; for any other move,
+place checkers the normal way, one die at a time.
 
 **Long-press a checker to see where it can go — and mind the doubles.** Press
 and hold a point that holds your checkers; every point that checker can reach

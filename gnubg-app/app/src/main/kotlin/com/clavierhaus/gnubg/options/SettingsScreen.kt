@@ -301,10 +301,12 @@ private fun TipsSettingsTab() {
     }
 
     SettingsSection("On the board") {
-        Tip("Tap a destination to make a point",
-            "Instead of moving checkers one die at a time, tap an empty point you " +
-                "want to land on. If your dice reach it, the whole move plays at once " +
-                "-- two checkers slide in together to make the point.")
+        Tip("Tap a destination to land two checkers at once",
+            "When both of your dice can reach the same empty point -- each from a " +
+                "point where you have a checker -- tap that point and both checkers " +
+                "slide in together in one move. It is the fast way to make a point " +
+                "when the roll allows it. (For anything else, move checkers the normal " +
+                "way, one die at a time.)")
         SettingsDivider()
         Tip("Long-press to see every reachable point",
             "Press and hold one of your checkers to preview where it can go. On a " +
