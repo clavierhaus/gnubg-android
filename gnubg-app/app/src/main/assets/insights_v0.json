@@ -1,7 +1,7 @@
 {
  "version": 1,
  "corpus_license": "GPL-3.0-or-later",
- "generated": "2026-07-19",
+ "generated": "2026-07-20",
  "tier": "authored",
  "authors": [
   "clavierhaus <gnubg@clavierhaus.at>",
@@ -757,6 +757,20 @@
       "direction": "down",
       "min_abs": 0.05,
       "weight": 1.0
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.0,
+       0.94
+      ],
+      "best_in": [
+       0.0,
+       0.94
+      ],
+      "weight": 0.0
      }
     ]
    },
@@ -802,6 +816,20 @@
       "direction": "down",
       "min_abs": 0.05,
       "weight": 1.0
+     },
+     {
+      "term": "I_BACK_CHEQUER",
+      "side": "opp",
+      "direction": "any",
+      "played_in": [
+       0.0,
+       0.94
+      ],
+      "best_in": [
+       0.0,
+       0.94
+      ],
+      "weight": 0.0
      }
     ]
    },

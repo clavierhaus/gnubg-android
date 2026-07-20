@@ -199,6 +199,15 @@ class InsightMatcher(context: Context) {
             " cand=" + candidates + " fired=" + fired.size)
         if (fired.isEmpty() && candidates > 0)
             android.util.Log.i("gnubg-insight", "misses: " + misses.toString().take(900))
+        // Envelope law (one line per category; field defect 2026-07-20 00:09:
+        // two stacked "threat" lines). Strongest entry per category survives,
+        // then the MAX_FIRE cap -- mirrors matcher_proto and the narrator.
+        val bestPerCat = HashMap<String, Triple<Float, Int, Entry>>()
+        for (t in fired) {
+            val cur = bestPerCat[t.third.category]
+            if (cur == null || t.first > cur.first) bestPerCat[t.third.category] = t
+        }
+        fired.clear(); fired.addAll(bestPerCat.values)
         fired.sortWith(compareByDescending<Triple<Float, Int, Entry>> { it.first }
             .thenByDescending { it.second }
             .thenBy { it.third.id })
