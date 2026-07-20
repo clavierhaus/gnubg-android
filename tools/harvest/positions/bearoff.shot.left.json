@@ -1,7 +1,7 @@
 {
  "entry": "bearoff.shot.left",
  "provenance": "parametric",
- "generated": "2026-07-19",
+ "generated": "2026-07-20",
  "verifier": "tools/pilot/inputs_harness",
  "signature": {
   "class_played": 10,

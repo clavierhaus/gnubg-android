@@ -1,7 +1,7 @@
 {
  "entry": "blot.shot.given",
  "provenance": "parametric",
- "generated": "2026-07-19",
+ "generated": "2026-07-20",
  "verifier": "tools/pilot/inputs_harness",
  "signature": {
   "terms": [
@@ -25,6 +25,20 @@
     "direction": "down",
     "min_abs": 0.05,
     "weight": 1.0
+   },
+   {
+    "term": "I_BACK_CHEQUER",
+    "side": "opp",
+    "direction": "any",
+    "played_in": [
+     0.0,
+     0.94
+    ],
+    "best_in": [
+     0.0,
+     0.94
+    ],
+    "weight": 0.0
    }
   ]
  },
@@ -94,7 +108,8 @@
    "deltas": {
     "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.361111,
-    "opp.I_PIPLOSS": -0.481481
+    "opp.I_PIPLOSS": -0.481481,
+    "opp.I_BACK_CHEQUER": 0.0
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -222,7 +237,8 @@
    "deltas": {
     "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.416667,
-    "opp.I_PIPLOSS": -0.555556
+    "opp.I_PIPLOSS": -0.555556,
+    "opp.I_BACK_CHEQUER": 0.0
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -350,7 +366,8 @@
    "deltas": {
     "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.361111,
-    "opp.I_PIPLOSS": -0.451389
+    "opp.I_PIPLOSS": -0.451389,
+    "opp.I_BACK_CHEQUER": 0.0
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -478,7 +495,8 @@
    "deltas": {
     "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.388889,
-    "opp.I_PIPLOSS": -0.486111
+    "opp.I_PIPLOSS": -0.486111,
+    "opp.I_BACK_CHEQUER": 0.0
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
@@ -606,7 +624,8 @@
    "deltas": {
     "me.I_FORWARD_ANCHOR": 0.0,
     "opp.I_P1": -0.388889,
-    "opp.I_PIPLOSS": -0.453704
+    "opp.I_PIPLOSS": -0.453704,
+    "opp.I_BACK_CHEQUER": 0.0
    },
    "deltas_all": {
     "me.I_OFF1": 0.0,
