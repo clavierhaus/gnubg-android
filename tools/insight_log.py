@@ -49,7 +49,11 @@ def main(lines):
             nr = v.get("narr")
             if mt: print(f"   corpus: candidates={mt[1]} fired={mt[2]}")
             if nr: print(f"   narrator: candidates={nr[0]} narrated={nr[1]}" + (f" [{nr[2]}]" if nr[2] else ""))
-            if mt and mt[2] == 0 and (not nr or nr[1] == 0):
+            if mt is None and nr is None:
+                print("   !! WHY-LAYER ABSENT: flagged verdict, but no match/narrator/probe line at all --")
+                print("      the insight effect never ran (composition or gating defect, not a rules gap)")
+                alerts += 1
+            elif mt and mt[2] == 0 and (not nr or nr[1] == 0):
                 print("   !! SILENCE on a flagged move -- nearest misses:")
                 for e, t, gate, vp, vb, d in (v.get("misses") or [])[:4]:
                     print(f"        {e:26} {t:22} gate={gate:4} vp={vp} vb={vb} d={d}")
