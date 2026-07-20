@@ -597,6 +597,38 @@ private fun WhyInsights(glance: CoachGlance) {
                 " mvB=" + glance.bestMove.joinToString(","))
             // L3 (DELTA_NARRATOR_PLAYBOOK): the corpus speaks first; the
             // narrator only when no authored signature fires on a flagged move.
+            // QUORUMPROBE (playbook amendment 2, phase A'): candidate-set
+            // statistics over the fixed top-K rows -- the field instrument
+            // that quorum rules will be measured against before adoption.
+            run {
+                val subjects = listOf("opp.I_P1", "opp.I_ENTER", "opp.I_ENTER2",
+                    "me.I_CONTAIN", "me.I_BACK_ANCHOR", "me.I_FORWARD_ANCHOR",
+                    "me.I_BREAK_CONTACT", "PipCount.opp")
+                val sb = StringBuilder("QUORUMPROBE rank=").append(glance.rank)
+                    .append(" k=").append(glance.alts.size)
+                val boards = glance.alts.map {
+                    Triple(it.rank, it.isPlayed, Engine.applyMoveToBoard(glance.preBoard, it.anMove))
+                }
+                val nHalf = { f: FloatArray -> f.size / 2 }
+                for (key in subjects) {
+                    val side = key.substringBefore('.'); val term = key.substringAfter('.')
+                    sb.append(' ').append(key).append("=[")
+                    boards.forEachIndexed { bi, (_, isP, b) ->
+                        if (bi > 0) sb.append(',')
+                        if (b.size != 50) { sb.append('X'); return@forEachIndexed }
+                        val v = if (key == "PipCount.opp") Engine.pipCount(b)[0].toFloat()
+                        else {
+                            val f = Engine.positionFeatures(b)
+                            val i = InsightMatcher.INPUT_ORDER.indexOf(term)
+                            if (i < 0) -1f else if (side == "me") f[nHalf(f) + i] else f[i]
+                        }
+                        if (isP) sb.append('P').append(':')
+                        sb.append("%.3f".format(v))
+                    }
+                    sb.append(']')
+                }
+                android.util.Log.i("gnubg-insight", sb.toString())
+            }
             val fromCorpus = matcher.match(playedBoard, bestBoard, skillWord)
             when {
                 fromCorpus.isNotEmpty() -> fromCorpus
