@@ -360,45 +360,64 @@ Severity is the equity gap between the best and second-best candidate: a proxy
 for how much a plausible error costs at this position, and therefore the axis
 along which the epistemic-honesty threshold is expected to appear.
 
-Sampling runs deterministic self-play across several noise levels. Noise
+Sampling runs deterministic self-play across an OPENING BANK and several noise
+levels. The opening bank is engine-derived and license-clean: the 15 distinct
+opening rolls (doubles cannot open), each played into gnubg's own top-three
+replies, yields a fan of real opening lines -- no external data, nothing
+retrieved, nothing copyrighted, the engine itself is the source. Noise
 perturbs only WHICH positions self-play visits (deterministic per board, so
-reproducible from source per section 5.2); candidate measurement always runs
-at clean 0-ply, so equities and severity bands stay authoritative. At each
-position all 21 distinct rolls are enumerated, for density.
+reproducible per section 5.2); candidate measurement always runs at clean
+0-ply, so equities and severity bands stay authoritative. At each position all
+21 distinct rolls are enumerated, for density.
 
-First measured curves, over 3750 candidate-sets (four noise configs from the
-standard opening), yield rising left-to-right with severity where a real
+Measured curves over the opening bank (45 lines x 3 noise configs x 30
+halfmoves, 74,827 candidate-sets), yield rising with severity where a real
 explanatory axis exists:
 
     predicate         0.00-0.02  0.02-0.06  0.06-0.12   0.12+
-    on.bar               4.5%       8.7%      11.2%     16.5%   rule candidate
-    blot.opp.home        2.6%       5.8%       8.0%      8.0%   rule candidate
-    contact.kept         1.5%       2.0%       2.0%      2.9%   rejected
+    on.bar              14.1%      17.9%      20.7%     30.2%   rule candidate
+    blot.opp.home        8.9%      12.0%      14.0%     15.2%   rule candidate
+    contact.kept         0.7%       0.5%       0.3%      0.4%   rejected
     anchor.held          0.0%       0.0%       0.0%      0.0%   dead axis
     home.board.4pt       0.0%       0.0%       0.0%      0.0%   dead axis
 
 The reading, which is the method working as intended:
-- on.bar rises steeply and holds high yield at blunder severity: a robust
-  rule candidate.
-- blot.opp.home rises then plateaus at serious severity -- a rule candidate,
-  with the plateau recorded honestly rather than smoothed away.
-- contact.kept fires but does not track severity: it would speak equally on
-  trivial and serious decisions, violating the honesty threshold, so it is
-  rejected. A predicate that fires is not thereby a rule.
-- anchor.held and home.board.4pt fire zero times across all 3750 sets: dead
+- on.bar rises steeply and holds high yield (nearly a third of sets at blunder
+  severity): a robust rule candidate.
+- blot.opp.home rises cleanly with no plateau -- an earlier one-line sample
+  showed a plateau at high severity that the opening bank revealed to be an
+  artifact. A solid rule candidate.
+- contact.kept fires but does not track severity, and the broad sample drives
+  it near zero everywhere: it would speak equally on trivial and serious
+  decisions, violating the honesty threshold. Rejected. A predicate that fires
+  is not thereby a rule.
+- anchor.held and home.board.4pt fire zero times across all 74,827 sets: dead
   quorum axes (the property is true of all candidates or none, so never of
-  exactly one). Measured over multiple lines, this is genuine deadness, not
-  undersampling.
+  exactly one). Conclusively dead across 45 opening lines, not undersampling.
 
-Three of five predicates ruled out by measurement, none by opinion. This is
-the honesty curve distinguishing rule candidates from dead axes from honesty-
-violating axes -- the discipline section 6 describes, exercised.
+Three of five predicates ruled out by measurement, none by opinion. The
+breadth CHANGED conclusions relative to a single opening line (on.bar
+stronger, blot.opp.home's plateau removed, contact.kept weaker), which is why
+representativeness is a correctness concern and not a formality -- it sharpened
+the truth.
 
-Two limits are on the record. The configs vary the line through noise but all
-start from the standard opening; a real opening-move bank is the remaining
-sampling breadth. And these curves measure yield alone; adoption additionally
-requires the reference-authority agreement of section 4.3, not yet measured.
-No predicate is adopted on these numbers.
+Reference-authority agreement (section 4.3), measured at 2-ply over the bank
+(subsampled for tractability -- 2-ply is ~56x the 0-ply cost, and the
+agreement rate converges on ~1500 fires):
+
+    predicate         0-ply fires   authority-confirmed   agreement
+    blot.opp.home         555              517             93.2%
+    on.bar                953              855             89.7%
+
+Both surviving candidates are depth-robust: when 0-ply says the axis isolates
+exactly one candidate, the 2-ply authority agrees about nine times in ten.
+The adoption evidence table (yield-by-severity plus authority-agreement) now
+exists for each surviving predicate.
+
+Still evidence, not adoption. Under section 4.3 adoption requires the
+maintainer's threshold, PRE-REGISTERED before these numbers are read, applied
+mechanically -- the data then selects the survivors, no hand-picking. No
+predicate is adopted on these numbers by the act of measuring them.
 
 
 ## 6. The corpus as a verbosity-calibration instrument
