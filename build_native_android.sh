@@ -191,5 +191,9 @@ done < <(
         | sort
 )
 
+# stamp for the stale-native guard in build_and_deploy.sh: the state of the
+# native sources this build was produced from
+{ git ls-files -s jni-bridge engine-core; git diff -- jni-bridge engine-core; } | sha1sum | cut -d' ' -f1 > .native_build_stamp
+
 echo
 echo "==> Complete Android native build finished"

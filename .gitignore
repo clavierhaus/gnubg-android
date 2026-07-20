@@ -190,3 +190,4 @@ gnubg-app/app/src/main/jniLibs/
 
 # compiled pilot harness -- build locally via tools/pilot/build.sh
 tools/pilot/inputs_harness
+.native_build_stamp
