@@ -42,7 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.clavierhaus.gnubg.Engine
 
-enum class SettingsTab { GAME, REPORT, BOARD, ENGINE, ANALYSIS, ABOUT, LICENSE }
+enum class SettingsTab { GAME, REPORT, BOARD, TIPS, ANALYSIS, ABOUT, LICENSE }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
@@ -98,7 +98,7 @@ fun SettingsScreen(
                     SettingsTab.GAME -> GameSettingsTab(settings, viewModel)
                     SettingsTab.REPORT -> ReportSettingsTab()
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
-                    SettingsTab.ENGINE -> EngineSettingsTab(settings, viewModel)
+                    SettingsTab.TIPS -> TipsSettingsTab()
                     SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
                     SettingsTab.ABOUT -> AboutSettingsTab()
                     SettingsTab.LICENSE -> LicenseSettingsTab()
@@ -158,7 +158,7 @@ private fun SettingsTabs(
                 SettingsTab.GAME -> "Tournament"
                 SettingsTab.REPORT -> "Report"
                 SettingsTab.BOARD -> "Board"
-                SettingsTab.ENGINE -> "Engine"
+                SettingsTab.TIPS -> "Tips & Tricks"
                 SettingsTab.ANALYSIS -> "Analysis"
                 SettingsTab.ABOUT -> "About"
                 SettingsTab.LICENSE -> "License"
@@ -277,21 +277,73 @@ private fun BoardSettingsTab(settings: GameSettings, vm: GameViewModel) {
 }
 
 @Composable
-private fun EngineSettingsTab(settings: GameSettings, vm: GameViewModel) {
-    SettingsSection("Playing strength") {
-        Difficulty.values().forEachIndexed { i, difficulty ->
-            SettingsRow(difficulty.label, difficulty.subtitle) {
-                RadioButton(
-                    selected = settings.difficulty == difficulty,
-                    onClick = { vm.setDifficulty(difficulty) },
-                    colors = radioColors
-                )
-            }
-            if (i < Difficulty.values().size - 1) SettingsDivider()
+private fun TipsSettingsTab() {
+    val pal = LocalBoardPalette.current
+
+    @Composable
+    fun Tip(headline: String, body: String) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+            Text("\u2022  $headline", color = pal.uiTextPrimary,
+                fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(body, color = pal.uiTextSecondary, fontSize = 13.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 2.dp))
         }
     }
 
+    SettingsSection("Get more out of CBG") {
+        Text(
+            "This is the full GNU Backgammon engine -- the same neural-net player " +
+                "and analyser as the desktop. A few of its best features are not " +
+                "obvious until someone points them out.",
+            color = pal.uiTextSecondary, fontSize = 13.sp,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+        )
+    }
 
+    SettingsSection("On the board") {
+        Tip("Tap a destination to make a point",
+            "Instead of moving checkers one die at a time, tap an empty point you " +
+                "want to land on. If your dice reach it, the whole move plays at once " +
+                "-- two checkers slide in together to make the point.")
+        SettingsDivider()
+        Tip("Long-press to see every reachable point",
+            "Press and hold one of your checkers to preview where it can go. On a " +
+                "double this shows the full run: a back checker on the 24-point " +
+                "rolling 2-2 lights 22, 20, 18 and 16. It is gnubg's own legal-move " +
+                "list, so a point lights only if the engine truly offers it.")
+        SettingsDivider()
+        Tip("Swap the dice order",
+            "Tap your two dice to swap which one is tried first when you tap to move. " +
+                "The move itself is unchanged -- only the order the app tries them.")
+    }
+
+    SettingsSection("Coaching") {
+        Tip("Train with a teacher watching",
+            "Choose Train from the hub. gnubg judges every move you make and pauses " +
+                "so you can study it -- the game waits for you. Pick the opponent's " +
+                "strength and match length on the setup screen.")
+        SettingsDivider()
+        Tip("The five rows on the right are buttons",
+            "After a judged move the right-hand panel lists gnubg's top five moves, " +
+                "with yours marked P in its place. Those rows are tappable: first tap " +
+                "shows the position before the move, second tap on the same row shows " +
+                "the result with green arrows. Tap P twice, then row 1 twice, to watch " +
+                "your move and gnubg's best play out from the identical start.")
+        SettingsDivider()
+        Tip("Cube decisions are coached too",
+            "In matches longer than one point, the Coach judges your double, take and " +
+                "drop decisions against gnubg's -- using the engine's own cube evaluation.")
+    }
+
+    SettingsSection("Beyond play") {
+        Tip("Analyse any position",
+            "Choose Analyse to paste a GNU BG or XG position ID and have the engine " +
+                "evaluate it -- candidate moves, equities, and cube decisions.")
+        SettingsDivider()
+        Tip("Review a saved match",
+            "Choose Review to step through a match move by move with gnubg's verdict " +
+                "on each play.")
+    }
 }
 
 @Composable
