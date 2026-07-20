@@ -42,10 +42,15 @@ This is the fast way to **make a point**: tap the empty point you want to
 occupy and, when both dice can land there, two checkers slide in together. No
 need to move each checker separately.
 
-**Long-press a checker to see where it can go.** Press and hold a point that
-holds your checkers; every legal landing point for that checker lights up.
-Release without moving — it's a preview, not a commitment. Use it whenever
-you're unsure which of your dice actually plays.
+**Long-press a checker to see where it can go — and mind the doubles.** Press
+and hold a point that holds your checkers; every point that checker can reach
+lights up. This is more than one die: if a checker can travel several hops on
+one turn, every resting point along the way lights. On a **double**, a single
+back checker on the 24-point rolling 2-2 lights **22, 20, 18, and 16** — one
+hop, two, three, four. The highlight is gnubg's own legal-move list, so a point
+lights only if the engine truly offers a move landing there, and once you have
+played a die only the moves that remain are shown. Release without moving —
+it's a preview, not a commitment.
 
 **Drag, if you prefer.** You can also drag a checker from its point to a
 destination; the same legality rules apply.
@@ -102,9 +107,11 @@ honest verdicts:
 - **A flagged move** — gnubg's severity (doubtful, bad, very bad) and the exact
   equity it cost.
 
-**Study the alternatives — the two-tap toggle.** Below the verdict is a list:
-your move first, marked **P** in red, then gnubg's better moves numbered by
-rank. Tap any one of them:
+**Study the alternatives — the two-tap toggle.** Below the verdict is a fixed
+list of gnubg's top five moves for the position, ranked best-first. Your own
+move is marked **P** in red **in its place in the ranking** — so if you played
+the fourth-best move, P sits at the fourth row, not the top. Each row shows how
+much it gains or loses against your move. Tap any one of them:
 
 - **First tap** shows the **decision point** — the position before the move,
   with the dice, no arrows. This is the same starting picture for every entry
