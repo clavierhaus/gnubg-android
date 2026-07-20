@@ -337,7 +337,10 @@ source of our own.
   candidate-set statistics the on-device QUORUMPROBE emits, but over the whole
   corpus at once. The output is a data file the maintainer reads to see which
   quorum predicates actually hold, and how often -- the evidence B' adoption
-  is gated on.
+  is gated on. Per section 6.4 the same stage also emits the per-class,
+  per-severity yield statistics from which the honesty curve is built (how
+  many positions admit a confirmed statement, of which kinds, how many admit
+  none) -- specified from the outset because it is expensive to retrofit.
 
 Every step is re-derivable from source: fixed starting positions + recorded
 strengths + the deterministic-noise engine -> the checked-in ID list -> the
