@@ -644,17 +644,12 @@ private fun WhyInsights(glance: CoachGlance) {
         fontWeight = FontWeight.Bold)
     Spacer(modifier = Modifier.height(4.dp))
     for (ins in list) {
-        Row(verticalAlignment = Alignment.Top) {
-            Text(
-                when (ins.category) {
-                    "race" -> "Race"; "threat" -> "Threat"; else -> "Board"
-                },
-                color = pal.uiTextDisabled, fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(end = 6.dp, top = 1.dp)
-            )
-            Text(ins.phrase, color = Color.White, fontSize = 12.sp)
-        }
+        // No category label: it consumed horizontal width and forced the
+        // phrase into a narrower, more-wrapping column, and "Threat"/"Board"/
+        // "Race" carried no meaning for the reader. The phrase now uses the
+        // full panel width, so it wraps to fewer lines and fits under the
+        // five-row candidate list without scrolling.
+        Text(ins.phrase, color = Color.White, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(3.dp))
     }
 }
