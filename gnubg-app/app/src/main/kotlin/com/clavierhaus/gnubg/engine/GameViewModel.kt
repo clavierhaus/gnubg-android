@@ -76,6 +76,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * pre-move, which is also exactly what makes the alternative views
      * consistent with the live board. continueCoachTurn() delivers it. */
     private var pendingCoachMove: String? = null
+    // Terminal latch (root fix, 2026-07-20): GAME_OVER is sticky. gnubg's
+    // NextTurn(TRUE) auto-advances into the next game the instant a game ends,
+    // so any settle that reads the engine after a win sees a live next game and
+    // would overwrite the end screen. Once GAME_OVER is projected, readMatchState
+    // refuses to replace the phase until newGame() (the player's acknowledgment)
+    // clears this. One owner of the terminal transition, enforced at the writer.
+    private var gameOverLatched = false
 
     /* Coach cube coaching (M4): the parallel of pendingCoachMove for cube
      * decisions. When the human makes a cube decision in a coach session, the
@@ -270,6 +277,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         nPoints: Int = 1,
         moveHistory: List<MoveSnapshot> = emptyList()
     ) {
+        // Terminal latch: hold GAME_OVER against any non-terminal projection
+        // until the player acknowledges (newGame). A fresh GAME_OVER (winner
+        // supplied) re-latches; everything else is refused while latched.
+        if (phase == GamePhase.GAME_OVER) {
+            gameOverLatched = true
+        } else if (gameOverLatched) {
+            android.util.Log.i("gnubg-vm",
+                "readMatchState: held at GAME_OVER (refused phase=$phase while latched)")
+            return
+        }
         val score       = Engine.getMatchScore()
         val matchLength = Engine.getMatchLength()
         val cubeInfo  = Engine.getMatchCubeInfo()
@@ -334,6 +351,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
+        // The player has acknowledged the end screen: release the terminal
+        // latch so the next game's projection can be written.
+        gameOverLatched = false
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and
         // arm the live-dice watcher. Otherwise, when the engine wins the opening
@@ -721,6 +741,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * is, shows the thinking overlay, and arms the live-dice watcher. Engine
      * thread only. */
     private fun beginEngineWork(kind: BusyKind) {
+        // Terminal latch first: after a win, this is a clean no-op -- never
+        // clear glances, set busy, or flash a thinking state over the end
+        // screen (the coach win path calls this before its settle).
+        if (gameOverLatched) return
         _coachGlance.value = null
         _coachCubeGlance.value = null
         _coachCubeAnswer.value = null
@@ -734,6 +758,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     /* The coach HOLD -- the one genuinely app-side phase (a decision judged
      * but deliberately not yet given to gnubg). Engine thread only. */
     private fun holdCoachReview() {
+        if (gameOverLatched) return
         _busyKind.value = BusyKind.NONE
         _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
     }
@@ -1111,6 +1136,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun commandNewGame() {
+        gameOverLatched = false
         viewModelScope.launch(engineThread) {
             Engine.commandNewGame()
             settleFromEngine()
@@ -1213,6 +1239,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         pendingCubeAction = -1
         _busyKind.value = BusyKind.NONE
         _liveEngineDice.value = null
+        gameOverLatched = false
         viewModelScope.launch(engineThread) {
             Engine.setEngineStrength(difficulty.settingIndex)
             Engine.commandNewMatch(length)
@@ -1244,6 +1271,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun commandNewMatch(length: Int = _settings.value.matchLength) {
         _settings.value = _settings.value.copy(matchLength = length)
         _showMatchSetup.value = false
+        gameOverLatched = false
         viewModelScope.launch(engineThread) {
             Engine.commandNewMatch(length)
             Engine.commandNewGame()
@@ -1252,6 +1280,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun commandNewSession(games: Int = 0) {
+        gameOverLatched = false
         viewModelScope.launch(engineThread) {
             Engine.commandNewSession(games)
             settleFromEngine()
