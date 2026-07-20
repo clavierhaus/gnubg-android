@@ -93,23 +93,43 @@ int main(int argc, char **argv){
     int od[26]={0,-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2,0};
     for(int i=0;i<24;i++){int v=od[i+1]; if(v>0)open[0][i]=v; else if(v<0)open[1][23-i]=-v;}
 
-    /* sampling configs: the opening at several noise levels. Different noise
-     * levels (deterministic) send self-play down different but reproducible
-     * lines -- cheap diversity without a hand-authored opening bank. */
-    float noises[] = { 0.0f, 0.020f, 0.040f, 0.060f };
+    /* OPENING BANK: the 15 distinct opening rolls (doubles cannot open), each
+     * played into gnubg's top-N replies -- a fan of real opening lines, all
+     * engine-derived (GPL, reproducible, no external data, no license). This
+     * is the sampling breadth that noise alone did not give: every line starts
+     * from a DIFFERENT real opening, not just the standard position. */
+    evalcontext ec_meas0 = { .fCubeful=FALSE,.nPlies=0,.fUsePrune=FALSE,.fDeterministic=TRUE,.rNoise=0.0f };
+    int opens[15][2] = {{6,5},{6,4},{6,3},{6,2},{6,1},{5,4},{5,3},{5,2},{5,1},
+                        {4,3},{4,2},{4,1},{3,2},{3,1},{2,1}};
+    const int TOPN = 3;   /* top-3 replies per opening roll -> up to 45 lines */
+    TanBoard bank[15*TOPN]; int nbank=0;
+    for (int o=0;o<15;o++){
+        movelist ml;
+        if (FindnSaveBestMoves(&ml,opens[o][0],opens[o][1],(ConstTanBoard)open,NULL,TRUE,0.0f,&ci,&ec_meas0,aamf)<0) continue;
+        int k = ml.cMoves<TOPN?ml.cMoves:TOPN;
+        for (int i=0;i<k;i++){
+            TanBoard nb; memcpy(nb,open,sizeof(TanBoard));
+            ApplyMove(nb,ml.amMoves[i].anMove,FALSE);
+            SwapSides(nb);   /* now opponent (the OTHER side) is on roll -- a real game line */
+            memcpy(bank[nbank++],nb,sizeof(TanBoard));
+        }
+    }
+
+    float noises[] = { 0.0f, 0.020f, 0.040f };
     int NN = (int)(sizeof(noises)/sizeof(noises[0]));
 
     long seen[4]={0}; long quorum[NPRED][4]; memset(quorum,0,sizeof(quorum));
     long measured=0;
-    /* also track per-predicate whether it EVER fired, across all configs */
     long pred_total[NPRED]; memset(pred_total,0,sizeof(pred_total));
 
-    for(int n=0;n<NN;n++)
-        walk(open, noises[n], plies, hm, &ci, aamf, seen, quorum, &measured);
+    /* walk every opening line under every noise level */
+    for(int linen=0; linen<nbank; linen++)
+        for(int n=0;n<NN;n++)
+            walk(bank[linen], noises[n], plies, hm, &ci, aamf, seen, quorum, &measured);
 
     for(int p=0;p<NPRED;p++) for(int i=0;i<4;i++) pred_total[p]+=quorum[p][i];
 
-    printf("# honesty curve (representative): %d noise configs x %d halfmoves, measurement 0-ply clean\n", NN, hm);
+    printf("# honesty curve (opening bank): %d opening lines x %d noise configs x %d halfmoves, measurement 0-ply clean\n", nbank, NN, hm);
     printf("# candidate-sets=%ld  band totals: %s=%ld %s=%ld %s=%ld %s=%ld\n",
            measured, BAND[0],seen[0],BAND[1],seen[1],BAND[2],seen[2],BAND[3],seen[3]);
     printf("%-16s", "predicate\\sev");
