@@ -835,10 +835,16 @@ private fun CoachPanel(
         }
 
         // GNU's turn now lives ON the board (left-half mirror of Roll).
-        // Only New game remains a pane button, at game over.
+        // At game over "New game" remains, but is DISABLED (greyed) when the
+        // MATCH is decided -- there is no next game in a settled match (field
+        // report: "New game" active after a 7-point match was won). A mid-match
+        // game-over leaves it enabled to continue. The match-restart action is
+        // New match / Home, elsewhere in the coach flow.
         if (phase == GamePhase.GAME_OVER) {
+            val matchOver = matchLength > 1 &&
+                (humanScore >= matchLength || engineScore >= matchLength)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                GameButton("New game", pal.uiChipOff, compact = true) { onNewGame() }
+                GameButton("New game", pal.uiChipOff, enabled = !matchOver, compact = true) { onNewGame() }
             }
         }
     }

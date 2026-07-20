@@ -214,9 +214,21 @@ fun GameLayout(
                             if (tutorMode) {
                                 TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail, settings.showEquity)
                             } else {
+                                // Resign / New game are LIVE-PLAY actions. When the
+                                // MATCH is decided neither is valid -- no game to
+                                // resign, no next game in a settled match -- so both
+                                // are greyed rather than removed, so the player sees
+                                // they are unavailable. (Field report: "New game"
+                                // active after a 7-point match was won.) New match /
+                                // Home, below, are the terminal actions.
+                                val matchOver = gameState.matchLength > 1 &&
+                                    (gameState.humanScore >= gameState.matchLength ||
+                                        gameState.engineScore >= gameState.matchLength)
                                 PlayLifecyclePanel(
                                     onResign = { pendingLifecycleAction = PlayLifecycleAction.RESIGN },
-                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME }
+                                    onNewGame = { pendingLifecycleAction = PlayLifecycleAction.NEW_GAME },
+                                    resignEnabled = !matchOver,
+                                    newGameEnabled = !matchOver
                                 )
                             }
 
@@ -338,7 +350,9 @@ private enum class PlayLifecycleAction {
 @Composable
 private fun PlayLifecyclePanel(
     onResign: () -> Unit,
-    onNewGame: () -> Unit
+    onNewGame: () -> Unit,
+    resignEnabled: Boolean = true,
+    newGameEnabled: Boolean = true
 ) {
     val pal = LocalBoardPalette.current
     Column(
@@ -353,8 +367,8 @@ private fun PlayLifecyclePanel(
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LifecycleButton("Resign", pal.uiActionNegative, onResign)
-            LifecycleButton("New game", pal.uiActionRoll, onNewGame)
+            LifecycleButton("Resign", pal.uiActionNegative, onResign, enabled = resignEnabled)
+            LifecycleButton("New game", pal.uiActionRoll, onNewGame, enabled = newGameEnabled)
         }
 
     }
