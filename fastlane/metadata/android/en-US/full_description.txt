@@ -1,6 +1,6 @@
-CBG (Clavierhaus Backgammon) brings the real GNU Backgammon engine to a modern touch interface.
+The first standalone backgammon app on F-Droid: a full-strength engine in your pocket, not an online client. No server, no account, no internet -- just you and one of the strongest backgammon players ever written.
 
-The application works entirely offline and contains no advertising, analytics or proprietary online services.
+CBG (Clavierhaus Backgammon) puts the real GNU Backgammon engine -- the same neural-net player and analyser that runs on the desktop -- behind a modern touch interface. It works entirely offline and contains no advertising, no analytics, and no proprietary online services.
 
 Play
 
@@ -8,29 +8,28 @@ Play complete matches against GNU Backgammon at seven strength levels, from Begi
 
 Train
 
-Play with the Coach enabled and have GNU Backgammon assess each move. The application shows whether a move was best, acceptable or an error, together with stronger alternatives and their equity differences.
+Turn on the Coach and have GNU Backgammon judge every move you make. See at a glance whether a move was the best, merely acceptable, or an error -- with the stronger alternatives and exactly what each one was worth. Tap any alternative to watch it play out on the board, arrow by arrow, against your own.
 
 Analyse
 
-Paste a GNU Backgammon Position ID, Match ID or XGID -- from a forum, a book, or another app. With dice entered, GNU Backgammon ranks the available checker plays. Without dice, it analyses the cube decision. (Free-position setup on an editor board ships in the forthcoming Plus edition.)
+Paste a GNU Backgammon Position ID, Match ID or XGID -- from a forum, a book, or another app. With dice entered, the engine ranks the available checker plays. Without dice, it analyses the cube decision.
 
 Review
 
-Save matches in GNU Backgammon's SGF format and step through them by game and move. Review the move played, GNU Backgammon's preferred move, the equity cost and the engine's assessment.
+Save matches in GNU Backgammon's SGF format and step through them by game and move: the move you played, the engine's preferred move, the equity cost, and its assessment.
 
-GNU Backgammon remains the sole authority for game rules, legal moves, cube decisions and analysis. The Android interface displays engine state and sends explicit user actions to the engine; it does not replace the engine with separate Android-side backgammon logic.
+One principle underlies all of it: GNU Backgammon is the sole authority for the rules, the legal moves, the cube decisions and the analysis. The interface shows you the engine's own judgement and sends your actions to the engine -- it never substitutes its own backgammon logic. Every number you see is the engine's.
 
-Features include:
+Features:
 
-* Complete offline operation
-* Seven opponent-strength levels
-* Full match and doubling-cube play
-* Live move assessment
-* Position editing and analysis
-* GNU Backgammon ID and XGID input
+* Fully offline -- no network, no accounts, no ads, no tracking
+* The real GNU Backgammon neural-net engine
+* Seven opponent strengths, Beginner to Grandmaster
+* Full match play with the doubling cube
+* Live move-by-move coaching with equity costs
+* Position analysis from GNU BG IDs and XGIDs
 * SGF match saving and review
-* Multiple board themes
-* Phone and tablet layouts
-* Tap and drag input
+* Multiple board themes, phone and tablet layouts
+* Tap, drag, and tap-a-destination checker input
 
 Requires Android 12 or newer and a 64-bit ARM device.

@@ -32,7 +32,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _liveEngineDice = MutableStateFlow<Pair<Int, Int>?>(null)
     val gameState: StateFlow<BoardState> =
         combine(_gameState, _liveEngineDice) { st, live ->
-            if (st.phase == GamePhase.ENGINE_THINKING && live != null)
+            // Show the engine's roll while it is thinking AND on the end screen:
+            // a game-ending engine move transitions straight to GAME_OVER, and
+            // the roll that ended the game must remain visible (it is the record
+            // of what happened). Any later phase clears it via _liveEngineDice.
+            if ((st.phase == GamePhase.ENGINE_THINKING || st.phase == GamePhase.GAME_OVER) && live != null)
                 st.copy(engineDice = live) else st
         }.stateIn(viewModelScope, SharingStarted.Eagerly, BoardState())
 
@@ -479,6 +483,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newBoard = unique[0].first
         val rawRemaining = unique[0].second
 
+        // Legality is already gnubg's, at both granularities: each of the two
+        // applySubMove hops above routes through LegalMove (eval.c:2732), and
+        // the COMPLETE turn is validated by confirm() via Engine.findMove
+        // (GenerateMoves + cMaxMoves/cMaxPips match) when the player commits.
+        // A destination stack is a PARTIAL move -- on doubles it plays two of
+        // four dice -- so it must NOT be gated against findMove here (that
+        // demands a maximum move and wrongly rejects the legal partial: e.g.
+        // double sixes, stacking two checkers 21->15 leaves two sixes still to
+        // play). No extra check belongs here.
+
         val rawNextMoves = if (rawRemaining.isNotEmpty()) {
             val r0 = rawRemaining[0]
             val r1 = if (rawRemaining.size > 1) rawRemaining[1] else r0
@@ -730,7 +744,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 kotlinx.coroutines.delay(100)
             }
-            if (_gameState.value.phase != GamePhase.ENGINE_THINKING)
+            // Keep the roll on the end screen: if the engine's move ended the
+            // game, GAME_OVER must still show the dice that ended it. Clear only
+            // for other exits (the next game's beginEngineWork resets cleanly).
+            val p = _gameState.value.phase
+            if (p != GamePhase.ENGINE_THINKING && p != GamePhase.GAME_OVER)
                 _liveEngineDice.value = null
         }
     }

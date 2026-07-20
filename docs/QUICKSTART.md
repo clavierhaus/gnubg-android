@@ -35,17 +35,23 @@ checker; the app plays one die from there (it tries your dice in order). Tap
 again to play the second die. The engine decides at each tap whether that
 sub-move is legal — if nothing happens, that die can't be played from there.
 
-**Tap the destination directly — the shortcut worth knowing.** Instead of
-walking a checker die-by-die, tap an **empty point you want to land on**. If
-some combination of your dice reaches it, the app makes the whole move at once.
-This is the fast way to **make a point**: tap the empty point you want to
-occupy and, when both dice can land there, two checkers slide in together. No
-need to move each checker separately.
+**Tap the destination to land two checkers at once — the shortcut worth
+knowing.** When both of your dice can reach the same empty point — each from a
+point where you already have a checker — tap that point, and both checkers
+slide in together in a single move. It's the fast way to **make a point** when
+the roll allows it: no need to move each checker separately. This shortcut is
+specifically for that two-checkers-onto-one-point case; for any other move,
+place checkers the normal way, one die at a time.
 
-**Long-press a checker to see where it can go.** Press and hold a point that
-holds your checkers; every legal landing point for that checker lights up.
-Release without moving — it's a preview, not a commitment. Use it whenever
-you're unsure which of your dice actually plays.
+**Long-press a checker to see where it can go — and mind the doubles.** Press
+and hold a point that holds your checkers; every point that checker can reach
+lights up. This is more than one die: if a checker can travel several hops on
+one turn, every resting point along the way lights. On a **double**, a single
+back checker on the 24-point rolling 2-2 lights **22, 20, 18, and 16** — one
+hop, two, three, four. The highlight is gnubg's own legal-move list, so a point
+lights only if the engine truly offers a move landing there, and once you have
+played a die only the moves that remain are shown. Release without moving —
+it's a preview, not a commitment.
 
 **Drag, if you prefer.** You can also drag a checker from its point to a
 destination; the same legality rules apply.
@@ -97,24 +103,43 @@ Then you play. After each of your moves, gnubg judges it and the game pauses so
 you can study the verdict — **GNU waits for you**. You'll see one of three
 honest verdicts:
 
+## The right-hand panel — reading the Coach's verdict
+
+Everything the Coach tells you appears on the **right-hand side of the board**,
+and it rewards a moment's explanation because its most useful feature is not
+obvious at first glance.
+
+At the top is the **verdict** on the move you just played — one of three honest
+outcomes:
+
 - **The best move** — you found gnubg's top choice.
 - **Fine, Nth of M** — a reasonable move, with what would have been better.
 - **A flagged move** — gnubg's severity (doubtful, bad, very bad) and the exact
   equity it cost.
 
-**Study the alternatives — the two-tap toggle.** Below the verdict is a list:
-your move first, marked **P** in red, then gnubg's better moves numbered by
-rank. Tap any one of them:
+Below the verdict is a **list of five rows**: gnubg's top five moves for this
+position, ranked best-first, with your own move marked **P** in red **in its
+place in the ranking** — so if you played the fourth-best move, P sits at the
+fourth row, not the top. Each row shows how much that move gains or loses
+against yours.
 
-- **First tap** shows the **decision point** — the position before the move,
-  with the dice, no arrows. This is the same starting picture for every entry
-  in the list, so you're always comparing like with like.
-- **Second tap** shows the **result** of that move — where the checkers end up,
-  with **green arrows** pointing to the destinations they occupy.
-- **Tap again** to flip back.
+**Here is the part people miss: those five rows are buttons.** They look like a
+read-out, but each one is tappable, and tapping is how you *see* the difference
+on the board rather than just read the notation. This is the Coach's real
+teaching tool, and it's worth learning the two-tap rhythm:
 
-So you can hold your move and gnubg's best move against the identical starting
-position and see, arrow by arrow, how they differ.
+- **First tap on a row** shows that move's **decision point** — the position
+  *before* the move, with the dice, no arrows. Crucially this is the *same*
+  starting picture for every row, so you're always comparing like with like.
+- **Second tap on the same row** shows the **result** — where those checkers
+  end up, with **green arrows** pointing to each destination.
+- **Tap once more** to flip back to the decision point.
+
+So the way to actually compare is: tap **P** twice to watch your own move play
+out in green arrows, then tap **row 1** twice to watch gnubg's best move play
+out from the identical start. Arrow by arrow, you see exactly how the best play
+differs from yours. Until you tap, nothing on the board moves — the rows are an
+invitation, and most of the Coach's value is behind them.
 
 **Continue** by tapping **GNU's turn** — the button on the board's left half,
 the mirror of your Roll. Only then does gnubg receive your move and reply. The

@@ -1,82 +1,55 @@
 # Documentation index
 
-Canonical project documentation for the GNU Backgammon Android port.
+The GNU Backgammon Android port. This index is the map; read the three
+starting points first, treat the rest as reference, and ignore `history/`
+unless you're tracing why something is the way it is.
 
-## Authoritative current state
+## Start here (in order)
 
-The single source of truth for where the project is now is **`STATUS.md`**.
-Read it first. Everything else is reference, history, or forward-looking design
-and defers to it.
+1. **`ARCHITECTURE_FOR_CONTRIBUTORS.md`** — the four-layer stack (gnubg engine
+   → C facade → JNI/Kotlin bridge → Compose UI), a real tap-to-command data
+   flow, and how to add a feature. The single best entry point.
+2. **`QUICKSTART.md`** — the user's view: the four modes and the non-obvious
+   board gestures (the destination-tap stack move, the multi-hop long-press
+   highlight, the coach two-tap compare). Read it to know what the app
+   actually does before changing how it does it.
+3. **`ARCHITECTURE.md`** — the one rule everything obeys: gnubg is the sole
+   authority for game logic; Kotlin owns only shell and presentation. The
+   command-bridge policy lives here.
 
-## Living documents
+## Reference (read when the task touches them)
 
-- `STATUS.md` -- authoritative current state. Start here.
-- `MASTER_V0.9.md` -- deep engineering reference and full build history.
-- `ARCHITECTURE.md` -- ownership boundaries (gnubg authoritative; Kotlin owns
-  shell/presentation) and command-bridge policy.
-- `ARCHITECTURE_FOR_CONTRIBUTORS.md` -- the four-layer stack, a real
-  tap-to-gnubg-command data-flow trace, and a how-to for adding a feature.
-  The best starting point for new contributors.
-- `TECHNICAL-NOTES.md` -- interaction model and invariants (submove testing,
-  undo snapshots, cube path).
-- `PHASE3_TUTOR_ANALYSIS.md` -- tutor analysis internals (the chequer tutor;
-  canonical reference for the tutor pattern).
-- `CODE_AUDIT_2026-07.md` -- a deliberate audit of the largest/most-suspect
-  areas (reinventions, dead code, tangled responsibilities) with findings.
-- `ROADMAP.md` -- milestone arc and forward plan.
-- `ROADMAP_ANALYSIS_PARITY.md` -- detailed analysis roadmap: how upcoming
-  analysis features map to gnubg functions (candidate list, Performance
-  Rating, position entry, rollouts), benchmarked against XG Mobile.
-- `ARCHITECTURE_ANALYSE_MODE.md` -- design proposal for the Analyse
-  destination: position entry, match save, and match review, and the hub
-  restructure they require. Engine backing verified against the vendored
-  sources.
+- `TECHNICAL-NOTES.md` — interaction model and invariants: sub-move testing,
+  undo snapshots, the cube path, the terminal-state (GAME_OVER) latch.
+- `THREADING.md` / `MULTICORE_ANALYSIS.md` — the single engine thread, the
+  projection contract, parallel analysis.
+- `INSIGHT_JOURNEY_AND_ARCHITECTURE.md` — the coach "Why" system end to end:
+  the two-tier doctrine, what was taken from and rejected of
+  backgammon-teacher, the corpus/narrator design, and the build-coherence
+  lesson. Read this before touching coach mode.
+- `INPUT_DICTIONARY.md` — the measured meaning and side of each gnubg neural
+  input (I_*). The reference for any signature or delta work.
+- `ARCHITECTURE_ANALYSE_MODE.md` — the Analyse-mode design.
+- `SETTINGS-UX-BLUEPRINT.md` — settings surface and the gnubg option mapping.
 
-## Forward-looking / design
+## Coach content pipeline (public tooling; the baked assets are Plus)
 
-- `TUTOR_VISION.md` -- north-star vision for the mobile tutor. Not a source of
-  current state.
-- `MULTICORE_ANALYSIS.md` -- design note for multi-core single-move analysis.
-  A proposal, not yet implemented.
-- `SETTINGS-UX-BLUEPRINT.md` -- aspirational Settings UX design. Partially
-  realised (the grouped-tab Settings surface exists); the deep
-  fine-tuning/exposure model is not built.
-- `gnubg_mobile_tutor_mission_statement.tex` / `.pdf` -- product philosophy and
-  vision for the mobile tutor (not an engineering spec).
+- `CORPUS_HARVEST_PLAN.md` — the corpus pipeline and its two-tier doctrine.
+- `DELTA_NARRATOR_PLAYBOOK.md` — the binding law for the deterministic
+  fallback narrator.
+- `CORPUS_ENTRIES_DRAFT.md`, `INSIGHT_COVERAGE.md` — the entries and what they
+  cover. `COACH.md`, `COMPANION.md` — coach-mode notes.
 
-## History (frozen snapshots, superseded by STATUS.md)
+## Release & distribution
 
-Under `history/`:
+- `FDROID_SUBMISSION.md` — the F-Droid recipe and reproducible-build notes.
+- `RELEASE_SIGNING.md` — keystore and signing policy.
+- The user-facing changelog is `../CHANGELOG.md`; per-release F-Droid notes
+  live in `../fastlane/metadata/android/en-US/changelogs/`.
 
-- `STATUS_V0.8.10.md` -- Home Hub scaffold milestone.
-- `STATUS_V0.8.11.md` -- GNUbg lifecycle bridge milestone.
-- `CHANGELOG-0.8.9.md` -- 0.8.9 changelog.
-- `SETTINGS_GNUBG_MAPPING_V0.8.13_DRAFT.md` -- archived Settings/GNUbg command
-  mapping draft.
-- `KNOWN-LIMITATIONS.md` -- superseded by the "Known gaps" section of STATUS.md.
+## history/
 
-## Build
-
-- Build instructions are in the top-level [`README.md`](../README.md#building).
-  For local development, `./build_and_deploy.sh` at the repository root is a
-  convenience wrapper around the Gradle build + install + launch.
-
-## Documentation rule
-
-Project-wide documentation lives at repository root under `docs/`. The Android
-module may keep a tiny pointer README, but should not have its own
-project-level `docs/` directory, because the project spans the Android app, the
-JNI bridge, the engine core, and the upstream source.
-
-## Building documentation
-
-From the repository root:
-
-    make docs
-
-To build only the mobile tutor mission statement PDF:
-
-    make tutor-mission-pdf
-
-The LaTeX source remains the editable source of truth for the mission
-statement; the generated PDF is the public-facing rendered artifact.
+Superseded plans, completed visions, and point-in-time status/handover
+snapshots. Kept for provenance (this is a GPL project); not part of the
+current picture. Nothing here is authoritative — if it disagrees with the
+docs above, the docs above win.
