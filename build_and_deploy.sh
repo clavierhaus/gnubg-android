@@ -36,6 +36,7 @@ hr()   { printf '%s----------------------------------------------------------%s\
 DO_NATIVE=1; DO_APK=1; DO_INSTALL=1; DO_RECONFIGURE=0; DO_LOGCAT=0; REINSTALL=0
 for arg in "$@"; do case "$arg" in
   --apk-only)     DO_NATIVE=0 ;;
+    --force-apk-only) DO_NATIVE=0; FORCE_APK_ONLY=1 ;;
   --native-only)  DO_APK=0; DO_INSTALL=0 ;;
   --no-build)     DO_NATIVE=0; DO_APK=0 ;;
   --reconfigure)  DO_RECONFIGURE=1 ;;
@@ -48,6 +49,7 @@ esac; done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 ROOT=""
 d="$SCRIPT_DIR"
+FORCE_APK_ONLY=0
 while [ "$d" != "/" ]; do
   [ -d "$d/jni-bridge" ] && [ -d "$d/.git" ] && { ROOT="$d"; break; }
   d="$(dirname "$d")"
@@ -91,7 +93,19 @@ if [ "$DO_NATIVE" -eq 1 ]; then
   cp "$CMAKE_BUILD/libgnubg-engine.so" "$JNILIBS/libgnubg-engine.so"
   ok "copied libgnubg-engine.so -> jniLibs/arm64-v8a/"
 else
-  warn "skipping native build"
+  # THE STALE-NATIVE GUARD (field lesson, 2026-07-20): a facade fix once
+  # shipped in Kotlin while its C half stayed in the device's old native
+  # libs -- reverted Kotlin read un-reverted C, and a four-hour ghost hunt
+  # followed. Refuse --apk-only when native sources changed since the last
+  # native build; --force-apk-only overrides deliberately.
+  NATIVE_HASH=$( { git ls-files -s jni-bridge engine-core; git diff -- jni-bridge engine-core; } | sha1sum | cut -d' ' -f1 )
+  STAMP_FILE=".native_build_stamp"
+  if [ "$FORCE_APK_ONLY" != "1" ]; then
+    if [ ! -f "$STAMP_FILE" ] || [ "$(cat "$STAMP_FILE")" != "$NATIVE_HASH" ]; then
+      die "native sources changed since the last native build -- run ./build_native_android.sh first (or pass --force-apk-only if you know why this is safe)."
+    fi
+  fi
+  warn "skipping native build (native sources unchanged since last native build)"
 fi
 
 # --- 2. wipe + gradle --------------------------------------------------------

@@ -162,6 +162,17 @@ runs after every sync.
   retired). Currently armed: APPLYPROBE (an unexplained zero-delta glance,
   2026-07-19 23:58, reproduction pending) and QUORUMPROBE (amendment-2
   evidence collection).
+- BUILD COHERENCE: the app is Kotlin over a native facade; a fix that spans
+  both MUST ship in one deploy. The class of bug this prevents is proven:
+  a facade change went into the device's native libs, its revert shipped
+  apk-only, and reverted Kotlin read un-reverted C for hours -- every
+  feature delta zeroed exactly when only the mover's half differed between
+  boards (the opponent's half being what the swapped read reported). The
+  deploy script now refuses --apk-only when jni-bridge/ or engine-core/
+  changed since the last native build (.native_build_stamp;
+  --force-apk-only overrides deliberately). Corollary evidence law: field
+  measurements captured under a stale native build are poisoned -- the
+  amendment-2 quorum evidence was restarted from the rebuilt binary.
 - Bake discipline everywhere: tiered artifacts, bake refuses "proposed",
   registration precedes baking, counts asserted before commit (a silent
   ENTRY_META skip once shipped a commit whose message claimed more entries
@@ -171,7 +182,11 @@ runs after every sync.
 
 - Amendment 2 phase A': QUORUMPROBE field data -> quorum rule drafts ->
   maintainer adoption.
-- The 23:58 zero-delta ghost: APPLYPROBE armed, one field line decides.
+- (resolved 2026-07-20 ~05:50) The zero-delta ghost WAS the stale native
+  build above; root-caused from APPLYPROBE fingerprints + QUORUMPROBE's
+  identical-across-candidates signature + a sandbox reproduction that
+  exonerated the committed C; fixed by rebuilding native; verified live by
+  threat.risk.accepted firing on a quiet doubtful.
 - Corpus batch 5 phrases (home.point.made.missed, opening.builder.wasted):
   drafted, curated, tier proposed -- awaiting maintainer adoption.
 - Waiting list (may never close, by doctrine): race/bearoff efficiency,
