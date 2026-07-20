@@ -1,6 +1,7 @@
 Fixes:
 - Move hints now show every point a checker can reach, including all targets on doubles (e.g. double 2 from the 24-point lights 22, 20, 18, 16).
-- Winning a game now shows the result and the final dice, and waits for you to start a new game instead of resetting on its own.
+- Winning a game shows the result and the final dice and waits for you to start a new game; a decided match greys out Resign and New game.
 - The engine's resignation offer can be answered in Coach mode.
 
-Also: a dedicated About tab with a build stamp.
+New:
+- A Tips & Tricks tab, and an About tab with a build stamp.

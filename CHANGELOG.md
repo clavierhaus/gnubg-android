@@ -11,7 +11,7 @@ One rule underlies every entry: GNU Backgammon is the sole authority for game
 logic and analysis. "Fixed" almost always means the app stopped disagreeing with
 the engine, or stopped hiding what the engine already knew.
 
-## [0.22.2] -- 2026-07-20
+## [0.22.3] -- 2026-07-20
 
 ### Fixed
 
@@ -37,9 +37,16 @@ the engine, or stopped hiding what the engine already knew.
   Accept / Play-on buttons; both play surfaces now render blocking decisions
   (resignation and cube offers) from one shared component, so neither can omit
   one.
+- When a match is decided, Resign and New game are greyed out instead of
+  active -- there is no game to resign and no next game in a settled match.
+  New match and Home remain available.
 
 ### Changed
 
+- Replaced the redundant Engine settings tab (playing strength is chosen in
+  the Play and Coach setup screens) with a Tips & Tricks tab that surfaces the
+  features players tend to miss: the tap-a-destination move, the multi-hop
+  move highlight, and the coach panel's tappable ranked rows.
 - Settings gained a dedicated About tab (identity, source, and a build stamp
   showing the exact commit and build time); the License tab is now the plain
   GPL text. The build stamp exists so it is always possible to tell, at a

@@ -1,1 +1,1 @@
-Play, train and analyse -- powered by the GNU Backgammon engine
+The first standalone backgammon app on F-Droid: play and analyse, fully offline
