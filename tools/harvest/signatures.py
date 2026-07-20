@@ -62,6 +62,12 @@ SIGNATURES = {
              "min_abs": 0.10, "weight": 1.0},
             {"term": "I_PIPLOSS", "side": "opp", "direction": "down",
              "min_abs": 0.05, "weight": 1.0},
+            # their story is "you left blots under fire" -- it belongs to
+            # positions where the opponent is NOT on the bar (measured played
+            # values 0.708-0.875). Without this gate the entries hijacked a
+            # declined double hit (field, 2026-07-20 00:09: opp on bar = 1.0).
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.0, 0.94], "best_in": [0.0, 0.94], "weight": 0.0},
         ],
     },
     "blot.double.given": {
@@ -74,6 +80,12 @@ SIGNATURES = {
              "min_abs": 0.05, "weight": 1.0},
             {"term": "I_PIPLOSS", "side": "opp", "direction": "down",
              "min_abs": 0.05, "weight": 1.0},
+            # their story is "you left blots under fire" -- it belongs to
+            # positions where the opponent is NOT on the bar (measured played
+            # values 0.708-0.875). Without this gate the entries hijacked a
+            # declined double hit (field, 2026-07-20 00:09: opp on bar = 1.0).
+            {"term": "I_BACK_CHEQUER", "side": "opp", "direction": "any",
+             "played_in": [0.0, 0.94], "best_in": [0.0, 0.94], "weight": 0.0},
         ],
     },
     "anchor.surrender.back": {
