@@ -190,7 +190,9 @@ class InsightMatcher(context: Context) {
             " pipsP=" + sp.pips.joinToString("/") +
             " pipsB=" + sb.pips.joinToString("/") +
             " clsP=" + sp.clazz + " featN=" + sp.feat.size +
-            " cand=" + candidates + " fired=" + fired.size)
+            " cand=" + candidates + " fired=" + fired.size +
+            (if (fired.isNotEmpty())
+                " [" + fired.joinToString(",") { it.third.id } + "]" else ""))
         if (fired.isEmpty() && candidates > 0)
             android.util.Log.i("gnubg-insight", "misses: " + misses.toString().take(900))
         // Envelope law (one line per category; field defect 2026-07-20 00:09:
