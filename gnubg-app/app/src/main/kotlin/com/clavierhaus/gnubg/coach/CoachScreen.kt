@@ -578,7 +578,16 @@ private fun WhyInsights(glance: CoachGlance) {
     // One computation per verdict: gnubg's ApplyMove derives both boards from
     // the glance's pre-board (the array is the single source of truth), then
     // the matcher scores the corpus against gnubg's own feature deltas.
-    LaunchedEffect(glance) {
+    // Key on a STABLE per-verdict value, not the CoachGlance object. Three of
+    // its fields are IntArray (playedMove/bestMove/preBoard), and IntArray
+    // equality is by reference -- so data-class equals can wrongly report two
+    // verdicts "equal" and Compose then SKIPS this effect, leaving the verdict
+    // text rendered but the why-computation unrun (and silent in logcat). The
+    // position fingerprint plus rank/skill identifies the verdict uniquely.
+    LaunchedEffect(
+        com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard),
+        glance.rank, glance.skill
+    ) {
         insights = if (!matcher.available || !glance.flagged) emptyList()
         else withContext(Dispatchers.Default) {
             val skillWord = when (glance.skill) {
@@ -883,10 +892,15 @@ private fun CoachPanel(
             // muted; flagged moves speak up. All values gnubg's own.
             when {
                 g == null -> {
-                    Text(
-                        "Play your move and have it evaluated by the Coach.",
-                        color = pal.uiTextSecondary, fontSize = 13.sp
-                    )
+                    // Only invite a move while a game is actually in progress.
+                    // At game over there is nothing to play or evaluate; the
+                    // result and New game live in the phase block above.
+                    if (phase != GamePhase.GAME_OVER) {
+                        Text(
+                            "Play your move and have it evaluated by the Coach.",
+                            color = pal.uiTextSecondary, fontSize = 13.sp
+                        )
+                    }
                 }
                 g.rank == 0 -> {
                     Text(
