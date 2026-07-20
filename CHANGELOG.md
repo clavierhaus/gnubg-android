@@ -11,6 +11,51 @@ One rule underlies every entry: GNU Backgammon is the sole authority for game
 logic and analysis. "Fixed" almost always means the app stopped disagreeing with
 the engine, or stopped hiding what the engine already knew.
 
+## [0.22.2] -- 2026-07-20
+
+### Fixed
+
+- The legal-move highlight now lights every point a tapped checker can reach
+  along gnubg's own move paths, not just its first hop. On a doubles roll only
+  the first target used to appear; a double 2 from the 24-point now correctly
+  lights 22, 20, 18, and 16. Paths are followed as whole moves, so no
+  unreachable point is ever lit, and dice already played are excluded because
+  the legal set is regenerated against the partial board. (Regressed in the
+  move-highlight rework that replaced a graph search with a first-sub-move
+  reader.)
+- The destination-tap stack move again asks gnubg whether the composed
+  two-checker move is legal, via the engine's own findMove, instead of
+  trusting that two individually legal hops compose into a legal whole. Rolls
+  that force a particular die or both dice can no longer be played illegally
+  through the shortcut. (Same regression origin as the highlight.)
+- A won game now announces the result and holds on the end screen until you
+  start a new game, instead of silently resetting into a fresh position.
+  gnubg auto-advances to the next game the instant one ends; the app now
+  latches the game-over state so nothing overwrites it until you acknowledge
+  it. Resignations and dropped cubes that end a game are covered by the same
+  latch.
+- The dice that ended a game are now shown on the end screen. A game-ending
+  engine move went straight to game-over and the final roll -- the record of
+  what just happened -- was dropped; it now stays visible.
+- The resignation offer is answerable in coach mode. A game the engine
+  resigned could not be finished because the coach panel never drew the
+  Accept / Play-on buttons; both play surfaces now render blocking decisions
+  (resignation and cube offers) from one shared component, so neither can omit
+  one.
+
+### Changed
+
+- Settings gained a dedicated About tab (identity, source, and a build stamp
+  showing the exact commit and build time); the License tab is now the plain
+  GPL text. The build stamp exists so it is always possible to tell, at a
+  glance, which build a device is actually running.
+
+### Internal
+
+- The deploy script refuses an apk-only build when native sources changed
+  since the last native build, preventing a mismatched Kotlin-over-stale-native
+  binary.
+
 ## [0.21.1] -- 2026-07-13
 
 ### Distribution

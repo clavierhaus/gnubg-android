@@ -1,0 +1,7 @@
+Fixes:
+- Move hints now show every point a checker can reach, including all targets on doubles (e.g. double 2 from the 24-point lights 22, 20, 18, 16).
+- The tap-a-destination stack move is re-checked against gnubg for legality.
+- Winning a game now shows the result and the final dice, and waits for you to start a new game instead of resetting on its own.
+- The engine's resignation offer can be answered in Coach mode.
+
+Also: a dedicated About tab with a build stamp.

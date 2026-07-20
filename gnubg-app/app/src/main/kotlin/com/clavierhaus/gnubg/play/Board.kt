@@ -241,13 +241,44 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
     val moves = gameState.legalMoves
     if (moves.isEmpty()) return emptySet()
 
-    val origin = sourcePoint - 1
+    // Each legal move is a PATH of up to four sub-moves (anMove[8] = four
+    // src/dst pairs; a bear-off dst is gnubg's sentinel -1; -1 in the src slot
+    // terminates the move). We FOLLOW the tapped checker along each path: its
+    // resting points are every point it steps to while it keeps moving. That
+    // lights the multi-hop reach a single checker has -- for double 2s from the
+    // 24-point, 22, 20, 18, 16 -- not just the one-die target the old
+    // first-pair reader showed. It never splices hops across different moves
+    // (the older breadth-first bug lit unreachable points), because a path is
+    // walked as a unit. And because state.legalMoves is regenerated against the
+    // partial board after each sub-move (readMatchState callers, remainingDice),
+    // dice already spent are automatically excluded -- only the remaining reach
+    // is shown.
+    val origin = sourcePoint - 1        // gnubg 0-based point index
     val dests = linkedSetOf<Int>()
     var m = 0
-    while (m + 1 < moves.size) {
-        val src = moves[m]          // first sub-move of this move
-        val dst = moves[m + 1]
-        if (src == origin && dst in 0..23) dests.add(dst + 1)
+    while (m + 7 < moves.size) {
+        var here = origin               // where the tapped checker currently is
+        var moving = false              // has this move started moving OUR checker?
+        for (j in 0..3) {
+            val src = moves[m + j * 2]
+            val dst = moves[m + j * 2 + 1]
+            if (src < 0) break          // move ends
+            when {
+                // the tapped checker's first hop in this path
+                !moving && src == origin -> {
+                    moving = true
+                    if (dst in 0..23) { dests.add(dst + 1); here = dst }
+                    else break          // bore off on the first hop; nothing to light past it
+                }
+                // continuing to move the SAME checker along this path
+                moving && src == here -> {
+                    if (dst in 0..23) { dests.add(dst + 1); here = dst }
+                    else break          // bore off; path for this checker ends
+                }
+                // a sub-move of a DIFFERENT checker -- irrelevant to this source
+                else -> { /* skip */ }
+            }
+        }
         m += 8
     }
     return dests

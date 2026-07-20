@@ -49,8 +49,8 @@ android {
         applicationId = "com.clavierhaus.gnubg"
         minSdk = 31
         targetSdk = 35
-        versionCode = 19
-        versionName = "0.22.1"
+        versionCode = 20
+        versionName = "0.22.2"
         ndk {
             abiFilters += "arm64-v8a"
         }

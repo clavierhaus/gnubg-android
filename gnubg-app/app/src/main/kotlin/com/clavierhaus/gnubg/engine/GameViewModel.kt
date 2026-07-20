@@ -32,7 +32,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _liveEngineDice = MutableStateFlow<Pair<Int, Int>?>(null)
     val gameState: StateFlow<BoardState> =
         combine(_gameState, _liveEngineDice) { st, live ->
-            if (st.phase == GamePhase.ENGINE_THINKING && live != null)
+            // Show the engine's roll while it is thinking AND on the end screen:
+            // a game-ending engine move transitions straight to GAME_OVER, and
+            // the roll that ended the game must remain visible (it is the record
+            // of what happened). Any later phase clears it via _liveEngineDice.
+            if ((st.phase == GamePhase.ENGINE_THINKING || st.phase == GamePhase.GAME_OVER) && live != null)
                 st.copy(engineDice = live) else st
         }.stateIn(viewModelScope, SharingStarted.Eagerly, BoardState())
 
@@ -479,6 +483,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newBoard = unique[0].first
         val rawRemaining = unique[0].second
 
+        // gnubg is the sole authority on move legality. The two applySubMove
+        // calls above each validate a single hop, but not that the two-checker
+        // COMBINATION is a legal full move for this roll (backgammon has rolls
+        // where each half is legal alone yet the pair is forced differently --
+        // must-play-larger, must-play-both). gnubg's own findMove settles it:
+        // it runs GenerateMoves on the pre-move board and accepts curBoard only
+        // if it matches a legal move that uses the maximum dice. Empty result ->
+        // not a legal full move -> fall through to normal tap handling.
+        // (Regression fix: commit c33275e's rework dropped this authority check.)
+        run {
+            val d = state.remainingDice
+            val d0 = d[0]
+            val d1 = if (d.size > 1) d[1] else d[0]
+            val verified = Engine.findMove(state.board, newBoard, d0, d1)
+            if (verified.isEmpty()) {
+                android.util.Log.i(
+                    "gnubg-vm",
+                    "destinationStack: rejected point=$point -- gnubg findMove lists no legal move landing there"
+                )
+                return null
+            }
+        }
+
         val rawNextMoves = if (rawRemaining.isNotEmpty()) {
             val r0 = rawRemaining[0]
             val r1 = if (rawRemaining.size > 1) rawRemaining[1] else r0
@@ -730,7 +757,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 kotlinx.coroutines.delay(100)
             }
-            if (_gameState.value.phase != GamePhase.ENGINE_THINKING)
+            // Keep the roll on the end screen: if the engine's move ended the
+            // game, GAME_OVER must still show the dice that ended it. Clear only
+            // for other exits (the next game's beginEngineWork resets cleanly).
+            val p = _gameState.value.phase
+            if (p != GamePhase.ENGINE_THINKING && p != GamePhase.GAME_OVER)
                 _liveEngineDice.value = null
         }
     }
