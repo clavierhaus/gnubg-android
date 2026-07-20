@@ -149,6 +149,12 @@ runs after every sync.
   offline mirrors of the Kotlin; divergence is a defect; the confusion run
   (currently 108 pairs / 108 top-1 / 0 foreign / 0 silent) gates every
   signature change.
+- THE LOG RULE (maintainer order, 2026-07-20): causes are named from logs,
+  never ahead of them. When a defect is reported and log data exists or can
+  be captured, analysis starts from the captured lines; theories are
+  written down only as questions the next capture must answer. Tooling for
+  sifting logs is part of the system (tools/insight_log.py), not an
+  afterthought.
 - Field probes, named and disciplined: a probe is added BEFORE a frame or
   attribution theory is acted on (the one time this order was violated --
   the side-flip misdiagnosis of 2026-07-19 -- both halves were reverted the
