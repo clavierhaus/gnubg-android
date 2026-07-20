@@ -1,5 +1,10 @@
 # The Coach Insight System: Journey, Discards, and Architecture
 
+> The canonical, complete design of verbose coaching mode is
+> `VERBOSE_COACHING_DESIGN.md`. This document is the shorter journey
+> narrative and runtime map; where the two differ on design intent, the
+> design document is authoritative.
+
 Audience: developers who were not in the room. This document records how the
 coaching "Why" layer came to be, which ideas were tried and discarded (and
 why), and how the current system fits together. The binding law lives in
