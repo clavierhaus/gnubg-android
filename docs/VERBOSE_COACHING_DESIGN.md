@@ -450,6 +450,46 @@ for comparative explanation. Which of these is true is the next question the
 instrument is positioned to answer -- and it will answer it against the null,
 not against hope.
 
+### 5.6 A road the failed tooling opened: the corpus's empirical vocabulary
+
+The quorum tooling failed at its own task, but its machinery -- host-side
+candidate generation, the opening bank, deterministic self-play, and above all
+the equity-alignment measurement -- answers a question the CORPUS tier (section
+4.1) has carried unanswered since it was first authored. The corpus signatures
+are hand-chosen deltas in gnubg's I_* input vocabulary, and the harvest plan's
+own author notes concede they were "a GUESS from reading enum comments, not a
+measurement." No instrument had ever measured which of gnubg's inputs actually
+carry explanatory weight.
+
+The alignment machinery, pointed at gnubg's own inputs instead of at quorum
+predicates, measures exactly that. Over the opening bank, for each candidate
+set it takes the best and the worst play, computes every I_* delta between
+their boards, and accumulates -- per input -- how strongly that delta grows as
+the equity gap grows. An input whose delta rises with the stakes is real
+explanatory currency; one flat across stakes is noise the corpus should not
+lean on. Measured over 5822 candidate-sets:
+
+- Real currency: I_PIPLOSS and I_P1 (the largest movers), then I_ENTER,
+  I_MOBILITY, I_FREEPIP, I_ACONTAIN (moderate magnitude, delta sharpening
+  two- to threefold as decisions get serious).
+- Confirmed inert: I_OFF1..3, I_FORWARD_ANCHOR, I_CONTAIN, I_CONTAIN2,
+  I_BACK_ANCHOR, I_BACKBONE (barely move between best and worst play).
+
+A notable correction fell out of it: I_MOBILITY and I_FREEPIP were recorded as
+flat and dead when the corpus tested them inside narrow race positions
+(section 2.4); across the full decision space they are among the most stakes-
+responsive inputs. They were not dead -- they were tested in the wrong
+neighbourhood. This is a measured correction to a standing belief, not a
+reinterpretation.
+
+The road this opens: the corpus can be re-grounded on MEASURED vocabulary
+rather than guessed vocabulary -- author signatures against the inputs shown to
+track equity, not against the inputs whose enum names sound relevant. It also
+sharpens section 6's honesty curve: the low-yield "vocabulary gaps" can now be
+named input by input, not merely counted. This is a leftover of the failed
+quorum experiment worth its own future work; it is recorded here so it is not
+lost, and it is a finding to build from, not a task in progress.
+
 
 ## 6. The corpus as a verbosity-calibration instrument
 
