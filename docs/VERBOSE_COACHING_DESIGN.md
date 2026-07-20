@@ -236,6 +236,28 @@ Three law extensions govern it:
   be measured over a corpus of real decision positions with their full
   candidate lists (section 5). No quorum rule ships before its evidence is
   reviewed and the rule is adopted.
+- **Adoption by reference-authority agreement (not maintainer judgment).** A
+  drafted quorum rule is adopted if and only if its predicate is CONFIRMED by
+  a higher-authority gnubg evaluation across the corpus, above a threshold
+  fixed IN ADVANCE. The authority is gnubg itself at a reference strength
+  materially stronger than the verdict's (the verdict runs 0-ply; the
+  authority runs a fixed higher ply or short rollout) -- the same engine, a
+  deeper truth, GPL-clean by construction and reproducible via the
+  deterministic-noise mechanism (section 5.2). For each drafted predicate the
+  harness measures how often the predicate as evaluated on the verdict's
+  candidate set AGREES with the same predicate on the authority's evaluation;
+  a rule earns adoption only if agreement clears a PRE-REGISTERED threshold,
+  recorded in this document before results are seen so it cannot be tuned to
+  bless a favoured rule. Each adopted rule ships with a citable adoption
+  record (corpus version, authority setting, measured agreement rate) checked
+  into the tooling, so anyone can re-run the measurement and verify the rule
+  met its bar. The maintainer sets the authority setting and the thresholds
+  ONCE, in advance (a policy decision), and may veto on grounds outside the
+  metric, but cannot hand-pick rules the evidence does not support -- personal
+  bias is designed out. Where published reference sources apply (opening
+  rollouts, standard cube positions, match-equity tables), the adoption record
+  may additionally CITE them as corroboration -- referenced, never
+  incorporated, so no copyrighted text is baked and GPL stays clean.
 
 Phase order, primed to distinguish it from the narrator's own phases: A'
 (instrumentation + drafts) -> B' (maintainer adoption) -> C' (bake + Kotlin
