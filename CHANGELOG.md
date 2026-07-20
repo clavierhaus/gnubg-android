@@ -23,11 +23,6 @@ the engine, or stopped hiding what the engine already knew.
   the legal set is regenerated against the partial board. (Regressed in the
   move-highlight rework that replaced a graph search with a first-sub-move
   reader.)
-- The destination-tap stack move again asks gnubg whether the composed
-  two-checker move is legal, via the engine's own findMove, instead of
-  trusting that two individually legal hops compose into a legal whole. Rolls
-  that force a particular die or both dice can no longer be played illegally
-  through the shortcut. (Same regression origin as the highlight.)
 - A won game now announces the result and holds on the end screen until you
   start a new game, instead of silently resetting into a fresh position.
   gnubg auto-advances to the next game the instant one ends; the app now

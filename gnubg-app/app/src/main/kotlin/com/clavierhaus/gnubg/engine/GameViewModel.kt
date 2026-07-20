@@ -483,28 +483,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newBoard = unique[0].first
         val rawRemaining = unique[0].second
 
-        // gnubg is the sole authority on move legality. The two applySubMove
-        // calls above each validate a single hop, but not that the two-checker
-        // COMBINATION is a legal full move for this roll (backgammon has rolls
-        // where each half is legal alone yet the pair is forced differently --
-        // must-play-larger, must-play-both). gnubg's own findMove settles it:
-        // it runs GenerateMoves on the pre-move board and accepts curBoard only
-        // if it matches a legal move that uses the maximum dice. Empty result ->
-        // not a legal full move -> fall through to normal tap handling.
-        // (Regression fix: commit c33275e's rework dropped this authority check.)
-        run {
-            val d = state.remainingDice
-            val d0 = d[0]
-            val d1 = if (d.size > 1) d[1] else d[0]
-            val verified = Engine.findMove(state.board, newBoard, d0, d1)
-            if (verified.isEmpty()) {
-                android.util.Log.i(
-                    "gnubg-vm",
-                    "destinationStack: rejected point=$point -- gnubg findMove lists no legal move landing there"
-                )
-                return null
-            }
-        }
+        // Legality is already gnubg's, at both granularities: each of the two
+        // applySubMove hops above routes through LegalMove (eval.c:2732), and
+        // the COMPLETE turn is validated by confirm() via Engine.findMove
+        // (GenerateMoves + cMaxMoves/cMaxPips match) when the player commits.
+        // A destination stack is a PARTIAL move -- on doubles it plays two of
+        // four dice -- so it must NOT be gated against findMove here (that
+        // demands a maximum move and wrongly rejects the legal partial: e.g.
+        // double sixes, stacking two checkers 21->15 leaves two sixes still to
+        // play). No extra check belongs here.
 
         val rawNextMoves = if (rawRemaining.isNotEmpty()) {
             val r0 = rawRemaining[0]
