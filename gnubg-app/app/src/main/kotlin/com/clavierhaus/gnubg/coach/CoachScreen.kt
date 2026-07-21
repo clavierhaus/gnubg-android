@@ -370,6 +370,33 @@ fun CoachScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
+                // Undo (Plus): while a judged move is HELD (chequer review
+                // only -- a cube decision is not a move), the player may
+                // discard it and replay the same roll. Orange per the PlusUi
+                // convention: orange control == Plus feature, at a glance.
+                // Vertical spine like Home -- same rail, same aesthetic.
+                if (gameState.phase == GamePhase.COACH_REVIEW && rawCubeGlance == null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                com.clavierhaus.gnubg.shared.PlusUi.Interactive,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable { viewModel.undoCoachMove() }
+                            .padding(horizontal = 10.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "U\nn\nd\no",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 15.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
             }
 
             Row(
