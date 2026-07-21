@@ -1242,6 +1242,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Coach Undo (Plus UI, reached only from the Plus coach rail): discard
+     *  the HELD move and hand the turn back to the player, same roll.
+     *
+     *  No engine rewind exists or is needed: the coach hold PRECEDES
+     *  applyMoveString (see the confirm path -- "the move is not yet
+     *  gnubg's"), so gnubg still sits at the pre-move position with the dice
+     *  rolled. Clearing the hold and re-settling from the engine re-derives
+     *  HUMAN_MOVING with the same dice and a fresh move entry -- the
+     *  projection restores the pre-move board because that IS gnubg's board.
+     *  The discarded verdict is cleared with the move it judged; nothing is
+     *  faked and no phase is picked here (contract order: the projection
+     *  derives it).
+     *
+     *  Deliberately chequer-only: a held CUBE decision (pendingCubeAction)
+     *  is not a move and is not undone by this; the guard on
+     *  pendingCoachMove excludes it. */
+    fun undoCoachMove() {
+        viewModelScope.launch(engineThread) {
+            if (_gameState.value.phase != GamePhase.COACH_REVIEW) return@launch
+            if (pendingCoachMove == null) return@launch
+            android.util.Log.i("gnubg-coach", "undo: discarding held '$pendingCoachMove'")
+            pendingCoachMove = null
+            _coachGlance.value = null
+            settleFromEngine()
+        }
+    }
+
     fun startCoachGame(
         length: Int = _coachLength.value,
         difficulty: Difficulty = _coachDifficulty.value
