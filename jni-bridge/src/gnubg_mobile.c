@@ -1624,3 +1624,134 @@ int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
     pthread_mutex_unlock(&gnubg_lock);
     return (int) n;
 }
+
+/*
+ * Match statistics (the PR feature's engine layer).
+ *
+ * Runs gnubg's OWN analysis over every game in the match record and reads
+ * out the summed statcontext -- no arithmetic of ours anywhere near the
+ * errors. The walk mirrors AnalyzeGame (analysis.c:963) exactly, made
+ * synchronous: AnalyzeGame queues AnalyseMoveMT tasks on the multithread
+ * queue, which this facade does not run, so each record is analysed inline
+ * with the same calls in the same order (AnalyzeMove on a copy of the
+ * pre-record state -- precisely what the task receives via its memcpy --
+ * then FixMatchState / swap / ApplyMoveRecord advance the walker, and one
+ * doubleError float persists across a double/take pair, which is all the
+ * linked-task mechanism exists to preserve). Game totals are summed with
+ * AddStatcontext and the per-decision rates come from getMWCFromError --
+ * gnubg's own ratio (formatgs.c divides by anCloseCube + anUnforcedMoves).
+ *
+ * out[40] layout (F = IEEE float bits via memcpy):
+ *   [0]      games analysed (0 = no match record / nothing to analyse)
+ *   [1..2]   anTotalMoves      player0, player1
+ *   [3..4]   anUnforcedMoves
+ *   [5..6]   anCloseCube
+ *   [7..8]   anTotalCube
+ *   [9..10]  F arErrorCheckerplay[p][0]        (EMG chequer error total)
+ *   [11..12] F cube error total [p][0]         (sum of the six categories)
+ *   [13..14] F arLuck[p][0]                    (EMG luck total)
+ *   [15..16] F aaaar[COMBINED][PERMOVE][p][NORMALISED]  (per-decision rate;
+ *            PR as the pros quote it = this * 500, a display convention)
+ *   [17..24] anMoves[p][skill]  p0 x N_SKILLS then p1
+ *   [25..34] anLuck[p][luck]    p0 x N_LUCKS  then p1
+ *   [35..36] F arActualResult[p]
+ *   [37..38] F arLuckAdj[p]
+ *   [39]     reserved 0
+ *
+ * Heavy (2-ply over the whole match): call from a background thread.
+ */
+int gnubg_mobile_match_stats(int out[40])
+{
+    memset(out, 0, sizeof(int) * 40);
+    pthread_mutex_lock(&gnubg_lock);
+
+    statcontext scTotal;
+    float aaaar[3][2][2][2];
+    int games = 0;
+    listOLD *plg;
+
+    IniStatcontext(&scTotal);
+
+    for (plg = lMatch.plNext; plg != &lMatch; plg = plg->plNext) {
+        listOLD *plGameWalk = (listOLD *) plg->p;
+        listOLD *pl;
+        moverecord *pmr;
+        matchstate msAnalyse;
+        statcontext *psc;
+        float doubleError = 0.0f;
+
+        if (!plGameWalk || plGameWalk->plNext == plGameWalk) continue;
+        pl  = plGameWalk->plNext;
+        pmr = (moverecord *) pl->p;
+        if (!pmr || pmr->mt != MOVE_GAMEINFO) continue;
+        psc = &pmr->g.sc;
+
+        /* GAMEINFO first: initialises msAnalyse and the game statcontext
+         * (AnalyzeMove's MOVE_GAMEINFO case runs IniStatcontext). */
+        if (AnalyzeMove(pmr, &msAnalyse, plGameWalk, psc,
+                        &esAnalysisChequer, &esAnalysisCube,
+                        aamfAnalysis, NULL, NULL) < 0)
+            continue;
+
+        for (pl = pl->plNext; pl != plGameWalk; pl = pl->plNext) {
+            matchstate msTmp;
+            pmr = (moverecord *) pl->p;
+            if (!pmr) break;
+
+            /* The task path hands AnalyseMoveMT a COPY of the walker's
+             * pre-record state; analyse on a copy here for the same reason
+             * (AnalyzeMove mutates its matchstate). */
+            memcpy(&msTmp, &msAnalyse, sizeof(msTmp));
+            if (AnalyzeMove(pmr, &msTmp, plGameWalk, psc,
+                            &esAnalysisChequer, &esAnalysisCube,
+                            aamfAnalysis, NULL, &doubleError) < 0)
+                break;
+
+            FixMatchState(&msAnalyse, pmr);
+            if ((pmr->fPlayer != msAnalyse.fMove)
+                && (pmr->mt == MOVE_NORMAL || pmr->mt == MOVE_RESIGN
+                    || pmr->mt == MOVE_SETDICE)) {
+                SwapSides(msAnalyse.anBoard);
+                msAnalyse.fMove = pmr->fPlayer;
+            }
+            ApplyMoveRecord(&msAnalyse, plGameWalk, pmr);
+        }
+
+        AddStatcontext(psc, &scTotal);
+        games++;
+    }
+
+    if (games > 0) {
+        int p, s;
+        getMWCFromError(&scTotal, aaaar);
+        out[0] = games;
+        for (p = 0; p < 2; p++) {
+            float cube_err =
+                scTotal.arErrorMissedDoubleDP[p][0] +
+                scTotal.arErrorMissedDoubleTG[p][0] +
+                scTotal.arErrorWrongDoubleDP[p][0] +
+                scTotal.arErrorWrongDoubleTG[p][0] +
+                scTotal.arErrorWrongTake[p][0] +
+                scTotal.arErrorWrongPass[p][0];
+            float rate = aaaar[COMBINED][PERMOVE][p][NORMALISED];
+
+            out[1 + p] = scTotal.anTotalMoves[p];
+            out[3 + p] = scTotal.anUnforcedMoves[p];
+            out[5 + p] = scTotal.anCloseCube[p];
+            out[7 + p] = scTotal.anTotalCube[p];
+            memcpy(&out[9 + p],  &scTotal.arErrorCheckerplay[p][0], sizeof(float));
+            memcpy(&out[11 + p], &cube_err, sizeof(float));
+            memcpy(&out[13 + p], &scTotal.arLuck[p][0], sizeof(float));
+            memcpy(&out[15 + p], &rate, sizeof(float));
+            for (s = 0; s < N_SKILLS; s++)
+                out[17 + p * N_SKILLS + s] = scTotal.anMoves[p][s];
+            for (s = 0; s < N_LUCKS; s++)
+                out[25 + p * N_LUCKS + s] = scTotal.anLuck[p][s];
+            memcpy(&out[35 + p], &scTotal.arActualResult[p], sizeof(float));
+            memcpy(&out[37 + p], &scTotal.arLuckAdj[p], sizeof(float));
+        }
+    }
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return games;
+}

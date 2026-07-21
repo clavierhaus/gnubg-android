@@ -78,6 +78,10 @@ int gnubg_mobile_load_game(const char *path);
 int gnubg_mobile_save_game(const char *path);
 int gnubg_mobile_load_match(const char *path);
 int gnubg_mobile_save_match(const char *path);
+
+/* PR feature: gnubg's own analysis over the whole match record; out[40]
+ * layout documented at the definition. Heavy -- background thread. */
+int gnubg_mobile_match_stats(int out[40]);
 int gnubg_mobile_load_position(const char *path);
 int gnubg_mobile_save_position(const char *path);
 

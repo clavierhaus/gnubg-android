@@ -1144,3 +1144,20 @@ Java_com_clavierhaus_gnubg_Engine_getResignation(JNIEnv *env, jobject thiz) {
     (void) env; (void) thiz;
     return (jint) gnubg_mobile_get_resignation();
 }
+
+/*
+ * Engine.matchStats(): gnubg's own whole-match analysis + statistics.
+ * 40-int layout documented at gnubg_mobile_match_stats. Heavy (2-ply over
+ * the full record) -- Kotlin calls it from a background dispatcher.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_matchStats(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    jintArray result = (*env)->NewIntArray(env, 40);
+    int s[40];
+    gnubg_mobile_match_stats(s);
+    jint buf[40];
+    for (int i = 0; i < 40; i++) buf[i] = (jint)s[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 40, buf);
+    return result;
+}
