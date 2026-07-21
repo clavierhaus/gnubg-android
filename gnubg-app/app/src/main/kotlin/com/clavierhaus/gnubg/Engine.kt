@@ -166,6 +166,18 @@ object Engine {
     // 2-ply over the full record -- call from a background dispatcher.
     external fun matchStats(): IntArray
 
+    // PR stage 2: the worst chequer decisions of the analysed match, worst
+    // first, up to 20 rows. Every number is gnubg's own stored analysis
+    // (pmr->ml / n.iMove / n.stMove; error = played minus best per
+    // analysis.c:447/:726, <= 0). Layout: [0] row count; [1..2] float-bits
+    // per-player self-check sums; rows at base 4, stride 5: gameIdx, recIdx
+    // (raw record ordinal, GAMEINFO = 0), player, float-bits error, skill.
+    // G3 CONTRACT (mandatory): the caller compares [1..2] against
+    // matchStats()'s arErrorCheckerplay totals ([9..10]) and treats the
+    // whole list as INVALID on mismatch beyond epsilon -- log loud, show
+    // nothing. Requires a prior matchStats() pass; fresh match -> 0 rows.
+    external fun matchErrors(): IntArray
+
     // Position entry (Analyse Position). Wraps gnubg's SetGNUbgID: accepts a
     // GNU BG ID ("PositionID:MatchID") or an XGID. Returns gnubg's own code:
     // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is

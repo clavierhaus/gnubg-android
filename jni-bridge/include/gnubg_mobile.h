@@ -82,6 +82,12 @@ int gnubg_mobile_save_match(const char *path);
 /* PR feature: gnubg's own analysis over the whole match record; out[40]
  * layout documented at the definition. Heavy -- background thread. */
 int gnubg_mobile_match_stats(int out[40]);
+
+/* PR stage 2: worst chequer decisions from the analysed record; out[104]
+ * layout at the definition. Rows carry raw (game, record) coordinates.
+ * out[1..2] are per-player self-check sums the caller MUST compare against
+ * stage 1's arErrorCheckerplay totals (guardrail G3). */
+int gnubg_mobile_match_errors(int out[104]);
 int gnubg_mobile_load_position(const char *path);
 int gnubg_mobile_save_position(const char *path);
 

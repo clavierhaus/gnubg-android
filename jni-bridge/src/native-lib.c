@@ -1161,3 +1161,20 @@ Java_com_clavierhaus_gnubg_Engine_matchStats(JNIEnv *env, jobject thiz) {
     (*env)->SetIntArrayRegion(env, result, 0, 40, buf);
     return result;
 }
+
+/*
+ * Engine.matchErrors(): worst chequer decisions of the analysed match.
+ * 104-int layout documented at gnubg_mobile_match_errors. Requires a prior
+ * matchStats() analysis pass; fresh match yields row count 0.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_matchErrors(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    jintArray result = (*env)->NewIntArray(env, 104);
+    int s[104];
+    gnubg_mobile_match_errors(s);
+    jint buf[104];
+    for (int i = 0; i < 104; i++) buf[i] = (jint)s[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 104, buf);
+    return result;
+}
