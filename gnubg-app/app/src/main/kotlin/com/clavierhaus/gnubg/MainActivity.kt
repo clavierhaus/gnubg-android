@@ -76,35 +76,88 @@ class MainActivity : ComponentActivity() {
                 //
                 // The cache path must be free of whitespace: CommandSaveMatch runs
                 // NextToken() on it and would truncate at the first space.
-                val saveMatch = rememberLauncherForActivityResult(
-                    ActivityResultContracts.CreateDocument("application/octet-stream")
-                ) { uri ->
-                    if (uri == null) return@rememberLauncherForActivityResult
-                    scope.launch {
-                        val tmp = File(context.cacheDir, "gnubg-match-export.sgf")
-                        val written = viewModel.saveMatchToFile(tmp)
-                        if (!written) {
-                            Toast.makeText(
-                                context,
-                                "Nothing to save yet -- start a game first.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@launch
-                        }
-                        val copied = withContext(Dispatchers.IO) {
-                            runCatching {
-                                context.contentResolver.openOutputStream(uri)?.use { out ->
-                                    tmp.inputStream().use { input -> input.copyTo(out) }
-                                } ?: throw java.io.IOException("no output stream")
-                            }.isSuccess
-                        }
-                        tmp.delete()
+                //
+                // STORAGE LAW (docs/PLUS_STRATEGY, settled 2026-07-20): saving
+                // goes through ONE user-granted CBG folder (SAF tree grant),
+                // not a per-save picker. The first tap of Save shows a short
+                // explanation and the folder picker, once; every save after
+                // that is silent. The grant is the system's own persisted-
+                // permission record -- see CbgFolder.
+                fun defaultMatchFilename(): String {
+                    val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+                    return "gnubg-match-" + stamp + ".sgf"
+                }
+
+                var showStorageDialog by remember { mutableStateOf(false) }
+
+                // Writes the current match into the granted folder. On a stale
+                // grant (folder deleted, permission revoked) it falls back to
+                // asking again -- the dialog is the recovery path too.
+                suspend fun saveIntoCbgFolder(tree: android.net.Uri) {
+                    val tmp = File(context.cacheDir, "gnubg-match-export.sgf")
+                    val written = viewModel.saveMatchToFile(tmp)
+                    if (!written) {
                         Toast.makeText(
                             context,
-                            if (copied) "Match saved." else "Could not write the file.",
+                            "Nothing to save yet -- start a game first.",
                             Toast.LENGTH_SHORT
                         ).show()
+                        return
                     }
+                    val name = defaultMatchFilename()
+                    val ok = withContext(Dispatchers.IO) {
+                        com.clavierhaus.gnubg.storage.CbgFolder.saveInto(context, tree, name, tmp)
+                    }
+                    tmp.delete()
+                    if (ok) {
+                        Toast.makeText(context, "Saved $name to your CBG folder.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Your CBG folder is no longer reachable -- please choose it again.", Toast.LENGTH_SHORT).show()
+                        showStorageDialog = true
+                    }
+                }
+
+                val pickCbgFolder = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocumentTree()
+                ) { uri ->
+                    if (uri == null) return@rememberLauncherForActivityResult
+                    com.clavierhaus.gnubg.storage.CbgFolder.take(context, uri)
+                    scope.launch { saveIntoCbgFolder(uri) }
+                }
+
+                fun onSaveTapped() {
+                    val tree = com.clavierhaus.gnubg.storage.CbgFolder.grantedTree(context)
+                    if (tree == null) showStorageDialog = true
+                    else scope.launch { saveIntoCbgFolder(tree) }
+                }
+
+                if (showStorageDialog) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showStorageDialog = false },
+                        title = { androidx.compose.material3.Text("Your matches, your folder") },
+                        text = {
+                            androidx.compose.material3.Text(
+                                "CBG stores matches as plain gnubg files (.sgf) in a folder " +
+                                "you pick -- browse them, back them up, open them anywhere " +
+                                "gnubg runs. The same folder works in both CBG and CBG Plus, " +
+                                "so upgrading never locks in or loses a match. Choose the " +
+                                "folder once; every save after that is silent."
+                            )
+                        },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                showStorageDialog = false
+                                pickCbgFolder.launch(
+                                    com.clavierhaus.gnubg.storage.CbgFolder.documentsInitialUri()
+                                )
+                            }) { androidx.compose.material3.Text("Choose folder") }
+                        },
+                        dismissButton = {
+                            androidx.compose.material3.TextButton(onClick = { showStorageDialog = false }) {
+                                androidx.compose.material3.Text("Not now")
+                            }
+                        }
+                    )
                 }
 
                 // Feature [3]: open a saved match. gnubg's SGF reader takes a
@@ -145,11 +198,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                fun defaultMatchFilename(): String {
-                    val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
-                    return "gnubg-match-" + stamp + ".sgf"
-                }
-
                 androidx.compose.foundation.layout.Box(
                     modifier = androidx.compose.ui.Modifier.fillMaxSize()
                 ) {
@@ -165,7 +213,7 @@ class MainActivity : ComponentActivity() {
                     AppMode.PLAY -> GameLayout(
                         viewModel = viewModel,
                         onReturnToHub = { mode = AppMode.HUB },
-                        onSaveMatch = { saveMatch.launch(defaultMatchFilename()) },
+                        onSaveMatch = { onSaveTapped() },
                         onOpenSettings = { showSettings = true }
                     )
 
