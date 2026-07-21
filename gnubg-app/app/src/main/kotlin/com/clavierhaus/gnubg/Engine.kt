@@ -157,6 +157,15 @@ object Engine {
     external fun loadSGF(path: String): Boolean
     external fun saveSGF(path: String): Boolean
 
+    // PR feature: gnubg's own analysis over the whole match record, summed
+    // with AddStatcontext, rates from getMWCFromError -- no arithmetic of
+    // ours near the errors. 40-int layout documented at
+    // gnubg_mobile_match_stats (floats as IEEE bits). [15..16] carry the
+    // combined per-decision EMG rate; PR as the pros quote it is that rate
+    // times 500 (a display convention, applied only at the UI). Heavy:
+    // 2-ply over the full record -- call from a background dispatcher.
+    external fun matchStats(): IntArray
+
     // Position entry (Analyse Position). Wraps gnubg's SetGNUbgID: accepts a
     // GNU BG ID ("PositionID:MatchID") or an XGID. Returns gnubg's own code:
     // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is
