@@ -2,6 +2,7 @@
 # public FOSS main and this repo's plus branch. tools/plus/check_foss_parity.sh
 # alarms on any difference outside this list. One path or prefix per line.
 PLUS.md
+docs/PLUS_STRATEGY.md
 plus-overlay.paths
 plus_build_and_deploy.sh
 licenses/
