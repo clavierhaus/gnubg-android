@@ -224,8 +224,12 @@ git push origin "$TAG"
 ok "tag pushed"
 
 printf '%screating GitHub release...%s\n' "$B" "$X"
-TITLE="$(head -n1 "$NOTES" | sed 's/^#* *//')"
-[ -n "$TITLE" ] || TITLE="$VNAME"
+# Title is MECHANICAL: fixed product name + the tag, nothing hand-typed.
+# The old code took the title from RELEASE_NOTES.md's first line, so a stale
+# heading (e.g. "...0.21.4") rotted into the title of a different version.
+# GitHub shows the tag beside the title already, so the version lives in the
+# tag alone -- one source of truth, nothing to drift.
+TITLE="CBG - Clavierhaus BackGammon $TAG"
 gh release create "$TAG" "$APK" "$APK_SHA" $PRERELEASE \
   --title "$TITLE" \
   --notes-file "$NOTES" \
