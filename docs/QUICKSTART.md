@@ -224,15 +224,25 @@ editor.
 
 ## Review a saved match
 
-Review walks through a match you've saved to `.sgf`, one move at a time.
+Review walks through a match you've saved to `.sgf`, one move at a time —
+the same board, replayed, with gnubg's opinion of every move along the way.
 
-**Open a match** with **Open match** and pick the saved file. Then step through
-it: **Move >** advances one move, **Game >** jumps to the next game of the
-match. The header shows the running score and where you are (which game, whose
-turn, end of game).
-
-This is the way to go back over a finished game and see how it unfolded —
-the same board, replayed.
+- **Open a match** with **Open match** and pick a saved `.sgf` file — your
+  saves live in the CBG folder you chose the first time you tapped Save.
+  Opening a file replaces any game in progress; the screen warns you before
+  it does.
+- **Step in both directions.** **Move >** advances one move and **< Move**
+  goes back one; **Game >** jumps to the next game of the match and
+  **< Game** to the previous. Nothing is locked forward — wander freely.
+- **The verdict follows the cursor.** For the move that produced the shown
+  position, the panel gives gnubg's own judgement: the move's rank among the
+  legal plays and its skill classification. It is the same authority as the
+  Coach, applied to history.
+- **The header keeps you oriented**: the running score, which game you're
+  in, whose move it was, and an *End of game* marker when you step past a
+  game's final move.
+- **Home** leaves Review; the match file stays untouched — Review only
+  reads, it never rewrites your record.
 
 ---
 
