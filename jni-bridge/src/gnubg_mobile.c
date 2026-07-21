@@ -1772,3 +1772,125 @@ int gnubg_mobile_match_stats(int out[40])
     pthread_mutex_unlock(&gnubg_lock);
     return games;
 }
+
+/*
+ * Match error list (PR stage 2) -- the receipts behind the summary.
+ *
+ * Walks the analysed match record and lists the worst chequer decisions.
+ * NOTHING here is computed by us: after an analysis pass (stage 1 /
+ * gnubg_mobile_match_stats), every analysed MOVE_NORMAL record CARRIES
+ * gnubg's own results -- pmr->ml, the scored move list (CopyMoveList,
+ * analysis.c:716); pmr->n.iMove, the played move's index found by
+ * position-key match (:724); pmr->n.stMove, the skill class (:731). The
+ * error is gnubg's own expression, mirrored verbatim from BOTH sites where
+ * gnubg computes it for display and statistics (analysis.c:447 and :726):
+ *
+ *     rChequerSkill = pmr->ml.amMoves[pmr->n.iMove].rScore
+ *                   - pmr->ml.amMoves[0].rScore;     PLAYED minus BEST, <= 0
+ *
+ * Guards, each from gnubg's own conditions: MOVE_NORMAL only (G6:
+ * chequer-only until the sum- and desktop-checks pass); analysed records
+ * only (esChequer.et != EVAL_NONE, the updateStatcontext condition :433);
+ * iMove < ml.cMoves (the key-match loop :724 leaves iMove == cMoves when no
+ * key matches -- gnubg then treats the error as 0, and indexing would be
+ * out of bounds).
+ *
+ * SELF-CONSISTENCY (guardrail G3): out[1..2] carry, per player, the sum of
+ * -rChequerSkill over exactly the records gnubg's own accumulator counts --
+ * unforced only (ml.cMoves > 1, :458), negated exactly as
+ * arErrorCheckerplay accumulates (-=, :459). The caller MUST compare these
+ * sums against stage 1's arErrorCheckerplay totals and declare the whole
+ * list invalid on mismatch beyond epsilon: a misread field cannot silently
+ * survive, because it would have to coincidentally sum to gnubg's total.
+ *
+ * out[104] layout (F = IEEE float bits):
+ *   [0]    row count n (0..20), worst first
+ *   [1..2] F per-player G3 check sums (player0, player1)
+ *   [3]    reserved 0
+ *   rows: base 4, stride 5, for i in 0..n-1:
+ *     [4+5i+0] game index   (0-based position of the game in lMatch)
+ *     [4+5i+1] record index (0-based ordinal in the game's record list;
+ *              the GAMEINFO record is 0 -- raw coordinates; the mapping to
+ *              Review's stepping is stage 4's job, per guardrail G5)
+ *     [4+5i+2] player (pmr->fPlayer)
+ *     [4+5i+3] F rChequerSkill (<= 0; more negative = worse)
+ *     [4+5i+4] skill class (pmr->n.stMove)
+ *
+ * Requires a prior analysis pass; un-analysed records simply do not
+ * qualify, so calling this on a fresh match yields n = 0.
+ */
+#define MATCH_ERR_ROWS 20
+
+int gnubg_mobile_match_errors(int out[104])
+{
+    float rowErr[MATCH_ERR_ROWS];
+    int rowDat[MATCH_ERR_ROWS][4];   /* game, rec, player, skill */
+    int n = 0;
+    float sum[2] = { 0.0f, 0.0f };
+    listOLD *plg;
+    int gameIdx = 0;
+
+    memset(out, 0, sizeof(int) * 104);
+    pthread_mutex_lock(&gnubg_lock);
+
+    for (plg = lMatch.plNext; plg != &lMatch; plg = plg->plNext, gameIdx++) {
+        listOLD *plGameWalk = (listOLD *) plg->p;
+        listOLD *pl;
+        int recIdx = 0;
+
+        if (!plGameWalk) continue;
+        for (pl = plGameWalk->plNext; pl != plGameWalk; pl = pl->plNext, recIdx++) {
+            moverecord *pmr = (moverecord *) pl->p;
+            float err;
+
+            if (!pmr || pmr->mt != MOVE_NORMAL) continue;
+            if (pmr->esChequer.et == EVAL_NONE) continue;          /* :433 */
+            if (!pmr->ml.amMoves) continue;
+
+            /* :724's no-match case leaves iMove == cMoves: error 0, and
+             * indexing amMoves there would be out of bounds. */
+            if (pmr->n.iMove < pmr->ml.cMoves)
+                err = pmr->ml.amMoves[pmr->n.iMove].rScore
+                    - pmr->ml.amMoves[0].rScore;                   /* :447 :726 */
+            else
+                err = 0.0f;
+
+            if (pmr->ml.cMoves > 1 && pmr->fPlayer >= 0 && pmr->fPlayer < 2)
+                sum[pmr->fPlayer] += -err;                         /* :458 :459 */
+
+            if (err < 0.0f) {
+                /* insert into the worst-first fixed list */
+                int j = n < MATCH_ERR_ROWS ? n : MATCH_ERR_ROWS;
+                while (j > 0 && rowErr[j - 1] > err) {
+                    if (j < MATCH_ERR_ROWS) {
+                        rowErr[j] = rowErr[j - 1];
+                        memcpy(rowDat[j], rowDat[j - 1], sizeof(rowDat[j]));
+                    }
+                    j--;
+                }
+                if (j < MATCH_ERR_ROWS) {
+                    rowErr[j] = err;
+                    rowDat[j][0] = gameIdx;
+                    rowDat[j][1] = recIdx;
+                    rowDat[j][2] = pmr->fPlayer;
+                    rowDat[j][3] = (int) pmr->n.stMove;
+                    if (n < MATCH_ERR_ROWS) n++;
+                }
+            }
+        }
+    }
+
+    out[0] = n;
+    memcpy(&out[1], &sum[0], sizeof(float));
+    memcpy(&out[2], &sum[1], sizeof(float));
+    for (int i = 0; i < n; i++) {
+        out[4 + 5 * i + 0] = rowDat[i][0];
+        out[4 + 5 * i + 1] = rowDat[i][1];
+        out[4 + 5 * i + 2] = rowDat[i][2];
+        memcpy(&out[4 + 5 * i + 3], &rowErr[i], sizeof(float));
+        out[4 + 5 * i + 4] = rowDat[i][3];
+    }
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return n;
+}
