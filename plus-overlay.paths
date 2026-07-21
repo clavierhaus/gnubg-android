@@ -12,6 +12,7 @@ gnubg-app/app/src/main/AndroidManifest.xml
 gnubg-app/app/src/main/assets/insights_v0.json
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/analyse/AnalyseScreen.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/CoachScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/stats/PersonalStatsScreen.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/InsightMatcher.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/PlusUi.kt
