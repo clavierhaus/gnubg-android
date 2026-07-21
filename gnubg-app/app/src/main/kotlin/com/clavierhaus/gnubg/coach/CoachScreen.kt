@@ -689,9 +689,10 @@ private fun CoachPanel(
                     // then, verdict on screen, GNU rolls and replies.
                     Text(
                         when (busy) {
-                            BusyKind.JUDGING  -> "Judging your move..."
-                            BusyKind.REPLYING -> "GNU is replying..."
-                            BusyKind.NONE     -> "GNU is thinking..."
+                            BusyKind.JUDGING   -> "Judging your move..."
+                            BusyKind.REPLYING  -> "GNU is replying..."
+                            BusyKind.ANALYSING -> "Analysing the match..."
+                            BusyKind.NONE      -> "GNU is thinking..."
                         },
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
