@@ -96,6 +96,31 @@ we are not a lock-in shop, and the GPL ethos of the project's foundation
 argues for data freedom in both directions. Locking data in would poison the
 exact goodwill the FOSS edition exists to earn.
 
+**SETTLED MECHANISM (2026-07-20): one SAF-granted folder.** Storage goes
+through the Storage Access Framework and nothing else. Rationale, verified
+against current Android guidance: a self-created directory at the storage
+root is dead since scoped storage (targetSdk 30+); MediaStore can silently
+create Documents/CBG but its ownership is per-app and dies on reinstall --
+under it, Plus could never read the free edition's files (match records are
+not media, so no read path exists since API 33). SAF is the only official
+mechanism where BOTH editions can be granted the same user-visible folder,
+where files survive uninstall, and where a reinstall costs one re-pick. No
+online storage of any kind, ever -- backup and sync are the user's own act on
+their own files, which plain .sgf in a plain folder makes trivial.
+
+UX law: **the dialog appears at the first tap of the existing Save button,
+never at launch.** It briefly explains (a) that CBG stores match files as
+plain gnubg-format files in a folder the user chooses and can browse, and
+(b) that the same folder is readable by both the free and the Plus edition,
+so nothing is ever locked in or lost on upgrade. Then ACTION_OPEN_DOCUMENT_TREE
+opens, pre-navigated to Documents/ via EXTRA_INITIAL_URI, the user creates or
+picks the CBG folder, the grant is persisted (takePersistableUriPermission),
+and every subsequent save is silent. Current code already has the per-file
+SAF CreateDocument flow (MainActivity save launcher) and the full engine
+surface (saveGame / saveMatch / savePosition / saveSGF); the build task is
+replacing per-save picking with the one-time tree grant plus the explanation
+dialog.
+
 
 ## 3. Feature inventory (surveyed 2026-07-20, code-grounded)
 
@@ -184,6 +209,13 @@ private" window's flexibility is used deliberately, not accidentally.
   bad direction, and it passes as "the honest game").
 - 2026-07 -- PR/aggregation (unbuilt): assigned Plus by this document.
 - 2026-07 -- Rollout controls (unbuilt): assigned split by this document.
+
+- 2026-07 -- Storage mechanism: SAF tree grant, single shared CBG folder,
+  dialog at first Save tap with transferability explanation. FOSS and Plus
+  identical here by design -- the shared folder IS the import mechanism, so
+  the mechanism itself is FOSS-realm (data freedom is part of the honest
+  game); only what Plus writes into it beyond match records (PR ledgers etc.)
+  is Plus content.
 
 Rule going forward: every realm decision gets a ledger line with a date and
 a one-line reason, at the moment it is made.
