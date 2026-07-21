@@ -1679,6 +1679,7 @@ int gnubg_mobile_match_stats(int out[40])
         matchstate msAnalyse;
         statcontext *psc;
         float doubleError = 0.0f;
+        int prevWasNormalDouble = 0;
 
         if (!plGameWalk || plGameWalk->plNext == plGameWalk) continue;
         pl  = plGameWalk->plNext;
@@ -1702,6 +1703,22 @@ int gnubg_mobile_match_stats(int out[40])
              * pre-record state; analyse on a copy here for the same reason
              * (AnalyzeMove mutates its matchstate). */
             memcpy(&msTmp, &msAnalyse, sizeof(msTmp));
+
+            /* doubleError lifetime, mirrored from the task queue exactly:
+             * each task starts fresh at 0.0f (AnalyseMoveMT, analysis.c:948);
+             * only a take/drop LINKED to a DT_NORMAL double shares its
+             * double's value (the linked-task carry, AnalyzeGame
+             * analysis.c:1003 computes DoubleType on the pre-record state).
+             * A game-lifetime float here would let a take of a non-normal
+             * doubletype read a stale value where gnubg reads fresh. */
+            if (pmr->mt == MOVE_TAKE || pmr->mt == MOVE_DROP) {
+                if (!prevWasNormalDouble) doubleError = 0.0f;
+            } else {
+                doubleError = 0.0f;
+            }
+            prevWasNormalDouble = (pmr->mt == MOVE_DOUBLE
+                && DoubleType(msAnalyse.fDoubled, msAnalyse.fMove,
+                              msAnalyse.fTurn) == DT_NORMAL);
             if (AnalyzeMove(pmr, &msTmp, plGameWalk, psc,
                             &esAnalysisChequer, &esAnalysisCube,
                             aamfAnalysis, NULL, &doubleError) < 0)
