@@ -147,6 +147,10 @@ data class MatchError(
 
 data class MatchReport(
     val games: Int,
+    val totalMoves: IntArray,           // anTotalMoves[p]
+    val unforcedMoves: IntArray,        // anUnforcedMoves[p]
+    val closeCube: IntArray,            // anCloseCube[p]
+    val totalCube: IntArray,            // anTotalCube[p]
     val prPerPlayer: FloatArray,        // rate x 500, index 0/1
     val chequerErrEmg: FloatArray,      // arErrorCheckerplay[p][0]
     val cubeErrEmg: FloatArray,         // summed cube error [p]
