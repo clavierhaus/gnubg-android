@@ -73,6 +73,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.22.4] -- 2026-07-21
+
 ## [0.22.1] -- 2026-07-18
 
 ## [0.22.0] -- 2026-07-17

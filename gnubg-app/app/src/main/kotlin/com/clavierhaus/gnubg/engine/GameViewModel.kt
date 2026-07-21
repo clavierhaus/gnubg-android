@@ -47,6 +47,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _busyKind = MutableStateFlow(BusyKind.NONE)
     val busyKind: StateFlow<BusyKind> = _busyKind.asStateFlow()
 
+    // PR feature: the last completed match's analysis report, or null until a
+    // match ends and its analysis pass succeeds. Set on the engine thread at
+    // match-over (before the record resets), read by the Plus stats screen.
+    private val _matchReport = MutableStateFlow<MatchReport?>(null)
+    val matchReport: StateFlow<MatchReport?> = _matchReport.asStateFlow()
+
     private var lastTutorAnalysis: TutorAnalysis? = null
     private var lastAnalysisDetail: MoveAnalysisDetail? = null
 
@@ -380,10 +386,103 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // 1-pointer has no next game, so we always return to setup.
             val matchOver = Engine.getMatchWinner() >= 0 || matchLength <= 1
             if (matchOver) {
+                // PR feature: analyse the whole match NOW, while lMatch still
+                // holds the completed record -- _showMatchSetup / startNewGame
+                // would reset it. Runs inline on the engine thread (already here);
+                // the report caches for the Plus stats screen. Failures never
+                // block the match-over UI.
+                analyseCompletedMatch()
                 _showMatchSetup.value = true
             } else {
                 startNewGame(isNewMatch = false)
             }
+        }
+    }
+
+    /**
+     * PR feature (stage 3): analyse the just-completed match and cache the
+     * report. MUST be called on the engine thread while lMatch still holds the
+     * record (i.e. before any reset). Every number is gnubg's own -- this only
+     * decodes the two verbs and applies the display-only PR scale.
+     *
+     * The verbs are heavy (a 2-ply analysis pass over the whole match), so this
+     * flips BusyKind.ANALYSING for the duration. On any failure -- no games, or
+     * the G3 self-consistency check failing -- the report is left null and the
+     * screen simply shows nothing; a wrong report must never render.
+     *
+     * G3 (guardrail): the error-list verb reports its own per-player sums of the
+     * chequer errors it listed; those must equal the stats verb's
+     * arErrorCheckerplay totals within epsilon. If they diverge, some field was
+     * misread -- we log LOUD and mark the report invalid rather than show it.
+     */
+    private fun analyseCompletedMatch() {
+        _busyKind.value = BusyKind.ANALYSING
+        try {
+            val s = Engine.matchStats()          // out[40]
+            if (s.size < 40 || s[0] <= 0) {
+                android.util.Log.i("gnubg-vm", "PR: no games to analyse")
+                _matchReport.value = null
+                return
+            }
+            val e = Engine.matchErrors()         // out[104]
+            fun f(a: IntArray, i: Int) = Float.fromBits(a[i])
+
+            val games = s[0]
+            val chequerErr = floatArrayOf(f(s, 9), f(s, 10))
+            val cubeErr = floatArrayOf(f(s, 11), f(s, 12))
+            val luck = floatArrayOf(f(s, 13), f(s, 14))
+            val rate = floatArrayOf(f(s, 15), f(s, 16))
+            val pr = floatArrayOf(rate[0] * 500f, rate[1] * 500f)   // display convention only
+            val skillHisto = arrayOf(
+                IntArray(4) { s[17 + it] }, IntArray(4) { s[21 + it] })
+            val luckHisto = arrayOf(
+                IntArray(5) { s[25 + it] }, IntArray(5) { s[30 + it] })
+            val actual = floatArrayOf(f(s, 35), f(s, 36))
+            val luckAdj = floatArrayOf(f(s, 37), f(s, 38))
+
+            val n = if (e.isNotEmpty()) e[0] else 0
+            val checkSum = floatArrayOf(f(e, 1), f(e, 2))
+            val errors = ArrayList<MatchError>(n)
+            for (i in 0 until n) {
+                val b = 4 + 5 * i
+                errors.add(MatchError(
+                    gameIdx = e[b], recIdx = e[b + 1], player = e[b + 2],
+                    errorEmg = f(e, b + 3), skill = e[b + 4]))
+            }
+
+            val eps = 1e-3f
+            val consistent =
+                kotlin.math.abs(checkSum[0] - chequerErr[0]) <= eps &&
+                kotlin.math.abs(checkSum[1] - chequerErr[1]) <= eps
+            if (!consistent) {
+                android.util.Log.e("gnubg-vm",
+                    "PR G3 MISMATCH -- error list rejected. " +
+                    "listSum=[${checkSum[0]},${checkSum[1]}] " +
+                    "statsTotal=[${chequerErr[0]},${chequerErr[1]}]")
+            }
+
+            android.util.Log.i("gnubg-vm",
+                "PR: games=$games pr=[${pr[0]},${pr[1]}] errors=$n valid=$consistent")
+
+            _matchReport.value = MatchReport(
+                games = games,
+                prPerPlayer = pr,
+                chequerErrEmg = chequerErr,
+                cubeErrEmg = cubeErr,
+                luckEmg = luck,
+                perDecisionRate = rate,
+                skillHisto = skillHisto,
+                luckHisto = luckHisto,
+                actualResult = actual,
+                luckAdjResult = luckAdj,
+                errors = if (consistent) errors else emptyList(),
+                valid = consistent
+            )
+        } catch (t: Throwable) {
+            android.util.Log.e("gnubg-vm", "PR: analysis failed: $t")
+            _matchReport.value = null
+        } finally {
+            _busyKind.value = BusyKind.NONE
         }
     }
 
