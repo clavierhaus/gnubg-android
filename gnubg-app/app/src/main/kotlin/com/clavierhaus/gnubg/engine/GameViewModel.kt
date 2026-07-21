@@ -386,12 +386,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // 1-pointer has no next game, so we always return to setup.
             val matchOver = Engine.getMatchWinner() >= 0 || matchLength <= 1
             if (matchOver) {
-                // PR feature: analyse the whole match NOW, while lMatch still
-                // holds the completed record -- _showMatchSetup / startNewGame
-                // would reset it. Runs inline on the engine thread (already here);
-                // the report caches for the Plus stats screen. Failures never
-                // block the match-over UI.
-                analyseCompletedMatch()
                 _showMatchSetup.value = true
             } else {
                 startNewGame(isNewMatch = false)
@@ -401,21 +395,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * PR feature (stage 3): analyse the just-completed match and cache the
-     * report. MUST be called on the engine thread while lMatch still holds the
-     * record (i.e. before any reset). Every number is gnubg's own -- this only
-     * decodes the two verbs and applies the display-only PR scale.
-     *
-     * The verbs are heavy (a 2-ply analysis pass over the whole match), so this
-     * flips BusyKind.ANALYSING for the duration. On any failure -- no games, or
-     * the G3 self-consistency check failing -- the report is left null and the
-     * screen simply shows nothing; a wrong report must never render.
+     * report. Public so the Plus stats screen can trigger it on demand when the
+     * screen opens (the consumer triggers the work -- the free edition, which
+     * has no stats screen, never calls this, so no analysis ever runs there;
+     * this is the compiled-but-unreachable fence, like undoCoachMove). MUST be
+     * reached while lMatch still holds the record (before "New match" resets).
+     * Every number is gnubg's own -- this only decodes the two verbs and
+     * applies the display-only PR scale.
      *
      * G3 (guardrail): the error-list verb reports its own per-player sums of the
      * chequer errors it listed; those must equal the stats verb's
      * arErrorCheckerplay totals within epsilon. If they diverge, some field was
      * misread -- we log LOUD and mark the report invalid rather than show it.
      */
-    private fun analyseCompletedMatch() {
+    fun analyseCompletedMatch() {
         _busyKind.value = BusyKind.ANALYSING
         try {
             val s = Engine.matchStats()          // out[40]
