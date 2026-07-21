@@ -361,6 +361,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
+        // A new match invalidates the previous match's stats report
+        // (lifecycle law: report is per-match, reset at new-match).
+        if (isNewMatch) _matchReport.value = null
         // The player has acknowledged the end screen: release the terminal
         // latch so the next game's projection can be written.
         gameOverLatched = false
@@ -409,6 +412,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * misread -- we log LOUD and mark the report invalid rather than show it.
      */
     fun analyseCompletedMatch() {
+        // Idempotent + self-dispatching: the Plus screen calls this from UI
+        // context on open. Cache guard (lifecycle law: one analysis per match,
+        // re-opening never re-runs) and double-run guard, then the heavy work
+        // on the engine thread like every other engine call.
+        if (_matchReport.value != null) return
+        if (_busyKind.value == BusyKind.ANALYSING) return
+        viewModelScope.launch(engineThread) {
+            if (_matchReport.value != null) return@launch
+            analyseCompletedMatchBlocking()
+        }
+    }
+
+    private fun analyseCompletedMatchBlocking() {
         _busyKind.value = BusyKind.ANALYSING
         try {
             val s = Engine.matchStats()          // out[40]
