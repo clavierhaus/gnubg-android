@@ -475,6 +475,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             _matchReport.value = MatchReport(
                 games = games,
+                totalMoves = intArrayOf(s[1], s[2]),
+                unforcedMoves = intArrayOf(s[3], s[4]),
+                closeCube = intArrayOf(s[5], s[6]),
+                totalCube = intArrayOf(s[7], s[8]),
                 prPerPlayer = pr,
                 chequerErrEmg = chequerErr,
                 cubeErrEmg = cubeErr,
