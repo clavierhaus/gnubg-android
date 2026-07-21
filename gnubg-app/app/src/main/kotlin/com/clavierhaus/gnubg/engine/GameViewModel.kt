@@ -536,38 +536,82 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (state.remainingDice.isEmpty()) return
         if (from !in 0..24 || to !in 0..24) return
         viewModelScope.launch(engineThread) {
-            // from == 0 is the bar signal (matches tapSource): the human re-enters
-            // from gnubg point 24. Entry for die d lands on board point 25 - d, i.e.
-            // gnubg 0-based 24 - d, so the same src - d == to - 1 test below applies.
-            val src = if (from == 0) 24 else from - 1
+            // Resolve the drag through gnubg's OWN enumerated move paths, exactly
+            // as the landing-point highlight does (Board.landingPointsForSource).
+            // Each legal move is a path of up to four sub-moves (anMove[8] = four
+            // src/dst pairs; src < 0 terminates). We follow the dragged checker
+            // from its origin along each path, collecting the sub-moves it takes,
+            // and accept the FIRST path that walks it to `to` -- including
+            // multi-hop (e.g. double 2s from 24 reaching 18 in three hops). The
+            // old code enumerated only single-die and same-target two-die moves,
+            // so multi-hop drags previewed (the highlight walks these paths) but
+            // committed nothing (this resolver had no branch for them): preview
+            // from gnubg, commit from hand arithmetic, disagreeing on multi-hop.
+            // Now both read the same authority.
+            //
+            // from == 0 is the bar signal; the checker re-enters from gnubg point
+            // 24 (0-based), which is where the legal-move paths already start it.
+            val origin = if (from == 0) 24 else from - 1
+            val target = to - 1                  // gnubg 0-based; to == 0 -> -1 (bear off)
+            val moves = state.legalMoves
             var newBoard = IntArray(0)
             val usedDice = ArrayList<Int>()
-            for (d in state.remainingDice.distinct()) {
-                if (src - d == to - 1 || (to == 0 && src - d < 0)) {
-                    val b = Engine.applySubMove(state.board, src, d)
-                    if (b.isNotEmpty()) { newBoard = b; usedDice.add(d); break }
+
+            var m = 0
+            walk@ while (m + 7 < moves.size) {
+                var here = origin
+                var moving = false
+                val pathSub = ArrayList<Pair<Int, Int>>()   // (src, dst) hops of OUR checker
+                var reached = false
+                for (j in 0..3) {
+                    val s = moves[m + j * 2]
+                    val d = moves[m + j * 2 + 1]
+                    if (s < 0) break
+                    if (!moving && s == origin) {
+                        moving = true; pathSub.add(s to d); here = d
+                    } else if (moving && s == here) {
+                        pathSub.add(s to d); here = d
+                    } else continue           // a different checker's sub-move
+                    if (d == target || (to == 0 && d < 0)) { reached = true; break }
                 }
-            }
-            if (newBoard.isEmpty() && state.remainingDice.size >= 2) {
-                val dice = state.remainingDice
-                outer@ for (i in dice.indices) {
-                    for (j in dice.indices) {
-                        if (i == j) continue
-                        val dA = dice[i]; val dB = dice[j]
-                        val b1 = Engine.applySubMove(state.board, src, dA)
-                        if (b1.isEmpty()) continue
-                        val mid = src - dA
-                        if (mid < 0) continue
-                        if (mid - dB == to - 1 || (to == 0 && mid - dB < 0)) {
-                            val b2 = Engine.applySubMove(b1, mid, dB)
-                            if (b2.isNotEmpty()) {
-                                newBoard = b2; usedDice.add(dA); usedDice.add(dB); break@outer
+                if (reached && pathSub.isNotEmpty()) {
+                    // Apply this checker's hops in order via the engine. The roll
+                    // for a hop is gnubg's own expression, src - dst (eval.c:2525
+                    // applies anMove paths as ApplySubMove(.., src, src - dst)).
+                    // For a bear-off hop gnubg marks dst with a negative sentinel,
+                    // where src - dst would be wrong; there we try each remaining
+                    // die and let the engine's LegalMove gate accept the right one
+                    // (bear-off, including overage, lives in the engine, not here).
+                    var b = state.board
+                    val used = ArrayList<Int>()
+                    val avail = state.remainingDice.toMutableList()
+                    var ok = true
+                    for ((s, d) in pathSub) {
+                        if (d >= 0) {
+                            val roll = s - d
+                            val nb = Engine.applySubMove(b, s, roll)
+                            if (nb.isEmpty() || !avail.remove(roll)) { ok = false; break }
+                            b = nb; used.add(roll)
+                        } else {
+                            // bear-off: try remaining dice, smallest legal first
+                            var done = false
+                            for (roll in avail.sorted()) {
+                                val nb = Engine.applySubMove(b, s, roll)
+                                if (nb.isNotEmpty()) {
+                                    b = nb; used.add(roll); avail.remove(roll); done = true; break
+                                }
                             }
+                            if (!done) { ok = false; break }
                         }
                     }
+                    if (ok) { newBoard = b; usedDice.addAll(used); break@walk }
                 }
+                m += 8
             }
-            if (newBoard.isEmpty()) return@launch
+            if (newBoard.isEmpty()) {
+                android.util.Log.i("gnubg-vm", "dragMove: no legal path from=$from to=$to -- ignored")
+                return@launch
+            }
             val rawRemaining = state.remainingDice.toMutableList()
             usedDice.forEach { rawRemaining.remove(it) }
             val pips = Engine.pipCount(newBoard)
