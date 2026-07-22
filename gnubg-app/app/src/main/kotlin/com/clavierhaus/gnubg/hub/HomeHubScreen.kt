@@ -116,7 +116,13 @@ fun HomeHubScreen(
             style = HomeTitleStyle,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 66.dp)
+                // Beside the gear, centred on it -- not stacked under it. The
+                // gear box is at start 48dp / top 18dp and 28dp square, so its
+                // centre is y=32dp and it ends at x=76dp; the title clears it
+                // at 92dp (16dp gutter). The title's line box is driven by the
+                // 48sp script span (~58dp), so top=4dp puts its centre at ~33dp,
+                // level with the gear.
+                .padding(start = 92.dp, top = 4.dp)
         )
 
         // Engine attribution, bottom-right -- a colophon, where a book would put
