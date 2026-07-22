@@ -19,7 +19,7 @@
 #      1. cmake --build jni-bridge/build-android-arm64
 #      2. cp libgnubg-engine.so -> gnubg-app/app/src/main/jniLibs/arm64-v8a/
 #      3. rm -rf gnubg-app/.gradle gnubg-app/app/build
-#      4. ./gradlew assembleDebug
+#      4. ./gradlew assembleRelease  (assembleDebug if no keystore.properties)
 #      5. adb install -r
 #      6. adb shell monkey (launch)
 #      7. adb logcat | grep gnubg  (if --logcat)
@@ -108,18 +108,36 @@ else
   warn "skipping native build (native sources unchanged since last native build)"
 fi
 
+# --- build type -------------------------------------------------------------
+# A release-signed build installs over a release-signed one; a debug build does
+# not, because Android refuses to change a package's signing identity. Since
+# the releases handed to testers are signed with the project key, deploying a
+# debug APK to the same device fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE
+# and costs an uninstall (and the app's data). So: sign with the project key
+# whenever it is available, and fall back to debug only when it is not, which
+# is the case for a contributor who has no keystore.
+if [ -f "$APP_DIR/keystore.properties" ]; then
+  BUILD_TYPE="release"; GRADLE_TASK="assembleRelease"
+  APK_PATH="$APP_DIR/app/build/outputs/apk/release/app-release.apk"
+else
+  BUILD_TYPE="debug";   GRADLE_TASK="assembleDebug"
+  APK_PATH="$APP_DIR/app/build/outputs/apk/debug/app-debug.apk"
+  warn "no keystore.properties -- building DEBUG; it will not install over a release-signed app"
+fi
+
 # --- 2. wipe + gradle --------------------------------------------------------
 if [ "$DO_APK" -eq 1 ]; then
   printf '%swiping Gradle cache and build output...%s\n' "$B" "$X"
   rm -rf "$APP_DIR/.gradle" "$APP_DIR/app/build"
   ok "wiped"
   printf '%sbuilding APK...%s\n' "$B" "$X"
-  ( cd "$APP_DIR" && ./gradlew assembleDebug ) || die "gradle build failed."
-  APK="$( { find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null || true; } | head -n1)"
-  ok "APK: ${APK#$ROOT/}"
+  ( cd "$APP_DIR" && ./gradlew "$GRADLE_TASK" ) || die "gradle build failed."
+  APK="$APK_PATH"
+  [ -f "$APK" ] || die "expected $APK after $GRADLE_TASK -- not produced"
+  ok "APK: ${APK#$ROOT/} ($BUILD_TYPE)"
 elif [ "$DO_INSTALL" -eq 1 ]; then
-  APK="$( { find "$APP_DIR/app/build/outputs/apk/debug" -name '*.apk' 2>/dev/null || true; } | head -n1)"
-  warn "skipping build; using existing APK"
+  APK="$APK_PATH"
+  warn "skipping build; using existing $BUILD_TYPE APK"
 fi
 
 if [ "$DO_INSTALL" -eq 1 ]; then
@@ -128,6 +146,7 @@ fi
 
 # --- 3. install + launch -----------------------------------------------------
 if [ "$DO_INSTALL" -eq 1 ]; then
+  mkdir -p "$ROOT/tmp"
   command -v adb >/dev/null 2>&1 || die "adb not found on PATH"
   adb start-server >/dev/null 2>&1 || true
   unauth="$(adb devices | awk 'NR>1 && $2=="unauthorized"{print $1}')"
@@ -142,18 +161,18 @@ if [ "$DO_INSTALL" -eq 1 ]; then
   if [ "$REINSTALL" -eq 1 ]; then
     warn "reinstall: uninstalling first (clears app data)"
     adb -s "$SERIAL" uninstall "$APP_ID" >/dev/null 2>&1 || true
-    adb -s "$SERIAL" install "$APK" >/tmp/_adb_$$ 2>&1 \
-      || { cat /tmp/_adb_$$ >&2; rm -f /tmp/_adb_$$; die "install failed"; }
+    adb -s "$SERIAL" install "$APK" >"$ROOT/tmp/_adb_$$" 2>&1 \
+      || { cat "$ROOT/tmp/_adb_$$" >&2; rm -f "$ROOT/tmp/_adb_$$"; die "install failed"; }
   else
-    if ! adb -s "$SERIAL" install -r "$APK" >/tmp/_adb_$$ 2>&1; then
-      if grep -qiE 'INSTALL_FAILED_UPDATE_INCOMPATIBLE|signatures do not match' /tmp/_adb_$$; then
-        cat /tmp/_adb_$$ >&2; rm -f /tmp/_adb_$$
+    if ! adb -s "$SERIAL" install -r "$APK" >"$ROOT/tmp/_adb_$$" 2>&1; then
+      if grep -qiE 'INSTALL_FAILED_UPDATE_INCOMPATIBLE|signatures do not match' "$ROOT/tmp/_adb_$$"; then
+        cat "$ROOT/tmp/_adb_$$" >&2; rm -f "$ROOT/tmp/_adb_$$"
         die "signature mismatch -- re-run with --reinstall (clears app data)"
       fi
-      cat /tmp/_adb_$$ >&2; rm -f /tmp/_adb_$$; die "install failed"
+      cat "$ROOT/tmp/_adb_$$" >&2; rm -f "$ROOT/tmp/_adb_$$"; die "install failed"
     fi
   fi
-  rm -f /tmp/_adb_$$; ok "installed"
+  rm -f "$ROOT/tmp/_adb_$$"; ok "installed"
 
   printf '%slaunching...%s\n' "$B" "$X"
   if adb -s "$SERIAL" shell monkey -p "$APP_ID" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; then
