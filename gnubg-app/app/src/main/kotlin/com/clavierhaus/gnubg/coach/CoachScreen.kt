@@ -685,15 +685,20 @@ private fun WhyInsights(
     Text("Why", color = pal.uiTextSecondary, fontSize = 11.sp,
         fontWeight = FontWeight.Bold)
     Spacer(modifier = Modifier.height(4.dp))
-    for (ins in list) {
-        // No category label: it consumed horizontal width and forced the
-        // phrase into a narrower, more-wrapping column, and "Threat"/"Board"/
-        // "Race" carried no meaning for the reader. The phrase now uses the
-        // full panel width, so it wraps to fewer lines and fits under the
-        // five-row candidate list without scrolling.
-        Text(ins.phrase, color = Color.White, fontSize = 12.sp)
-        Spacer(modifier = Modifier.height(3.dp))
-    }
+    // One paragraph, not a stack. Every fired phrase is a complete sentence
+    // ending in a full stop, so they set as running prose with a single space
+    // between them. Rendered as separate blocks they read as two unrelated
+    // remarks and spend vertical room the five candidate rows need.
+    //
+    // No category label either: it consumed horizontal width and forced the
+    // text into a narrower, more-wrapping column, and "Threat"/"Board"/"Race"
+    // carried no meaning for the reader. The paragraph uses the full panel
+    // width, so it wraps to fewer lines.
+    Text(
+        list.joinToString(" ") { it.phrase },
+        color = Color.White,
+        fontSize = 12.sp
+    )
 }
 
 /** A score badge matching the tournament scoreboard: a circular avatar with
