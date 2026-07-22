@@ -595,7 +595,7 @@ private fun MoveList(
  *  it with a phrase matched to the feature delta. Deliberately minimal until
  *  then -- no faux content. */
 @Composable
-private fun WhyInsights(glance: CoachGlance) {
+private fun WhyInsights(glance: CoachGlance, selectedAlt: Int) {
     val pal = LocalBoardPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val matcher = remember { InsightMatcher(context) }
@@ -613,21 +613,44 @@ private fun WhyInsights(glance: CoachGlance) {
     // position fingerprint plus rank/skill identifies the verdict uniquely.
     LaunchedEffect(
         com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard),
-        glance.rank, glance.skill
+        glance.rank, glance.skill,
+        selectedAlt
     ) {
+        // Blank first. Leaving the previous pair's phrase on screen while a
+        // different candidate is selected would attach an explanation to a move
+        // it does not describe -- a misattribution, which is exactly the
+        // wrong-but-fluent output the whole layer exists to prevent. Silence
+        // until the new pair has been scored.
+        insights = null
         insights = if (!matcher.available || !glance.flagged) emptyList()
         else withContext(Dispatchers.Default) {
             val skillWord = when (glance.skill) {
                 0 -> "very bad"; 1 -> "bad"; 2 -> "doubtful"; else -> ""
             }
+            // Which move do we explain against? Tapping an alternative asks
+            // "why is THAT one better than mine", so the pair becomes
+            // (played, thatAlternative). Selecting your own row -- or nothing --
+            // falls back to (played, best): the verdict explanation, byte for
+            // byte what this produced before. Both layers are already pairwise
+            // functions of two moves (match(played, best, skill),
+            // narrate(played, best)), so no new kind of statement is made here:
+            // the same measured board deltas, read against a different move.
+            //
+            // The severity word is NOT re-derived per pair. gnubg's Skill()
+            // (analysis.c:290) grades how bad the PLAYED move was, and that
+            // does not change according to which alternative you look at. The
+            // corpus entry's own terms remain the real gate.
+            val target = glance.alts.getOrNull(selectedAlt)?.takeIf { !it.isPlayed }
+            val pairMove = target?.anMove ?: glance.bestMove
             val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
-            val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
+            val bestBoard = Engine.applyMoveToBoard(glance.preBoard, pairMove)
             android.util.Log.i("gnubg-insight",
                 "APPLYPROBE fpPre=" + com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard) +
                 " fpP=" + (if (playedBoard.isEmpty()) "EMPTY" else com.clavierhaus.gnubg.engine.GameViewModel.fpOf(playedBoard).toString()) +
                 " fpB=" + (if (bestBoard.isEmpty()) "EMPTY" else com.clavierhaus.gnubg.engine.GameViewModel.fpOf(bestBoard).toString()) +
                 " mvP=" + glance.playedMove.joinToString(",") +
-                " mvB=" + glance.bestMove.joinToString(","))
+                " mvB=" + pairMove.joinToString(",") +
+                " pairRank=" + (target?.rank ?: 0))
             // L3 (DELTA_NARRATOR_PLAYBOOK): the corpus speaks first; the
             // narrator only when no authored signature fires on a flagged move.
             // QUORUMPROBE (playbook amendment 2, phase A'): candidate-set
@@ -962,7 +985,7 @@ private fun CoachPanel(
             // silence when nothing clears the gates.
             if (glance != null && glance.rank > 0) {
                 Spacer(modifier = Modifier.height(14.dp))
-                WhyInsights(glance)
+                WhyInsights(glance, selectedAlt)
             }
             } // end else (chequer verdict; cube verdict handled above)
         }
