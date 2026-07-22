@@ -47,6 +47,11 @@ git fetch -q origin
 FOSS_REF=origin/main MIRROR_REF=plus/main PLUS_REF=HEAD \
   ./tools/plus/check_foss_parity.sh || die "FOSS parity audit is RED -- fix before releasing"
 
+# Authored coach text must pass every gate that a shipped defect taught us to
+# check. A tester must never receive a build whose phrases can lie.
+python3 ./tools/plus/check_phrases.py || die "phrase gate failed -- fix before releasing"
+ok "phrase gate clean"
+
 command -v gh >/dev/null || die "gh not found"
 gh api user -q .login >/dev/null 2>&1 \
   || die "gh cannot reach github.com -- run: gh auth login"

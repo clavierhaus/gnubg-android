@@ -145,7 +145,7 @@
     {
       "id": "contact.break.early",
       "principle": "Far behind, the anchor is the game; don't break contact.",
-      "phrase_flag": "That far behind, the race is not your game -- the anchor was; running gives up the shot you were waiting for.",
+      "phrase_flag": "Far behind in the race, your move gives up the anchor and breaks contact.",
       "phrase_praise": "The anchor holds -- behind in the race, the holding game and its shot remain yours.",
       "category": "race",
       "signature": {
@@ -273,7 +273,7 @@
     {
       "id": "anchor.advance.mid",
       "principle": "An advanced anchor beats a deep one.",
-      "phrase_flag": "The anchor stayed buried when a higher point was there to hold.",
+      "phrase_flag": "Your anchor stays deep rather than advancing.",
       "phrase_praise": "The anchor steps up -- more board, more ways out.",
       "category": "board",
       "signature": {
@@ -450,7 +450,7 @@
     {
       "id": "hit.declined",
       "principle": "When the hit is right, take it -- pips on the bar are pips won.",
-      "phrase_flag": "The hit was there and you passed -- pips handed back for free.",
+      "phrase_flag": "You pass a hit -- pips handed back for free.",
       "phrase_praise": "Hit made -- the bar is the most expensive address on the board.",
       "category": "threat",
       "signature": {
@@ -487,7 +487,7 @@
     {
       "id": "race.escape.window",
       "principle": "Escape rolls are a resource; don't spend the window doing nothing.",
-      "phrase_flag": "The escape window was open and the runner stayed home.",
+      "phrase_flag": "Your runner stays back while escaping numbers are open.",
       "phrase_praise": "The back checker slips through while the gap is there.",
       "category": "race",
       "signature": {
