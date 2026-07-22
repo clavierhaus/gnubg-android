@@ -164,8 +164,8 @@ if "--no-grammar" not in sys.argv:
     except ImportError:
         print("WARNING: G-GRAMMAR SKIPPED -- language_tool_python is not installed.")
         print("         Four of five gates ran. To close the fifth:")
-        print("           sudo dnf install -y java-latest-openjdk-headless")
-        print("           (if that name is absent: sudo dnf list available 'java-*-openjdk-headless')")
+        print("           sudo dnf list available '*openjdk*headless'   # pick one, names vary by release")
+        print("           sudo dnf install -y <the package that list shows>")
         print("           pip install --user language-tool-python")
         print("         (first run downloads LanguageTool, a few hundred MB)")
         if "--require-grammar" in sys.argv:
