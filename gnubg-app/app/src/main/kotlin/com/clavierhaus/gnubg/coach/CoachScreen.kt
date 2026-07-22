@@ -38,10 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import com.clavierhaus.gnubg.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.Engine
@@ -160,11 +158,6 @@ private fun ordinal(n: Int): String = when {
     n % 10 == 3 -> "${n}rd"
     else -> "${n}th"
 }
-
-// Allura: the app's own voice, as in the hub (edition mark, capability
-// notes). Engine facts render in the UI faces; when the app itself speaks --
-// here, the close-call aside under a Doubtful verdict -- it speaks in script.
-private val AlluraScript = FontFamily(Font(R.font.allura_regular))
 
 private fun skillLabel(skill: Int): String = when (skill) {
     0 -> "Very bad"
@@ -993,9 +986,9 @@ private fun CoachPanel(
                             "A close call \u2014 ${"%.3f".format(g.loss)} apart. " +
                                 "Tap any variant and judge the boards yourself.",
                             color = Color.White,
-                            fontFamily = AlluraScript,
-                            fontSize = 19.sp,
-                            lineHeight = 24.sp
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
                         )
                     }
                     MoveList(g, selectedAlt, onSelectAlt)

@@ -22,7 +22,13 @@ die()  { printf '%sFAIL%s %s\n'   "$R" "$X" "$1" >&2; exit 1; }
 REPO="clavierhaus/cbg-plus"
 APP_DIR="gnubg-app"
 DO_BUILD=1
-[ "${1:-}" = "--no-build" ] && DO_BUILD=0
+REPLACE=0
+for a in "$@"; do
+  case "$a" in
+    --no-build) DO_BUILD=0 ;;
+    --replace)  REPLACE=1 ;;
+  esac
+done
 
 # --- guards ---------------------------------------------------------------
 [ -f "$APP_DIR/app/build.gradle.kts" ] || die "run this from the repo root"
@@ -157,4 +163,19 @@ current one." \
   || die "gh release create failed"
 
 ok "published $TAG"
+
+# --replace: keep exactly one release, so the collaborator's link is always the
+# current build. Best effort by design -- the new release is already published,
+# so a failed cleanup loses nothing and only leaves an extra old release behind.
+if [ "$REPLACE" = 1 ]; then
+  for old_tag in $(gh release list --repo "$REPO" --json tagName -q '.[].tagName' 2>/dev/null | grep '^plus-' || true); do
+    [ "$old_tag" = "$TAG" ] && continue
+    if gh release delete "$old_tag" --repo "$REPO" --yes >/dev/null 2>&1; then
+      ok "removed previous release $old_tag"
+    else
+      warn "could not remove $old_tag -- delete it by hand if you want only one"
+    fi
+  done
+fi
+
 gh release view "$TAG" --repo "$REPO" --json url -q .url
