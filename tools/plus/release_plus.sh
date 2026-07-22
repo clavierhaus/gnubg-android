@@ -54,7 +54,18 @@ ok "plus remote is '$PLUS_REMOTE'"
 
 git fetch -q "$PLUS_REMOTE"
 LOCAL="$(git rev-parse HEAD)"; REMOTE="$(git rev-parse "$PLUS_REMOTE/plus")"
-[ "$LOCAL" = "$REMOTE" ] || die "plus branch not in sync with $PLUS_REMOTE -- push first"
+if [ "$LOCAL" != "$REMOTE" ]; then
+  # Out of sync in one of three ways, each needing a different action. Saying
+  # "push first" when the tree is merely behind sends you the wrong way.
+  BASE="$(git merge-base HEAD "$PLUS_REMOTE/plus")"
+  if [ "$LOCAL" = "$BASE" ]; then
+    die "plus is BEHIND $PLUS_REMOTE -- run: git pull"
+  elif [ "$REMOTE" = "$BASE" ]; then
+    die "plus is AHEAD of $PLUS_REMOTE -- run: git push"
+  else
+    die "plus has DIVERGED from $PLUS_REMOTE -- reconcile before releasing"
+  fi
+fi
 ok "plus branch in sync ($(git rev-parse --short HEAD))"
 
 # Standing order: a red parity audit outranks all other work. The FOSS leg
