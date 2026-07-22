@@ -389,7 +389,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // 1-pointer has no next game, so we always return to setup.
             val matchOver = Engine.getMatchWinner() >= 0 || matchLength <= 1
             if (matchOver) {
-                _showMatchSetup.value = true
+                // Back to the setup the session came from, or a coach session
+                // would land in Play's match setup.
+                if (coachSession) _showCoachSetup.value = true
+                else _showMatchSetup.value = true
             } else {
                 startNewGame(isNewMatch = false)
             }

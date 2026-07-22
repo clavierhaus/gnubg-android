@@ -470,7 +470,16 @@ fun CoachScreen(
                     },
                     onNewGame = {
                         glance = null
-                        viewModel.startCoachGame()
+                        // newGame(), NOT startCoachGame(). startCoachGame runs
+                        // commandNewMatch + commandNewGame -- a new MATCH. That
+                        // clears gnubg's match state, so the score fell back to
+                        // 0:0 and the game just won was erased (field report:
+                        // GNU doubled during the bear-off, the drop scored a
+                        // point, and "New game" zeroed it). newGame() asks
+                        // gnubg whether the match is over and otherwise
+                        // advances with CommandNext, which keeps the score --
+                        // the path Play's button already uses.
+                        viewModel.newGame()
                     }
                 )
             }
