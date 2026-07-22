@@ -37,7 +37,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.MutableState
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.clavierhaus.gnubg.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.Engine
@@ -156,6 +160,11 @@ private fun ordinal(n: Int): String = when {
     n % 10 == 3 -> "${n}rd"
     else -> "${n}th"
 }
+
+// Allura: the app's own voice, as in the hub (edition mark, capability
+// notes). Engine facts render in the UI faces; when the app itself speaks --
+// here, the close-call aside under a Doubtful verdict -- it speaks in script.
+private val AlluraScript = FontFamily(Font(R.font.allura_regular))
 
 private fun skillLabel(skill: Int): String = when (skill) {
     0 -> "Very bad"
@@ -595,12 +604,15 @@ private fun MoveList(
  *  it with a phrase matched to the feature delta. Deliberately minimal until
  *  then -- no faux content. */
 @Composable
-private fun WhyInsights(glance: CoachGlance) {
+private fun WhyInsights(
+    glance: CoachGlance,
+    insightsOut: MutableState<List<InsightMatcher.Insight>?>
+) {
     val pal = LocalBoardPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val matcher = remember { InsightMatcher(context) }
     val narrator = remember { DeltaNarrator(context) }
-    var insights by remember { mutableStateOf<List<InsightMatcher.Insight>?>(null) }
+    var insights by insightsOut
 
     // One computation per verdict: gnubg's ApplyMove derives both boards from
     // the glance's pre-board (the array is the single source of truth), then
@@ -615,6 +627,10 @@ private fun WhyInsights(glance: CoachGlance) {
         com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard),
         glance.rank, glance.skill
     ) {
+        // Blank first: between verdicts the hoisted state must not carry the
+        // previous verdict's result (a stale "empty" would flash the close-call
+        // aside before this verdict has been scored).
+        insights = null
         insights = if (!matcher.available || !glance.flagged) emptyList()
         else withContext(Dispatchers.Default) {
             val skillWord = when (glance.skill) {
@@ -730,6 +746,14 @@ private fun CoachPanel(
     onNewGame: () -> Unit
 ) {
     val pal = LocalBoardPalette.current
+    // The insight layer's result, hoisted: the verdict header needs to know
+    // "consulted and silent" (the close-call aside renders under the verdict,
+    // not in the why-area), and the why-area below renders the phrases.
+    // null = not yet computed for this verdict; empty = consulted, nothing
+    // licensed fired.
+    val insightsState = androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<List<InsightMatcher.Insight>?>(null)
+    }
     Column(
         modifier = Modifier.width(240.dp).fillMaxHeight().padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -952,6 +976,28 @@ private fun CoachPanel(
                         color = Color.White, fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    // The close-call aside (Peter, 2026-07-22): on a DOUBTFUL
+                    // verdict where both insight layers were consulted and
+                    // nothing licensed fired, the app speaks in its own voice
+                    // -- script face -- naming the situation and pointing at
+                    // the walk-through. The teaching is non-verbal: tap the
+                    // variants, judge the boards. Licensed by gnubg's own
+                    // mildest grade plus the on-screen margin; asserts
+                    // closeness only, never "it's a trade" (silence can also
+                    // mean vocabulary gaps). Not shown when a phrase fired
+                    // (it would contradict it); not on bad/very-bad silence
+                    // (those are not close; they stay silent).
+                    if (g.skill == 2 && insightsState.value?.isEmpty() == true) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "A close call \u2014 ${"%.3f".format(g.loss)} apart. " +
+                                "Tap any variant and judge the boards yourself.",
+                            color = Color.White,
+                            fontFamily = AlluraScript,
+                            fontSize = 19.sp,
+                            lineHeight = 24.sp
+                        )
+                    }
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
             }
@@ -962,7 +1008,7 @@ private fun CoachPanel(
             // silence when nothing clears the gates.
             if (glance != null && glance.rank > 0) {
                 Spacer(modifier = Modifier.height(14.dp))
-                WhyInsights(glance)
+                WhyInsights(glance, insightsState)
             }
             } // end else (chequer verdict; cube verdict handled above)
         }
