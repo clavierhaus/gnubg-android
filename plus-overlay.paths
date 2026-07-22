@@ -22,3 +22,4 @@ gnubg-app/app/src/main/res/drawable/ic_launcher_foreground.png
 gnubg-app/app/src/main/res/mipmap-
 gnubg-app/app/src/main/assets/narrator_rules_v0.json
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/DeltaNarrator.kt
+tools/plus/release_plus.sh
