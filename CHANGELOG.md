@@ -11,6 +11,22 @@ One rule underlies every entry: GNU Backgammon is the sole authority for game
 logic and analysis. "Fixed" almost always means the app stopped disagreeing with
 the engine, or stopped hiding what the engine already knew.
 
+## [Unreleased]
+
+## [0.22.5] -- 2026-07-22
+
+### Added & Changed
+- Introduced the core engine foundation for "Your Personal Stats" (replacing 'PR').
+- Match analysis now automatically runs and caches at the end of a match.
+- Match reports now accurately carry total decision counts.
+- Engine: implemented mobile match error logic under strict evaluation guardrails.
+
+### Fixed
+- Fixed an issue where the "New game" coach action would incorrectly continue the match instead of restarting it.
+- Fixed board interaction: drag-and-drop releases now accurately resolve through the engine's move paths rather than manual coordinate calculation.
+- Fixed a bug where the free edition was improperly running background match analysis.
+- Fixed F-Droid reproducible build environment and native binary drift.
+
 ## [0.22.3] -- 2026-07-20
 
 ### Fixed
