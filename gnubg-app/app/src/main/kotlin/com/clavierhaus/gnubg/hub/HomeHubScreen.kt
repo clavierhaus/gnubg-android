@@ -116,13 +116,7 @@ fun HomeHubScreen(
             style = HomeTitleStyle,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                // On the gear's row, not stacked below it: the gear box sits at
-                // start 48dp / top 18dp and is 28dp square, so the title clears
-                // it horizontally (48 + 28 + 16 gutter) and its caps land level
-                // with the icon. This also returns the vertical space the entry
-                // notes took -- the entry column is centre-aligned, so it grew
-                // upward into the old 66dp title line and collided with it.
-                .padding(start = 92.dp, top = 12.dp)
+                .padding(start = 48.dp, top = 66.dp)
         )
 
         // Engine attribution, bottom-right -- a colophon, where a book would put
@@ -152,18 +146,21 @@ fun HomeHubScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 64.dp, top = 72.dp)
+                // Indented well clear of the title's 48dp left edge, so the
+                // header hangs to the left of the menu block and the two read
+                // as separate matter rather than one column.
+                .padding(start = 112.dp, top = 72.dp)
         ) {
             HomeHubEntry("Play Tournament Match", onPlay, note = "with personal stats")
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             // The fourth mode (docs/COACH.md): play gnubg with the engine
             // looking over your shoulder. Second position: learning sits
             // between competing and analysing.
             HomeHubEntry("Train with the Coach", onCoach, note = "with explanations")
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             // Second: the feature people still open XG Mobile for.
             HomeHubEntry("Analyse Position", onAnalysePosition, note = "with the set-up editor")
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             // Third, now that it exists.
             HomeHubEntry("Review Match", onReviewMatch)
         }
