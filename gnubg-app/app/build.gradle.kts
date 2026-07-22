@@ -36,7 +36,7 @@ val gitCommit = gitOut("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
 val gitDirty = gitOut("status", "--porcelain").isNotEmpty()
 val buildStampUtc = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'").apply {
     timeZone = TimeZone.getTimeZone("UTC")
-}.format(Date())
+}.format(Date(gitOut("log", "-1", "--format=%ct").toLongOrNull()?.times(1000) ?: 0L))
 
 android {
     // Match the NDK the native libs are built with (recipe: r27); without
@@ -49,8 +49,8 @@ android {
         applicationId = "com.clavierhaus.gnubg"
         minSdk = 31
         targetSdk = 35
-        versionCode = 23
-        versionName = "0.22.5"
+        versionCode = 24
+        versionName = "0.22.6"
         ndk {
             abiFilters += "arm64-v8a"
         }
