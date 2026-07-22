@@ -162,7 +162,13 @@ if "--no-grammar" not in sys.argv:
                 if e.get(key): check(f"{e['id']}[{key}]", e[key])
         tool.close()
     except ImportError:
-        print("note: language_tool_python not installed -- grammar gate skipped")
+        print("WARNING: G-GRAMMAR SKIPPED -- language_tool_python is not installed.")
+        print("         Four of five gates ran. To close the fifth:")
+        print("           sudo dnf install -y java-21-openjdk-headless")
+        print("           pip install --user language-tool-python")
+        print("         (first run downloads LanguageTool, a few hundred MB)")
+        if "--require-grammar" in sys.argv:
+            fail("G-GRAMMAR", "(toolchain)", "grammar gate required but unavailable")
 
 # --- report -----------------------------------------------------------------
 if findings:

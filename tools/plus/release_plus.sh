@@ -73,6 +73,8 @@ fi
 # Authored coach text must pass every gate that a shipped defect taught us to
 # check. A tester must never receive a build whose phrases can lie.
 python3 ./tools/plus/check_phrases.py || die "phrase gate failed -- fix before releasing"
+# (add --require-grammar above once language_tool_python is installed, to make a
+#  missing grammar gate fatal rather than merely loud)
 ok "phrase gate clean"
 
 command -v gh >/dev/null || die "gh not found"
