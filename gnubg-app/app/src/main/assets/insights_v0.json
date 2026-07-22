@@ -1,1081 +1,1036 @@
 {
- "version": 1,
- "corpus_license": "GPL-3.0-or-later",
- "generated": "2026-07-20",
- "tier": "authored",
- "authors": [
-  "clavierhaus <gnubg@clavierhaus.at>",
-  "Clavierhaus Backgammon contributors"
- ],
- "acknowledgements": {
-  "yairwein/backgammon-teacher": {
-   "license": "MIT",
-   "copyright": "Copyright (c) 2024-2026 Yair Weinberger",
-   "for": "presentation taxonomy (race/board/threat), notable-delta threshold shape, harvest prompt scaffolding and rules"
-  }
- },
- "draft_assistance_note": "Entries were first-drafted with the assistance of large language models (claude-sonnet-4-6). Each entry is human-verified and edited into original expression before inclusion. No prose from copyrighted sources is included.",
- "entries": [
-  {
-   "id": "prime.break.5",
-   "principle": "A 5-prime is worth holding.",
-   "phrase_flag": "You broke a 5-prime for a play that gains little.",
-   "phrase_praise": "The 5-prime holds -- the back checker stays where it belongs.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACKESCAPES",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 1.0
-     },
-     {
-      "term": "I_CONTAIN",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.05,
-      "max_abs": 0.3,
-      "weight": 1.0,
-      "played_in": [
-       0.0,
-       0.8
-      ],
-      "best_in": [
-       0.85,
-       1.0
-      ]
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
+  "version": 1,
+  "corpus_license": "GPL-3.0-or-later",
+  "generated": "2026-07-20",
+  "tier": "authored",
+  "authors": [
+    "clavierhaus <gnubg@clavierhaus.at>",
+    "Clavierhaus Backgammon contributors"
+  ],
+  "acknowledgements": {
+    "yairwein/backgammon-teacher": {
+      "license": "MIT",
+      "copyright": "Copyright (c) 2024-2026 Yair Weinberger",
+      "for": "presentation taxonomy (race/board/threat), notable-delta threshold shape, harvest prompt scaffolding and rules"
+    }
   },
-  {
-   "id": "bearoff.shot.left",
-   "principle": "Bear in without leaving the shot that loses a won race.",
-   "phrase_flag": "The race was already won; the blot you left in front of their anchor is the one roll that loses it.",
-   "phrase_praise": "Filled safely behind the anchor -- they hold their point and never get a shot.",
-   "category": "threat",
-   "signature": {
-    "class_played": 10,
-    "class_best": 10,
-    "terms": [
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.04,
-      "weight": 1.5,
-      "played_in": [
-       0.05,
-       1.0
+  "draft_assistance_note": "Entries were first-drafted with the assistance of large language models (claude-sonnet-4-6). Each entry is human-verified and edited into original expression before inclusion. No prose from copyrighted sources is included.",
+  "entries": [
+    {
+      "id": "prime.break.5",
+      "principle": "A 5-prime is worth holding.",
+      "phrase_flag": "You broke a 5-prime for a play that gains little.",
+      "phrase_praise": "The 5-prime holds -- the back checker stays where it belongs.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACKESCAPES",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 1.0
+          },
+          {
+            "term": "I_CONTAIN",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.05,
+            "max_abs": 0.3,
+            "weight": 1.0,
+            "played_in": [
+              0.0,
+              0.8
+            ],
+            "best_in": [
+              0.85,
+              1.0
+            ]
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       0.0,
-       0.02
-      ]
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       0.0,
-       0.4
+      "tier": "authored"
+    },
+    {
+      "id": "bearoff.shot.left",
+      "principle": "Bear in without leaving the shot that loses a won race.",
+      "phrase_flag": "The race was already won; the blot you left in front of their anchor is the one roll that loses it.",
+      "phrase_praise": "Filled safely behind the anchor -- they hold their point and never get a shot.",
+      "category": "threat",
+      "signature": {
+        "class_played": 10,
+        "class_best": 10,
+        "terms": [
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.04,
+            "weight": 1.5,
+            "played_in": [
+              0.05,
+              1.0
+            ],
+            "best_in": [
+              0.0,
+              0.02
+            ]
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              0.0,
+              0.4
+            ],
+            "best_in": [
+              0.0,
+              0.4
+            ],
+            "weight": 1.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.0,
-       0.4
+      "tier": "authored"
+    },
+    {
+      "id": "prime.extend.missed",
+      "principle": "When the builders are ready, the fifth prime point is the play.",
+      "phrase_flag": "The builders were in place to stretch four prime points to five, and the fifth point went unmade.",
+      "phrase_praise": "You leave the opponent fewer numbers that escape.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_CONTAIN",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.06,
+            "weight": 1.5,
+            "played_in": [
+              0.82,
+              0.92
+            ],
+            "best_in": [
+              0.9,
+              1.0
+            ]
+          },
+          {
+            "term": "I_BACKESCAPES",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.04,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 1.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "prime.extend.missed",
-   "principle": "When the builders are ready, the fifth prime point is the play.",
-   "phrase_flag": "The builders were in place to stretch four prime points to five, and the fifth point went unmade.",
-   "phrase_praise": "Five points in a row -- the blockade closes another escape number.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_CONTAIN",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.06,
-      "weight": 1.5,
-      "played_in": [
-       0.82,
-       0.92
+      "tier": "authored"
+    },
+    {
+      "id": "enter.fight.point",
+      "principle": "Enter making the advanced anchor, not splitting into the fight.",
+      "phrase_flag": "You entered and split, leaving a checker under fire where an advanced anchor could stand.",
+      "phrase_praise": "Entered making the advanced anchor -- a made point in their board instead of blots in the fight.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.3,
+            "weight": 2.0,
+            "played_in": [
+              1.0,
+              2.0
+            ],
+            "best_in": [
+              0.3,
+              0.7
+            ]
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.03,
+            "weight": 1.0
+          },
+          {
+            "term": "I_BACK_ANCHOR",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              0.0,
+              0.6
+            ],
+            "best_in": [
+              0.0,
+              1.0
+            ],
+            "weight": 0.0
+          },
+          {
+            "term": "PipCount.opp",
+            "side": "",
+            "direction": "any",
+            "played_in": [
+              135,
+              160
+            ],
+            "best_in": [
+              135,
+              160
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       0.9,
-       1.0
-      ]
-     },
-     {
-      "term": "I_BACKESCAPES",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.04,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "enter.fight.point",
-   "principle": "Enter making the advanced anchor, not splitting into the fight.",
-   "phrase_flag": "Entered splitting into their board: two loose checkers under fire where one advanced anchor could stand.",
-   "phrase_praise": "Entered making the advanced anchor -- a made point in their board instead of blots in the fight.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.3,
-      "weight": 2.0,
-      "played_in": [
-       1.0,
-       2.0
+      "tier": "authored"
+    },
+    {
+      "id": "hit.loose.homeboard",
+      "principle": "A loose hit in your board without cover invites the return shot.",
+      "phrase_flag": "A loose hit in your own board with no cover -- they enter shooting, and the return shot undoes the hit.",
+      "phrase_praise": "Hit and covered -- the point is made, and they enter against a stronger board with nothing to shoot at.",
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              0.95,
+              1.0
+            ],
+            "best_in": [
+              0.95,
+              1.0
+            ],
+            "weight": 1.5
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 1.5,
+            "played_in": [
+              0.08,
+              1.0
+            ],
+            "best_in": [
+              0.0,
+              0.04
+            ]
+          },
+          {
+            "term": "I_ENTER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.01,
+            "weight": 1.0
+          },
+          {
+            "term": "I_ENTER2",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.15,
+            "weight": 0.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.3,
-       0.7
-      ]
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.03,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BACK_ANCHOR",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       0.0,
-       0.6
+      "tier": "authored"
+    },
+    {
+      "id": "contact.break.early",
+      "principle": "Far behind, the anchor is the game; don't break contact.",
+      "phrase_flag": "That far behind, the race is not your game -- the anchor was; running gives up the shot you were waiting for.",
+      "phrase_praise": "The anchor holds -- behind in the race, the holding game and its shot remain yours.",
+      "category": "race",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BREAK_CONTACT",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.045,
+            "weight": 1.5,
+            "played_in": [
+              0.0,
+              0.25
+            ],
+            "best_in": [
+              0.12,
+              1.0
+            ]
+          },
+          {
+            "term": "I_BACK_ANCHOR",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.5
+          },
+          {
+            "term": "PipCount.opp",
+            "side": "",
+            "direction": "any",
+            "played_in": [
+              85,
+              130
+            ],
+            "best_in": [
+              85,
+              130
+            ],
+            "weight": 0.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.0,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "board.crunch.spared",
+      "principle": "Never crunch the board while a spare can carry the roll.",
+      "phrase_flag": "The board crunched onto dead points while a spare was free to carry the roll.",
+      "phrase_praise": "The spare took the roll and the home board stands connected.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_ENTER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.05,
+            "weight": 2.0
+          },
+          {
+            "term": "I_ENTER2",
+            "side": "opp",
+            "direction": "any",
+            "max_abs": 0.05,
+            "weight": 0.5
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              0.95,
+              1.0
+            ],
+            "best_in": [
+              0.95,
+              1.0
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 0.0
-     },
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "any",
-      "played_in": [
-       135,
-       160
+      "tier": "authored"
+    },
+    {
+      "id": "point.deep.wasted",
+      "principle": "Build the blockade from the front; the deep point can wait.",
+      "phrase_flag": "The deep point is a dead point this early; the blockade wanted building from the front.",
+      "phrase_praise": "The front point extends the block -- the trapped checkers feel it at once.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_CONTAIN",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.05,
+            "weight": 1.5,
+            "played_in": [
+              0.45,
+              0.62
+            ],
+            "best_in": [
+              0.65,
+              0.85
+            ]
+          },
+          {
+            "term": "I_TIMING",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              0.0,
+              0.4
+            ],
+            "best_in": [
+              0.0,
+              1.0
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       135,
-       160
+      "tier": "authored"
+    },
+    {
+      "id": "blot.cover.missed",
+      "principle": "A builder wants covering; a covered builder is a point.",
+      "phrase_flag": "The blot on the point was a builder waiting for cover; left alone it is only a target.",
+      "phrase_praise": "Covered -- the builder became a point, and the anchor has nothing to shoot at.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.04,
+            "weight": 1.5
+          },
+          {
+            "term": "I_ENTER2",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.15,
+            "weight": 1.5
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              0.8,
+              0.94
+            ],
+            "best_in": [
+              0.8,
+              0.94
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "hit.loose.homeboard",
-   "principle": "A loose hit in your board without cover invites the return shot.",
-   "phrase_flag": "A loose hit in your own board with no cover -- they enter shooting, and the return shot undoes the hit.",
-   "phrase_praise": "Hit and covered -- the point is made, and they enter against a stronger board with nothing to shoot at.",
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "anchor.split.straggler",
+      "principle": "Keep the anchor whole; a split anchor shelters no one.",
+      "phrase_flag": "Running one checker off the anchor buys the worst of both: a straggler under fire and no shelter behind it.",
+      "phrase_praise": "The anchor stays whole -- no stragglers, no shots, the shelter holds.",
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACK_ANCHOR",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.25,
+            "weight": 1.5
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.04,
+            "weight": 1.0
+          },
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              1.0,
+              2.0
+            ],
+            "best_in": [
+              0.1,
+              0.25
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "prime.contain.lost",
+      "principle": "Don't let the trapped checker out for free.",
+      "phrase_flag": "You let the trapped checker out for nothing.",
+      "phrase_praise": null,
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_CONTAIN",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.35,
+            "weight": 1.5
+          },
+          {
+            "term": "I_BACKESCAPES",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.2,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad",
+        "very bad"
       ],
-      "weight": 1.5
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 1.5,
-      "played_in": [
-       0.08,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "anchor.surrender.back",
+      "principle": "A back anchor is shelter; don't leave it without a reason.",
+      "phrase_flag": "You gave up the back anchor -- shelter gone, and the blots are under fire.",
+      "phrase_praise": null,
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "PipCount.opp",
+            "side": "",
+            "direction": "any",
+            "played_in": [
+              110,
+              135
+            ],
+            "best_in": [
+              110,
+              135
+            ],
+            "weight": 0.0
+          },
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.3,
+            "weight": 1.0,
+            "played_in": [
+              1.01,
+              2.0
+            ],
+            "best_in": [
+              0.01,
+              1.0
+            ]
+          },
+          {
+            "term": "I_BACKBONE",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.2,
+            "weight": 1.0
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.1,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.0,
-       0.04
-      ]
-     },
-     {
-      "term": "I_ENTER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.01,
-      "weight": 1.0
-     },
-     {
-      "term": "I_ENTER2",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.15,
-      "weight": 0.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "contact.break.early",
-   "principle": "Far behind, the anchor is the game; don't break contact.",
-   "phrase_flag": "That far behind, the race is not your game -- the anchor was; running gives up the shot you were waiting for.",
-   "phrase_praise": "The anchor holds -- behind in the race, the holding game and its shot remain yours.",
-   "category": "race",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BREAK_CONTACT",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.045,
-      "weight": 1.5,
-      "played_in": [
-       0.0,
-       0.25
+      "tier": "authored"
+    },
+    {
+      "id": "anchor.advance.golden",
+      "principle": "The 20-point anchor is worth fighting for.",
+      "phrase_flag": "The golden point was there for the taking, and the anchor stayed buried on the 24.",
+      "phrase_praise": "The golden anchor is made -- the best point in their board is yours.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.3,
+            "weight": 1.0,
+            "played_in": [
+              0.01,
+              0.4
+            ],
+            "best_in": [
+              0.8,
+              0.87
+            ]
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful"
       ],
-      "best_in": [
-       0.12,
-       1.0
-      ]
-     },
-     {
-      "term": "I_BACK_ANCHOR",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.5
-     },
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "any",
-      "played_in": [
-       85,
-       130
+      "tier": "authored"
+    },
+    {
+      "id": "anchor.advance.mid",
+      "principle": "An advanced anchor beats a deep one.",
+      "phrase_flag": "The anchor stayed buried when a higher point was there to hold.",
+      "phrase_praise": "The anchor steps up -- more board, more ways out.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.25,
+            "weight": 1.0,
+            "played_in": [
+              0.01,
+              0.4
+            ],
+            "best_in": [
+              0.45,
+              0.7
+            ]
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful"
       ],
-      "best_in": [
-       85,
-       130
+      "tier": "authored"
+    },
+    {
+      "id": "board.close.entry",
+      "principle": "Every home point you make keeps the hit man out longer.",
+      "phrase_flag": "Your board stayed open with a checker sitting on the bar.",
+      "phrase_praise": "Another home point made -- the checker on the bar stays there longer.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_ENTER2",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.5
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              1.0,
+              1.0
+            ],
+            "best_in": [
+              1.0,
+              1.0
+            ],
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 0.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "hit.double.declined",
-   "principle": "When both blots are in reach, hit both.",
-   "phrase_flag": "Both blots were in reach; hitting one leaves the other standing and half the punishment unspent.",
-   "phrase_praise": "Two checkers on the bar -- their next rolls belong to re-entering, not to the game.",
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "up",
-      "min_abs": 10.0,
-      "weight": 1.5
-     },
-     {
-      "term": "I_ENTER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.03,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "blot.shot.given",
+      "principle": "Count the shots before you leave the blot.",
+      "phrase_flag": "You left a blot under direct fire for no return.",
+      "phrase_praise": null,
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "any",
+            "max_abs": 0.29,
+            "weight": 0.0
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.1,
+            "weight": 1.0
+          },
+          {
+            "term": "I_PIPLOSS",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 1.0
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              0.0,
+              0.94
+            ],
+            "best_in": [
+              0.0,
+              0.94
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "blot.double.given",
+      "principle": "One blot is a risk; two in range is a plan for disaster.",
+      "phrase_flag": "Two blots in range -- one roll can hit them both.",
+      "phrase_praise": null,
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "any",
+            "max_abs": 0.29,
+            "weight": 0.0
+          },
+          {
+            "term": "I_P2",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 2.0
+          },
+          {
+            "term": "I_P1",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 1.0
+          },
+          {
+            "term": "I_PIPLOSS",
+            "side": "opp",
+            "direction": "down",
+            "min_abs": 0.05,
+            "weight": 1.0
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "any",
+            "played_in": [
+              0.0,
+              0.94
+            ],
+            "best_in": [
+              0.0,
+              0.94
+            ],
+            "weight": 0.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "bad",
+        "very bad"
       ],
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "board.crunch.spared",
-   "principle": "Never crunch the board while a spare can carry the roll.",
-   "phrase_flag": "The board crunched onto dead points while a spare was free to carry the roll.",
-   "phrase_praise": "The spare took the roll and the home board stands connected.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_ENTER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.05,
-      "weight": 2.0
-     },
-     {
-      "term": "I_ENTER2",
-      "side": "opp",
-      "direction": "any",
-      "max_abs": 0.05,
-      "weight": 0.5
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "hit.declined",
+      "principle": "When the hit is right, take it -- pips on the bar are pips won.",
+      "phrase_flag": "The hit was there and you passed -- pips handed back for free.",
+      "phrase_praise": "Hit made -- the bar is the most expensive address on the board.",
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.3,
+            "weight": 1.5
+          },
+          {
+            "term": "PipCount.opp",
+            "side": "",
+            "direction": "up",
+            "min_abs": 4.0,
+            "weight": 1.5
+          },
+          {
+            "term": "I_ENTER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.02,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       0.95,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "race.break.ahead",
+      "principle": "Ahead in the race, break contact and run.",
+      "phrase_flag": "Ahead in the race and still in contact -- the trailer is the one who wants it.",
+      "phrase_praise": "Contact broken with the lead -- the race is yours to count.",
+      "category": "race",
+      "signature": {
+        "class_played": 10,
+        "class_best": 8,
+        "terms": [
+          {
+            "term": "I_BREAK_CONTACT",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.1,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "point.deep.wasted",
-   "principle": "Build the blockade from the front; the deep point can wait.",
-   "phrase_flag": "The deep point is a dead point this early; the blockade wanted building from the front.",
-   "phrase_praise": "The front point extends the block -- the trapped checkers feel it at once.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_CONTAIN",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.05,
-      "weight": 1.5,
-      "played_in": [
-       0.45,
-       0.62
+      "tier": "authored"
+    },
+    {
+      "id": "race.escape.window",
+      "principle": "Escape rolls are a resource; don't spend the window doing nothing.",
+      "phrase_flag": "The escape window was open and the runner stayed home.",
+      "phrase_praise": "The back checker slips through while the gap is there.",
+      "category": "race",
+      "signature": {
+        "class_best": 10,
+        "terms": [
+          {
+            "term": "I_FORWARD_ANCHOR",
+            "side": "me",
+            "direction": "any",
+            "best_in": [
+              1.01,
+              2.0
+            ],
+            "weight": 0.0
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.1,
+            "weight": 1.0
+          },
+          {
+            "term": "I_BACKESCAPES",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.0
+          },
+          {
+            "term": "I_BREAK_CONTACT",
+            "side": "me",
+            "direction": "down",
+            "min_abs": 0.02,
+            "weight": 0.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       0.65,
-       0.85
-      ]
-     },
-     {
-      "term": "I_TIMING",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       0.0,
-       0.4
+      "tier": "authored"
+    },
+    {
+      "id": "backgame.timing",
+      "principle": "A backgame lives or dies on timing.",
+      "phrase_flag": "The backgame burned its timing -- it will crunch before the shot comes.",
+      "phrase_praise": "The timing holds -- the backgame stays dangerous.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACKG",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              0.01,
+              5.0
+            ],
+            "best_in": [
+              0.01,
+              5.0
+            ],
+            "weight": 0.5
+          },
+          {
+            "term": "I_TIMING",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "bad",
+        "very bad"
       ],
-      "best_in": [
-       0.0,
-       1.0
+      "tier": "authored"
+    },
+    {
+      "id": "timing.hold.crunch",
+      "principle": "A holding game survives on its timing.",
+      "phrase_flag": "The board crunched early -- a holding game has to outwait the shot.",
+      "phrase_praise": "The timing holds; the anchor can wait for its shot.",
+      "category": "board",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_BACKG1",
+            "side": "me",
+            "direction": "any",
+            "played_in": [
+              0.01,
+              5.0
+            ],
+            "best_in": [
+              0.01,
+              5.0
+            ],
+            "weight": 0.5
+          },
+          {
+            "term": "I_CONTAIN",
+            "side": "me",
+            "direction": "any",
+            "best_in": [
+              0.0,
+              0.84
+            ],
+            "weight": 0.0
+          },
+          {
+            "term": "I_TIMING",
+            "side": "me",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.5
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "blot.cover.missed",
-   "principle": "A builder wants covering; a covered builder is a point.",
-   "phrase_flag": "The blot on the point was a builder waiting for cover; left alone it is only a target.",
-   "phrase_praise": "Covered -- the builder became a point, and the anchor has nothing to shoot at.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.04,
-      "weight": 1.5
-     },
-     {
-      "term": "I_ENTER2",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.15,
-      "weight": 1.5
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.8,
-       0.94
+      "tier": "authored"
+    },
+    {
+      "id": "blitz.point.missed",
+      "principle": "When the blitz is on, points are made on heads.",
+      "phrase_flag": "The blot stood in your home board and the point went unmade -- a blitz cannot pause.",
+      "phrase_praise": "Point on his head -- the blitz rolls on.",
+      "category": "threat",
+      "signature": {
+        "terms": [
+          {
+            "term": "I_ENTER2",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.5
+          },
+          {
+            "term": "I_BACK_CHEQUER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.0
+          },
+          {
+            "term": "I_ENTER",
+            "side": "opp",
+            "direction": "up",
+            "min_abs": 0.1,
+            "weight": 1.0
+          },
+          {
+            "term": "PipCount.opp",
+            "side": "",
+            "direction": "up",
+            "min_abs": 3.0,
+            "weight": 1.0
+          }
+        ]
+      },
+      "severity_hint": [
+        "doubtful",
+        "bad"
       ],
-      "best_in": [
-       0.8,
-       0.94
-      ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "anchor.split.straggler",
-   "principle": "Keep the anchor whole; a split anchor shelters no one.",
-   "phrase_flag": "Running one checker off the anchor buys the worst of both: a straggler under fire and no shelter behind it.",
-   "phrase_praise": "The anchor stays whole -- no stragglers, no shots, the shelter holds.",
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACK_ANCHOR",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.25,
-      "weight": 1.5
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.04,
-      "weight": 1.0
-     },
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       1.0,
-       2.0
-      ],
-      "best_in": [
-       0.1,
-       0.25
-      ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "prime.contain.lost",
-   "principle": "Don't let the trapped checker out for free.",
-   "phrase_flag": "You let the trapped checker out for nothing.",
-   "phrase_praise": null,
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_CONTAIN",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.35,
-      "weight": 1.5
-     },
-     {
-      "term": "I_BACKESCAPES",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.2,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "anchor.surrender.back",
-   "principle": "A back anchor is shelter; don't leave it without a reason.",
-   "phrase_flag": "You gave up the back anchor -- shelter gone, and the blots are under fire.",
-   "phrase_praise": null,
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "any",
-      "played_in": [
-       110,
-       135
-      ],
-      "best_in": [
-       110,
-       135
-      ],
-      "weight": 0.0
-     },
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.3,
-      "weight": 1.0,
-      "played_in": [
-       1.01,
-       2.0
-      ],
-      "best_in": [
-       0.01,
-       1.0
-      ]
-     },
-     {
-      "term": "I_BACKBONE",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.2,
-      "weight": 1.0
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.1,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "anchor.advance.golden",
-   "principle": "The 20-point anchor is worth fighting for.",
-   "phrase_flag": "The golden point was there for the taking, and the anchor stayed buried on the 24.",
-   "phrase_praise": "The golden anchor is made -- the best point in their board is yours.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.3,
-      "weight": 1.0,
-      "played_in": [
-       0.01,
-       0.4
-      ],
-      "best_in": [
-       0.8,
-       0.87
-      ]
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "anchor.advance.mid",
-   "principle": "An advanced anchor beats a deep one.",
-   "phrase_flag": "The anchor stayed buried when a higher point was there to hold.",
-   "phrase_praise": "The anchor steps up -- more board, more ways out.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.25,
-      "weight": 1.0,
-      "played_in": [
-       0.01,
-       0.4
-      ],
-      "best_in": [
-       0.45,
-       0.7
-      ]
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "board.close.entry",
-   "principle": "Every home point you make keeps the hit man out longer.",
-   "phrase_flag": "Your board stayed open with a checker sitting on the bar.",
-   "phrase_praise": "Another home point made -- the checker on the bar stays there longer.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_ENTER2",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.5
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       1.0,
-       1.0
-      ],
-      "best_in": [
-       1.0,
-       1.0
-      ],
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "blot.shot.given",
-   "principle": "Count the shots before you leave the blot.",
-   "phrase_flag": "You left a blot under direct fire for no return.",
-   "phrase_praise": null,
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "any",
-      "max_abs": 0.29,
-      "weight": 0.0
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.1,
-      "weight": 1.0
-     },
-     {
-      "term": "I_PIPLOSS",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.0,
-       0.94
-      ],
-      "best_in": [
-       0.0,
-       0.94
-      ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "blot.double.given",
-   "principle": "One blot is a risk; two in range is a plan for disaster.",
-   "phrase_flag": "Two blots in range -- one roll can hit them both.",
-   "phrase_praise": null,
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "any",
-      "max_abs": 0.29,
-      "weight": 0.0
-     },
-     {
-      "term": "I_P2",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 2.0
-     },
-     {
-      "term": "I_P1",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 1.0
-     },
-     {
-      "term": "I_PIPLOSS",
-      "side": "opp",
-      "direction": "down",
-      "min_abs": 0.05,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "any",
-      "played_in": [
-       0.0,
-       0.94
-      ],
-      "best_in": [
-       0.0,
-       0.94
-      ],
-      "weight": 0.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "hit.declined",
-   "principle": "When the hit is right, take it -- pips on the bar are pips won.",
-   "phrase_flag": "The hit was there and you passed -- pips handed back for free.",
-   "phrase_praise": "Hit made -- the bar is the most expensive address on the board.",
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.3,
-      "weight": 1.5
-     },
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "up",
-      "min_abs": 4.0,
-      "weight": 1.5
-     },
-     {
-      "term": "I_ENTER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.02,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "race.break.ahead",
-   "principle": "Ahead in the race, break contact and run.",
-   "phrase_flag": "Ahead in the race and still in contact -- the trailer is the one who wants it.",
-   "phrase_praise": "Contact broken with the lead -- the race is yours to count.",
-   "category": "race",
-   "signature": {
-    "class_played": 10,
-    "class_best": 8,
-    "terms": [
-     {
-      "term": "I_BREAK_CONTACT",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.1,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "race.escape.window",
-   "principle": "Escape rolls are a resource; don't spend the window doing nothing.",
-   "phrase_flag": "The escape window was open and the runner stayed home.",
-   "phrase_praise": "The back checker slips through while the gap is there.",
-   "category": "race",
-   "signature": {
-    "class_best": 10,
-    "terms": [
-     {
-      "term": "I_FORWARD_ANCHOR",
-      "side": "me",
-      "direction": "any",
-      "best_in": [
-       1.01,
-       2.0
-      ],
-      "weight": 0.0
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.1,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BACKESCAPES",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.0
-     },
-     {
-      "term": "I_BREAK_CONTACT",
-      "side": "me",
-      "direction": "down",
-      "min_abs": 0.02,
-      "weight": 0.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "backgame.timing",
-   "principle": "A backgame lives or dies on timing.",
-   "phrase_flag": "The backgame burned its timing -- it will crunch before the shot comes.",
-   "phrase_praise": "The timing holds -- the backgame stays dangerous.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACKG",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       0.01,
-       5.0
-      ],
-      "best_in": [
-       0.01,
-       5.0
-      ],
-      "weight": 0.5
-     },
-     {
-      "term": "I_TIMING",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "bad",
-    "very bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "timing.hold.crunch",
-   "principle": "A holding game survives on its timing.",
-   "phrase_flag": "The board crunched early -- a holding game has to outwait the shot.",
-   "phrase_praise": "The timing holds; the anchor can wait for its shot.",
-   "category": "board",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_BACKG1",
-      "side": "me",
-      "direction": "any",
-      "played_in": [
-       0.01,
-       5.0
-      ],
-      "best_in": [
-       0.01,
-       5.0
-      ],
-      "weight": 0.5
-     },
-     {
-      "term": "I_CONTAIN",
-      "side": "me",
-      "direction": "any",
-      "best_in": [
-       0.0,
-       0.84
-      ],
-      "weight": 0.0
-     },
-     {
-      "term": "I_TIMING",
-      "side": "me",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.5
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  },
-  {
-   "id": "blitz.point.missed",
-   "principle": "When the blitz is on, points are made on heads.",
-   "phrase_flag": "The blot stood in your home board and the point went unmade -- a blitz cannot pause.",
-   "phrase_praise": "Point on his head -- the blitz rolls on.",
-   "category": "threat",
-   "signature": {
-    "terms": [
-     {
-      "term": "I_ENTER2",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.5
-     },
-     {
-      "term": "I_BACK_CHEQUER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.0
-     },
-     {
-      "term": "I_ENTER",
-      "side": "opp",
-      "direction": "up",
-      "min_abs": 0.1,
-      "weight": 1.0
-     },
-     {
-      "term": "PipCount.opp",
-      "side": "",
-      "direction": "up",
-      "min_abs": 3.0,
-      "weight": 1.0
-     }
-    ]
-   },
-   "severity_hint": [
-    "doubtful",
-    "bad"
-   ],
-   "tier": "authored"
-  }
- ]
+      "tier": "authored"
+    }
+  ]
 }
