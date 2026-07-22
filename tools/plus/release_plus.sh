@@ -37,15 +37,38 @@ ok "working tree clean"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "plus" ] || die "on '$BRANCH', expected 'plus'"
 
-git fetch -q plus
-LOCAL="$(git rev-parse HEAD)"; REMOTE="$(git rev-parse plus/plus)"
-[ "$LOCAL" = "$REMOTE" ] || die "plus branch not in sync with the remote -- push first"
+# Remotes are named differently depending on which clone this is run from: in
+# the FOSS working copy cbg-plus is a secondary remote (usually 'plus'), while
+# a dedicated cbg-plus clone has it as 'origin'. Detect by URL rather than
+# assuming a name.
+PLUS_REMOTE=""; FOSS_REMOTE=""
+for r in $(git remote); do
+  u="$(git remote get-url "$r")"
+  case "$u" in
+    *cbg-plus*)       PLUS_REMOTE="$r" ;;
+    *gnubg-android*)  FOSS_REMOTE="$r" ;;
+  esac
+done
+[ -n "$PLUS_REMOTE" ] || die "no remote points at cbg-plus"
+ok "plus remote is '$PLUS_REMOTE'"
+
+git fetch -q "$PLUS_REMOTE"
+LOCAL="$(git rev-parse HEAD)"; REMOTE="$(git rev-parse "$PLUS_REMOTE/plus")"
+[ "$LOCAL" = "$REMOTE" ] || die "plus branch not in sync with $PLUS_REMOTE -- push first"
 ok "plus branch in sync ($(git rev-parse --short HEAD))"
 
-# Standing order: a red parity audit outranks all other work.
-git fetch -q origin
-FOSS_REF=origin/main MIRROR_REF=plus/main PLUS_REF=HEAD \
-  ./tools/plus/check_foss_parity.sh || die "FOSS parity audit is RED -- fix before releasing"
+# Standing order: a red parity audit outranks all other work. The FOSS leg
+# needs a remote pointing at the upstream repo; a dedicated cbg-plus clone may
+# not have one, in which case say so rather than pass silently.
+if [ -n "$FOSS_REMOTE" ]; then
+  git fetch -q "$FOSS_REMOTE"
+  FOSS_REF="$FOSS_REMOTE/main" MIRROR_REF="$PLUS_REMOTE/main" PLUS_REF=HEAD \
+    ./tools/plus/check_foss_parity.sh || die "FOSS parity audit is RED -- fix before releasing"
+else
+  FOSS_REF="$PLUS_REMOTE/main" MIRROR_REF="$PLUS_REMOTE/main" PLUS_REF=HEAD \
+    ./tools/plus/check_foss_parity.sh || die "overlay audit is RED -- fix before releasing"
+  warn "no upstream FOSS remote in this clone: plus-vs-mirror checked, mirror-vs-FOSS NOT verified"
+fi
 
 # Authored coach text must pass every gate that a shipped defect taught us to
 # check. A tester must never receive a build whose phrases can lie.
