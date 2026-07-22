@@ -981,7 +981,11 @@ private fun CoachPanel(
                     // (it would contradict it); not on bad/very-bad silence
                     // (those are not close; they stay silent).
                     if (g.skill == 2 && insightsState.value?.isEmpty() == true) {
-                        Spacer(modifier = Modifier.height(6.dp))
+                        // One blank line above and below, so the aside reads as
+                        // its own paragraph between two fixed blocks (the
+                        // verdict line and the five variant rows). One line is
+                        // this text's own lineHeight, 16.
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             "A close call \u2014 ${"%.3f".format(g.loss)} apart. " +
                                 "Tap any variant and judge the boards yourself.",
@@ -990,6 +994,8 @@ private fun CoachPanel(
                             fontSize = 12.sp,
                             lineHeight = 16.sp
                         )
+                        // MoveList opens with its own 6dp, so 10 here totals 16.
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
