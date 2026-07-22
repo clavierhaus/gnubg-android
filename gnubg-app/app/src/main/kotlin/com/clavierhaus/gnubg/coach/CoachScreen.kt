@@ -201,19 +201,6 @@ fun CoachScreen(
     val gameState by viewModel.gameState.collectAsState()
     val pal = BoardPalettes.from(settings.boardTheme)
 
-    // Your Personal Stats (Plus): full-screen over the coach when opened from
-    // the match-over rail. Plain remember -- process death just closes it.
-    val showStats = androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(false)
-    }
-    if (showStats.value) {
-        com.clavierhaus.gnubg.stats.PersonalStatsScreen(
-            viewModel = viewModel,
-            onClose = { showStats.value = false }
-        )
-        return
-    }
-
     // Setup gate (M4): the mode opens on a setup screen -- strength + length --
     // before any board, so match length > 1 (cube in play) is a deliberate
     // choice. The game starts from the setup's Start button, not on entry.
@@ -402,36 +389,6 @@ fun CoachScreen(
                     ) {
                         Text(
                             "U\nn\nd\no",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 15.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-                // Your Personal Stats entry (design law: the match-over surface,
-                // while lMatch still holds the record). Same matchOver expression
-                // as the New-game disable below (matchLength > 1 and a player
-                // reached it). Orange = Plus, spine aesthetic like Home/Undo.
-                val statsMatchOver = gameState.phase == GamePhase.GAME_OVER &&
-                    gameState.matchLength > 1 &&
-                    (gameState.humanScore >= gameState.matchLength ||
-                     gameState.engineScore >= gameState.matchLength)
-                if (statsMatchOver) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                com.clavierhaus.gnubg.shared.PlusUi.Interactive,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .clickable { showStats.value = true }
-                            .padding(horizontal = 10.dp, vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "S\nt\na\nt\ns",
                             color = Color.White,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,

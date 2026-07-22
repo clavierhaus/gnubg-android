@@ -41,6 +41,20 @@ fun GameLayout(
     val tutorMode = settings.tutorMode
     val palette = BoardPalettes.from(settings.boardTheme)
     val pal = palette
+
+    // Your Personal Stats (Plus): entered from the PLAY match-over panel --
+    // the record is built from honest play only; Coach is the gym and has no
+    // entry (record purity by construction). Full-screen; plain remember.
+    val showStats = androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(false)
+    }
+    if (showStats.value) {
+        com.clavierhaus.gnubg.stats.PersonalStatsScreen(
+            viewModel = viewModel,
+            onClose = { showStats.value = false }
+        )
+        return
+    }
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
     if (showMatchSetup) {
         MatchSetupScreen(
@@ -168,6 +182,29 @@ fun GameLayout(
                                         fontWeight = FontWeight.Bold, maxLines = 2,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                    // This else branch is only reached when the match
+                                    // is concluded (a player took it, or a 1-point
+                                    // match ended) -- every finished Play match offers
+                                    // its stats. Orange = Plus. Compact: the pane
+                                    // does not scroll.
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                com.clavierhaus.gnubg.shared.PlusUi.Interactive,
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .clickable { showStats.value = true }
+                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            "Your stats",
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                     // New match / Home live in the hoisted row below,
                                     // the same place as in every other phase. "Exit" is
                                     // gone: the action is Home, and it is called Home
