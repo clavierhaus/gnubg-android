@@ -148,15 +148,15 @@ fun HomeHubScreen(
                 .align(Alignment.CenterStart)
                 .padding(start = 64.dp, top = 72.dp)
         ) {
-            HomeHubEntry("Play Tournament Match", onPlay)
+            HomeHubEntry("Play Tournament Match", onPlay, note = "with personal stats")
             Spacer(modifier = Modifier.height(22.dp))
             // The fourth mode (docs/COACH.md): play gnubg with the engine
             // looking over your shoulder. Second position: learning sits
             // between competing and analysing.
-            HomeHubEntry("Train with the Coach", onCoach)
+            HomeHubEntry("Train with the Coach", onCoach, note = "with explanations")
             Spacer(modifier = Modifier.height(22.dp))
             // Second: the feature people still open XG Mobile for.
-            HomeHubEntry("Analyse Position", onAnalysePosition)
+            HomeHubEntry("Analyse Position", onAnalysePosition, note = "with the set-up editor")
             Spacer(modifier = Modifier.height(22.dp))
             // Third, now that it exists.
             HomeHubEntry("Review Match", onReviewMatch)
@@ -168,23 +168,37 @@ fun HomeHubScreen(
 @Composable
 private fun HomeHubEntry(
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    note: String? = null
 ) {
     // Emphasise the VERB: the first word (Play / Train / Analyse / Review) in
     // GNU-orange, the rest in the entry's default colour -- echoing the "GNU"
     // in the title so each entry reads as an action.
     val verb = label.substringBefore(' ')
     val rest = label.substring(verb.length)
-    BasicText(
-        text = buildAnnotatedString {
-            withStyle(SpanStyle(color = GnuOrange)) { append(verb) }
-            append(rest)
-        },
-        style = HomeEntryStyle,
+    Column(
         modifier = Modifier
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp)
-    )
+    ) {
+        BasicText(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = GnuOrange)) { append(verb) }
+                append(rest)
+            },
+            style = HomeEntryStyle
+        )
+        // Indented second line rather than an inline suffix: a margin note sits
+        // beside its line, and the entries are already long at 36sp on a
+        // landscape hub -- an inline suffix risks overflow.
+        if (note != null) {
+            BasicText(
+                text = note,
+                style = HomeNoteStyle,
+                modifier = Modifier.padding(start = 28.dp, top = 0.dp)
+            )
+        }
+    }
 }
 
 // Sampled from ic_launcher_foreground.png. The icon is the app's signature; the
@@ -225,6 +239,21 @@ private val HomeEntryStyle = TextStyle(
     fontFamily = DejaVuSerif,
     color = GnuWhite,
     fontSize = 36.sp,
+    fontWeight = FontWeight.Normal,
+    shadow = HomeShadow
+)
+
+// Plus capability note. Same script face as the edition mark above, with the
+// proportions INVERTED: the mark is orange and oversized (a badge, once per
+// app); the note is muted and UNDERSIZED against its entry, so it reads as a
+// pencilled annotation beside a printed line. Never orange -- orange is
+// reserved for Plus interactive elements, and each entry's verb already
+// carries it. A note is a capability claim, so it is written only where Plus
+// genuinely adds one; entries that gain nothing stay bare.
+private val HomeNoteStyle = TextStyle(
+    fontFamily = AlluraScript,
+    color = GnuWhite.copy(alpha = 0.75f),
+    fontSize = 30.sp,
     fontWeight = FontWeight.Normal,
     shadow = HomeShadow
 )
