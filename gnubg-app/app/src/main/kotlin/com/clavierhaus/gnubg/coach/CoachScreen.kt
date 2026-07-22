@@ -814,11 +814,13 @@ private fun CoachPanel(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 phase == GamePhase.COACH_REVIEW -> {
-                    Text(
-                        "Study the eval while GNU waits.",
-                        color = pal.uiTextSecondary, fontSize = 11.sp,
-                        maxLines = 1
-                    )
+                    // No caption here. It used to read "Study the eval while
+                    // GNU waits", which says nothing the panel below does not
+                    // already show, and the room is better spent on the
+                    // verdict, the aside and the variant rows -- which on a
+                    // flagged move can run to two sentences. The branch stays
+                    // for the gap it opens between the score row and the
+                    // verdict.
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 phase == GamePhase.ENGINE_THINKING -> {
