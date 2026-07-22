@@ -55,7 +55,15 @@ class DeltaNarrator(context: Context) {
 
     /** Same frame as InsightMatcher: me = feat[n+i], opp = feat[i],
      *  PipCount.opp = pips[0]. One source of frame truth per playbook L5. */
-    fun narrate(played: IntArray, best: IntArray): List<InsightMatcher.Insight> {
+    /** [ref] names the variant being compared against, in lower case: the
+     *  sentences carry a {REF} token so one authored text stays true whichever
+     *  variant the pair points at. Sentence-initial {REF} is capitalised after
+     *  substitution, so "the best variant" reads correctly in both positions. */
+    fun narrate(
+        played: IntArray,
+        best: IntArray,
+        ref: String = "the best variant"
+    ): List<InsightMatcher.Insight> {
         if (rules.isEmpty()) return emptyList()
         val fp = Engine.positionFeatures(played)
         val fb = Engine.positionFeatures(best)
@@ -92,7 +100,13 @@ class DeltaNarrator(context: Context) {
             " narrated=" + ranked.size +
             (if (ranked.isNotEmpty()) " [" + ranked.joinToString(",") { it.rule.id } + "]" else ""))
         return ranked.map {
-            InsightMatcher.Insight(it.rule.id, it.rule.sentence, it.rule.category, it.score)
+            InsightMatcher.Insight(
+                it.rule.id,
+                it.rule.sentence.replace("{REF}", ref)
+                    .replaceFirstChar { c -> c.uppercase() },
+                it.rule.category,
+                it.score
+            )
         }
     }
 }
