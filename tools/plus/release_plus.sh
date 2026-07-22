@@ -83,6 +83,21 @@ gh api user -q .login >/dev/null 2>&1 \
 ok "gh authenticated as $(gh api user -q .login)"
 
 # --- build ----------------------------------------------------------------
+# Signing key. keystore.properties is gitignored, so a separate cbg-plus clone
+# will not have it even though the FOSS working copy does. Without it gradle
+# silently emits app-release-unsigned.apk -- check before spending a build on it.
+KSP="$APP_DIR/keystore.properties"
+[ -f "$KSP" ] || die "missing $KSP (gitignored, so a fresh clone lacks it). Copy it over:
+       cp /home/erweitert/gnubg-android/gnubg-app/keystore.properties $APP_DIR/"
+KS_NAMED="$(sed -n 's/^storeFile=//p' "$KSP" | head -n1)"
+case "$KS_NAMED" in
+  /*) KS_PATH="$KS_NAMED" ;;
+  *)  KS_PATH="$APP_DIR/$KS_NAMED" ;;   # gradle resolves against rootProject = gnubg-app/
+esac
+[ -f "$KS_PATH" ] || die "keystore.properties names storeFile=$KS_NAMED, which resolves to
+       $KS_PATH and does not exist. Copy the keystore across too, or make storeFile absolute."
+ok "signing key present ($KS_PATH)"
+
 if [ "$DO_BUILD" = 1 ]; then
   # jniLibs is gitignored: the .so are produced by build_native_android.sh and
   # live only in the working tree. A release built without them would ship an
