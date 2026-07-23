@@ -140,9 +140,12 @@ else
 fi
 
 # --- publish --------------------------------------------------------------
-TAG="plus-$(date +%Y%m%d-%H%M)"
+STAMP="$(date +%Y%m%d-%H%M)"
+TAG="plus-$STAMP"
 VNAME="$(grep -oP 'versionName\s*=\s*"\K[^"]+' "$APP_DIR/app/build.gradle.kts" | head -n1)"
-ASSET="$(dirname "$APK")/cbg-plus-$TAG.apk"
+# Named for a human receiving it, not for the tag: the tag already starts with
+# "plus-", so deriving the filename from it produced cbg-plus-plus-<stamp>.apk.
+ASSET="$(dirname "$APK")/CBG-Plus-$VNAME-$STAMP.apk"
 cp -f "$APK" "$ASSET"
 sha256sum "$ASSET" | awk '{print $1}' > "$ASSET.sha256"
 
@@ -179,3 +182,9 @@ if [ "$REPLACE" = 1 ]; then
 fi
 
 gh release view "$TAG" --repo "$REPO" --json url -q .url
+
+# The same bytes that were just published, still on disk -- so a copy for Drive
+# or a direct hand-off needs no round trip through GitHub.
+printf '\nlocal copy, identical to the published asset:\n  %s\n  %s\n' \
+  "$ASSET" "$ASSET.sha256"
+printf 'sha256: %s\n' "$(cat "$ASSET.sha256")"
