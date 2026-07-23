@@ -1,0 +1,1 @@
+Fix: doubles long-tap highlight showed a point beyond the remaining dice.

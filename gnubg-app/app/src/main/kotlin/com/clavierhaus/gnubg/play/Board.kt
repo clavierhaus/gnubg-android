@@ -249,17 +249,20 @@ private fun landingPointsForSource(gameState: BoardState, sourcePoint: Int): Set
     // 24-point, 22, 20, 18, 16 -- not just the one-die target the old
     // first-pair reader showed. It never splices hops across different moves
     // (the older breadth-first bug lit unreachable points), because a path is
-    // walked as a unit. And because state.legalMoves is regenerated against the
-    // partial board after each sub-move (readMatchState callers, remainingDice),
-    // dice already spent are automatically excluded -- only the remaining reach
-    // is shown.
+    // walked as a unit. The regenerated legalMoves is NOT budget-aware for
+    // doubles: getLegalMoves(board, d, d) always generates up-to-four-hop
+    // paths however many dice remain (field report: double 2s with one die
+    // played lit source-8, a point three dice cannot reach). Every sub-move
+    // in a path costs one die, so the walk is capped at remainingDice.size.
     val origin = sourcePoint - 1        // gnubg 0-based point index
+    val budget = gameState.remainingDice.size
     val dests = linkedSetOf<Int>()
     var m = 0
     while (m + 7 < moves.size) {
         var here = origin               // where the tapped checker currently is
         var moving = false              // has this move started moving OUR checker?
         for (j in 0..3) {
+            if (j >= budget) break      // one die per path hop: no reach beyond the dice left
             val src = moves[m + j * 2]
             val dst = moves[m + j * 2 + 1]
             if (src < 0) break          // move ends
