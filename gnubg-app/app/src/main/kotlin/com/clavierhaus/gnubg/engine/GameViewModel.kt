@@ -308,6 +308,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // match-value cap). The UI reads this rather than reimplementing any
         // subset of the rule.
         val canDouble = Engine.canDouble()
+        // gnubg's own Crawford flag for the game in progress (ms.fCrawford,
+        // set by gnubg from the score under fAutoCrawford -- play.c:864). Read
+        // from the atomic cube-state snapshot; index [8] documented at the
+        // facade. Never derived from the score here (no reimplementation).
+        val crawford  = Engine.getCubeDebugState()[8] == 1
         val turn      = Engine.getMatchTurn()
         // Display board comes pre-oriented to a STABLE human (player-0) frame from
         // a single atomic facade call. The old code read the board and an
@@ -353,6 +358,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             cubeOwner      = cubeOwner,
             fDoubled       = fDoubled,
             canDouble      = canDouble,
+            crawford       = crawford,
             unplayableDice = unplayableDice,
             resignation    = Engine.getResignation(),
             tutorAnalysis  = lastTutorAnalysis,

@@ -47,6 +47,7 @@ data class BoardState(
     val cubeOwner: Int = -1,   // -1=centred, 0=human, 1=engine
     val fDoubled: Boolean = false,
     val canDouble: Boolean = false,  // engine authority (gnubg_can_double); UI cube tappability
+    val crawford: Boolean = false,   // gnubg's ms.fCrawford: THIS game is the Crawford game
     val unplayableDice: Set<Int> = emptySet(),  // die faces gnubg lists no move for; greyed in UI
     val resignation: Int = 0,                   // gnubg's ms.fResigned: 1 normal, 2 gammon, 3 backgammon
     val pipCountHuman: Int = 167,
@@ -72,6 +73,7 @@ data class BoardState(
                cubeOwner == other.cubeOwner &&
                fDoubled == other.fDoubled &&
                canDouble == other.canDouble &&
+               crawford == other.crawford &&
                pipCountHuman == other.pipCountHuman &&
                pipCountEngine == other.pipCountEngine &&
                phase == other.phase &&
@@ -91,6 +93,7 @@ data class BoardState(
         result = 31 * result + cubeOwner
         result = 31 * result + fDoubled.hashCode()
         result = 31 * result + canDouble.hashCode()
+        result = 31 * result + crawford.hashCode()
         result = 31 * result + pipCountHuman
         result = 31 * result + pipCountEngine
         result = 31 * result + phase.hashCode()

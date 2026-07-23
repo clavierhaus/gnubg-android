@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -117,6 +118,21 @@ fun GameLayout(
                                 .height(1.dp)
                                 .background(pal.uiPanel)
                         )
+
+                        // Match context: gnubg says this is the Crawford game
+                        // (leader one point from the match, cube dead for the
+                        // game). Shown from the engine's own flag, never from
+                        // score arithmetic here.
+                        if (gameState.crawford && gameState.matchLength > 1) {
+                            Text(
+                                "Crawford",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         when {
                             gameState.phase == GamePhase.GAME_OVER -> {
