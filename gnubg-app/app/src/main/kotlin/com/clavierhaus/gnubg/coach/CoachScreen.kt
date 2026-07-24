@@ -605,7 +605,6 @@ private fun MoveList(
  *  block so the panel's lower half is claimed now; the insight layer will fill
  *  it with a phrase matched to the feature delta. Deliberately minimal until
  *  then -- no faux content. */
-@Composable
 /**
  * The verdict line for a PREVIEWED variant: its own rank, its equity against
  * gnubg's best, and gnubg's own grade of that equity loss -- Engine.skill IS
@@ -629,6 +628,7 @@ private fun VariantVerdictLine(g: CoachGlance, sel: CoachAlt) {
     )
 }
 
+@Composable
 private fun WhyInsights(
     glance: CoachGlance,
     insightsOut: MutableState<List<InsightMatcher.Insight>?>,
