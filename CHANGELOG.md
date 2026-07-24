@@ -13,6 +13,31 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [0.22.8] -- upcoming release
+
+- New: all-time statistics, per difficulty level -- matches won and
+  lost, rolls, doubles, and pips per roll, for you and GNU side by
+  side, each rate shown with its sample size and expected value.
+  Reached from the match-over panel; counting starts with this
+  release, decided tournament matches only, Coach sessions excluded.
+  (Requested on the issue tracker.)
+- New: a centered "Crawford" indicator under the scoreboard whenever
+  gnubg flags the game in progress as the Crawford game (cube dead for
+  the game).
+
+- Fix: with doubles, the long-tap target highlight lit a point one
+  spent die beyond reach (e.g. 22 lighting 14 with three 2s left); the
+  reach shown now matches the dice actually remaining. Display only --
+  the phantom point was never playable.
+
+## [0.22.6] -- 2026-07-22
+
+- Fix (reproducible builds): the build stamp shown in About now derives
+  from the commit time instead of the build clock, making builds
+  byte-identical across machines. First release verified reproducible
+  on F-Droid's own build hardware.
+
+
 ## [0.22.5] -- 2026-07-22
 
 ### Added & Changed
@@ -86,8 +111,6 @@ the engine, or stopped hiding what the engine already knew.
 ### Documentation
 
 - Updated the README release status to 0.21.1.
-
-## [Unreleased]
 
 ## [0.22.4] -- 2026-07-21
 
