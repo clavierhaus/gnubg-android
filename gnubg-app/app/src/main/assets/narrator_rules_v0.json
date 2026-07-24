@@ -9,7 +9,7 @@
       "term": "I_P1",
       "side": "opp",
       "direction": "down",
-      "notable": 0.08,
+      "notable": 0.20,
       "sentence": "Your move leaves the opponent more shots than {REF} does."
     },
     {
@@ -27,7 +27,7 @@
       "term": "I_ENTER",
       "side": "opp",
       "direction": "up",
-      "notable": 0.08,
+      "notable": 0.18,
       "sentence": "{REF} makes it harder for the opponent to enter from the bar."
     },
     {
@@ -45,7 +45,7 @@
       "term": "I_CONTAIN",
       "side": "me",
       "direction": "up",
-      "notable": 0.08,
+      "notable": 0.18,
       "sentence": "{REF} does more to contain the opponent's runners."
     },
     {
