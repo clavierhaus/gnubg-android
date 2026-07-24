@@ -56,6 +56,7 @@ class InsightMatcher(context: Context) {
 
     private class Entry(
         val id: String, val phraseFlag: String?, val phrasePraise: String?,
+        val phraseVariant: String?,
         val category: String, val severity: Set<String>,
         val classPlayed: Int?, val classBest: Int?, val terms: List<Term>
     )
@@ -108,6 +109,8 @@ class InsightMatcher(context: Context) {
                         it.isNotEmpty() && it != "null" },
                     phrasePraise = e.optString("phrase_praise").takeIf {
                         it.isNotEmpty() && it != "null" },
+                    phraseVariant = e.optString("phrase_variant").takeIf {
+                        it.isNotEmpty() && it != "null" },
                     category = e.getString("category"),
                     severity = buildSet {
                         val sv = e.getJSONArray("severity_hint")
@@ -142,7 +145,11 @@ class InsightMatcher(context: Context) {
     }
 
     /** Both boards mover-frame board[50], as the coach glance provides. */
-    fun match(played: IntArray, best: IntArray, skillWord: String): List<Insight> {
+    /** [variantVoice] selects the VARIANT voice: what the compared variant
+     *  achieves, for when a non-played row is previewed. Default is the flag
+     *  voice -- what the played move gave up. */
+    fun match(played: IntArray, best: IntArray, skillWord: String,
+              variantVoice: Boolean = false): List<Insight> {
         if (entries.isEmpty()) return emptyList()
         val sp = Snap(played)
         val sb = Snap(best)
@@ -208,7 +215,8 @@ class InsightMatcher(context: Context) {
             .thenByDescending { it.second }
             .thenBy { it.third.id })
         return fired.take(MAX_FIRE).mapNotNull { (score, _, e) ->
-            val phrase = e.phraseFlag ?: e.phrasePraise ?: return@mapNotNull null
+            val phrase = (if (variantVoice) e.phraseVariant else null)
+                ?: e.phraseFlag ?: e.phrasePraise ?: return@mapNotNull null
             Insight(e.id, phrase, e.category, score)
         }
     }
