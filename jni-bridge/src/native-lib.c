@@ -1178,3 +1178,20 @@ Java_com_clavierhaus_gnubg_Engine_matchErrors(JNIEnv *env, jobject thiz) {
     (*env)->SetIntArrayRegion(env, result, 0, 104, buf);
     return result;
 }
+
+/*
+ * Engine.tallyRolls(): per-side roll counts of the finished match, straight
+ * from gnubg's own moverecords. 8-int layout documented at
+ * gnubg_mobile_tally_rolls. Cheap -- no analysis, just a record walk.
+ */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_tallyRolls(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    jintArray result = (*env)->NewIntArray(env, 8);
+    int s[8];
+    gnubg_mobile_tally_rolls(s);
+    jint buf[8];
+    for (int i = 0; i < 8; i++) buf[i] = (jint)s[i];
+    (*env)->SetIntArrayRegion(env, result, 0, 8, buf);
+    return result;
+}

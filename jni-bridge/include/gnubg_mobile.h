@@ -88,6 +88,11 @@ int gnubg_mobile_match_stats(int out[40]);
  * out[1..2] are per-player self-check sums the caller MUST compare against
  * stage 1's arErrorCheckerplay totals (guardrail G3). */
 int gnubg_mobile_match_errors(int out[104]);
+
+/* All-time tally (FOSS): per-side roll counts of the finished match;
+ * out[8] layout documented at the definition. Cheap -- a record walk with
+ * no analysis. Same lMatch lifetime constraint as the stats walk. */
+int gnubg_mobile_tally_rolls(int out[8]);
 int gnubg_mobile_load_position(const char *path);
 int gnubg_mobile_save_position(const char *path);
 
