@@ -178,6 +178,14 @@ object Engine {
     // nothing. Requires a prior matchStats() pass; fresh match -> 0 rows.
     external fun matchErrors(): IntArray
 
+    // All-time tally (FOSS): per-side roll counts of the finished match,
+    // read from gnubg's own moverecords -- rolls, doubles, face-pip sum for
+    // You then the engine, plus [6] games walked and [7] a skip counter the
+    // caller logs LOUD on if nonzero. 8-int layout at
+    // gnubg_mobile_tally_rolls. Cheap; call at match end while lMatch still
+    // holds the record.
+    external fun tallyRolls(): IntArray
+
     // Position entry (Analyse Position). Wraps gnubg's SetGNUbgID: accepts a
     // GNU BG ID ("PositionID:MatchID") or an XGID. Returns gnubg's own code:
     // 0 installed, 1 no valid IDs found, 2 installed but the player on roll is

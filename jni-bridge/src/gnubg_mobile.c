@@ -1894,3 +1894,53 @@ int gnubg_mobile_match_errors(int out[104])
     pthread_mutex_unlock(&gnubg_lock);
     return n;
 }
+
+/*
+ * All-time tally (FOSS, issue-tracker request): per-side roll counts for the
+ * match currently held in lMatch. Called once at match end, before "New
+ * match" resets the record (same lifetime constraint as the stats walk).
+ *
+ * out[0..2] player 0 (You):    rolls, doubles, face-pip sum
+ * out[3..5] player 1 (engine): rolls, doubles, face-pip sum
+ * out[6]    games walked (sanity)
+ * out[7]    records skipped for an invalid fPlayer -- the caller logs LOUD if
+ *           this is ever nonzero (G3 spirit: never show numbers a self-check
+ *           doubts)
+ *
+ * Counting rule: MOVE_NORMAL records only. In app play every roll lands as
+ * exactly one MOVE_NORMAL (a dance included -- the record exists with no
+ * move); MOVE_SETDICE is excluded to avoid double counting the same roll.
+ * Device-verify against a real match before the UI ships.
+ *
+ * "Roll value" is anDice[0]+anDice[1], the faces as rolled; doubles move
+ * fourfold, but that is movement, not the roll's value.
+ */
+int gnubg_mobile_tally_rolls(int out[8])
+{
+    memset(out, 0, sizeof(int) * 8);
+    pthread_mutex_lock(&gnubg_lock);
+
+    listOLD *plg;
+    for (plg = lMatch.plNext; plg != &lMatch; plg = plg->plNext) {
+        listOLD *plGameWalk = (listOLD *) plg->p;
+        listOLD *pl;
+
+        if (!plGameWalk || plGameWalk->plNext == plGameWalk) continue;
+        out[6]++;
+
+        for (pl = plGameWalk->plNext; pl != plGameWalk; pl = pl->plNext) {
+            moverecord *pmr = (moverecord *) pl->p;
+            if (!pmr || pmr->mt != MOVE_NORMAL) continue;
+            if (pmr->anDice[0] == 0) continue;
+            if (pmr->fPlayer != 0 && pmr->fPlayer != 1) { out[7]++; continue; }
+
+            int base = pmr->fPlayer == 0 ? 0 : 3;
+            out[base]++;
+            if (pmr->anDice[0] == pmr->anDice[1]) out[base + 1]++;
+            out[base + 2] += (int) (pmr->anDice[0] + pmr->anDice[1]);
+        }
+    }
+
+    pthread_mutex_unlock(&gnubg_lock);
+    return 0;
+}

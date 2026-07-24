@@ -94,6 +94,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // clears this. One owner of the terminal transition, enforced at the writer.
     private var gameOverLatched = false
 
+    // All-time tally (FOSS): level captured at match START (attribution
+    // rule), armed only for Play -- never Coach, the gym is not the record --
+    // and fired exactly once per decided match.
+    private var tallyLevel: Difficulty? = null
+    private var matchTallied = false
+
+    /** All-time tally: fire once when the MATCH is decided. Multi-pointers:
+     *  gnubg's own verdict (getMatchWinner() >= 0). One-pointers: gnubg
+     *  reports no match winner (nMatchTo <= 1), so the game winner decides.
+     *  Reads tallyRolls() here, while lMatch still holds the record --
+     *  same lifetime constraint as the stats walk. Each facade call locks
+     *  internally, as with every other Engine read made from this path. */
+    private fun maybeRecordTally(gameWinner: Int) {
+        val level = tallyLevel ?: return          // Coach or unarmed: nothing recorded
+        if (matchTallied) return
+        val matchWinner = Engine.getMatchWinner()
+        val decided = when {
+            matchWinner >= 0                      -> matchWinner
+            _settings.value.matchLength <= 1      -> gameWinner
+            else                                  -> -1
+        }
+        if (decided < 0) return                   // game over, match continues
+        matchTallied = true
+        val rolls = Engine.tallyRolls()
+        val ctx = getApplication<Application>()
+        viewModelScope.launch {
+            MatchTally.recordMatch(ctx, level, humanWonMatch = decided == 0, rolls = rolls)
+        }
+        android.util.Log.i("gnubg-tally",
+            "recorded: level=$level won=${decided == 0} rolls=${rolls.joinToString(",")}")
+    }
+
     /* Coach cube coaching (M4): the parallel of pendingCoachMove for cube
      * decisions. When the human makes a cube decision in a coach session, the
      * verdict is judged and HELD here; continueCoachCube() then carries out the
@@ -291,7 +323,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // until the player acknowledges (newGame). A fresh GAME_OVER (winner
         // supplied) re-latches; everything else is refused while latched.
         if (phase == GamePhase.GAME_OVER) {
+            val firstLatch = !gameOverLatched
             gameOverLatched = true
+            // All-time tally: the first GAME_OVER projection of a game is the
+            // single-fire seam; whether the MATCH ended is decided inside.
+            if (firstLatch) maybeRecordTally(winner)
         } else if (gameOverLatched) {
             android.util.Log.i("gnubg-vm",
                 "readMatchState: held at GAME_OVER (refused phase=$phase while latched)")
@@ -373,6 +409,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // The player has acknowledged the end screen: release the terminal
         // latch so the next game's projection can be written.
         gameOverLatched = false
+        // All-time tally: arm at match start with the level to attribute the
+        // whole match to (mid-match level changes do not re-attribute).
+        if (isNewMatch) {
+            tallyLevel = if (coachSession) null else _settings.value.difficulty
+            matchTallied = false
+        }
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and
         // arm the live-dice watcher. Otherwise, when the engine wins the opening
