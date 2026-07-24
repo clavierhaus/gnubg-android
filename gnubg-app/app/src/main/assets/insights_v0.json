@@ -19,8 +19,8 @@
   {
    "id": "enter.fight.point",
    "principle": "Enter making the advanced anchor, not splitting into the fight.",
-   "phrase_flag": "You leave a checker under fire where an advanced anchor could stand.",
-   "phrase_praise": "Entered making the advanced anchor -- a made point in the opponent's home board instead of blots in the fight.",
+   "phrase_flag": "You enter without making the advanced anchor, and the opponent gets more shots.",
+   "phrase_praise": "Entered making the advanced anchor -- a made point in the opponent's home board, and fewer shots against you.",
    "category": "board",
    "signature": {
     "terms": [
@@ -81,7 +81,7 @@
     "bad"
    ],
    "tier": "authored",
-   "phrase_variant": "{REF} enters making the advanced anchor -- a made point in the opponent's home board instead of a checker under fire."
+   "phrase_variant": "{REF} enters making the advanced anchor -- a made point in the opponent's home board instead of more shots against you."
   },
   {
    "id": "hit.loose.homeboard",
@@ -147,8 +147,8 @@
   {
    "id": "contact.break.early",
    "principle": "Far behind, the anchor is the game; don't break contact.",
-   "phrase_flag": "Far behind in the race, your move gives up the anchor and breaks contact.",
-   "phrase_praise": "The anchor holds -- behind in the race, the holding game and its shot remain yours.",
+   "phrase_flag": "Far behind in the race, your move gives up your rearmost point and breaks contact.",
+   "phrase_praise": "The rearmost point holds -- behind in the race, the contact and its shot remain yours.",
    "category": "race",
    "signature": {
     "terms": [
@@ -195,13 +195,13 @@
     "very bad"
    ],
    "tier": "authored",
-   "phrase_variant": "Behind in the race, {REF} keeps the anchor and the contact -- the holding game and its shot stay alive."
+   "phrase_variant": "Behind in the race, {REF} keeps your rearmost point and the contact -- the shot stays alive."
   },
   {
    "id": "anchor.split.straggler",
    "principle": "Keep the anchor whole; a split anchor shelters no one.",
-   "phrase_flag": "Running one checker off the anchor buys the worst of both: a straggler under fire and no shelter behind it.",
-   "phrase_praise": "The anchor stays whole -- no stragglers, no shots, the shelter holds.",
+   "phrase_flag": "Running one checker off the point buys the worst of both: more shots against you and no shelter behind them.",
+   "phrase_praise": "The point stays whole -- fewer shots, and the shelter holds.",
    "category": "threat",
    "signature": {
     "terms": [
@@ -241,7 +241,7 @@
     "very bad"
    ],
    "tier": "authored",
-   "phrase_variant": "{REF} keeps the anchor whole -- no straggler under fire, and the shelter holds."
+   "phrase_variant": "{REF} keeps the point whole and gives the opponent fewer shots."
   },
   {
    "id": "prime.contain.lost",

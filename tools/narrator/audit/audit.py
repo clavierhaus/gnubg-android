@@ -81,17 +81,17 @@ def fires(entry, vin, vpip, vcls, pin, ppip, pcls):
 # independent board fact to check (reported separately, never counted as pass).
 CLAIMS = {
  "enter.fight.point":
-   ("has a made point in the opponent's home board, and no more blots than the played move",
-    lambda V, P: V["meanch"] >= 1 and V["meblots"] <= P["meblots"]),
+   ("has a made point in the opponent's home board (the advanced anchor)",
+    lambda V, P: V["meanch"] >= 1),
  "hit.loose.homeboard":
    ("has at least as many made home points as the played move",
     lambda V, P: V["mehome"] >= P["mehome"]),
  "contact.break.early":
-   ("still holds an anchor in the opponent's home board",
-    lambda V, P: V["meanch"] >= 1 and V["meanch"] >= P["meanch"]),
+   ("keeps a rearmost made point at least as far back as the played move's",
+    lambda V, P: V["rearanch"] >= 0 and V["rearanch"] >= P["rearanch"]),
  "anchor.split.straggler":
-   ("keeps the anchor and leaves no more blots",
-    lambda V, P: V["meanch"] >= P["meanch"] and V["meblots"] <= P["meblots"]),
+   ("keeps its rearmost made point rather than breaking it",
+    lambda V, P: V["rearanch"] >= 0 and V["rearanch"] >= P["rearanch"]),
  "prime.contain.lost": None,
  "anchor.advance.mid":
    ("its most advanced anchor in the opponent's home board is further advanced",

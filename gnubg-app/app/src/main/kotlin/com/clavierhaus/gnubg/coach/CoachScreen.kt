@@ -605,10 +605,34 @@ private fun MoveList(
  *  block so the panel's lower half is claimed now; the insight layer will fill
  *  it with a phrase matched to the feature delta. Deliberately minimal until
  *  then -- no faux content. */
+/**
+ * The verdict line for a PREVIEWED variant: its own rank, its equity against
+ * gnubg's best, and gnubg's own grade of that equity loss -- Engine.skill IS
+ * analysis.c Skill(), so nothing here is re-derived. Shown only while a row
+ * other than the played move is selected; the played move's own verdict
+ * returns the moment the selection clears.
+ */
+@Composable
+private fun VariantVerdictLine(g: CoachGlance, sel: CoachAlt) {
+    val pal = LocalBoardPalette.current
+    val d = (g.eqPlayed + sel.gain) - g.eqBest      // <= 0; 0 on the best row
+    val band = Engine.skill(d)
+    Text(
+        if (band == 3)
+            "${ordinal(sel.rank + 1)} of ${g.cMoves} (${"%+.3f".format(d)})."
+        else
+            "${skillLabel(band)}: ${"%+.3f".format(d)} " +
+                "(${ordinal(sel.rank + 1)} of ${g.cMoves})",
+        color = if (band == 3) pal.uiActionPositive else Color.White,
+        fontSize = 14.sp, fontWeight = FontWeight.Bold
+    )
+}
+
 @Composable
 private fun WhyInsights(
     glance: CoachGlance,
-    insightsOut: MutableState<List<InsightMatcher.Insight>?>
+    insightsOut: MutableState<List<InsightMatcher.Insight>?>,
+    selectedAlt: Int
 ) {
     val pal = LocalBoardPalette.current
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -625,9 +649,12 @@ private fun WhyInsights(
     // verdicts "equal" and Compose then SKIPS this effect, leaving the verdict
     // text rendered but the why-computation unrun (and silent in logcat). The
     // position fingerprint plus rank/skill identifies the verdict uniquely.
+    // The previewed variant joins the key: the pair the phrases describe is
+    // (played, previewed), so the insight must be recomputed on every tap.
+    val previewed = glance.alts.getOrNull(selectedAlt)?.takeIf { !it.isPlayed }
     LaunchedEffect(
         com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard),
-        glance.rank, glance.skill
+        glance.rank, glance.skill, selectedAlt
     ) {
         // Blank first: between verdicts the hoisted state must not carry the
         // previous verdict's result (a stale "empty" would flash the close-call
@@ -639,7 +666,10 @@ private fun WhyInsights(
                 0 -> "very bad"; 1 -> "bad"; 2 -> "doubtful"; else -> ""
             }
             val playedBoard = Engine.applyMoveToBoard(glance.preBoard, glance.playedMove)
-            val bestBoard = Engine.applyMoveToBoard(glance.preBoard, glance.bestMove)
+            // Compare against the PREVIEWED variant when a row is selected --
+            // otherwise gnubg's best. The voice follows the referent.
+            val bestBoard = Engine.applyMoveToBoard(
+                glance.preBoard, previewed?.anMove ?: glance.bestMove)
             android.util.Log.i("gnubg-insight",
                 "APPLYPROBE fpPre=" + com.clavierhaus.gnubg.engine.GameViewModel.fpOf(glance.preBoard) +
                 " fpP=" + (if (playedBoard.isEmpty()) "EMPTY" else com.clavierhaus.gnubg.engine.GameViewModel.fpOf(playedBoard).toString()) +
@@ -680,10 +710,12 @@ private fun WhyInsights(
                 }
                 android.util.Log.i("gnubg-insight", sb.toString())
             }
-            val fromCorpus = matcher.match(playedBoard, bestBoard, skillWord)
+            val refWord = if (previewed != null) "this variant" else "the best variant"
+            val fromCorpus = matcher.match(playedBoard, bestBoard, skillWord,
+                                           variantVoice = previewed != null)
             when {
                 fromCorpus.isNotEmpty() -> fromCorpus
-                narrator.available -> narrator.narrate(playedBoard, bestBoard)
+                narrator.available -> narrator.narrate(playedBoard, bestBoard, refWord)
                 else -> emptyList()
             }
         }
@@ -969,17 +1001,21 @@ private fun CoachPanel(
                         color = pal.uiActionPositive, fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    g.alts.getOrNull(selectedAlt)?.takeIf { !it.isPlayed }
+                        ?.let { VariantVerdictLine(g, it) }
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
                 !g.flagged -> {
-                    Text(
+                    val selF = g.alts.getOrNull(selectedAlt)?.takeIf { !it.isPlayed }
+                    if (selF != null) VariantVerdictLine(g, selF) else Text(
                         "Fine. ${ordinal(g.rank + 1)} of ${g.cMoves} (${"%+.3f".format(-g.loss)}).",
                         color = pal.uiTextSecondary, fontSize = 13.sp
                     )
                     MoveList(g, selectedAlt, onSelectAlt)
                 }
                 else -> {
-                    Text(
+                    val selV = g.alts.getOrNull(selectedAlt)?.takeIf { !it.isPlayed }
+                    if (selV != null) VariantVerdictLine(g, selV) else Text(
                         "${skillLabel(g.skill)}: ${"%+.3f".format(-g.loss)} " +
                             "(${ordinal(g.rank + 1)} of ${g.cMoves})",
                         color = Color.White, fontSize = 14.sp,
@@ -1023,7 +1059,7 @@ private fun CoachPanel(
             // silence when nothing clears the gates.
             if (glance != null && glance.rank > 0) {
                 Spacer(modifier = Modifier.height(14.dp))
-                WhyInsights(glance, insightsState)
+                WhyInsights(glance, insightsState, selectedAlt)
             }
             } // end else (chequer verdict; cube verdict handled above)
         }
