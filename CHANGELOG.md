@@ -15,6 +15,11 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [0.22.8] -- upcoming release
 
+- Documentation: docs/G4_VALIDATION.md -- how to verify the app's match
+  analysis field-for-field against desktop GNU Backgammon, using Save
+  match and gnubg's own statistics window. We do not ask to be believed;
+  we ask to be checked.
+
 - New: all-time statistics, per difficulty level -- matches won and
   lost, rolls, doubles, and pips per roll, for you and GNU side by
   side, each rate shown with its sample size and expected value.
