@@ -30,6 +30,7 @@ fun GameLayout(
     onSaveMatch: (() -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null
 ) {
+    var showStatistics by remember { androidx.compose.runtime.mutableStateOf(false) }
     var pendingLifecycleAction by remember { mutableStateOf<PlayLifecycleAction?>(null) }
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val gameState by viewModel.gameState.collectAsStateWithLifecycle()
@@ -57,7 +58,11 @@ fun GameLayout(
         return
     }
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
-    if (showMatchSetup) {
+    if (showStatistics) {
+        // All-time tally: full-screen while open; Back returns to the
+        // match-over panel exactly as it was.
+        StatisticsScreen(onBack = { showStatistics = false })
+    } else if (showMatchSetup) {
         MatchSetupScreen(
             tutorMode = tutorMode,
             selectedLength = settings.matchLength,
@@ -225,6 +230,14 @@ fun GameLayout(
                                     // the same place as in every other phase. "Exit" is
                                     // gone: the action is Home, and it is called Home
                                     // everywhere.
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    // All-time tally: the tournament's own scoreboard,
+                                    // offered at the moment the match concludes.
+                                    // Deliberately not a hub entry -- statistics are
+                                    // not a mode.
+                                    LifecycleButton("Statistics", pal.uiChipOff, onClick = {
+                                        showStatistics = true
+                                    })
                                 }
                             }
                             gameState.phase == GamePhase.CUBE_OFFERED -> {
