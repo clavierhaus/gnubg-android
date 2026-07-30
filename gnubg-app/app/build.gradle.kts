@@ -87,6 +87,11 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // AGP 8.13 aapt2 spends ~53 s CPU crunching the 13.5 MB hub
+            // background (measured 2026-07-30), blowing the aapt2 daemon's
+            // 30 s compile timeout on slower machines incl. F-Droid VMs.
+            // Crunching this art gains nothing; ship PNGs as authored.
+            isCrunchPngs = false
 
             if (hasReleaseKey) {
                 signingConfig = signingConfigs.getByName("release")
