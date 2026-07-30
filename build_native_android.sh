@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NDK_VERSION="${NDK_VERSION:-27.0.12077973}"
+NDK_VERSION="${NDK_VERSION:-28.2.13676358}"
 ANDROID_ABI="${ANDROID_ABI:-arm64-v8a}"
 ANDROID_PLATFORM="${ANDROID_PLATFORM:-android-28}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
@@ -109,7 +109,7 @@ rm -rf "$CMAKE_BUILD"
 # The build-id is why libz/libintl/libgirepository (which we do not compile)
 # also differed: the difference is applied at link time, uniformly.
 REPRO_CFLAGS="-ffile-prefix-map=$ROOT=. -ffile-prefix-map=$NDK_ROOT=/ndk -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__="
-REPRO_LDFLAGS="-Wl,--build-id=none"
+REPRO_LDFLAGS="-Wl,--build-id=none -Wl,-z,max-page-size=16384"
 
 cmake \
     -S "$ROOT/jni-bridge" \

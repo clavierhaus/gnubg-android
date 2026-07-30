@@ -41,14 +41,14 @@ val buildStampUtc = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'").apply {
 android {
     // Match the NDK the native libs are built with (recipe: r27); without
     // this AGP defaults to 26.1.x and skips stripping with a warning.
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
     namespace = "com.clavierhaus.gnubg"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "at.clavierhaus.backgammon"
         minSdk = 31
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 25
         versionName = "0.22.8"
         ndk {
@@ -87,6 +87,11 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // AGP 8.13 aapt2 spends ~53 s CPU crunching the 13.5 MB hub
+            // background (measured 2026-07-30), blowing the aapt2 daemon's
+            // 30 s compile timeout on slower machines incl. F-Droid VMs.
+            // Crunching this art gains nothing; ship PNGs as authored.
+            isCrunchPngs = false
 
             if (hasReleaseKey) {
                 signingConfig = signingConfigs.getByName("release")

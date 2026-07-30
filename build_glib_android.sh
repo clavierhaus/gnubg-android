@@ -6,7 +6,7 @@ GLIB_ARCHIVE="glib-${GLIB_VERSION}.tar.xz"
 GLIB_SHA256="51ab804c56f6eab3e5045c774d1290ac5e4c923d4f9a3d8e33123bee45c1840e"
 GLIB_URL="https://download.gnome.org/sources/glib/2.88/${GLIB_ARCHIVE}"
 
-NDK_VERSION="${NDK_VERSION:-27.0.12077973}"
+NDK_VERSION="${NDK_VERSION:-28.2.13676358}"
 ANDROID_API="${ANDROID_API:-28}"
 
 SCRIPT_DIR="$(
@@ -234,7 +234,7 @@ endian = 'little'
 
 [built-in options]
 c_args = ['-DANDROID', '-fPIC', '-Os', '-ffile-prefix-map=$GLIB_SRC=/glib', '-ffile-prefix-map=$PROJECT_ROOT=.', '-ffile-prefix-map=$NDK_ROOT=/ndk', '-Wno-builtin-macro-redefined', '-D__DATE__=', '-D__TIME__=', '-D__TIMESTAMP__=']
-c_link_args = ['-fPIC', '-Wl,--build-id=none']
+c_link_args = ['-fPIC', '-Wl,--build-id=none', '-Wl,-z,max-page-size=16384']
 
 [properties]
 sizeof_size_t = 8
