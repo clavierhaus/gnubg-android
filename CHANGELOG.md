@@ -15,6 +15,9 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [0.22.8] -- upcoming release
 
+### Fixed
+- The roll that ends a game or match now stays visible on the end screen (the engine's winning roll was never drawn at game over).
+
 - Documentation: docs/G4_VALIDATION.md -- how to verify the app's match
   analysis field-for-field against desktop GNU Backgammon, using Save
   match and gnubg's own statistics window. We do not ask to be believed;

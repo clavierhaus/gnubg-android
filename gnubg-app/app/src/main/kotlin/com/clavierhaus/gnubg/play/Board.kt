@@ -758,6 +758,24 @@ fun BackgammonBoard(
                 }
             }
 
+            // At GAME_OVER after an engine win: the roll that ended the game
+            // stays on the board. The ViewModel deliberately carries the live
+            // engine dice into GAME_OVER for exactly this ("the roll that
+            // ended the game must remain visible -- it is the record of what
+            // happened"); this block is the renderer's half of that promise,
+            // which was missing: winning rolls must always be shown
+            // (maintainer order, 2026-07-31). Player wins need no counterpart
+            // -- the player's own dice told that story as they were played.
+            if (gameState.phase == GamePhase.GAME_OVER && gameState.winner == 1) {
+                gameState.engineDice?.let { (e0, e1) ->
+                    val rects = g.engineDiceCentred()
+                    listOf(e0, e1).forEachIndexed { i, face ->
+                        val r = rects[i]
+                        drawDie(r.left, r.top, r.width, r.height, face, p.diceDark, p.dicePip, p.frame)
+                    }
+                }
+            }
+
             // Coach visual WHY: traced per-leg motion for played (muted) vs
             // best (emphasized, arrowhead), plus translucent ghost checkers at
             // gnubg's destinations. Drawn over the checkers so the difference
