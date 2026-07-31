@@ -191,6 +191,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
+        // Field debug trace (Plus-only, always on). Safe before any grant
+        // exists: writes are dropped until the CBG folder is granted, then
+        // resume automatically.
+        com.clavierhaus.gnubg.debug.DebugTrace.init(application)
         viewModelScope.launch(engineThread) {
             // 1. Load persisted settings BEFORE the engine reads them, so the
             //    first match honors the user's saved rules/strength/MET.
@@ -400,6 +404,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             tutorAnalysis  = lastTutorAnalysis,
             analysisDetail = lastAnalysisDetail
         )
+        // Field debug trace (Plus-only). Every state transition funnels through
+        // readMatchState, so one snapshot here captures them all, using the
+        // engine's own authoritative fields gathered just above -- exactly the
+        // fields that decide questions like "is this 5-point match over at 2:0?"
+        com.clavierhaus.gnubg.debug.DebugTrace.record(
+            "STATE",
+            "phase" to phase,
+            "turn" to turn,
+            "you" to score[0],
+            "opp" to score[1],
+            "matchTo" to matchLength,
+            "crawford" to crawford,
+            "winner" to winner,
+            "nPoints" to nPoints,
+            "cube" to cubeValue,
+            "cubeOwner" to cubeOwner,
+            "fDoubled" to fDoubled,
+            "canDouble" to canDouble,
+            "resign" to Engine.getResignation(),
+            "dice" to (dicePair?.let { "${it.first},${it.second}" } ?: "-"),
+            "gameOverLatched" to gameOverLatched
+        )
+        if (phase == GamePhase.GAME_OVER) com.clavierhaus.gnubg.debug.DebugTrace.flush()
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
@@ -426,6 +453,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun newGame() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "newGame")
         // The GAME_OVER acknowledgment consumes any pending cube answer.
         _coachCubeAnswer.value = null
         viewModelScope.launch(engineThread) {
@@ -555,6 +583,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * the MOVE_RESIGN record and awards the points.
      */
     fun acceptResignation() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "acceptResignation")
         viewModelScope.launch(engineThread) {
             val scoreBefore = Engine.getMatchScore()
             Engine.commandAgree()
@@ -567,6 +596,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      * ms.fResignationDeclined so GNU will not offer the same level again.
      */
     fun declineResignation() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "declineResignation")
         viewModelScope.launch(engineThread) {
             Engine.commandDecline()
             settleFromEngine()
@@ -574,6 +604,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun rollDice() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "rollDice")
         if (_gameState.value.phase != GamePhase.WAITING_FOR_ROLL) return
         viewModelScope.launch(engineThread) {
             doRollNow()
@@ -694,6 +725,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dragMove(from: Int, to: Int) {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "dragMove", "from" to from, "to" to to)
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.remainingDice.isEmpty()) return
@@ -890,6 +922,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun undo() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "undo")
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
 
@@ -989,6 +1022,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun passTurn() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "passTurn")
         val state = _gameState.value
         if (state.phase != GamePhase.HUMAN_MOVING) return
         if (state.legalMoves.isNotEmpty()) return
@@ -1124,6 +1158,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun offerDouble() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "offerDouble")
         val state = _gameState.value
         if (state.phase != GamePhase.WAITING_FOR_ROLL) {
             android.util.Log.i("gnubg-vm", "offerDouble: ignored phase=${state.phase}")
@@ -1238,6 +1273,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun acceptDouble() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "acceptDouble")
         // Coach: taking is a cube decision -- judge and hold; the take itself
         // happens in takeNow() when the player continues.
         if (coachSession) {
@@ -1259,6 +1295,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dropDouble() {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "dropDouble")
         if (coachSession) {
             viewModelScope.launch(engineThread) { judgeAndHoldCube(Engine.getMatchBoard(), 3) }
             return
@@ -1521,6 +1558,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun commandNewMatch(length: Int = _settings.value.matchLength) {
+        com.clavierhaus.gnubg.debug.DebugTrace.record("ACTION", "fn" to "commandNewMatch", "length" to length)
         _settings.value = _settings.value.copy(matchLength = length)
         _showMatchSetup.value = false
         gameOverLatched = false
