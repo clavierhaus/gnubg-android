@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -138,47 +141,38 @@ fun PersonalStatsScreen(
 
 @Composable
 private fun ReportBody(r: MatchReport) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
+    // The app is landscape-only (sensorLandscape; the sensor flips 180° only,
+    // never to portrait), so the width is always there to use. Three columns,
+    // each independently scrollable, keep the whole report on one screen:
+    //   1. Scorecard  -- the headline aggregates (compartmentalisation: the
+    //      match totals lead; the per-move receipts are drill-down)
+    //   2. Details    -- You / GNU native figures side by side, readable
+    //      against each other, + the L5 verify line
+    //   3. Costliest moves -- L3's receipts, in their own scroll
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // --- Column 1: scorecard (Rating + Result) --------------------------
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text("Games analysed: ${r.games}", color = DIM, fontSize = 13.sp)
-        }
 
-        // L3 -- the hero: the receipts. Your costliest chequer decisions.
-        item {
-            Text("Your costliest moves", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        }
-        val yours = r.errors.filter { it.player == 0 }   // index 0 = You (VM score mapping)
-        if (yours.isEmpty()) {
-            item {
-                Text(
-                    "No chequer errors recorded for you in this match.",
-                    color = DIM, fontSize = 13.sp
-                )
-            }
-        } else {
-            items(yours.size) { i -> ErrorRow(yours[i]) }
-        }
-
-        // L3 -- the rating as ONE context line per player, caveat inline. L6 label.
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
             Text("Rating", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        }
-        item { RatingLine("You", r.prPerPlayer[0], r.perDecisionRate[0]) }
-        item { RatingLine("GNU", r.prPerPlayer[1], r.perDecisionRate[1]) }
-        item {
+            RatingLine("You", r.prPerPlayer[0], r.perDecisionRate[0])
+            RatingLine("GNU", r.prPerPlayer[1], r.perDecisionRate[1])
             Text(
                 "One match -- this number settles over ~20 matches.",
                 color = DIM, fontSize = 12.sp
             )
-        }
 
-        // Luck: labeled numbers only, no interpretation (L4: zero phrases).
-        item {
             Spacer(modifier = Modifier.height(4.dp))
             Text("Result", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        }
-        item {
             Text(
                 "Actual %.2f  ·  luck-adjusted %.2f  (points, you)"
                     .format(r.actualResult[0], r.luckAdjResult[0]),
@@ -186,21 +180,43 @@ private fun ReportBody(r: MatchReport) {
             )
         }
 
-        // L5 -- the details: the native figures desktop GNU Backgammon prints,
-        // and how anyone can check.
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
+        // --- Column 2: details (You / GNU) + verify line --------------------
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text("Details", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        }
-        item { DetailsBlock("You", 0, r) }
-        item { DetailsBlock("GNU", 1, r) }
-        item {
+            DetailsBlock("You", 0, r)
+            DetailsBlock("GNU", 1, r)
             Text(
                 "Verify: save this match, analyse the same file in desktop " +
                 "GNU Backgammon -- these numbers match.",
                 color = DIM, fontSize = 12.sp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // --- Column 3: costliest moves (L3 hero, own scroll) ----------------
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("Your costliest moves", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            val yours = r.errors.filter { it.player == 0 }   // index 0 = You (VM score mapping)
+            if (yours.isEmpty()) {
+                Text(
+                    "No chequer errors recorded for you in this match.",
+                    color = DIM, fontSize = 13.sp
+                )
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(yours.size) { i -> ErrorRow(yours[i]) }
+                }
+            }
         }
     }
 }
