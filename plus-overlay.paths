@@ -26,3 +26,5 @@ docs/PHRASE_RESEARCH_ROUTINE.md
 tools/narrator/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/debug/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/plusstore/
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/career/

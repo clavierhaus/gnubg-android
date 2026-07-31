@@ -140,47 +140,16 @@ object DebugTrace {
         }
     }
 
-    // --- SAF subdir + document resolution -----------------------------------
+    // --- SAF subdir + document resolution: shared Plus-side helpers ---------
 
-    private fun ensureLogDocument(ctx: Context, tree: Uri): Uri? = runCatching {
-        val treeDoc = DocumentsContract.buildDocumentUriUsingTree(
-            tree, DocumentsContract.getTreeDocumentId(tree)
-        )
-        val debugDir = findOrCreateChild(
-            ctx, tree, treeDoc, SUBDIR, DocumentsContract.Document.MIME_TYPE_DIR
+    private fun ensureLogDocument(ctx: android.content.Context, tree: Uri): Uri? {
+        val root = com.clavierhaus.gnubg.plusstore.SafDocs.treeRootDoc(tree)
+        val dir = com.clavierhaus.gnubg.plusstore.SafDocs.findOrCreateChild(
+            ctx, tree, root, SUBDIR, DocumentsContract.Document.MIME_TYPE_DIR
         ) ?: return null
-        findOrCreateChild(
-            ctx, tree, debugDir, FILENAME, "text/plain"
+        return com.clavierhaus.gnubg.plusstore.SafDocs.findOrCreateChild(
+            ctx, tree, dir, FILENAME, "text/plain"
         )
-    }.getOrNull()
-
-    /**
-     * Return the child of [parentDoc] named [displayName], creating it with
-     * [mime] if absent. gnubg's own createDocument idiom; the query walks the
-     * parent's children because there is no name-lookup in DocumentsContract.
-     */
-    private fun findOrCreateChild(
-        ctx: Context, tree: Uri, parentDoc: Uri, displayName: String, mime: String
-    ): Uri? {
-        val parentDocId = DocumentsContract.getDocumentId(parentDoc)
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parentDocId)
-        ctx.contentResolver.query(
-            childrenUri,
-            arrayOf(
-                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                DocumentsContract.Document.COLUMN_DISPLAY_NAME
-            ),
-            null, null, null
-        )?.use { c ->
-            val idCol = c.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-            val nameCol = c.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-            while (c.moveToNext()) {
-                if (c.getString(nameCol) == displayName) {
-                    return DocumentsContract.buildDocumentUriUsingTree(tree, c.getString(idCol))
-                }
-            }
-        }
-        return DocumentsContract.createDocument(ctx.contentResolver, parentDoc, mime, displayName)
     }
 
     private fun sanitize(v: Any?): String =

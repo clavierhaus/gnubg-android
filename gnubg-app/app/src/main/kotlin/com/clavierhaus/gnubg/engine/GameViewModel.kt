@@ -126,6 +126,46 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             "recorded: level=$level won=${decided == 0} rolls=${rolls.joinToString(",")}")
     }
 
+    // Career collector (Plus, scope 1): silently collect every finished PLAY
+    // match into the signed ledger. Mirrors the tally hook exactly -- armed
+    // only for Play (never Coach: "the gym doesn't go on your record"),
+    // single fire, and the MATCH-decided test is the engine's own authority
+    // (getMatchWinner), never a score comparison. Spec: FOSS
+    // docs/CRYPTOGRAPHY.md + docs/CAREER_AND_STATS.md.
+    private var matchCollected = false
+
+    private fun maybeCollectCareer(gameWinner: Int) {
+        if (tallyLevel == null) return            // Coach or unarmed: not a record match
+        if (matchCollected) return
+        val matchWinner = Engine.getMatchWinner()
+        val decided = when {
+            matchWinner >= 0                      -> matchWinner
+            _settings.value.matchLength <= 1      -> gameWinner
+            else                                  -> -1
+        }
+        if (decided < 0) return                   // game over, match continues
+        matchCollected = true
+        val ctx = getApplication<Application>()
+        viewModelScope.launch(engineThread) {
+            // Analysis first (gnubg's own; same path the stats screen uses).
+            analyseCompletedMatchBlocking()
+            val report = _matchReport.value ?: run {
+                android.util.Log.w("cbg-career", "no report; match not collected")
+                return@launch
+            }
+            // gnubg needs a real path: SGF to app storage, then collect() copies
+            // it into the user's career/ folder and appends the signed entry.
+            val tmp = java.io.File(ctx.filesDir,
+                "career-" + System.currentTimeMillis() + ".sgf")
+            if (!saveMatchToFile(tmp)) {
+                android.util.Log.w("cbg-career", "sgf save failed; match not collected")
+                return@launch
+            }
+            com.clavierhaus.gnubg.career.CareerLedger.collect(ctx, tmp, report)
+            tmp.delete()
+        }
+    }
+
     /* Coach cube coaching (M4): the parallel of pendingCoachMove for cube
      * decisions. When the human makes a cube decision in a coach session, the
      * verdict is judged and HELD here; continueCoachCube() then carries out the
@@ -332,6 +372,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             // All-time tally: the first GAME_OVER projection of a game is the
             // single-fire seam; whether the MATCH ended is decided inside.
             if (firstLatch) maybeRecordTally(winner)
+            if (firstLatch) maybeCollectCareer(winner)
         } else if (gameOverLatched) {
             android.util.Log.i("gnubg-vm",
                 "readMatchState: held at GAME_OVER (refused phase=$phase while latched)")
@@ -441,6 +482,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (isNewMatch) {
             tallyLevel = if (coachSession) null else _settings.value.difficulty
             matchTallied = false
+            matchCollected = false
         }
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and
