@@ -30,80 +30,65 @@ Status date: 2026-07-30.
 
 The analytical heart of this app is not ours and was never meant to be. It is
 gnubg — GNU Backgammon, engine version 1.08.003, vendored whole into
-`engine-core/` and driven through a thin facade. gnubg is one of the two or
-three strongest backgammon engines in existence, it is free software, and its
-analysis has been the quiet reference standard for two decades: when people
-want to know whether a move was right, they ask gnubg. CBG does not add a
-brain to the phone. It carries gnubg's existing brain, unaltered, onto the
-phone — and then does the honest work of showing what that brain says without
-distorting it.
+`engine-core/` and driven through a thin facade. gnubg is one of the
+strongest backgammon engines in existence, it is free software, and its
+analysis has been a reference standard for two decades: when people want to
+know whether a move was right, one of the things they do is ask gnubg. CBG
+does not add a brain to the phone. It carries gnubg's existing brain,
+unaltered, onto the phone — and then does the honest work of showing what
+that brain says without distorting it.
 
 That is the whole origin. Every screen in this arc — the coach, the stats
 panel, the career to come — is a window onto gnubg's own output. The
 engineering is in the carrying and the showing, never in the deciding.
 
-### The mobile predecessor: XG, and what it did and didn't do
+### The company it keeps
 
-A strong mobile analyzer already exists, and has since 2014: XG Mobile, the
-phone edition of eXtreme Gammon. It must be credited honestly, because
-pretending otherwise would be its own kind of dishonesty. XG is a
-fourth-generation neural net in the line TD-Gammon → Jellyfish → Snowie → XG;
-its mobile champion level plays near world-class (PR ~0.55, a hair below the
-desktop 3-ply); it is endorsed by the US Backgammon Federation; and for years
-it was, deservedly, the study tool serious players carried. CBG's claim is
-therefore **not** "the first strong analyzer on mobile," nor "the strongest."
-Those claims are taken, and taking them falsely would forfeit the one thing
-this project is built to have: credibility.
+CBG is not the first serious backgammon analyzer to reach a phone, and it does
+not pretend to be. eXtreme Gammon's mobile edition has been available since
+2014; it is strong, it is respected, and it is endorsed by the US Backgammon
+Federation. Serious players have carried it for years, and rightly. We
+acknowledge its standing without reservation — a document that had to
+diminish what came before in order to justify itself would be admitting it had
+no reason of its own.
 
-What XG Mobile did was bring real strength to the pocket. What it did not do —
-and this is the whole opening — is make its authority *checkable*, and it has
-lately stopped even keeping its distribution intact. XG's numbers are trusted
-because XG is endorsed and because XG is strong; the trust rests on reputation
-and authority. You cannot open XG, take its verdict on your match, and
-independently confirm it against the same engine anywhere else, because the
-engine is closed and the "PR" scale is computed by an unpublished filter. And
-as of 2026 the incumbent is visibly decaying on the platform: the Android
-build has fallen out of Google Play (users sideload an APK), and the app
-creeps forward in cosmetic point releases while the desktop parent has shipped
-nothing of substance in years. The strong mobile analyzer is still there — but
-neglected, closed, and unverifiable.
+CBG has a reason of its own, and it is not "better." It is *different*, in one
+specific way that the rest of this document builds on. So this note does not
+compare, rank, or argue against anything. It states what CBG does, why it does
+it that way, and why it invites people to see for themselves.
 
-### The goal: authority you can check, not authority you must trust
+### What CBG does, and why: verifiability
 
-CBG's goal is a mobile backgammon experience whose authority rests on
-**verifiability** — and this is the spine of the entire project, the one point
-that, if every other were stripped away, would still be the reason this code
-exists.
+CBG's organizing principle — the spine of the whole project, the one thing
+that if everything else were stripped away would still be the reason this code
+exists — is **verifiability**.
 
-State it plainly, because stated plainly it ends the argument:
+Stated plainly:
 
 > Every number CBG shows you is gnubg's own number, and you can prove it.
 > Save the match, open the same file in desktop GNU Backgammon — the free,
-> open engine anyone can download — and the figures are identical, because
-> they were never anything but gnubg's to begin with. We do not ask you to
-> believe us. We ask you to check us.
+> open engine anyone can download — and the figures are the same, because they
+> were never anything but gnubg's to begin with. We do not ask you to believe
+> us. We ask you to check us.
 
-This is a categorically different basis for trust than XG's. XG says: *trust
-this number because the program is strong and the federation endorses it.* CBG
-says: *don't trust the number — verify it, here is exactly how, and the tool
-to verify it with is free.* One asks for faith backed by authority. The other
-removes the need for faith entirely.
+Why we build this way: trust that is *asked for* can always be doubted, and
+doubt invites argument. Trust that can be *checked* needs neither. When the
+tool to verify a CBG number is free, open, and produces that number in under a
+minute, there is nothing left to debate — not because we have won an argument,
+but because we have declined to have one. A question about a CBG number is
+answered the same way every time: run gnubg and look. The project deliberately
+holds no position that could be disputed, because it claims nothing of its own
+about the numbers — the numbers are gnubg's, and gnubg is checkable by anyone.
 
-The power of this framing is that **it makes discussion redundant.** There is
-no debate to be had about whether CBG's analysis is "as good as" XG's, or
-biased, or tuned, or wrong — because CBG's analysis is not CBG's. It is
-gnubg's, reproducible by anyone, on an open engine, in under a minute. A
-disagreement about a CBG number is not an argument with CBG; it is an argument
-with gnubg, settled by running gnubg. The project deliberately owns no ground
-on which such a fight could happen. Every design law downstream — no unlabeled
+This is why the invitation to compare is genuine and unworried. We are not
+asking anyone to take our word over someone else's; we are handing them the
+means to need no one's word at all. Every design law downstream — no unlabeled
 numbers (L1), never the bare "PR" token (L6), the correct-or-silent coach, the
-verify-line on the stats screen (L5) — exists to keep that redundancy total:
-to ensure there is never a CBG-specific claim standing between the user and
-gnubg's checkable truth.
-
-Verifiability first. Everything else — honesty of silence, the auditable
-career record, active stewardship on a platform the incumbent has abandoned —
-follows from it and reinforces it, but this is the spine.
+verify-line on the stats screen (L5) — exists to keep that true: to ensure
+there is never a CBG-specific claim standing between a person and gnubg's
+checkable output. Verifiability first. Everything else the project values —
+the honesty of silence, the auditable career record, keeping the software
+alive and correctly distributed — follows from it and serves it.
 
 ## 2. Two things, deliberately separate: the panel and the career
 
@@ -246,13 +231,11 @@ detail lives in the maintainer's project notes; the reasoning is:
   single match's numbers verifiable. The career makes the *whole record*
   verifiable: not "trust that this player's rating is real" but "check the
   chain — every match is a plain gnubg file you can re-analyse, and the
-  signatures prove the sequence was not edited after the fact." It is the
-  first auditable player record in backgammon: a rating whose provenance can
-  be checked move by move, match by match, against the same open engine,
-  depending on no central server and no one's endorsement. XG can tell a
-  federation a player's PR; it cannot let the federation *verify* it. CBG's
-  career is verifiability applied to a career instead of a single match —
-  the same argument-ending move, one level up.
+  signatures prove the sequence was not edited after the fact." It is an
+  auditable player record: a rating whose provenance can be checked move by
+  move, match by match, against the same open engine, depending on no central
+  server and no one's endorsement. The career is verifiability applied to a
+  career instead of a single match — the same principle, one level up.
 
 The panel is where a single match's numbers are shown and qualified. The
 career is where matches accumulate into something a rating can honestly
