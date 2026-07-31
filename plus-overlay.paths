@@ -2,7 +2,6 @@
 # public FOSS main and this repo's plus branch. tools/plus/check_foss_parity.sh
 # alarms on any difference outside this list. One path or prefix per line.
 PLUS.md
-docs/PLUS_STRATEGY.md
 plus-overlay.paths
 plus_build_and_deploy.sh
 licenses/
@@ -27,4 +26,3 @@ docs/PHRASE_RESEARCH_ROUTINE.md
 tools/narrator/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/debug/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
-docs/STICK_REVIEW_MATCH.md
