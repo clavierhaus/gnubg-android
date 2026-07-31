@@ -46,7 +46,7 @@ private val INTRO_ACK = booleanPreferencesKey("intro_acknowledged")
 
 private const val INTRO_TEXT =
     "Your career starts with your next finished match. Every tournament " +
-    "match is analysed and recorded — yours to keep, and yours to prove. " +
+    "match is analysed and recorded — yours to keep, and yours to prove.\n" +
     "Coach matches are practice: the gym doesn't go on your record."
 
 @Composable
