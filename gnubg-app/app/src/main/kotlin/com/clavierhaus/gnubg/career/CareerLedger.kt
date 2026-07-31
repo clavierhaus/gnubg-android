@@ -92,15 +92,15 @@ object CareerLedger {
      * path), [report] the analysis as computed. Copies the SGF into career/,
      * appends the signed chain entry. Never throws.
      */
-    fun collect(ctx: Context, sgf: File, report: MatchReport) {
+    fun collect(ctx: Context, sgf: File, report: MatchReport): Int? {
         val tree = CbgFolder.grantedTree(ctx) ?: run {
-            Log.w(TAG, "no folder grant; match not collected"); return
+            Log.w(TAG, "no folder grant; match not collected"); return null
         }
-        val kp = loadOrCreateKey(ctx) ?: return
+        val kp = loadOrCreateKey(ctx) ?: return null
         val careerDir = SafDocs.findOrCreateChild(
             ctx, tree, SafDocs.treeRootDoc(tree), DIR,
             android.provider.DocumentsContract.Document.MIME_TYPE_DIR
-        ) ?: run { Log.w(TAG, "career/ not creatable"); return }
+        ) ?: run { Log.w(TAG, "career/ not creatable"); return null }
 
         // Public key: present once, written on first collect.
         val pubDoc = SafDocs.findChild(ctx, tree, careerDir, PUBKEY)
@@ -111,22 +111,25 @@ object CareerLedger {
 
         // 1. SGF into career/, recording the name the provider ACTUALLY used.
         val sgfBytes = runCatching { sgf.readBytes() }.getOrNull() ?: run {
-            Log.w(TAG, "sgf unreadable; match not collected"); return
+            Log.w(TAG, "sgf unreadable; match not collected"); return null
         }
         val requested = sgf.name
         val created = SafDocs.createDocumentReturningName(
             ctx, careerDir, "application/x-gnubg-sgf", requested
-        ) ?: run { Log.w(TAG, "sgf copy not creatable"); return }
+        ) ?: run { Log.w(TAG, "sgf copy not creatable"); return null }
         val (sgfDoc, actualName) = created
         if (!SafDocs.overwrite(ctx, sgfDoc, sgfBytes)) {
-            Log.w(TAG, "sgf copy write failed"); return
+            Log.w(TAG, "sgf copy write failed"); return null
         }
 
         // 2. Chain: hash of the previous FULL stored line (or genesis).
         val ledgerDoc = SafDocs.findOrCreateChild(
             ctx, tree, careerDir, LEDGER, "application/json"
-        ) ?: run { Log.w(TAG, "ledger not creatable"); return }
-        val prevHash = lastLineHash(SafDocs.readAll(ctx, ledgerDoc)) ?: "genesis"
+        ) ?: run { Log.w(TAG, "ledger not creatable"); return null }
+        val priorRaw = SafDocs.readAll(ctx, ledgerDoc)
+        val prevHash = lastLineHash(priorRaw) ?: "genesis"
+        val priorCount = priorRaw?.toString(Charsets.UTF_8)
+            ?.substringBeforeLast('\n', "")?.split('\n')?.count { it.isNotBlank() } ?: 0
 
         // 3. The entry, hand-assembled so the SIGNED BYTES ARE THE STORED
         //    BYTES -- no serializer between signing and storage.
@@ -149,9 +152,10 @@ object CareerLedger {
             Base64.encodeToString(sig, Base64.NO_WRAP).toByteArray() + "\n".toByteArray()
         if (!SafDocs.append(ctx, ledgerDoc, line)) {
             Log.w(TAG, "ledger append failed (sgf saved, entry missing -- verifier will name it)")
-            return
+            return null
         }
         Log.i(TAG, "collected: $actualName (chain prev=$prevHash)")
+        return priorCount + 1
     }
 
     // ---- helpers ------------------------------------------------------------

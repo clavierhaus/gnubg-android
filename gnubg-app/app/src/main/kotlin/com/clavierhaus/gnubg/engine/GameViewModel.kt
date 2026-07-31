@@ -133,6 +133,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // (getMatchWinner), never a score comparison. Spec: FOSS
     // docs/CRYPTOGRAPHY.md + docs/CAREER_AND_STATS.md.
     private var matchCollected = false
+    private val _careerRecorded = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
+    val careerRecorded: kotlinx.coroutines.flow.StateFlow<Int?> = _careerRecorded
 
     private fun maybeCollectCareer(gameWinner: Int) {
         if (tallyLevel == null) return            // Coach or unarmed: not a record match
@@ -161,7 +163,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 android.util.Log.w("cbg-career", "sgf save failed; match not collected")
                 return@launch
             }
-            com.clavierhaus.gnubg.career.CareerLedger.collect(ctx, tmp, report)
+            _careerRecorded.value =
+                com.clavierhaus.gnubg.career.CareerLedger.collect(ctx, tmp, report)
             tmp.delete()
         }
     }
@@ -483,6 +486,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             tallyLevel = if (coachSession) null else _settings.value.difficulty
             matchTallied = false
             matchCollected = false
+            _careerRecorded.value = null
         }
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and

@@ -226,6 +226,14 @@ fun GameLayout(
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
+                                    viewModel.careerRecorded.collectAsStateWithLifecycle().value?.let { n ->
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            "Recorded — match $n of your career.",
+                                            color = pal.uiTextSecondary,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                     // New match / Home live in the hoisted row below,
                                     // the same place as in every other phase. "Exit" is
                                     // gone: the action is Home, and it is called Home
@@ -641,6 +649,15 @@ private fun MatchSetupScreen(
                 GameButton("Home", pal.uiButtonNeutral) { onReturnToHub() }
             }
         }
+
+        // The career lives where it is earned: tournament mode's own entry
+        // screen (maintainer ruling). An aligned corner child -- it does not
+        // touch the weighted setup Column, which was hard-won.
+        com.clavierhaus.gnubg.career.CareerEntryBlock(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, bottom = 14.dp)
+        )
         // The Column owns the full height, so weighted spacers can distribute
         // what is left over after the controls have measured themselves. It must
         // NOT scroll: a scrollable Column measures with unbounded height, which
