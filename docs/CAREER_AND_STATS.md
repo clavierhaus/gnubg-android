@@ -224,6 +224,12 @@ detail lives in the maintainer's project notes; the reasoning is:
   a rooted owner can drive the signing path. It proves the record as kept, not
   that the keeper never had the means to forge. This is stated in the design,
   never oversold.
+- **The cryptographic stack and its full reasoning are public.** They live in
+  the FOSS repository — `docs/CRYPTOGRAPHY.md` — deliberately: the decision
+  method, the candidates and verdicts (Keystore disqualified as key home,
+  Tink declined, platform JCA chosen), the exact algorithms and encodings,
+  and the point-by-point GPLv3 defense. The spec for checking the record
+  cannot live behind the record's paywall.
 - **Verification is everyone's.** Collection is Plus; the chain verifier is
   FOSS (an open script or FOSS-side tool). "We do not ask to be believed, we
   ask to be checked" requires that the check not itself be paywalled.
