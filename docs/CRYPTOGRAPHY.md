@@ -225,3 +225,53 @@ your career pass* (file, optional passphrase, consequences in two
 sentences), *Check my record* (on-device verify plus the printed openssl
 line) — and one calm paragraph covering recovery and key loss. Nothing at
 first launch, nothing during play, ever.
+
+## 7. The pass formats — moving and backing up the key
+
+The maintainer has ruled the QR flow and its camera permission acceptable:
+neither touches the philosophy, which constrains what the software does with
+the network and the user's data, not whether it may render a code or scan
+one. Both transfer formats are specified here before implementation, and
+both are standards readable by openssl — the pass is the user's property in
+a form that outlives us, like everything else.
+
+**The pass file (`career-pass.cbgkey`).**
+
+- *Without passphrase:* the private key exactly as standardized — PKCS#8,
+  PEM-armored (`-----BEGIN PRIVATE KEY-----`). Nothing else in the file.
+  Checkable and usable with standard tools:
+  `openssl pkey -in career-pass.cbgkey -noout -text`
+  The public half needs no separate backup; it derives from the private key
+  (`openssl pkey -in career-pass.cbgkey -pubout`) and is in the career
+  folder besides.
+- *With passphrase:* the same key in the standard encrypted PKCS#8 envelope
+  (`-----BEGIN ENCRYPTED PRIVATE KEY-----`), PKCS#5 v2: PBKDF2-HMAC-SHA256
+  key derivation, AES-256-CBC encryption — the exact envelope
+  `openssl pkcs8 -topk8 -v2 aes-256-cbc` produces, decryptable by openssl
+  with nothing from us:
+  `openssl pkey -in career-pass.cbgkey -passin stdin -noout -text`
+- No custom container, no metadata, no format of ours. A `.cbgkey` file IS
+  a standard key file; the extension only tells the app what to offer when
+  one is opened.
+
+**The QR payload (phone-to-phone move).**
+
+- The string `CBGKEY1:` followed by base64 (no wrap) of the PKCS#8 DER
+  private key. A P-256 key is ~140 bytes DER — comfortably inside a QR code
+  at high error correction.
+- Plain, never passphrase-wrapped: in this flow the physical act is the
+  authentication (§6.4), and the code is shown, scanned, and gone. The
+  on-screen warning states the true consequence of showing it elsewhere.
+- `CBGKEY1` is the format version. A future format bumps the prefix; a
+  scanner refuses prefixes it does not know, by name.
+
+**Import, both routes:** the receiving side derives the public key from the
+imported private key and compares it against `career-pubkey.pem` in the
+user's folder. Match → the career continues. Mismatch → stated as an event
+(§6.7): "This pass belongs to a different career than the one in this
+folder" — never an error code.
+
+**Build gate, binding:** before any of this ships, the same round-trip
+proof that gated the signatures — a JCA-produced encrypted PKCS#8 envelope
+decrypted by stock openssl with the passphrase, and a plain envelope read
+by `openssl pkey` — demonstrated first, then implemented.
