@@ -28,3 +28,4 @@ tools/narrator/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/debug/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
 docs/CAREER_AND_STATS.md
+docs/STICK_REVIEW_MATCH.md
