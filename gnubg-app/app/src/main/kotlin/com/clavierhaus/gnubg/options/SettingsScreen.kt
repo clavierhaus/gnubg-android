@@ -42,7 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.clavierhaus.gnubg.Engine
 
-enum class SettingsTab { GAME, REPORT, BOARD, TIPS, ANALYSIS, ABOUT, LICENSE }
+enum class SettingsTab { GAME, REPORT, BOARD, TIPS, ANALYSIS, CAREER, ABOUT, LICENSE }
 
 // Chrome colors now come from LocalBoardPalette (themed). See BoardPalette.kt.
 
@@ -100,6 +100,7 @@ fun SettingsScreen(
                     SettingsTab.BOARD -> BoardSettingsTab(settings, viewModel)
                     SettingsTab.TIPS -> TipsSettingsTab()
                     SettingsTab.ANALYSIS -> AnalysisTutorSettingsTab(settings, viewModel)
+                    SettingsTab.CAREER -> com.clavierhaus.gnubg.career.CareerSettingsTab()
                     SettingsTab.ABOUT -> AboutSettingsTab()
                     SettingsTab.LICENSE -> LicenseSettingsTab()
                 }
@@ -160,6 +161,7 @@ private fun SettingsTabs(
                 SettingsTab.BOARD -> "Board"
                 SettingsTab.TIPS -> "Tips & Tricks"
                 SettingsTab.ANALYSIS -> "Analysis"
+                SettingsTab.CAREER -> "Career"
                 SettingsTab.ABOUT -> "About"
                 SettingsTab.LICENSE -> "License"
             }
@@ -177,7 +179,11 @@ private fun SettingsTabs(
             ) {
                 Text(
                     text = label,
-                    color = if (activeTab == tab) pal.uiTextPrimary else pal.uiTextSecondary,
+                    color = when {
+                        tab == SettingsTab.CAREER -> com.clavierhaus.gnubg.shared.PlusUi.Interactive
+                        activeTab == tab -> pal.uiTextPrimary
+                        else -> pal.uiTextSecondary
+                    },
                     fontSize = 13.sp,
                     fontWeight = if (activeTab == tab) FontWeight.Bold else FontWeight.Normal
                 )
