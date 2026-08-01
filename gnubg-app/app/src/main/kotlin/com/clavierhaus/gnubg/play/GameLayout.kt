@@ -720,25 +720,6 @@ private fun MatchSetupScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            Text("Match clock", color = pal.uiTextSecondary, fontSize = 16.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                com.clavierhaus.gnubg.clock.ClockMode.entries.forEach { m ->
-                    GameButton(
-                        label = m.label,
-                        color = if (clockMode == m) pal.uiChipOn else pal.uiChipOff,
-                        compact = true
-                    ) { onSelectClock(m) }
-                }
-            }
-            if (clockMode != com.clavierhaus.gnubg.clock.ClockMode.OFF) {
-                Text(
-                    "12 s per move + ${com.clavierhaus.gnubg.clock.formatClock(clockMode.reserveMs(selectedLength))} bank -- run out and the match is lost.",
-                    color = pal.uiTextSecondary, fontSize = 11.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
             // Tutor and match length sit side by side: this screen is
             // landscape-only and has horizontal room to spare but no vertical
             // slack -- stacking them overflowed the column and clipped the
@@ -777,6 +758,36 @@ private fun MatchSetupScreen(
                 // Blind space: a weighted spacer, so the separation is whatever
                 // the screen has left over rather than a fixed distance that
                 // only looks right on one device.
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Match clock sits IN this row (tutor | clock | length):
+                // stacking it above shadowed the Your-career block below-left.
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Match clock",
+                        color = pal.uiTextSecondary,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.clavierhaus.gnubg.clock.ClockMode.entries.forEach { m ->
+                            GameButton(
+                                label = m.label,
+                                color = if (clockMode == m) pal.uiChipOn else pal.uiChipOff,
+                                compact = true
+                            ) { onSelectClock(m) }
+                        }
+                    }
+                    if (clockMode != com.clavierhaus.gnubg.clock.ClockMode.OFF) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "12 s + ${com.clavierhaus.gnubg.clock.formatClock(clockMode.reserveMs(selectedLength))} bank",
+                            color = pal.uiTextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.weight(1f))
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
