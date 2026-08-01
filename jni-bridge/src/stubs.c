@@ -275,12 +275,36 @@ void gnubg_init_tld(void) {
     /* With GPrivate, initialization is lazy. No global setup needed. */
 }
 
-/* -- Rollout Infrastructure ----------------------------------------------- */
+/* -- Rollout Infrastructure -------------------------------------------------
+ * Scheduling is the port's; every number-producing line is gnubg's
+ * (maintainer ruling 2026-08-01: "this is a gnubg port, not some
+ * improvement ... we deliver what we promise").
+ *
+ * - Dice: gnubg's scheme exactly. ONE quasi-random permutation array,
+ *   seeded once per rollout as gnubg seeds it (rollout.c:1159-1160:
+ *   gated on prc->fRotate, QuasiRandomSeed(&perms, (int)prc->nSeed)),
+ *   shared read-only across workers; the trial index rides as iGame, so
+ *   trial i draws the dice desktop gnubg's trial i draws
+ *   (RolloutDice contract, rollout.c:223).
+ * - Aggregation: gnubg's incremental update ported VERBATIM from
+ *   rollout.c:1196-1219 -- running sum, rMuNew, the variance decay
+ *   recursion, the [0,1] clamp on probability outputs (j < OUTPUT_EQUITY),
+ *   sigma = sqrtf(variance / n) at every step -- applied in trial-index
+ *   order, so the arithmetic and its rounding follow serial gnubg.
+ * - Progress and cancel are ADDITIONS, not alterations: a per-trial
+ *   completion map lets a poll run the same verbatim update over whatever
+ *   has finished; cancel makes unstarted trials no-ops, and a partial
+ *   result is labeled by its completed count, never passed off as full.
+ * - Per-thread RNG contexts remain for draws beyond the permutation depth
+ *   (documented in docs/MULTICORE_ANALYSIS.md 2.9; Gate B against desktop
+ *   gnubg adjudicates what the verify-line may claim there).
+ *
+ * One rollout runs at a time (the facade's engine-thread discipline).
+ */
 static GThreadPool *rollout_pool = NULL;
 
 typedef struct {
     float arOutput[NUM_ROLLOUT_OUTPUTS];
-    float arStdDev[NUM_ROLLOUT_OUTPUTS]; 
 } __attribute__((aligned(64))) RolloutResult;
 
 typedef struct {
@@ -288,49 +312,114 @@ typedef struct {
     GCond cond;
     gint tasks_remaining;
     RolloutResult *results;
+    unsigned char *completed;          /* per-trial: 1 = results[i] valid */
     const cubeinfo *pci;
     rolloutcontext *prc;
     const unsigned int (*anBoard)[25]; /* Matches the decayed pointer type */
+    perArray *dicePerms;               /* the ONE shared array (gnubg's scheme) */
 } RolloutBarrier;
+
+/* Live-progress registration: a single rollout at a time. */
+static GMutex rollout_live_mutex;
+static RolloutBarrier *rollout_live = NULL;
+static gint rollout_cancel_flag = 0;
+static gint rollout_done_count = 0;
+
+/* gnubg's aggregation, rollout.c:1196-1219 ported verbatim (one
+ * alternative; altGameCount -> n; the fInvert branch does not apply to a
+ * single-position rollout -- the caller owns perspective). Walks trials in
+ * index order over the completion map; returns how many were counted. */
+static unsigned int
+rollout_accumulate(const RolloutResult *results, const unsigned char *completed,
+                   unsigned int nTrials,
+                   float arMu[NUM_ROLLOUT_OUTPUTS], float arSigma[NUM_ROLLOUT_OUTPUTS])
+{
+    float arResult[NUM_ROLLOUT_OUTPUTS];
+    float arVariance[NUM_ROLLOUT_OUTPUTS];
+    unsigned int n = 0;
+
+    for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+        arResult[j] = arVariance[j] = 0.0f;
+        arMu[j] = arSigma[j] = 0.0f;
+    }
+
+    for (unsigned int i = 0; i < nTrials; i++) {
+        const float *aar;
+
+        if (!__atomic_load_n(&completed[i], __ATOMIC_ACQUIRE))
+            continue;
+        aar = results[i].arOutput;
+        n++;
+
+        /* apply the results */
+        for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+            float rMuNew;
+
+            arResult[j] += aar[j];
+            rMuNew = arResult[j] / (float) n;
+
+            if (n > 1) {        /* for i == 0 aarVariance is not defined */
+                float rDelta = rMuNew - arMu[j];
+
+                arVariance[j] =
+                    arVariance[j] * (1.0f - 1.0f / (float) (n - 1)) +
+                    (float) (n) * rDelta * rDelta;
+            }
+
+            arMu[j] = rMuNew;
+
+            if (j < OUTPUT_EQUITY) {
+                if (arMu[j] < 0.0f)
+                    arMu[j] = 0.0f;
+                else if (arMu[j] > 1.0f)
+                    arMu[j] = 1.0f;
+            }
+
+            arSigma[j] = sqrtf(arVariance[j] / (float) n);
+        }                       /* for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++ ) */
+    }
+    return n;
+}
 
 static void rollout_worker_func(gpointer data, gpointer user_data) {
     int task_index = GPOINTER_TO_INT(data);
     RolloutBarrier *barrier = (RolloutBarrier *)user_data;
 
-    /* Per-thread RNG context -- copied lazily on first use */
-    rngcontext *local_rng = g_private_get(&gnubg_rng_key);
-    if (!local_rng) {
-        local_rng = CopyRNGContext(rngctxRollout);
-        g_private_set(&gnubg_rng_key, local_rng);
+    if (!g_atomic_int_get(&rollout_cancel_flag)) {
+        /* Per-thread RNG context -- copied lazily on first use */
+        rngcontext *local_rng = g_private_get(&gnubg_rng_key);
+        if (!local_rng) {
+            local_rng = CopyRNGContext(rngctxRollout);
+            g_private_set(&gnubg_rng_key, local_rng);
+        }
+
+        /* Board copy for this trial */
+        unsigned int aanBoard[1][2][25];
+        memcpy(aanBoard[0], barrier->anBoard, 25 * 2 * sizeof(unsigned int));
+
+        /* Per-trial output slot */
+        float aarOutput[1][NUM_ROLLOUT_OUTPUTS];
+        memset(aarOutput[0], 0, sizeof(aarOutput[0]));
+
+        cubeinfo aci[1];
+        memcpy(&aci[0], barrier->pci, sizeof(cubeinfo));
+        int afCubeDecTop[1] = {0};
+
+        rolloutstat aarsStats[1][2];
+        memset(aarsStats, 0, sizeof(aarsStats));
+
+        /* Trial index as gnubg's iGame; dice from the ONE shared array. */
+        BasicCubefulRolloutNoLocking(aanBoard, aarOutput,
+                                      0, task_index,
+                                      aci, afCubeDecTop, 1,
+                                      barrier->prc, aarsStats, 0,
+                                      barrier->dicePerms, local_rng, NULL);
+
+        memcpy(barrier->results[task_index].arOutput, aarOutput[0],
+               NUM_ROLLOUT_OUTPUTS * sizeof(float));
+        __atomic_store_n(&barrier->completed[task_index], 1, __ATOMIC_RELEASE);
+        g_atomic_int_inc(&rollout_done_count);
     }
-
-    /* Board copy for this trial */
-    unsigned int aanBoard[1][2][25];
-    memcpy(aanBoard[0], barrier->anBoard, 25 * 2 * sizeof(unsigned int));
-
-    /* Per-trial output slot */
-    float aarOutput[1][NUM_ROLLOUT_OUTPUTS];
-    memset(aarOutput[0], 0, sizeof(aarOutput[0]));
-
-    cubeinfo aci[1];
-    memcpy(&aci[0], barrier->pci, sizeof(cubeinfo));
-    int afCubeDecTop[1] = {0};
-
-    rolloutstat aarsStats[1][2];
-    memset(aarsStats, 0, sizeof(aarsStats));
-
-    perArray dicePerms;
-    dicePerms.nPermutationSeed = -1;
-    QuasiRandomSeed(&dicePerms, (int)barrier->prc->nSeed + task_index);
-
-    BasicCubefulRolloutNoLocking(aanBoard, aarOutput,
-                                  0, task_index,
-                                  aci, afCubeDecTop, 1,
-                                  barrier->prc, aarsStats, 0,
-                                  &dicePerms, local_rng, NULL);
-
-    memcpy(barrier->results[task_index].arOutput, aarOutput[0],
-           NUM_ROLLOUT_OUTPUTS * sizeof(float));
 
     g_mutex_lock(&barrier->mutex);
     barrier->tasks_remaining--;
@@ -338,12 +427,12 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
         g_cond_signal(&barrier->cond);
     g_mutex_unlock(&barrier->mutex);
 }
-    
+
 
 void gnubg_init_rollout(void) {
     if (!rngctxRollout && rngctxCurrent)
         rngctxRollout = CopyRNGContext(rngctxCurrent);
-        
+
     if (!rollout_pool) {
         gint max_threads = sysconf(_SC_NPROCESSORS_ONLN);
         if (max_threads < 1) max_threads = 4;
@@ -351,9 +440,21 @@ void gnubg_init_rollout(void) {
     }
 }
 
+/* Roll out one position under prc. Returns the number of trials actually
+ * completed (== prc->nTrials unless cancelled), or -1 on allocation
+ * failure. arOutput/arStdDev carry gnubg's aggregation over the completed
+ * trials. */
 int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], float arStdDev[NUM_ROLLOUT_OUTPUTS], const cubeinfo *pci, rolloutcontext *prc) {
+    static perArray sharedPerms;   /* one rollout at a time; engine-thread owned */
+    unsigned int completed_trials;
+
     if (!rollout_pool) gnubg_init_rollout();
-    
+
+    /* The dice generator, set up as gnubg sets it up (rollout.c:1159-1160). */
+    sharedPerms.nPermutationSeed = -1;
+    if (prc->fRotate)
+        QuasiRandomSeed(&sharedPerms, (int) prc->nSeed);
+
     RolloutBarrier barrier;
     g_mutex_init(&barrier.mutex);
     g_cond_init(&barrier.cond);
@@ -361,56 +462,69 @@ int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], f
     barrier.pci = pci;
     barrier.prc = prc;
     barrier.anBoard = anBoard; /* Decays cleanly into const unsigned int (*)[25] */
-    
-    /* Allocate cache-aligned results array */
+    barrier.dicePerms = &sharedPerms;
+
+    /* Allocate cache-aligned results array + completion map */
     if (posix_memalign((void**)&barrier.results, 64, prc->nTrials * sizeof(RolloutResult)) != 0) {
         return -1;
     }
-    
-    /* Initialize the results array to zero */
     memset(barrier.results, 0, prc->nTrials * sizeof(RolloutResult));
-    
+    barrier.completed = g_malloc0(prc->nTrials);
+
+    g_atomic_int_set(&rollout_cancel_flag, 0);
+    g_atomic_int_set(&rollout_done_count, 0);
+    g_mutex_lock(&rollout_live_mutex);
+    rollout_live = &barrier;
+    g_mutex_unlock(&rollout_live_mutex);
+
     /* Dispatch tasks */
-    for (int i = 0; i < prc->nTrials; i++) {
-        g_thread_pool_push(rollout_pool, GINT_TO_POINTER(i), NULL);
+    for (unsigned int i = 0; i < prc->nTrials; i++) {
+        g_thread_pool_push(rollout_pool, GINT_TO_POINTER((int) i), NULL);
     }
-    
+
     /* Wait for completion */
     g_mutex_lock(&barrier.mutex);
     while (barrier.tasks_remaining > 0) {
         g_cond_wait(&barrier.cond, &barrier.mutex);
     }
     g_mutex_unlock(&barrier.mutex);
-    
-    /* Accumulate results (scatter-gather merge) */
-    for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
-        arOutput[j] = 0.0f;
-        arStdDev[j] = 0.0f;
-    }
-    
-    double adSum[NUM_ROLLOUT_OUTPUTS]  = {0};
-    double adSum2[NUM_ROLLOUT_OUTPUTS] = {0};
-    for (unsigned int i = 0; i < prc->nTrials; i++) {
-        for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
-            double v = barrier.results[i].arOutput[j];
-            adSum[j]  += v;
-            adSum2[j] += v * v;
-        }
-    }
-    for (int j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
-        arOutput[j] = (float)(adSum[j] / prc->nTrials);
-        if (prc->nTrials > 1) {
-            double var = (adSum2[j] - adSum[j]*adSum[j]/prc->nTrials)
-                         / (prc->nTrials - 1);
-            arStdDev[j] = (float)(var > 0 ? sqrt(var/prc->nTrials) : 0.0);
-        } else {
-            arStdDev[j] = 0.0f;
-        }
-    }
-    
+
+    g_mutex_lock(&rollout_live_mutex);
+    rollout_live = NULL;
+    g_mutex_unlock(&rollout_live_mutex);
+
+    /* gnubg's aggregation over the completed trials, in trial order. */
+    completed_trials = rollout_accumulate(barrier.results, barrier.completed,
+                                          prc->nTrials, arOutput, arStdDev);
+
     free(barrier.results);
+    g_free(barrier.completed);
     g_mutex_clear(&barrier.mutex);
     g_cond_clear(&barrier.cond);
-    
-    return 0;
+
+    return (int) completed_trials;
+}
+
+/* Live progress for the UI's polled snapshot: fills done/total and the
+ * running gnubg aggregation over whatever has completed. Returns 1 while a
+ * rollout is live, 0 otherwise. Safe from any thread. */
+int gnubg_rollout_poll(int *done, int *total,
+                       float arMu[NUM_ROLLOUT_OUTPUTS], float arSigma[NUM_ROLLOUT_OUTPUTS]) {
+    int live = 0;
+    g_mutex_lock(&rollout_live_mutex);
+    if (rollout_live) {
+        live = 1;
+        *done = g_atomic_int_get(&rollout_done_count);
+        *total = (int) rollout_live->prc->nTrials;
+        rollout_accumulate(rollout_live->results, rollout_live->completed,
+                           rollout_live->prc->nTrials, arMu, arSigma);
+    }
+    g_mutex_unlock(&rollout_live_mutex);
+    return live;
+}
+
+/* Cancel the live rollout: unstarted trials become no-ops; the running
+ * gnubg_rollout call returns with the completed count. */
+void gnubg_rollout_cancel(void) {
+    g_atomic_int_set(&rollout_cancel_flag, 1);
 }
