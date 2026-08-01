@@ -329,3 +329,55 @@ The regulation preset is already codified in the tree: `rcRollout` in
 stubs.c (cubeful, variance reduction, rotation, 1296 trials, Mersenne
 dice, 144-game minimum) under the comment "docking points ... set by the
 Kotlin UI layer" -- written for exactly this feature, waiting.
+
+### 2.9 The discovered engine, and the pivot (2026-08-01, second session)
+
+Preparing mt_glue.c, the full read of stubs.c found what no grep had
+surfaced: **the port already contains a parallel rollout engine**
+(stubs.c, "Rollout Infrastructure"), initialized at startup
+(gnubg_init_rollout, called from the facade's init since day one) and
+never yet called. Inventory:
+
+- GThreadPool sized to all online cores; one task per trial.
+- Per-thread lazy TLS -- and this is ALSO how all current evaluation
+  works: the real TLSGet lives here, building each thread's
+  ThreadLocalData (aMoves + three NNStates) on first touch.
+- Per-thread RNG contexts (CopyRNGContext of rngctxRollout).
+- Each trial runs **gnubg's own BasicCubefulRolloutNoLocking** -- the
+  genuine trial core; the custom code is scheduling and mean/SD
+  accumulation only. Part-1-class plumbing around gnubg's logic.
+- Barrier wait, cache-aligned per-trial results, scatter-gather merge.
+
+**The pivot:** rollouts do NOT need USE_MULTITHREAD. Sections 2.1-2.3
+stay as the documented path for Part 1's candidate-loop future, but the
+rollout feature rides the engine that exists. The nightmare sections
+(mt_glue.c, the half-migrated header, the stubs guards, the native-wide
+risk) are SHELVED, not deleted -- they are the map for a different
+mountain.
+
+**Fidelity findings the pivot must fix first (sole-authority guards):**
+
+1. **Seed scheme diverges from desktop gnubg.** The pool reseeds the
+   quasi-random permutation PER TRIAL (nSeed + task_index); gnubg seeds
+   ONE permutation array and indexes dice by (iTurn, iGame)
+   (rollout.c:223). Same seed would not reproduce desktop numbers --
+   and same-seed desktop reproduction is the feature's headline. Fix:
+   one shared read-only QuasiRandomSeed(nSeed) array across workers,
+   trial index as gnubg's iGame. Beyond the permutation depth gnubg
+   falls to sequential RNG draws; Gate B decides empirically what the
+   verify-line may honestly claim there.
+2. **Hand-rolled mean/SD.** Near-certainly gnubg's basic-output math;
+   Gate B's field-for-field desktop comparison covers it, because
+   near-certainly is not the standard.
+
+**Additions the feature needs (port-owned, zero gnubg divergence):**
+a mutex-guarded progress snapshot over the filling results array
+(running equity +/- CI for the live candidate list) with cancel; and a
+per-candidate driver (the existing entry rolls one position; the
+feature rolls each candidate's post-move board).
+
+**Revised gates:** Gate A is unnecessary (nothing about the existing
+engine changes -- no flag, no header, no stubs edits). Gate B becomes
+the whole test: this pool vs desktop gnubg, same position, same seed,
+same trials -- dice-identical through the permutation depth,
+statistics field-for-field.
