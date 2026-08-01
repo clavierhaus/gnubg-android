@@ -196,3 +196,97 @@ judgment.
 - AnalyseMoveTask -- multithread.h:55-60 (existing per-move-record analysis task)
 - EvaluatePositionCache -- eval.c:96 (shared cache; the locking concern)
 - RolloutLoopMT -- rollout.c:1480 (existing MT usage pattern to mirror)
+
+---
+
+## Part 2 -- Enabling USE_MULTITHREAD for on-device rollouts (the verified path)
+
+Added 2026-08-01. Part 1 scoped a future parallelization gnubg does not have
+(the single-move candidate loop). Part 2 is the nearer, smaller prize:
+rollouts are ALREADY multithreaded in gnubg's own design -- the port merely
+compiles with the switch off. Every claim below was read from the vendored
+sources on this date; a future session can start from here without
+re-deriving anything. Realm: FOSS first, Plus inherits (maintainer ruling).
+
+### 2.1 The two configurations, precisely
+
+- **MT-off (the port today).** `jni-bridge/src/stubs.c` supplies the entire
+  threading substrate as no-ops (Mutex_*, ManualEvent_*, TLS*, CloseThread)
+  PLUS serial bodies under the `*WithLocking` names, and `gnubg_init_tld()`
+  hand-builds the single ThreadLocalData. `multithread.h:181` falls back to
+  `MT_GetNumThreads() == 1`. No build flag defines USE_MULTITHREAD anywhere.
+- **MT-on (gnubg's design).** `eval.c:5129-5134` renames the canonical
+  implementations to the `*WithLocking` symbols via macro; the plain names
+  (`EvaluatePosition`, `ScoreMove`, `FindnSaveBestMoves`, ...) become
+  FUNCTION POINTERS assigned at init (`multithread.c:210-216`), and workers
+  get per-thread state via `MT_CreateThreadLocalData` (`multithread.c:171`).
+  Consequence one: stubs.c's serial WithLocking bodies would collide at
+  link. Consequence two: **MT init is mandatory** -- with the pointers
+  unassigned, the first evaluation in the app dereferences null.
+
+### 2.2 The change, minimal and reversible
+
+1. **stubs.c** gains `#ifndef USE_MULTITHREAD` guards around exactly three
+   regions: the threading substrate, the WithLocking bodies, and the tld
+   hand-init. Nothing is deleted; the file becomes explicitly the MT-off
+   shim, and BOTH configurations build forever (which is also what makes the
+   enablement upstreamable evidence for Part 1's ambition).
+   **The guard must NOT cover** the rollout docking points: `rcRollout` and
+   friends live in stubs.c too and are configuration-independent.
+2. **Build flag**: `-DUSE_MULTITHREAD` (and `MAX_NUMTHREADS`) ride the
+   existing `CMAKE_C_FLAGS` path in `build_native_android.sh` (:111/:120).
+   Reproducible; the owed F-Droid 0.22.8 reproducibility re-proof covers it.
+3. **Facade init** (`gnubg_mobile.c:1363`): under MT, `MT_InitThreads()` +
+   `MT_SetNumThreads(N)` take the slot `gnubg_init_tld()` holds today.
+   N = device performance cores, conservatively capped (thermals), shown in
+   gnubg's own term ("Threads"), never a user knob in v1.
+
+### 2.3 Why rollouts then need no new threading work
+
+`rollout.c:1480`: `RolloutGeneral` itself dispatches
+`mt_add_tasks(MT_GetNumThreads(), RolloutLoopMT, ...)` and blocks in
+`MT_WaitForTasks(UpdateProgress, 2000, ...)` -- the progress callback runs
+ON THE CALLING THREAD every 2 s. That is the app's proven poll-snapshot
+pattern with no adaptation: the facade's rollout call sits on the engine
+thread, fills a snapshot the UI polls, and cancellation is `fInterrupt`
+(read `MT_SafeGet`-safe, cross-thread by design).
+
+### 2.4 Determinism, the verify-line's foundation
+
+`RolloutDice(iTurn, iGame, ...)` (`rollout.c:223`) derives each trial's dice
+from the trial and turn indices under a once-seeded quasi-random permutation
+(`QuasiRandomSeed`, `rollout.c:190`). Whichever worker plays game 517 rolls
+game 517's dice; aggregates are therefore identical at any thread count for
+a given seed -- which is what makes "reproduce this rollout in desktop
+gnubg: same seed, same numbers" true by construction. Gate B confirms it
+empirically anyway.
+
+### 2.5 Three reads that MUST precede their lines of code
+
+Named here so nothing hides behind "probably":
+
+1. `MT_InitThreads` full body (its definition style defeated a signature
+   grep) -- read before writing the init call; specifically whether it
+   creates the calling thread's ThreadLocalData or only the workers'.
+2. The `#if` guard bracketing `eval.c:5129` -- confirm before placing the
+   stubs.c guards.
+3. `multithread.c`'s glib-thread dependencies against the Android glib this
+   port builds -- confirm the primitives exist, not assume.
+
+### 2.6 The gates, each blocking the next
+
+- **Gate A -- behavior unchanged:** one evaluation and one full match
+  analysis, MT-on vs MT-off, bit-identical numbers (Part 1's own standard).
+- **Gate B -- rollout determinism:** same seed, threads 1 vs 4, identical
+  outputs, trial for trial.
+- Only then: the rollout facade (new functions parallel to the validated
+  ones, driving `ScoreMoveRollout` over gnubg's own candidate list with the
+  `rcRollout` docking points), and the Analyse-screen UI (live candidate
+  list, seed displayed, foreground-service continuation).
+
+### 2.7 What the feature inherits for free
+
+The regulation preset is already codified in the tree: `rcRollout` in
+stubs.c (cubeful, variance reduction, rotation, 1296 trials, Mersenne
+dice, 144-game minimum) under the comment "docking points ... set by the
+Kotlin UI layer" -- written for exactly this feature, waiting.
