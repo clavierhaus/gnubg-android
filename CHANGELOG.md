@@ -15,6 +15,9 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [0.22.8] -- upcoming release
 
+### Added
+- Competition match clock in tournament mode: 12-second delay plus a bank of minutes per point (Live 2, Online 1), one clock shown in the running player's chequer colour, timeout loses the match. gnubg itself has no clock, so this is app-layer and never touches game logic.
+
 ### Fixed
 - The roll that ends a game or match now stays visible on the end screen (the engine's winning roll was never drawn at game over).
 
