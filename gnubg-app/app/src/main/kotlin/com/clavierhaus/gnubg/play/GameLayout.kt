@@ -269,7 +269,7 @@ fun GameLayout(
                                     // match ended) -- every finished Play match offers
                                     // its stats. Orange = Plus. Compact: the pane
                                     // does not scroll.
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Box(
                                         modifier = Modifier
                                             .background(
@@ -277,7 +277,7 @@ fun GameLayout(
                                                 RoundedCornerShape(8.dp)
                                             )
                                             .clickable { showStats.value = true }
-                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                            .padding(horizontal = 14.dp, vertical = 6.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -288,18 +288,18 @@ fun GameLayout(
                                         )
                                     }
                                     viewModel.careerRecorded.collectAsStateWithLifecycle().value?.let { n ->
-                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             "Recorded — match $n of your career.",
                                             color = pal.uiTextSecondary,
-                                            fontSize = 12.sp
+                                            fontSize = 11.sp,
+                                            lineHeight = 12.sp
                                         )
                                     }
                                     // New match / Home live in the hoisted row below,
                                     // the same place as in every other phase. "Exit" is
                                     // gone: the action is Home, and it is called Home
                                     // everywhere.
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     // All-time tally: the tournament's own scoreboard,
                                     // offered at the moment the match concludes.
                                     // Deliberately not a hub entry -- statistics are
