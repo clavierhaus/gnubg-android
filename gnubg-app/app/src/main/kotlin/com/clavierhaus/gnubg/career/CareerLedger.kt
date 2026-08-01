@@ -92,7 +92,8 @@ object CareerLedger {
      * path), [report] the analysis as computed. Copies the SGF into career/,
      * appends the signed chain entry. Never throws.
      */
-    fun collect(ctx: Context, sgf: File, report: MatchReport): Int? {
+    fun collect(ctx: Context, sgf: File, report: MatchReport,
+                clock: String = "off", timeout: Boolean = false): Int? {
         val tree = CbgFolder.grantedTree(ctx) ?: run {
             Log.w(TAG, "no folder grant; match not collected"); return null
         }
@@ -140,6 +141,8 @@ object CareerLedger {
             append(",\"match\":\"").append(jsonEsc(actualName)).append('"')
             append(",\"sha256\":\"").append(hex(sha256(sgfBytes))).append('"')
             append(",\"stats\":").append(statsJson(report))
+            append(",\"clock\":\"").append(clock).append('"')
+            if (timeout) append(",\"timeout\":true")
             append(",\"prev\":\"").append(prevHash).append('"')
             append('}')
         }.toByteArray(Charsets.UTF_8)

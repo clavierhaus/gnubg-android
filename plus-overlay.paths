@@ -29,3 +29,4 @@ gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/plusstore/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/career/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/options/SettingsScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/clock/

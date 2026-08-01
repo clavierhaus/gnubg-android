@@ -64,6 +64,8 @@ fun GameLayout(
         StatisticsScreen(onBack = { showStatistics = false })
     } else if (showMatchSetup) {
         MatchSetupScreen(
+            clockMode = viewModel.clockMode.collectAsStateWithLifecycle().value,
+            onSelectClock = { viewModel.setClockMode(it) },
             tutorMode = tutorMode,
             selectedLength = settings.matchLength,
             selectedDifficulty = settings.difficulty,
@@ -129,6 +131,32 @@ fun GameLayout(
                             Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         }
 
+                        // Match clock: one clock, the running side's reserve, in that
+                        // player's chequer colour (maintainer ruling).
+                        viewModel.clockState.collectAsStateWithLifecycle().value?.let { ck ->
+                            if (ck.timeoutSide == null && ck.activeSide >= 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                val you = ck.activeSide == 0
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.CenterHorizontally)
+                                        .background(
+                                            if (you) pal.checkerLight else pal.checkerDark,
+                                            RoundedCornerShape(6.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    val delay = (ck.delayLeftMs + 999) / 1000
+                                    Text(
+                                        (if (delay > 0) "${delay}s · " else "") +
+                                            com.clavierhaus.gnubg.clock.formatClock(ck.activeReserveMs),
+                                        color = if (you) pal.checkerDark else pal.checkerLight,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                         // Thin blue divider below the scoreboard; space below is reserved
                         // for future match-context / tutor UI.
                         Box(
@@ -154,6 +182,23 @@ fun GameLayout(
                         }
 
                         when {
+                            viewModel.clockState.collectAsStateWithLifecycle().value?.timeoutSide != null -> {
+                                val t = viewModel.clockState.collectAsStateWithLifecycle().value!!.timeoutSide
+                                Text(
+                                    if (t == 0) "Your time ran out — GNU wins the match"
+                                    else "GNU's time ran out — you win the match",
+                                    color = Color.White, fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                                viewModel.careerRecorded.collectAsStateWithLifecycle().value?.let { n ->
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        "Recorded — match $n of your career.",
+                                        color = pal.uiTextSecondary, fontSize = 12.sp
+                                    )
+                                }
+                            }
                             gameState.phase == GamePhase.GAME_OVER -> {
                                 val humanWonMatch =
                                     gameState.matchLength > 1 &&
@@ -610,6 +655,8 @@ fun GameButton(
 
 @Composable
 private fun MatchSetupScreen(
+    clockMode: com.clavierhaus.gnubg.clock.ClockMode,
+    onSelectClock: (com.clavierhaus.gnubg.clock.ClockMode) -> Unit,
     tutorMode: Boolean,
     selectedLength: Int,
     selectedDifficulty: Difficulty,
@@ -713,6 +760,29 @@ private fun MatchSetupScreen(
                         onSelectDifficulty(difficulty)
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Match clock: competition-conforming, derived from the length --
+            // no free knobs (12 s Bronstein delay; Live 2 min/pt, Online
+            // 1 min/pt). gnubg itself has no clock (engine read 2026-07-31),
+            // so this is app-layer and never touches game logic.
+            Text("Match clock", color = pal.uiTextSecondary, fontSize = 16.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.clavierhaus.gnubg.clock.ClockMode.entries.forEach { m ->
+                    GameButton(
+                        label = m.label,
+                        color = if (clockMode == m) pal.uiChipOn else pal.uiChipOff,
+                        compact = true
+                    ) { onSelectClock(m) }
+                }
+            }
+            if (clockMode != com.clavierhaus.gnubg.clock.ClockMode.OFF) {
+                Text(
+                    "12 s per move + ${com.clavierhaus.gnubg.clock.formatClock(clockMode.reserveMs(selectedLength))} bank -- run out and the match is lost.",
+                    color = pal.uiTextSecondary, fontSize = 11.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(6.dp))

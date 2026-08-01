@@ -133,6 +133,91 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // (getMatchWinner), never a score comparison. Spec: FOSS
     // docs/CRYPTOGRAPHY.md + docs/CAREER_AND_STATS.md.
     private var matchCollected = false
+    // Tournament match clock (Plus). One clock runs at a time; hand-over
+    // follows the dice (turn/phase). Regulation parameters in clock/MatchClock.
+    val clockMode = kotlinx.coroutines.flow.MutableStateFlow(com.clavierhaus.gnubg.clock.ClockMode.OFF)
+    private val _clockState =
+        kotlinx.coroutines.flow.MutableStateFlow<com.clavierhaus.gnubg.clock.ClockUiState?>(null)
+    val clockState: kotlinx.coroutines.flow.StateFlow<com.clavierhaus.gnubg.clock.ClockUiState?> = _clockState
+    @Volatile var clockPaused: Boolean = false
+    private var clockJob: kotlinx.coroutines.Job? = null
+
+    fun setClockMode(m: com.clavierhaus.gnubg.clock.ClockMode) {
+        clockMode.value = m
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.clavierhaus.gnubg.clock.ClockPrefs.save(getApplication(), m)
+        }
+    }
+
+    private fun startClock() {
+        clockJob?.cancel()
+        _clockState.value = null
+        val mode = clockMode.value
+        if (mode == com.clavierhaus.gnubg.clock.ClockMode.OFF) return
+        val reserve = mode.reserveMs(_settings.value.matchLength)
+        var st = com.clavierhaus.gnubg.clock.ClockUiState(-1,
+            com.clavierhaus.gnubg.clock.DELAY_MS, reserve, reserve)
+        _clockState.value = st
+        clockJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            var last = android.os.SystemClock.elapsedRealtime()
+            while (true) {
+                kotlinx.coroutines.delay(200)
+                val now = android.os.SystemClock.elapsedRealtime()
+                val dt = now - last; last = now
+                val g = _gameState.value
+                val side = when {
+                    clockPaused -> -1
+                    g.phase == GamePhase.GAME_OVER -> -1
+                    g.phase == GamePhase.ENGINE_THINKING -> 1
+                    g.turn == 1 -> 1
+                    g.turn == 0 -> 0
+                    else -> -1
+                }
+                if (side != st.activeSide) {
+                    st = st.copy(activeSide = side,
+                        delayLeftMs = com.clavierhaus.gnubg.clock.DELAY_MS)
+                    _clockState.value = st
+                    continue
+                }
+                if (side == -1) continue
+                var delay = st.delayLeftMs
+                var you = st.reserveYouMs
+                var gnu = st.reserveGnuMs
+                var rest = dt
+                if (delay > 0) {
+                    val used = minOf(delay, rest); delay -= used; rest -= used
+                }
+                if (rest > 0) {
+                    if (side == 0) you -= rest else gnu -= rest
+                }
+                st = st.copy(delayLeftMs = delay, reserveYouMs = you, reserveGnuMs = gnu)
+                if ((side == 0 && you <= 0) || (side == 1 && gnu <= 0)) {
+                    st = st.copy(timeoutSide = side)
+                    _clockState.value = st
+                    onClockTimeout(side)
+                    return@launch
+                }
+                _clockState.value = st
+            }
+        }
+    }
+
+    private fun onClockTimeout(loser: Int) {
+        android.util.Log.i("cbg-clock", "timeout: side=$loser loses the match on time")
+        if (matchCollected) return
+        matchCollected = true
+        val ctx = getApplication<Application>()
+        viewModelScope.launch(engineThread) {
+            analyseCompletedMatchBlocking()
+            val report = _matchReport.value ?: return@launch
+            val tmp = java.io.File(ctx.filesDir,
+                "career-" + System.currentTimeMillis() + ".sgf")
+            if (!saveMatchToFile(tmp)) return@launch
+            _careerRecorded.value = com.clavierhaus.gnubg.career.CareerLedger.collect(
+                ctx, tmp, report, clockMode.value.ledgerName, timeout = true)
+            tmp.delete()
+        }
+    }
     private val _careerRecorded = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
     val careerRecorded: kotlinx.coroutines.flow.StateFlow<Int?> = _careerRecorded
 
@@ -164,7 +249,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             _careerRecorded.value =
-                com.clavierhaus.gnubg.career.CareerLedger.collect(ctx, tmp, report)
+                com.clavierhaus.gnubg.career.CareerLedger.collect(
+                    ctx, tmp, report, clockMode.value.ledgerName, timeout = false)
             tmp.delete()
         }
     }
@@ -238,6 +324,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // exists: writes are dropped until the CBG folder is granted, then
         // resume automatically.
         com.clavierhaus.gnubg.debug.DebugTrace.init(application)
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            clockMode.value = com.clavierhaus.gnubg.clock.ClockPrefs.load(application)
+        }
         viewModelScope.launch(engineThread) {
             // 1. Load persisted settings BEFORE the engine reads them, so the
             //    first match honors the user's saved rules/strength/MET.
@@ -487,6 +576,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             matchTallied = false
             matchCollected = false
             _careerRecorded.value = null
+            if (isNewMatch) startClock()
         }
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and
