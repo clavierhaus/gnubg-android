@@ -261,17 +261,42 @@ a given seed -- which is what makes "reproduce this rollout in desktop
 gnubg: same seed, same numbers" true by construction. Gate B confirms it
 empirically anyway.
 
-### 2.5 Three reads that MUST precede their lines of code
+### 2.5 The reads happened -- and rewrote the init story (2026-08-01)
 
-Named here so nothing hides behind "probably":
+The three planned reads were done, plus the follow-ups they forced. The
+findings, each load-bearing:
 
-1. `MT_InitThreads` full body (its definition style defeated a signature
-   grep) -- read before writing the init call; specifically whether it
-   creates the calling thread's ThreadLocalData or only the workers'.
-2. The `#if` guard bracketing `eval.c:5129` -- confirm before placing the
-   stubs.c guards.
-3. `multithread.c`'s glib-thread dependencies against the Android glib this
-   port builds -- confirm the primitives exist, not assume.
+1. **`MT_InitThreads` is a phantom.** Declared (`multithread.h:112`),
+   defined nowhere in the vendored engine, called nowhere: on desktop it
+   lives in gnubg's main program, which this port replaced with the facade.
+   The real init is `MT_SetNumThreads(N)` (`multithread.c:194`): it creates
+   the glib worker threads, gives each its TLD, and assigns the function
+   pointers -- including a third family, `*NoLocking`, used when N == 1
+   (which hands Gate A its ideal configuration: MT-on at one thread is the
+   nearest cousin of today's serial build).
+2. **The engine defines NO threading primitives at all.** The complete
+   definition inventory of `multithread.c` shows it USES Mutex_*,
+   ManualEvent_*, TLS*, `CloseThread`, `MT_CreateThreadLocalData`, and the
+   `td` object -- and defines none of them. `ThreadData td` itself lives in
+   OUR `stubs.c` (:47). Consequence: stubs.c is not a shim over an
+   engine-provided layer; **it is the port's only provider of that layer**,
+   and under MT-on its no-ops must become real glib-backed implementations
+   (a new `mt_glue.c`), while the config-independent globals -- `td`,
+   `rcRollout`, and friends -- stay unguarded in both configurations.
+3. **glib threading is core glib** (`g_thread_try_new` with a pre-2.32
+   fallback branch already in the source); the Android glib this port
+   builds carries it.
+4. **The facade owns the whole init sequence** under MT-on: primitive-layer
+   init (queue mutex, activity event, TLS key), the CALLING thread's own
+   TLD (the engine thread runs evaluations directly and needs its aMoves),
+   then `MT_SetNumThreads(N)`.
+
+**Method ruling for the next step:** no further archaeology -- the compiler
+builds the symbol ledger. A host-side link probe of `multithread.c` +
+`stubs.c` under `-DUSE_MULTITHREAD` (host glib, same as the C syntax gate)
+enumerates every missing and duplicate symbol mechanically; that list IS
+the specification for `mt_glue.c` and for the exact `#ifndef` guard
+boundaries in stubs.c. Flawless by compiler, not by grep.
 
 ### 2.6 The gates, each blocking the next
 
