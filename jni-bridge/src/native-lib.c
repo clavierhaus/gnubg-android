@@ -1195,3 +1195,35 @@ Java_com_clavierhaus_gnubg_Engine_tallyRolls(JNIEnv *env, jobject thiz) {
     (*env)->SetIntArrayRegion(env, result, 0, 8, buf);
     return result;
 }
+
+/* Engine.rolloutStart(maxN, seed): Int -- BLOCKS for the whole rollout run
+ * (call on the engine thread). Returns candidates rolled, 0 no dice, -1
+ * error. Marshalling only. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_rolloutStart(JNIEnv *env, jobject thiz,
+                                               jint maxN, jint seed) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_rollout_start((int) maxN, (unsigned int) seed);
+}
+
+/* Engine.rolloutStatus(out): Int -- snapshot, safe from any thread. out must
+ * hold 206 ints (layout documented at gnubg_mobile_rollout_status). */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_rolloutStatus(JNIEnv *env, jobject thiz,
+                                                jintArray jOut) {
+    (void) thiz;
+    int buf[206];
+    jint n;
+    if (!jOut || (*env)->GetArrayLength(env, jOut) < 206) return (jint) -1;
+    n = (jint) gnubg_mobile_rollout_status(buf);
+    if (n >= 0)
+        (*env)->SetIntArrayRegion(env, jOut, 0, 206, (const jint *) buf);
+    return n;
+}
+
+/* Engine.rolloutCancel(): Unit -- safe from any thread. */
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_rolloutCancel(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    gnubg_mobile_rollout_cancel();
+}

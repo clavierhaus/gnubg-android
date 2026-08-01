@@ -69,6 +69,11 @@ extern void  EvalInitialise(char *szWeights, char *szWeightsBinary, int fNoBearo
 extern void *InitRNG(unsigned long *pnSeed, int *pfInitFrom, int fSet, rng rngx);
 extern void  gnubg_init_tld(void);
 extern void  gnubg_init_rollout(void);
+extern int   gnubg_rollout_move(move *pm, const cubeinfo *pciOriginal, rolloutcontext *prc);
+extern int   gnubg_rollout_poll(int *done, int *total,
+                                float arMu[NUM_ROLLOUT_OUTPUTS], float arSigma[NUM_ROLLOUT_OUTPUTS]);
+extern void  gnubg_rollout_cancel(void);
+extern rolloutcontext rcRollout;
 extern rng           rngCurrent;
 extern rngcontext   *rngctxCurrent;
 extern int fNextTurn;
@@ -1623,6 +1628,201 @@ int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
     g_free(ml.amMoves);
     pthread_mutex_unlock(&gnubg_lock);
     return (int) n;
+}
+
+/* -- Rollouts (Analyse mode's study tool) -----------------------------------
+ * PORT: the candidate list is gnubg_mobile_hint_moves' machinery verbatim
+ * (same position in ms, same GetMatchStateCubeInfo, same
+ * FindnSaveBestMoves call: esAnalysisChequer.ec, aamfAnalysis, NULL
+ * keyMove, best-first) -- the rollout rolls EXACTLY the candidates the
+ * Analyse screen already shows. Each candidate is rolled by
+ * gnubg_rollout_move (stubs.c), whose per-move setup mirrors gnubg's
+ * ScoreMoveRollout and whose trial core is gnubg's own
+ * BasicCubefulRollout under the rcRollout regulation context; dice and
+ * aggregation are gnubg's schemes verbatim (docs/MULTICORE_ANALYSIS.md
+ * 2.9). New parallel functions -- nothing validated is extended.
+ *
+ * gnubg_mobile_rollout_start BLOCKS on the engine thread for the whole
+ * run (that is Analyse mode owning the engine); the UI reads progress
+ * through gnubg_mobile_rollout_status from any thread, and
+ * gnubg_mobile_rollout_cancel is safe from any thread. One rollout at a
+ * time. */
+#define RO_MAX_CAND 8
+
+static struct {
+    int active;
+    int cancelled;
+    int nCand;
+    int current;                 /* candidate being rolled; -1 = none */
+    unsigned int seed;
+    unsigned int trials;
+    int anMove[RO_MAX_CAND][8];
+    float mu[RO_MAX_CAND][NUM_ROLLOUT_OUTPUTS];
+    float sigma[RO_MAX_CAND][NUM_ROLLOUT_OUTPUTS];
+    float rScore[RO_MAX_CAND];
+    float rScore2[RO_MAX_CAND];
+    int trialsDone[RO_MAX_CAND];
+} ro_state;
+static pthread_mutex_t ro_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Roll out the top max_n candidates of the loaded position. seed 0 means
+ * "choose one" (time-derived) -- the chosen seed is reported in status so
+ * the UI can display it and anyone can reproduce the rollout in desktop
+ * gnubg. Returns the number of candidates rolled (the last may be
+ * partial after a cancel -- its trialsDone says so), 0 when the position
+ * has no dice, -1 on error. */
+int gnubg_mobile_rollout_start(int max_n, unsigned int seed) {
+    movelist ml;
+    cubeinfo ci;
+    unsigned int i, n;
+    int j;
+
+    if (max_n < 1) return -1;
+    if (max_n > RO_MAX_CAND) max_n = RO_MAX_CAND;
+
+    pthread_mutex_lock(&gnubg_lock);
+
+    if (ms.gs != GAME_PLAYING || !ms.anDice[0] || !ms.anDice[1]) {
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    GetMatchStateCubeInfo(&ci, &ms);
+    memset(&ml, 0, sizeof(ml));
+
+    if (FindnSaveBestMoves(&ml, (int) ms.anDice[0], (int) ms.anDice[1],
+                           (ConstTanBoard) ms.anBoard, NULL, TRUE,
+                           arSkillLevel[SKILL_DOUBTFUL], &ci,
+                           &esAnalysisChequer.ec, aamfAnalysis) < 0) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return -1;
+    }
+    if (ml.cMoves == 0 || !ml.amMoves) {
+        g_free(ml.amMoves);
+        pthread_mutex_unlock(&gnubg_lock);
+        return 0;
+    }
+
+    n = ml.cMoves;
+    if (n > (unsigned int) max_n) n = (unsigned int) max_n;
+
+    if (seed == 0)
+        seed = (unsigned int) time(NULL);
+    rcRollout.nSeed = seed;
+
+    pthread_mutex_lock(&ro_state_mutex);
+    memset(&ro_state, 0, sizeof(ro_state));
+    ro_state.active = 1;
+    ro_state.nCand = (int) n;
+    ro_state.current = -1;
+    ro_state.seed = seed;
+    ro_state.trials = rcRollout.nTrials;
+    for (i = 0; i < n; i++)
+        for (j = 0; j < 8; j++)
+            ro_state.anMove[i][j] = ml.amMoves[i].anMove[j];
+    pthread_mutex_unlock(&ro_state_mutex);
+
+    for (i = 0; i < n; i++) {
+        int nDone;
+
+        pthread_mutex_lock(&ro_state_mutex);
+        if (ro_state.cancelled) {
+            pthread_mutex_unlock(&ro_state_mutex);
+            break;
+        }
+        ro_state.current = (int) i;
+        pthread_mutex_unlock(&ro_state_mutex);
+
+        nDone = gnubg_rollout_move(&ml.amMoves[i], &ci, &rcRollout);
+
+        pthread_mutex_lock(&ro_state_mutex);
+        ro_state.current = -1;
+        if (nDone > 0) {
+            ro_state.trialsDone[i] = nDone;
+            ro_state.rScore[i]  = ml.amMoves[i].rScore;
+            ro_state.rScore2[i] = ml.amMoves[i].rScore2;
+            for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+                ro_state.mu[i][j]    = ml.amMoves[i].arEvalMove[j];
+                ro_state.sigma[i][j] = ml.amMoves[i].arEvalStdDev[j];
+            }
+        }
+        if (nDone < (int) rcRollout.nTrials) {
+            ro_state.cancelled = 1;   /* partial: cancel arrived mid-candidate */
+            pthread_mutex_unlock(&ro_state_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&ro_state_mutex);
+    }
+
+    pthread_mutex_lock(&ro_state_mutex);
+    ro_state.active = 0;
+    ro_state.current = -1;
+    pthread_mutex_unlock(&ro_state_mutex);
+
+    g_free(ml.amMoves);
+    pthread_mutex_unlock(&gnubg_lock);
+    return (int) n;
+}
+
+/* Status snapshot, safe from any thread. Layout (float values as IEEE bits):
+ *   [0] active  [1] nCand  [2] current (-1 none)  [3] seed  [4] trialsTotal
+ *   [5] liveDone (trials finished of the candidate being rolled)
+ *   [6+k*25 .. ] per candidate k: anMove[8], rScore, rScore2, trialsDone,
+ *                mu[NUM_ROLLOUT_OUTPUTS], sigma[NUM_ROLLOUT_OUTPUTS]
+ * For the candidate currently rolling, mu/sigma/trialsDone carry the LIVE
+ * running values (gnubg's own aggregation over completed trials).
+ * Needs out[6 + 8*25] = out[206]. Returns nCand, or 0 when nothing has
+ * ever been started. */
+int gnubg_mobile_rollout_status(int out[206]) {
+    union { float f; unsigned int bits; } u;
+    int k, j, base;
+    int liveDone = 0, liveTotal = 0;
+    float liveMu[NUM_ROLLOUT_OUTPUTS], liveSigma[NUM_ROLLOUT_OUTPUTS];
+    int haveLive;
+
+    if (!out) return -1;
+
+    haveLive = gnubg_rollout_poll(&liveDone, &liveTotal, liveMu, liveSigma);
+
+    pthread_mutex_lock(&ro_state_mutex);
+    out[0] = ro_state.active;
+    out[1] = ro_state.nCand;
+    out[2] = ro_state.current;
+    out[3] = (int) ro_state.seed;
+    out[4] = (int) ro_state.trials;
+    out[5] = haveLive ? liveDone : 0;
+
+    for (k = 0; k < ro_state.nCand; k++) {
+        base = 6 + k * 25;
+        for (j = 0; j < 8; j++) out[base + j] = ro_state.anMove[k][j];
+        u.f = ro_state.rScore[k];  out[base + 8] = (int) u.bits;
+        u.f = ro_state.rScore2[k]; out[base + 9] = (int) u.bits;
+        out[base + 10] = ro_state.trialsDone[k];
+        for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+            u.f = ro_state.mu[k][j];    out[base + 11 + j] = (int) u.bits;
+            u.f = ro_state.sigma[k][j]; out[base + 18 + j] = (int) u.bits;
+        }
+        if (haveLive && k == ro_state.current) {
+            out[base + 10] = liveDone;
+            for (j = 0; j < NUM_ROLLOUT_OUTPUTS; j++) {
+                u.f = liveMu[j];    out[base + 11 + j] = (int) u.bits;
+                u.f = liveSigma[j]; out[base + 18 + j] = (int) u.bits;
+            }
+        }
+    }
+    k = ro_state.nCand;
+    pthread_mutex_unlock(&ro_state_mutex);
+    return k;
+}
+
+/* Cancel: the current candidate finishes partial (labeled by trialsDone);
+ * later candidates never start. Safe from any thread. */
+void gnubg_mobile_rollout_cancel(void) {
+    pthread_mutex_lock(&ro_state_mutex);
+    ro_state.cancelled = 1;
+    pthread_mutex_unlock(&ro_state_mutex);
+    gnubg_rollout_cancel();
 }
 
 /*

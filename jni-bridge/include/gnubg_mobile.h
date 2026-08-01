@@ -177,6 +177,11 @@ int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]);
 
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 
+/* -- Rollouts (Analyse mode) -- see gnubg_mobile.c for layout docs -------- */
+int  gnubg_mobile_rollout_start(int max_n, unsigned int seed);
+int  gnubg_mobile_rollout_status(int out[206]);
+void gnubg_mobile_rollout_cancel(void);
+
 #ifdef __cplusplus
 }
 #endif
