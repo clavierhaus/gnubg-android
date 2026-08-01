@@ -69,7 +69,11 @@ fun CareerEntryBlock(modifier: Modifier = Modifier) {
 
     val a = acked ?: return   // brief first-frame silence beats a flicker
 
-    Column(modifier = modifier.widthIn(max = 340.dp)) {
+    // ~10% wider (340 -> 374): the intro wraps one line shorter, and since
+    // the block is bottom-anchored its top edge -- the headline -- drops one
+    // line lower, clearing the tutor chips on a Pixel 8 Pro while staying
+    // left of the Start Match button's boundary. Tablet unaffected.
+    Column(modifier = modifier.widthIn(max = 374.dp)) {
         Text(
             "Your career",
             color = PlusUi.Interactive, fontSize = 14.sp, fontWeight = FontWeight.Bold
