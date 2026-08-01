@@ -200,7 +200,7 @@
   {
    "id": "anchor.split.straggler",
    "principle": "Keep the anchor whole; a split anchor shelters no one.",
-   "phrase_flag": "Running one checker off the point buys the worst of both: more shots against you and no shelter behind them.",
+   "phrase_flag": "Running one checker off the anchor buys the worst of both: a straggler under fire and no shelter left behind.",
    "phrase_praise": "The point stays whole -- fewer shots, and the shelter holds.",
    "category": "threat",
    "signature": {
