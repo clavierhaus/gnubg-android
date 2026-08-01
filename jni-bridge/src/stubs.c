@@ -18,6 +18,7 @@
 #include "eval.h"
 #include "multithread.h"
 #include "rollout.h"
+#include "positionid.h"
 #include "lib/isaac.h"
 
 /* -- Global state variables ----------------------------------------------- */
@@ -317,6 +318,10 @@ typedef struct {
     rolloutcontext *prc;
     const unsigned int (*anBoard)[25]; /* Matches the decayed pointer type */
     perArray *dicePerms;               /* the ONE shared array (gnubg's scheme) */
+    int fInvert;                       /* move rollouts: invert EACH trial's
+                                        * output (InvertEvaluationR) before
+                                        * accumulation -- gnubg's own order,
+                                        * rollout.c:1192-1194 */
 } RolloutBarrier;
 
 /* Live-progress registration: a single rollout at a time. */
@@ -415,6 +420,9 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
                                       barrier->prc, aarsStats, 0,
                                       barrier->dicePerms, local_rng, NULL);
 
+        if (barrier->fInvert)
+            InvertEvaluationR(aarOutput[0], barrier->pci);
+
         memcpy(barrier->results[task_index].arOutput, aarOutput[0],
                NUM_ROLLOUT_OUTPUTS * sizeof(float));
         __atomic_store_n(&barrier->completed[task_index], 1, __ATOMIC_RELEASE);
@@ -444,7 +452,7 @@ void gnubg_init_rollout(void) {
  * completed (== prc->nTrials unless cancelled), or -1 on allocation
  * failure. arOutput/arStdDev carry gnubg's aggregation over the completed
  * trials. */
-int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], float arStdDev[NUM_ROLLOUT_OUTPUTS], const cubeinfo *pci, rolloutcontext *prc) {
+static int gnubg_rollout_internal(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], float arStdDev[NUM_ROLLOUT_OUTPUTS], const cubeinfo *pci, rolloutcontext *prc, int fInvert) {
     static perArray sharedPerms;   /* one rollout at a time; engine-thread owned */
     unsigned int completed_trials;
 
@@ -463,6 +471,7 @@ int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], f
     barrier.prc = prc;
     barrier.anBoard = anBoard; /* Decays cleanly into const unsigned int (*)[25] */
     barrier.dicePerms = &sharedPerms;
+    barrier.fInvert = fInvert;
 
     /* Allocate cache-aligned results array + completion map */
     if (posix_memalign((void**)&barrier.results, 64, prc->nTrials * sizeof(RolloutResult)) != 0) {
@@ -503,6 +512,52 @@ int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], f
     g_cond_clear(&barrier.cond);
 
     return (int) completed_trials;
+}
+
+int gnubg_rollout(const TanBoard anBoard, float arOutput[NUM_ROLLOUT_OUTPUTS], float arStdDev[NUM_ROLLOUT_OUTPUTS], const cubeinfo *pci, rolloutcontext *prc) {
+    return gnubg_rollout_internal(anBoard, arOutput, arStdDev, pci, prc, 0);
+}
+
+/* Roll out ONE candidate move -- the per-move setup is ScoreMoveRollout's,
+ * mirrored line for line (rollout.c:1819+): position from the move's key,
+ * SwapSides, fMove flipped, rolled with per-trial inversion; then gnubg's
+ * own score mapping (rScore = mwc2eq of cubeful equity in match play,
+ * against the ORIGINAL-orientation cubeinfo; rScore2 = cubeless equity).
+ * Results land in the move struct exactly where gnubg puts them
+ * (arEvalMove / arEvalStdDev / rScore / rScore2). Returns completed
+ * trials, or -1. */
+int gnubg_rollout_move(move *pm, const cubeinfo *pciOriginal, rolloutcontext *prc) {
+    TanBoard anBoard;
+    cubeinfo ci;
+    int nDone;
+
+    PositionFromKey(anBoard, &pm->key);
+    SwapSides(anBoard);
+
+    memcpy(&ci, pciOriginal, sizeof(cubeinfo));
+    /* swap fMove in cubeinfo */
+    ci.fMove = !ci.fMove;
+
+    nDone = gnubg_rollout_internal((ConstTanBoard) anBoard,
+                                   pm->arEvalMove, pm->arEvalStdDev,
+                                   &ci, prc, 1);
+    if (nDone <= 0)
+        return nDone;
+
+    /* Score for move:
+     * rScore is the primary score (cubeful/cubeless)
+     * rScore2 is the secondary score (cubeless) */
+    if (prc->fCubeful) {
+        if (pciOriginal->nMatchTo)
+            pm->rScore = mwc2eq(pm->arEvalMove[OUTPUT_CUBEFUL_EQUITY], pciOriginal);
+        else
+            pm->rScore = pm->arEvalMove[OUTPUT_CUBEFUL_EQUITY];
+    } else
+        pm->rScore = pm->arEvalMove[OUTPUT_EQUITY];
+
+    pm->rScore2 = pm->arEvalMove[OUTPUT_EQUITY];
+
+    return nDone;
 }
 
 /* Live progress for the UI's polled snapshot: fills done/total and the
