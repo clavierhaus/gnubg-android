@@ -100,6 +100,87 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var tallyLevel: Difficulty? = null
     private var matchTallied = false
 
+    // Tournament match clock. One clock runs at a time; hand-over follows the
+    // dice (turn/phase). Regulation parameters in clock/MatchClock.kt -- the
+    // engine itself has no clock (ResetDelayTimer is the animation delay;
+    // moverecord stores no time), so this is app-layer by license of that
+    // silence and never touches game logic: a timeout is a forfeit ruled at
+    // the table, exactly as a director would call it.
+    val clockMode = kotlinx.coroutines.flow.MutableStateFlow(com.clavierhaus.gnubg.clock.ClockMode.OFF)
+    private val _clockState =
+        kotlinx.coroutines.flow.MutableStateFlow<com.clavierhaus.gnubg.clock.ClockUiState?>(null)
+    val clockState: kotlinx.coroutines.flow.StateFlow<com.clavierhaus.gnubg.clock.ClockUiState?> = _clockState
+    @Volatile var clockPaused: Boolean = false
+    private var clockJob: kotlinx.coroutines.Job? = null
+
+    fun setClockMode(m: com.clavierhaus.gnubg.clock.ClockMode) {
+        clockMode.value = m
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.clavierhaus.gnubg.clock.ClockPrefs.save(getApplication(), m)
+        }
+    }
+
+    private fun startClock() {
+        clockJob?.cancel()
+        _clockState.value = null
+        val mode = clockMode.value
+        if (mode == com.clavierhaus.gnubg.clock.ClockMode.OFF) return
+        val reserve = mode.reserveMs(_settings.value.matchLength)
+        var st = com.clavierhaus.gnubg.clock.ClockUiState(-1,
+            com.clavierhaus.gnubg.clock.DELAY_MS, reserve, reserve)
+        _clockState.value = st
+        clockJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            var last = android.os.SystemClock.elapsedRealtime()
+            while (true) {
+                kotlinx.coroutines.delay(200)
+                val now = android.os.SystemClock.elapsedRealtime()
+                // A frozen process (Doze, backgrounding beyond ON_PAUSE) must
+                // never charge the bank: clamp any gap to one tick's worth.
+                val dt = (now - last).coerceAtMost(500L); last = now
+                val g = _gameState.value
+                val side = when {
+                    clockPaused -> -1
+                    g.phase == GamePhase.GAME_OVER -> -1
+                    g.phase == GamePhase.ENGINE_THINKING -> 1
+                    g.turn == 1 -> 1
+                    g.turn == 0 -> 0
+                    else -> -1
+                }
+                if (side != st.activeSide) {
+                    st = st.copy(activeSide = side,
+                        delayLeftMs = com.clavierhaus.gnubg.clock.DELAY_MS)
+                    _clockState.value = st
+                    continue
+                }
+                if (side == -1) continue
+                var delay = st.delayLeftMs
+                var you = st.reserveYouMs
+                var gnu = st.reserveGnuMs
+                var rest = dt
+                if (delay > 0) {
+                    val used = minOf(delay, rest); delay -= used; rest -= used
+                }
+                if (rest > 0) {
+                    if (side == 0) you -= rest else gnu -= rest
+                }
+                st = st.copy(delayLeftMs = delay, reserveYouMs = you, reserveGnuMs = gnu)
+                if ((side == 0 && you <= 0) || (side == 1 && gnu <= 0)) {
+                    st = st.copy(timeoutSide = side)
+                    _clockState.value = st
+                    onClockTimeout(side)
+                    return@launch
+                }
+                _clockState.value = st
+            }
+        }
+    }
+
+    private fun onClockTimeout(loser: Int) {
+        // The match is decided by time, at the app layer -- a forfeit. The
+        // engine's match state remains as the board stood, which is true.
+        android.util.Log.i("cbg-clock", "timeout: side=$loser loses the match on time")
+    }
+
     /** All-time tally: fire once when the MATCH is decided. Multi-pointers:
      *  gnubg's own verdict (getMatchWinner() >= 0). One-pointers: gnubg
      *  reports no match winner (nMatchTo <= 1), so the game winner decides.
@@ -196,6 +277,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             //    first match honors the user's saved rules/strength/MET.
             val saved = PreferencesManager.settingsFlow(application).first()
             _settings.value = saved
+            clockMode.value = com.clavierhaus.gnubg.clock.ClockPrefs.load(application)
 
             val weightsPath = AssetExtractor.extractWeights(application)
             Engine.initialise(weightsPath)
@@ -414,6 +496,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (isNewMatch) {
             tallyLevel = if (coachSession) null else _settings.value.difficulty
             matchTallied = false
+            if (isNewMatch) startClock()
         }
         // Before driving gnubg's new game (which may hand the opening to the
         // engine and compute its move synchronously), show a thinking state and
