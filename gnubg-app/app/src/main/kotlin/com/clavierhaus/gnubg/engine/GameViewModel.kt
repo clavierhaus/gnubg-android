@@ -163,7 +163,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             while (true) {
                 kotlinx.coroutines.delay(200)
                 val now = android.os.SystemClock.elapsedRealtime()
-                val dt = now - last; last = now
+                // Clamp: after a process freeze (Doze) the first delta spans
+                // the whole frozen interval -- never charge it to a player.
+                val dt = (now - last).coerceAtMost(500L); last = now
                 val g = _gameState.value
                 val side = when {
                     clockPaused -> -1

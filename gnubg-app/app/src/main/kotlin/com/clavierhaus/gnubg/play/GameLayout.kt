@@ -57,6 +57,22 @@ fun GameLayout(
         )
         return
     }
+    // The clock stops when the app does: a phone is not a live table, and a
+    // phone call must not eat the bank. ON_PAUSE/ON_RESUME drive the ticker's
+    // paused flag; the ticker also resets its own timebase on resume via
+    // elapsedRealtime deltas, so backgrounded time never counts.
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> viewModel.clockPaused = true
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> viewModel.clockPaused = false
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(obs)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
+    }
     androidx.compose.runtime.CompositionLocalProvider(LocalBoardPalette provides palette) {
     if (showStatistics) {
         // All-time tally: full-screen while open; Back returns to the
