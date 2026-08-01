@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.first
  * Parameters are the federation standard verified from the sources
  * (USBGF/UKBGF; Galaxy follows the same convention): Bronstein/US delay of
  * 12 seconds per move -- the bank depletes only after the free seconds --
- * with a reserve of minutes-per-point x match length. LIVE = 2 min/pt,
- * ONLINE = 1 min/pt (the online convention). Delay, never increment: the
+ * with a reserve of minutes-per-point x match length. one clock, one
+ * convention: 2 min/pt. Delay, never increment: the
  * increment styles are documented to corrupt dice handling at the table.
  *
  * Provenance rule (maintainer, 2026-07-31): the clock's conditions are a
@@ -22,8 +22,7 @@ import kotlinx.coroutines.flow.first
  */
 enum class ClockMode(val label: String, val minutesPerPoint: Int) {
     OFF("Off", 0),
-    LIVE("Live", 2),
-    ONLINE("Online", 1);
+    COMPETITION("Competition", 2);
 
     /** The value written into the signed career entry. */
     val ledgerName: String get() = name.lowercase()
