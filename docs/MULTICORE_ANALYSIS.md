@@ -381,3 +381,18 @@ engine changes -- no flag, no header, no stubs edits). Gate B becomes
 the whole test: this pool vs desktop gnubg, same position, same seed,
 same trials -- dice-identical through the permutation depth,
 statistics field-for-field.
+
+**Implementation anchors (pinned 2026-08-01, end of session 2):** the trial
+function's full signature truth is `rollout.h:140` (EXP_LOCK_FUN
+declaration -- verify the worker's 13-argument call against it before
+touching it); gnubg's incremental aggregation -- the formula the pool's
+hand-rolled mean/SD must be REPLACED with verbatim (maintainer ruling:
+"this is a gnubg port, not some improvement... we deliver what we
+promise") -- is the Welford-style update at `rollout.c:1203-1210`
+(rDelta / aarVariance decay / aarMu assignment), with aarSigma's
+derivation adjacent. Next session: port that block into the pool's merge
+step, apply the shared-perArray seed fix, add the mutex-guarded progress
+snapshot + cancel, then the per-candidate driver mirroring
+ScoreMoveRollout's per-move setup (read its body first), then the facade
+export and the C gate. Gate B on the maintainer's desktop gnubg remains
+the whole test.
