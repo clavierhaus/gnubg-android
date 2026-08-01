@@ -291,6 +291,20 @@ findings, each load-bearing:
    TLD (the engine thread runs evaluations directly and needs its aMoves),
    then `MT_SetNumThreads(N)`.
 
+5. **The header's type layer is half-migrated** (found by the first
+   compile probe, 2026-08-01): `ThreadData` declares raw `pthread_mutex_t`
+   queue/multi locks and `ManualEvent`'s NEWER-glib branch is
+   `pthread_cond_t` (inverted from upstream logic), while `Mutex` still
+   typedefs to `GMutex` -- the port trimmed the primitive implementations
+   out of multithread.c and drifted the header toward pthread to keep the
+   MT-off stubs compiling, then stopped halfway. The port owns this layer
+   completely. **Design consequence:** `mt_glue.c` finishes the migration
+   in ONE coherent direction -- pthread throughout (the direction already
+   begun; native to bionic; worker creation moves from `g_thread_try_new`
+   to `pthread_create`, removing the glib-thread dependency from the MT
+   story entirely). The header's `Mutex`/`TLSItem` typedefs move with it;
+   the compiler re-probes after, and only a clean ledger proceeds.
+
 **Method ruling for the next step:** no further archaeology -- the compiler
 builds the symbol ledger. A host-side link probe of `multithread.c` +
 `stubs.c` under `-DUSE_MULTITHREAD` (host glib, same as the C syntax gate)
