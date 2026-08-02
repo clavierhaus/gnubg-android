@@ -27,6 +27,7 @@ import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_HUMAN
 import com.clavierhaus.gnubg.play.EDIT_ZONE_TRAY
 import com.clavierhaus.gnubg.play.BoardPalettes
 import com.clavierhaus.gnubg.play.GameButton
+import com.clavierhaus.gnubg.service.RolloutService
 import com.clavierhaus.gnubg.play.LocalBoardPalette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,6 +58,11 @@ import com.clavierhaus.gnubg.shared.PlusUi
  */
 
 private data class Candidate(val text: String, val equity: Float)
+private data class RolloutCand(val text: String, val equity: Float, val done: Int)
+private data class RolloutSnap(
+    val active: Boolean, val nCand: Int, val current: Int,
+    val seed: Int, val trials: Int, val cands: List<RolloutCand>
+)
 
 private class AnalyseResult(
     val board: IntArray,
@@ -124,6 +130,18 @@ fun AnalyseScreen(
     // devs (7 + 7), or null when none has been run for this result.
     var rolloutRes by remember { mutableStateOf<FloatArray?>(null) }
     var rolloutBusy by remember { mutableStateOf(false) }
+    // Candidates rollout: live snapshot + running flag; the screen stays
+    // awake while trials run, and the foreground service keeps the process
+    // alive when the app is backgrounded (maintainer ruling: continuation
+    // from the start -- a rollout that dies off-screen would be SP's bug).
+    var candSnap by remember { mutableStateOf<RolloutSnap?>(null) }
+    var candRolling by remember { mutableStateOf(false) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val rootView = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(candRolling) {
+        rootView.keepScreenOn = candRolling
+        onDispose { rootView.keepScreenOn = false }
+    }
 
     suspend fun readBack(): AnalyseResult = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
@@ -259,6 +277,49 @@ fun AnalyseScreen(
             }
             rolloutRes = out           // null stays null: verb reported failure
             rolloutBusy = false
+        }
+    }
+
+    // ---------------- Candidates rollout (the regulation study) ----------------
+    // gnubg's own candidates, each rolled by gnubg's own trial core under the
+    // rcRollout regulation context (1296 games, cubeful, variance reduced;
+    // docs/MULTICORE_ANALYSIS.md 2.9). The seed is displayed: same seed and
+    // settings in desktop gnubg reproduce the numbers -- Gate B holds that
+    // claim to account. Status decode follows gnubg_mobile_rollout_status.
+    fun decodeRollout(raw: IntArray, rawBoard: IntArray): RolloutSnap {
+        val n = raw[1]
+        val cands = (0 until n).map { k ->
+            val base = 6 + k * 25
+            val mv = IntArray(8) { j -> raw[base + j] }
+            RolloutCand(
+                text = Engine.formatMove(rawBoard, mv),
+                equity = Float.fromBits(raw[base + 8]),
+                done = raw[base + 10]
+            )
+        }
+        return RolloutSnap(raw[0] != 0, n, raw[2], raw[3], raw[4], cands)
+    }
+
+    fun doCandidatesRollout() {
+        val r = result ?: return
+        if (busy || rolloutBusy || candRolling) return
+        candRolling = true
+        candSnap = null
+        RolloutService.start(ctx)
+        scope.launch {
+            val poller = launch {
+                val buf = IntArray(206)
+                while (true) {
+                    kotlinx.coroutines.delay(200)
+                    if (Engine.rolloutStatus(buf) > 0) candSnap = decodeRollout(buf, r.rawBoard)
+                }
+            }
+            withContext(Dispatchers.Default) { Engine.rolloutStart(3, 0) }
+            poller.cancel()
+            val buf = IntArray(206)
+            if (Engine.rolloutStatus(buf) > 0) candSnap = decodeRollout(buf, r.rawBoard)
+            candRolling = false
+            RolloutService.stop(ctx)
         }
     }
 
@@ -851,6 +912,61 @@ fun AnalyseScreen(
                                     color = if (i == 0) Color.White else pal.uiTextDisabled,
                                     fontSize = 14.sp
                                 )
+                            }
+                        }
+
+                        // Roll out: the SAME candidates, gnubg's trial core,
+                        // the regulation context. All terms are gnubg's own;
+                        // absolute equities (gnubg re-ranks after rollouts --
+                        // v1 keeps candidate order and shows each move's own
+                        // rolled equity, no relative arithmetic).
+                        val cs = candSnap
+                        if (cs == null && !candRolling && r.candidates.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            GameButton(
+                                label = "Roll out",
+                                color = pal.uiButtonNeutral,
+                                enabled = !busy && !rolloutBusy,
+                                compact = true
+                            ) { doCandidatesRollout() }
+                        }
+                        if (cs != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Rollout — " + cs.trials + " games each (cubeful, variance reduced)",
+                                color = pal.uiTextSecondary, fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            cs.cands.forEachIndexed { i, c ->
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        "" + (i + 1) + ". " + c.text +
+                                            (if (candRolling && i == cs.current) "  · rolling" else ""),
+                                        color = if (i == 0) Color.White else pal.uiTextSecondary,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        (if (c.done > 0) String.format("%+.3f", c.equity) else "—") +
+                                            "  " + c.done + "/" + cs.trials,
+                                        color = if (i == 0) Color.White else pal.uiTextDisabled,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    "Seed " + cs.seed + " — the same seed and settings in desktop gnubg reproduce these numbers.",
+                                    color = pal.uiTextDisabled, fontSize = 11.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (candRolling) {
+                                    GameButton(
+                                        label = "Cancel",
+                                        color = pal.uiButtonNeutral,
+                                        compact = true
+                                    ) { Engine.rolloutCancel() }
+                                }
                             }
                         }
                     }
