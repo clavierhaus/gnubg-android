@@ -878,7 +878,7 @@ fun AnalyseScreen(
                                 Box(modifier = Modifier.weight(1f)) {
                                     GameButton(
                                         label = if (rolloutBusy) "Rolling out..." else "Rollout",
-                                        color = pal.uiButtonNeutral,
+                                        color = com.clavierhaus.gnubg.shared.PlusUi.Interactive,
                                         enabled = !rolloutBusy && !busy,
                                         compact = true
                                     ) { doRollout() }
@@ -925,7 +925,11 @@ fun AnalyseScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             GameButton(
                                 label = "Roll out",
-                                color = pal.uiButtonNeutral,
+                                // Plus designation: orange, like the Career tab
+                                // and Your stats (maintainer ruling -- the
+                                // orange Roll out under gnubg's candidates).
+                                // FOSS keeps its native neutral.
+                                color = com.clavierhaus.gnubg.shared.PlusUi.Interactive,
                                 enabled = !busy && !rolloutBusy,
                                 compact = true
                             ) { doCandidatesRollout() }
@@ -934,7 +938,7 @@ fun AnalyseScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "Rollout — " + cs.trials + " games each (cubeful, variance reduced)",
-                                color = pal.uiTextSecondary, fontSize = 12.sp,
+                                color = com.clavierhaus.gnubg.shared.PlusUi.Interactive, fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             cs.cands.forEachIndexed { i, c ->
