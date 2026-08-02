@@ -23,10 +23,12 @@ REPO="clavierhaus/cbg-plus"
 APP_DIR="gnubg-app"
 DO_BUILD=1
 REPLACE=0
+BUILD_TYPE=release
 for a in "$@"; do
   case "$a" in
     --no-build) DO_BUILD=0 ;;
     --replace)  REPLACE=1 ;;
+    --debug)    BUILD_TYPE=debug ;;   # pre-production: debug-signed APK, no release key
   esac
 done
 
@@ -103,6 +105,9 @@ ok "gh authenticated as $(gh api user -q .login)"
 # Signing key. keystore.properties is gitignored, so a separate cbg-plus clone
 # will not have it even though the FOSS working copy does. Without it gradle
 # silently emits app-release-unsigned.apk -- check before spending a build on it.
+if [ "$BUILD_TYPE" = debug ]; then
+  ok "debug build: release signing key not required (pre-production)"
+else
 KSP="$APP_DIR/keystore.properties"
 [ -f "$KSP" ] || die "missing $KSP (gitignored, so a fresh clone lacks it). Copy it over:
        cp /home/erweitert/gnubg-android/gnubg-app/keystore.properties $APP_DIR/"
@@ -114,6 +119,7 @@ esac
 [ -f "$KS_PATH" ] || die "keystore.properties names storeFile=$KS_NAMED, which resolves to
        $KS_PATH and does not exist. Copy the keystore across too, or make storeFile absolute."
 ok "signing key present ($KS_PATH)"
+fi
 
 if [ "$DO_BUILD" = 1 ]; then
   # jniLibs is gitignored: the .so are produced by build_native_android.sh and
@@ -124,12 +130,21 @@ if [ "$DO_BUILD" = 1 ]; then
     || die "no native libraries in $APP_DIR/app/src/main/jniLibs -- run ./build_native_android.sh first"
   ok "native libraries present ($SO_COUNT)"
 
-  ( cd "$APP_DIR" && ./gradlew assembleRelease ) || die "gradle assembleRelease failed"
+  if [ "$BUILD_TYPE" = debug ]; then
+    ( cd "$APP_DIR" && ./gradlew assembleDebug ) || die "gradle assembleDebug failed"
+  else
+    ( cd "$APP_DIR" && ./gradlew assembleRelease ) || die "gradle assembleRelease failed"
+  fi
 fi
 
+if [ "$BUILD_TYPE" = debug ]; then
+  APK="$(find "$APP_DIR/app/build/outputs/apk/debug" -name 'app-debug.apk' 2>/dev/null | head -n1)"
+  [ -n "$APK" ] && [ -f "$APK" ] || die "no app-debug.apk -- gradle assembleDebug produced nothing"
+else
 APK="$(find "$APP_DIR/app/build/outputs/apk/release" -name 'app-release.apk' 2>/dev/null | head -n1)"
 [ -n "$APK" ] && [ -f "$APK" ] \
   || die "no signed app-release.apk -- keystore.properties must live in $APP_DIR/ (an unsigned build produces app-release-unsigned.apk)"
+fi
 
 # An unsigned APK will not install. Fail loudly rather than hand a tester a dud.
 if command -v apksigner >/dev/null 2>&1; then
@@ -145,7 +160,8 @@ TAG="plus-$STAMP"
 VNAME="$(grep -oP 'versionName\s*=\s*"\K[^"]+' "$APP_DIR/app/build.gradle.kts" | head -n1)"
 # Named for a human receiving it, not for the tag: the tag already starts with
 # "plus-", so deriving the filename from it produced cbg-plus-plus-<stamp>.apk.
-ASSET="$(dirname "$APK")/CBG-Plus-$VNAME-$STAMP.apk"
+SUFFIX=""; [ "$BUILD_TYPE" = debug ] && SUFFIX="-debug"
+ASSET="$(dirname "$APK")/CBG-Plus-$VNAME-$STAMP$SUFFIX.apk"
 cp -f "$APK" "$ASSET"
 sha256sum "$ASSET" | awk '{print $1}' > "$ASSET.sha256"
 
@@ -153,7 +169,7 @@ gh release create "$TAG" "$ASSET" "$ASSET.sha256" \
   --repo "$REPO" \
   --target plus \
   --title "CBG Plus -- $TAG" \
-  --notes "Private test build of CBG Plus, from plus @ $(git rev-parse --short HEAD) (engine version $VNAME).
+  --notes "Private test build of CBG Plus, from plus @ $(git rev-parse --short HEAD) (engine version $VNAME).$([ "$BUILD_TYPE" = debug ] && printf '\n\nPRE-PRODUCTION: this APK is debug-signed. When signed production builds\nbegin, Android will require uninstalling this one first (signature change).')
 
 Installs alongside the free CBG app: this is at.clavierhaus.backgammon, the
 free edition is com.clavierhaus.gnubg. Both can sit on the same device.
