@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application
+        <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+<application
         android:label="CBG"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -19,6 +23,18 @@
             </intent-filter>
         </activity>
 
+    
+        <!-- Rollout continuation (maintainer ruling: from the start). Special-use
+             foreground service: user-initiated, finite, on-device backgammon
+             rollout computation. No network, no sync; stops itself when done. -->
+        <service
+            android:name=".service.RolloutService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-initiated finite on-device backgammon rollout computation" />
+        </service>
     </application>
 
 </manifest>

@@ -146,6 +146,14 @@ object Engine {
     external fun cubeDecision(board: IntArray): IntArray?
     external fun rollout(board: IntArray, trials: Int): FloatArray?
 
+    // Candidates rollout (Analyse mode). rolloutStart BLOCKS for the whole
+    // run -- call on a background dispatcher; status/cancel are safe from
+    // any thread. Layout of the 206-int status array is documented at
+    // gnubg_mobile_rollout_status (gnubg_mobile.c).
+    external fun rolloutStart(maxN: Int, seed: Int): Int
+    external fun rolloutStatus(out: IntArray): Int
+    external fun rolloutCancel()
+
     // Files / SGF
     external fun loadGame(path: String): Boolean
     external fun saveGame(path: String): Boolean
