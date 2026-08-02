@@ -136,6 +136,10 @@ fun AnalyseScreen(
     // from the start -- a rollout that dies off-screen would be SP's bug).
     var candSnap by remember { mutableStateOf<RolloutSnap?>(null) }
     var candRolling by remember { mutableStateOf(false) }
+    // Plus guidance: 'Roll out' on the entry row and in the editor analyses
+    // and rolls in one tap -- the experienced player goes exactly where they
+    // want to go. The flag is consumed when the analysis lands.
+    var rolloutNext by remember { mutableStateOf(false) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val rootView = androidx.compose.ui.platform.LocalView.current
     androidx.compose.runtime.DisposableEffect(candRolling) {
@@ -320,6 +324,16 @@ fun AnalyseScreen(
             if (Engine.rolloutStatus(buf) > 0) candSnap = decodeRollout(buf, r.rawBoard)
             candRolling = false
             RolloutService.stop(ctx)
+        }
+    }
+
+    // Consume the one-tap flag when the analysis lands: entry-row or editor
+    // 'Roll out' analysed first; now the candidates roll.
+    androidx.compose.runtime.LaunchedEffect(busy, result) {
+        if (!busy && rolloutNext) {
+            rolloutNext = false
+            val r = result
+            if (r != null && r.candidates.isNotEmpty() && !candRolling) doCandidatesRollout()
         }
     }
 
@@ -670,6 +684,12 @@ fun AnalyseScreen(
                             enabled = !busy,
                             compact = true
                         ) { evaluateEdit() }
+                        GameButton(
+                            label = "Roll out",
+                            color = PlusUi.Interactive,
+                            enabled = !busy,
+                            compact = true
+                        ) { rolloutNext = true; evaluateEdit() }
                         GameButton("Cancel", pal.uiButtonNeutral, !busy, compact = true) { editing = false }
                     }
                 } else {
@@ -710,6 +730,15 @@ fun AnalyseScreen(
                         color = pal.uiActionPositive,
                         enabled = !busy && idText.isNotBlank()
                     ) { applyId() }
+
+                    // Plus guidance: one tap from pasted ID to rolling
+                    // candidates -- the term the experienced player is
+                    // looking for, in the designation orange.
+                    GameButton(
+                        label = "Roll out",
+                        color = PlusUi.Interactive,
+                        enabled = !busy && idText.isNotBlank()
+                    ) { rolloutNext = true; applyId() }
 
                     GameButton(
                         label = "Copy current",
