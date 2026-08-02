@@ -387,8 +387,21 @@ rollout_accumulate(const RolloutResult *results, const unsigned char *completed,
 }
 
 static void rollout_worker_func(gpointer data, gpointer user_data) {
-    int task_index = GPOINTER_TO_INT(data);
-    RolloutBarrier *barrier = (RolloutBarrier *)user_data;
+    /* Indices ride as i+1: GLib's queue rejects NULL data, and trial 0
+     * through GINT_TO_POINTER IS NULL -- the harness caught task 0 never
+     * being queued (dormant since the engine's first write). */
+    int task_index = GPOINTER_TO_INT(data) - 1;
+    /* The pool is created ONCE at init with NULL user_data; the live
+     * barrier is published (mutex) before any task is pushed and cleared
+     * only after the last completes -- one rollout at a time. Reading it
+     * here fixes a dormant NULL-user_data crash the harness caught on the
+     * engine's first-ever invocation. */
+    RolloutBarrier *barrier;
+    (void) user_data;
+    g_mutex_lock(&rollout_live_mutex);
+    barrier = rollout_live;
+    g_mutex_unlock(&rollout_live_mutex);
+    if (!barrier) return;
 
     if (!g_atomic_int_get(&rollout_cancel_flag)) {
         /* Per-thread RNG context -- copied lazily on first use */
@@ -488,7 +501,7 @@ static int gnubg_rollout_internal(const TanBoard anBoard, float arOutput[NUM_ROL
 
     /* Dispatch tasks */
     for (unsigned int i = 0; i < prc->nTrials; i++) {
-        g_thread_pool_push(rollout_pool, GINT_TO_POINTER((int) i), NULL);
+        g_thread_pool_push(rollout_pool, GINT_TO_POINTER((int) i + 1), NULL);
     }
 
     /* Wait for completion */

@@ -396,3 +396,51 @@ snapshot + cancel, then the per-candidate driver mirroring
 ScoreMoveRollout's per-move setup (read its body first), then the facade
 export and the C gate. Gate B on the maintainer's desktop gnubg remains
 the whole test.
+
+### 2.10 The test harness -- automated correctness, and Gate B's road (2026-08-02)
+
+The rollout core is plain C + glib with no Android dependency in its logic,
+so `tools/rollout_harness/` builds it ON THE HOST -- the engine source list
+mirrors `jni-bridge/CMakeLists.txt` EXACTLY (the port's own subset; a
+wildcard pulls in desktop files the port never compiles), with native-lib.c
+(JNI) replaced by `harness.c` + `host_compat.c` (gnubg_lock and a stderr
+__android_log_print; grows only as the linker demands).
+
+**It proved itself in its first minutes.** Two crashes dormant since the
+discovered engine was first written -- reachable only on the first-ever
+call of gnubg_rollout, which no code had made until this feature:
+
+1. The worker took the barrier from the pool's user_data, but the pool is
+   created ONCE at init with user_data = NULL. Fix: the worker reads the
+   mutex-published rollout_live (set before dispatch, cleared after).
+2. GLib's task queue rejects NULL data, and trial index 0 through
+   GINT_TO_POINTER IS NULL -- task 0 was never queued. Fix: indices ride
+   as i+1, decoded with -1.
+
+Also caught: two facade return-contract mismatches in the harness's own
+first checks (initialise returns 1; set_gnubg_id returns SetGNUbgID's raw
+0-or-2) -- the harness now documents both conventions in code.
+
+**The automated suite** (`tools/rollout_harness/run_tests.sh`, exit-coded,
+run on every change): T1 same seed twice -> byte-identical candidate
+rollouts ACROSS THE MULTITHREADED POOL (out-of-order completion, in-order
+merge -- the determinism-by-construction claim, now asserted); T2 seed
+sensitivity; T3 position-mode determinism (harness maxCand < 0 rolls the
+position itself via gnubg_rollout -- the directly desktop-comparable core,
+since the CLI's `rollout' rolls positions); T4 completion labeling. A
+trials-override argument exists for fast matched-N tests; Gate B uses the
+same N on both sides, so any matched count compares validly.
+
+**Gate B's desktop side, mapped and one step from wired:** the sandbox has
+the distribution's gnubg 1.07.001; the settings vocabulary is confirmed
+(`set rollout trials/cubeful/varredn/quasirandom/rng/seed`, chequerplay
+and cubedecision `evaluation plies 0` to mirror the BSS-zero eval contexts
+of rcRollout). One open question, deliberately not forced at the end of a
+long session: 1.07 in tty mode announces "Printing final results." and
+prints nothing (verified, both streams, pty too). Two candidate capture
+routes for the runner: the embedded Python (dir(gnubg) captured: command,
+hint, evalcontext, rolloutcontext -- no direct rollout-results getter, so
+likely command() plus a stored-eval read), or `set rollout log on` with
+per-game .sgf records -- the STRONGEST form, since comparing game records
+asserts dice-identical trials, not just matching aggregates. Next
+session's first item.
