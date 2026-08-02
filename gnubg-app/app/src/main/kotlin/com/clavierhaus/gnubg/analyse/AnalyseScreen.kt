@@ -763,12 +763,40 @@ fun AnalyseScreen(
                     MatchContext(r)
 
                     if (r.cubeText == null) {
-                        Text(
-                            "gnubg's candidates",
-                            color = pal.uiTextSecondary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        // The header row hosts the Roll out control: the pane
+                        // never scrolls (game-view law), and seven candidates
+                        // reach its floor on a phone -- a button below the
+                        // list was rendered past the edge. Here it is
+                        // list-length-proof and always reachable.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                if (candSnap == null) "gnubg's candidates"
+                                else "Rollout — " + candSnap!!.trials +
+                                    " games each (cubeful, variance reduced)",
+                                color = pal.uiTextSecondary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (candSnap == null && !candRolling && r.candidates.isNotEmpty()) {
+                                GameButton(
+                                    label = "Roll out",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = !busy && !rolloutBusy,
+                                    compact = true
+                                ) { doCandidatesRollout() }
+                            }
+                            if (candRolling) {
+                                GameButton(
+                                    label = "Cancel",
+                                    color = pal.uiButtonNeutral,
+                                    compact = true
+                                ) { Engine.rolloutCancel() }
+                            }
+                        }
                     }
 
                     if (r.cubeText != null) {
@@ -894,6 +922,12 @@ fun AnalyseScreen(
                             fontSize = 13.sp
                         )
                     } else {
+                        // The list yields the pane to the rollout view when
+                        // one runs -- both stacked would pass the never-
+                        // scrolls floor. Back (or re-Analyse) restores the
+                        // evaluation list.
+                        val cs = candSnap
+                        if (cs == null) {
                         val best = if (r.candidates.isEmpty()) 0f else r.candidates[0].equity
                         r.candidates.forEachIndexed { i, c ->
                             Row(modifier = Modifier.fillMaxWidth()) {
@@ -911,29 +945,11 @@ fun AnalyseScreen(
                                 )
                             }
                         }
-
-                        // Roll out: the SAME candidates, gnubg's trial core,
-                        // the regulation context. All terms are gnubg's own;
-                        // absolute equities (gnubg re-ranks after rollouts --
-                        // v1 keeps candidate order and shows each move's own
-                        // rolled equity, no relative arithmetic).
-                        val cs = candSnap
-                        if (cs == null && !candRolling && r.candidates.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            GameButton(
-                                label = "Roll out",
-                                color = pal.uiButtonNeutral,
-                                enabled = !busy && !rolloutBusy,
-                                compact = true
-                            ) { doCandidatesRollout() }
-                        }
-                        if (cs != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                "Rollout — " + cs.trials + " games each (cubeful, variance reduced)",
-                                color = pal.uiTextSecondary, fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                        } else {
+                            // Rollout view: the SAME candidates, gnubg's trial
+                            // core, the regulation context. Absolute equities
+                            // (gnubg re-ranks after rollouts -- v1 keeps
+                            // candidate order, each move's own rolled number).
                             cs.cands.forEachIndexed { i, c ->
                                 Row(modifier = Modifier.fillMaxWidth()) {
                                     Text(
@@ -951,20 +967,10 @@ fun AnalyseScreen(
                                     )
                                 }
                             }
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    "Seed " + cs.seed + " — the same seed and settings in desktop gnubg reproduce these numbers.",
-                                    color = pal.uiTextDisabled, fontSize = 11.sp,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (candRolling) {
-                                    GameButton(
-                                        label = "Cancel",
-                                        color = pal.uiButtonNeutral,
-                                        compact = true
-                                    ) { Engine.rolloutCancel() }
-                                }
-                            }
+                            Text(
+                                "Seed " + cs.seed + " — the same seed and settings in desktop gnubg reproduce these numbers.",
+                                color = pal.uiTextDisabled, fontSize = 11.sp
+                            )
                         }
                     }
                     } // end weighted result region
