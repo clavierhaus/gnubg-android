@@ -1337,7 +1337,9 @@ int gnubg_mobile_rollout(const int board[50], int trials,
     ret = gnubg_rollout((ConstTanBoard) anBoard, arOutput, arStdDev,
                         &ci_rollout, &rc_ro);
     pthread_mutex_unlock(&gnubg_lock);
-    if (ret != 0) return -1;
+    /* gnubg_rollout returns the COMPLETED trial count (>=1 = results valid);
+     * the old 0-on-success contract changed with the fidelity core. */
+    if (ret <= 0) return -1;
     for (i = 0; i < 7; i++) { out[i] = arOutput[i]; out[7 + i] = arStdDev[i]; }
     return 14;
 }
