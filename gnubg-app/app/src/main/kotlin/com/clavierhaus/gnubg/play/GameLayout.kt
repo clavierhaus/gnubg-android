@@ -148,7 +148,12 @@ fun GameLayout(
                         }
 
                         // Match clock: one clock, the running side's reserve, in that
-                        // player's chequer colour (maintainer ruling).
+                        // player's chequer colour (maintainer ruling). Galaxy-style
+                        // presentation (maintainer ruling 2026-08-02): while the
+                        // per-turn delay runs, the DELAY is the loud thing -- a big
+                        // countdown with the bank small beside it; only when the
+                        // grace expires does the bank take the stage. Sized to be
+                        // read across a table, not squinted at.
                         viewModel.clockState.collectAsStateWithLifecycle().value?.let { ck ->
                             if (ck.timeoutSide == null && ck.activeSide >= 0) {
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -158,18 +163,36 @@ fun GameLayout(
                                         .align(Alignment.CenterHorizontally)
                                         .background(
                                             if (you) pal.checkerLight else pal.checkerDark,
-                                            RoundedCornerShape(6.dp)
+                                            RoundedCornerShape(8.dp)
                                         )
-                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                        .padding(horizontal = 14.dp, vertical = 5.dp)
                                 ) {
                                     val delay = (ck.delayLeftMs + 999) / 1000
-                                    Text(
-                                        (if (delay > 0) "${delay}s · " else "") +
+                                    val fg = if (you) pal.checkerDark else pal.checkerLight
+                                    if (delay > 0) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                "$delay",
+                                                color = fg,
+                                                fontSize = 26.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                com.clavierhaus.gnubg.clock.formatClock(ck.activeReserveMs),
+                                                color = fg.copy(alpha = 0.7f),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    } else {
+                                        Text(
                                             com.clavierhaus.gnubg.clock.formatClock(ck.activeReserveMs),
-                                        color = if (you) pal.checkerDark else pal.checkerLight,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                            color = fg,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
