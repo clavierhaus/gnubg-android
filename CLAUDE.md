@@ -762,6 +762,10 @@ invisible grace period does not exist for the player.
 - Never guess external identifiers (ids, seeds, handles, URLs): mint or
   look up ground truth. A hand-invented position id cost a debugging
   detour (2026-08-02).
+- Pipelines MASK exit codes: `guard.sh | tail` returns tail's status, and
+  an && chain sailed past a red parity alarm and pushed (2026-08-02,
+  minutes after this ledger was first written). Gate on the guard's OWN
+  exit code -- capture it, or run the guard unpiped.
 
 ### Shell conventions for the maintainer's machine
 
