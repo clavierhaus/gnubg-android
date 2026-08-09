@@ -1,31 +1,32 @@
 # The Plus overlay manifest: the ONLY paths permitted to differ between the
-# public FOSS main and this repo's plus branch. tools/plus/check_foss_parity.sh
 # alarms on any difference outside this list. One path or prefix per line.
+# public FOSS main and this repo's plus branch. tools/plus/check_foss_parity.sh
+CLAUDE.md
 PLUS.md
-plus-overlay.paths
-plus_build_and_deploy.sh
-licenses/
-tools/plus/
+docs/PHRASE_RESEARCH_ROUTINE.md
 gnubg-app/app/build.gradle.kts
 gnubg-app/app/src/main/AndroidManifest.xml
 gnubg-app/app/src/main/assets/insights_v0.json
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/analyse/AnalyseScreen.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/CoachScreen.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/stats/PersonalStatsScreen.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/GameLayout.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/InsightMatcher.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/PlusUi.kt
-gnubg-app/app/src/main/res/font/allura_regular.ttf
-gnubg-app/app/src/main/res/drawable/ic_launcher_foreground.png
-gnubg-app/app/src/main/res/mipmap-
 gnubg-app/app/src/main/assets/narrator_rules_v0.json
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/analyse/AnalyseScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/career/
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/CoachScreen.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/DeltaNarrator.kt
-tools/plus/release_plus.sh
-docs/PHRASE_RESEARCH_ROUTINE.md
-tools/narrator/
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/coach/InsightMatcher.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/debug/
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/engine/GameViewModel.kt
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/plusstore/
-gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/career/
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/hub/HomeHubScreen.kt
 gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/options/SettingsScreen.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/play/GameLayout.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/plusstore/
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/shared/PlusUi.kt
+gnubg-app/app/src/main/kotlin/com/clavierhaus/gnubg/stats/PersonalStatsScreen.kt
+gnubg-app/app/src/main/res/drawable/ic_launcher_foreground.png
+gnubg-app/app/src/main/res/font/allura_regular.ttf
+gnubg-app/app/src/main/res/mipmap-
+licenses/
+plus-overlay.paths
+plus_build_and_deploy.sh
+tools/narrator/
+tools/plus/
+tools/plus/release_plus.sh
