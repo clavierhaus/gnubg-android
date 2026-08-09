@@ -672,3 +672,108 @@ Compose UI (Kotlin)
    search engine-core/ before writing anything.
 
 If you find yourself reinventing a wheel, STOP and ask.
+
+---
+
+## STANDING ORDERS LEDGER — reconciled 2026-08-02
+
+The rulings below accumulated in working sessions after this file's last
+update. They are BINDING, same force as everything above. Newest laws are
+listed with the incident that taught them, because the incident is the
+reason the law exists.
+
+### The port-not-improvement ruling (maintainer, 2026-08-01)
+
+"This is a gnubg port, not some improvement... we deliver what we promise."
+This extends THE ONE RULE to arithmetic plumbing: where port-owned code
+must exist around gnubg's logic (scheduling, marshalling, merging), every
+NUMBER-PRODUCING line is gnubg's, ported verbatim with the source line
+cited -- never a mathematically-equivalent reimplementation. Precedents:
+the rollout pool's aggregation is rollout.c:1196-1219 verbatim (Welford
+recursion, probability clamp, sigma every step, trial-index order); dice
+follow rollout.c:1159's one-shared-perArray scheme with trial as iGame;
+the per-candidate driver mirrors ScoreMoveRollout line for line including
+per-trial InvertEvaluationR placement.
+
+### Rollout doctrine
+
+- The engine is the port's own thread pool (stubs.c "Rollout
+  Infrastructure") running gnubg's BasicCubefulRollout per trial --
+  USE_MULTITHREAD stays OFF; docs/MULTICORE_ANALYSIS.md is the full record.
+- Determinism is a TESTED invariant, not an aspiration:
+  tools/rollout_harness/run_tests.sh must stay green (same seed ->
+  byte-identical across the pool). Run it after ANY change under
+  jni-bridge/ or engine-core/ touching rollout paths.
+- Every rollout displays its seed; the seed is a reproduction recipe for
+  desktop gnubg. Gate B (desktop comparison, same position/seed/trials)
+  is the truth-gate for that public claim.
+- The regulation context is rcRollout: 1296 trials, cubeful, variance
+  reduced, quasi-random, Mersenne, 0-ply eval contexts (BSS-zero).
+- Owed and binding: a terminal-position guard ("This position is already
+  decided -- there is nothing to roll out") on every rollout action, and
+  hostile-input rows (terminal / no-dice / garbage id) in the harness.
+
+### The match clock (regulation + display)
+
+Competition mode IS the USBGF/WBGF regulation, citable: reserve = 2 min x
+match length, 12-second Simple Delay per move, reserve expiration loses
+the match. 12 seconds is the standard -- do not offer other delays under
+the Competition name. Display is Galaxy-style (maintainer, 2026-08-02):
+while the delay runs, the DELAY is the loud thing (large countdown, bank
+small and dimmed); the bank takes the stage only when the grace expires.
+The state machine's timing was never wrong -- the lesson is that an
+invisible grace period does not exist for the player.
+
+### UI laws learned in the field
+
+- The game-view pane NEVER scrolls. Any control placed under a
+  variable-length list will eventually be rendered past the floor (the
+  buried Roll out button, 2026-08-02). Controls live in HEADER ROWS;
+  long content YIELDS the pane to its replacement view instead of
+  stacking.
+- Correct-or-silent applies to numbers as much as words: a rollout of a
+  decided position answering "0.000" is a number wearing the costume of
+  analysis. Refuse honestly instead.
+- PLAIN LANGUAGE: name the actual screen, button, and label in every
+  instruction and commit message. Inventing "Evaluate" for the real
+  "Analyse" button is a violation (2026-08-02).
+
+### Process laws (each bought with a real failure)
+
+- "DONE" means: pushed to every involved remote, parity audited, and the
+  maintainer handed a pull box with expected heads. Nothing less.
+- Patch-apply is NOT merge ancestry. git apply moves content only; always
+  finish with the real merge so parity's ancestry check passes
+  (caught 2026-08-02).
+- Multi-repo operations run as SEPARATE small shell calls. A broken &&
+  mega-chain resumed after a ';' in the wrong cwd (2026-08-01).
+- Code edits in C or Kotlin go through str_replace-style exact-match
+  editing, verified by grep afterwards -- heredoc'd python with
+  paren-heavy code text has silently failed twice, once leaving a "fix"
+  unapplied while later gates printed green (2026-08-02).
+- A Kotlin gate can transiently spew unresolved-import errors from an
+  in-flight file state: re-run before diagnosing (2026-08-02).
+- XML comments must not contain "--" (manifest merger parse failure,
+  2026-08-02).
+- Trust script/tool OUTPUT over expectation: read stderr even when stdout
+  looks like success; a return-contract change broke the one existing
+  caller and only the harness's first run revealed two crashes dormant
+  since the engine was written.
+- Never guess external identifiers (ids, seeds, handles, URLs): mint or
+  look up ground truth. A hand-invented position id cost a debugging
+  detour (2026-08-02).
+
+### Shell conventions for the maintainer's machine
+
+stderr and stdout are NEVER silenced in suggested commands. Never pipe
+into a pager; add --no-pager to every auto-paging command. Suggested
+commands touching root-owned state carry sudo unprefixed-asked. Use
+$PWD/tmp, never /tmp. On the maintainer's machine, work is confined to
+the project checkouts -- nothing outside them without explicit permission.
+
+### Documentation law
+
+Product documentation is PUBLIC and lives in this repository's docs/.
+Strategy, third-party correspondence, and anything naming outside parties
+never enters this repo or the mirror. Engineering records
+(MULTICORE_ANALYSIS.md and kin) are part of the product's public honesty.
