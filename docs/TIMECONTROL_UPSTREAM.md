@@ -85,21 +85,60 @@ simulated timestamps (never wall time):
 
 Exit-coded, run on every change, per the repository's standing law.
 
-## 5. Integration
+## 5. Integration — organic, and deliberately blind to the GUI
 
-- **Upstream gnubg:** command layer bindings + hooks at the turn
-  boundaries in play.c; `show tc` output; documentation node replacing
-  the V0.16 stub. Copyright: GNU project — FSF copyright assignment for
-  the contributor is anticipated and accepted as part of the submission
-  path (to be confirmed against current gnubg practice on bug-gnubg
-  before the patch is sent).
-- **CBG:** the facade exports the same tc calls; the Kotlin clock state
-  machine is DELETED and replaced by a thin poller + display. Display
-  ruling (maintainer, 2026-08-11): TWO clocks, both players always
-  visible, Galaxy-style — the active side carries the loud delay
-  countdown, the inactive side shows its bank dimmed and static; sizes
-  readable across a table. The Off/Competition option semantics and the
-  ledger's clock provenance are unchanged app-layer policy.
+The design premise makes the deepest integration question dissolve: a
+timestamp-driven module needs **no ticker inside gnubg at all**. The
+command-line program blocks at its prompt while the player thinks —
+which is exactly what a physical clock at the table does: it runs while
+you think and settles when you act. Time is therefore charged at action
+boundaries, and the whole integration is a handful of one-line calls at
+verified anchors in the existing source:
+
+- **New files** `timecontrol.c` / `timecontrol.h`, added to
+  `Makefile.am`. The module is pure C99 — `stdint.h`, an opaque struct,
+  const-correct, no globals, and **zero dependencies, not even glib** —
+  so it compiles and unit-tests anywhere a C compiler exists. The one
+  static instance and its glue live on the gnubg side, not in the
+  module.
+- **Command surface**, in the house style of `set.c` (the
+  `CommandSetClockwise` naming family, a `command acSetClock[]`
+  subtable declared in `backgammon.h` and registered in the main
+  command tree): `set clock on|off`, `set clock delay <seconds>`,
+  `set clock reserve <minutes-per-point>`, and `show clock` printing
+  both reserves, the running delay, and any fallen flag. Off by
+  default: a clock you can decline, always.
+- **Turn-lifecycle hooks**, four one-liners at anchors verified in the
+  current source: `NewGame()` (play.c:844) initialises the match's
+  clock from length and settings; the turn hand-over in
+  `TurnDone()` / `NextTurn()` (play.c:1663 / 1767) settles the
+  outgoing player's elapsed time (delay first, then reserve) and
+  starts the incoming player's delay. Timestamps come from the
+  program's existing time source (`get_time()`, already exported in
+  backgammon.h), converted to non-decreasing milliseconds in the glue —
+  the module is well-defined under any monotone input by contract.
+- **A fallen flag is reported, never enforced**: one line through
+  gnubg's normal output channel and a fact in `show clock`. What a
+  flag means — a forfeit under tournament regulations — is the
+  operator's act, exactly as at a real table where the clock does not
+  reach over and concede the match for you. No match-state surgery,
+  phase 1 or ever, without the maintainers asking for it.
+- **The GUI is untouched — and that is the invitation, not an
+  omission.** `tc_state()` returns everything a display needs: active
+  side, running delay, both reserves, flags. It is a ready-made
+  display contract. A GTK clock beside the board is an afternoon's
+  work for someone who knows `gtkboard.c` — and that afternoon is
+  deliberately left on the table for the list. The patch brings the
+  engine of the clock; the face of it belongs to whoever has waited
+  twenty years to draw one.
+
+**CBG side:** the facade exports the same tc calls; the Kotlin clock
+state machine is DELETED and replaced by a thin poller + display.
+Display ruling (maintainer, 2026-08-11): TWO clocks, both players always
+visible, Galaxy-style — the active side carries the loud delay
+countdown, the inactive side shows its bank dimmed and static; sizes
+readable across a table. The Off/Competition switch and the ledger's
+clock provenance are unchanged, already-shipped app-layer policy.
 
 ## 6. Sequencing
 
