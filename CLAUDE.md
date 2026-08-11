@@ -713,6 +713,22 @@ per-trial InvertEvaluationR placement.
   decided -- there is nothing to roll out") on every rollout action, and
   hostile-input rows (terminal / no-dice / garbage id) in the harness.
 
+### THE UPSTREAM CLOCK RULING (maintainer, 2026-08-11) -- supersedes the
+### app-layer clock architecture below
+
+The clock ARITHMETIC moves into engine-core as a self-contained C module
+(timecontrol.c/h) written to upstream GNU Backgammon standards and
+DESTINED FOR UPSTREAM SUBMISSION -- gnubg's own V0.16 manual documents an
+abandoned "Time controls" feature; this work completes it. Requirements:
+robust, reliable, foolproof, exhaustively harness-tested on the host
+(tools/clock_harness, same discipline as the rollout harness -- the
+maintainer's 10-point/11-second scenario is a permanent test row). The
+Kotlin layer becomes DISPLAY ONLY: two clocks, both players always
+visible, Galaxy-style delay-loud presentation, table-readable sizes.
+Design/RFC: docs/TIMECONTROL_UPSTREAM.md. Until the module lands, no
+further patches to the Kotlin state machine -- it is scheduled for
+replacement, not repair.
+
 ### The match clock (regulation + display)
 
 Competition mode IS the USBGF/WBGF regulation, citable: reserve = 2 min x
