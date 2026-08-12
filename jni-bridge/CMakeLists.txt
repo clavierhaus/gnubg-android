@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.22.1)
 project(gnubg_engine C)
 
 set(ENGINE   "${CMAKE_CURRENT_SOURCE_DIR}/../engine-core")
+
+# Warning policy (maintainer ruling 2026-08-12): a perfect build log is one
+# where every warning is actionable, and therefore zero exist. Port-owned
+# code compiles -Wall -Wextra -- its warnings are ours to fix. Vendored
+# upstream sources (the gnubg engine, exactly as shipped) compile quiet:
+# their warnings belong upstream, and "fixing" them here would mean
+# forking upstream, which this port refuses. Dependencies (glib, pcre2)
+# get the same treatment in build_glib_android.sh.
 set(GLIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/glib")
 
 add_library(gnubg-engine SHARED
@@ -18,6 +26,7 @@ add_library(gnubg-engine SHARED
     ${ENGINE}/util.c
     ${ENGINE}/file.c
     ${ENGINE}/boardpos.c
+    ${ENGINE}/timecontrol.c
     ${ENGINE}/multithread.c
     ${ENGINE}/lib/output.c
     ${ENGINE}/lib/SFMT.c
@@ -72,3 +81,10 @@ target_link_libraries(gnubg-engine
     log
     m
 )
+
+file(GLOB _vendored "${ENGINE}/*.c" "${ENGINE}/lib/*.c")
+list(REMOVE_ITEM _vendored "${ENGINE}/timecontrol.c")
+set_source_files_properties(${_vendored} PROPERTIES COMPILE_OPTIONS "-w")
+set_source_files_properties(
+    src/stubs.c src/native-lib.c src/gnubg_mobile.c "${ENGINE}/timecontrol.c"
+    PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")

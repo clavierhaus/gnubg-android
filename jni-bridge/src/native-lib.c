@@ -1227,3 +1227,56 @@ Java_com_clavierhaus_gnubg_Engine_rolloutCancel(JNIEnv *env, jobject thiz) {
     (void) env; (void) thiz;
     gnubg_mobile_rollout_cancel();
 }
+
+/* -- Match clock wrappers: marshalling only ------------------------------- */
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockArm(JNIEnv *env, jobject thiz,
+                                           jint delayMs, jint reserveMs) {
+    (void) env; (void) thiz;
+    gnubg_mobile_clock_arm((int) delayMs, (int) reserveMs);
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockOff(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    gnubg_mobile_clock_off();
+}
+
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockHand(JNIEnv *env, jobject thiz,
+                                            jint side) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_clock_hand((int) side);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockSettle(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_clock_settle();
+}
+
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockPause(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    return (jint) gnubg_mobile_clock_pause();
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockResume(JNIEnv *env, jobject thiz) {
+    (void) env; (void) thiz;
+    gnubg_mobile_clock_resume();
+}
+
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_clockState(JNIEnv *env, jobject thiz,
+                                             jintArray jOut) {
+    int buf[8];
+    jint n;
+    (void) thiz;
+    if (!jOut || (*env)->GetArrayLength(env, jOut) < 8) return (jint) -1;
+    n = (jint) gnubg_mobile_clock_state(buf);
+    if (n >= 0)
+        (*env)->SetIntArrayRegion(env, jOut, 0, 8, (const jint *) buf);
+    return n;
+}

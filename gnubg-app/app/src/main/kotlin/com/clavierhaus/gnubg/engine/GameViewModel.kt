@@ -120,57 +120,88 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Clock hand-overs are EVENTS, fired at the state transitions
+    // themselves -- never discovered by sampling. The engine's whole turn
+    // takes milliseconds; a 200 ms poll can miss it entirely, which is
+    // exactly the bug every clock field report described: one grace at
+    // match start, then one side charged for the whole match (2026-08-12).
+    // clockHandTo() dedups, so calling it from every transition is safe:
+    // a fresh per-move delay is granted only on a real change of side.
+    private var clockSideTracked = -2
+
+    private fun clockHandTo(side: Int) {
+        if (clockMode.value == com.clavierhaus.gnubg.clock.ClockMode.OFF) return
+        if (side == clockSideTracked) return
+        clockSideTracked = side
+        clockFlag(Engine.clockHand(side))
+    }
+
+    private fun clockFlag(ev: Int) {
+        if (ev != 1 && ev != 2) return
+        val out = IntArray(8)
+        if (Engine.clockState(out) >= 0) {
+            _clockState.value = com.clavierhaus.gnubg.clock.ClockUiState(
+                activeSide = out[2], delayLeftMs = out[3].toLong(),
+                reserveYouMs = out[4].toLong(), reserveGnuMs = out[5].toLong(),
+                timeoutSide = ev - 1)
+        }
+        clockJob?.cancel()
+        onClockTimeout(ev - 1)
+    }
+
     private fun startClock() {
         clockJob?.cancel()
         _clockState.value = null
         val mode = clockMode.value
-        if (mode == com.clavierhaus.gnubg.clock.ClockMode.OFF) return
+        if (mode == com.clavierhaus.gnubg.clock.ClockMode.OFF) {
+            Engine.clockOff()
+            return
+        }
+        // The arithmetic lives in engine-core/timecontrol.c -- the same
+        // pure-C99 module prepared for gnubg upstream, harness-proven
+        // (a 10-point match with every move inside the delay ends with
+        // both reserves bit-identical). This layer only decides WHOSE
+        // time runs and polls for display; it never adds or subtracts a
+        // millisecond. Timestamps are native CLOCK_MONOTONIC, which
+        // pauses in deep sleep -- a suspended device charges nobody.
         val reserve = mode.reserveMs(_settings.value.matchLength)
-        var st = com.clavierhaus.gnubg.clock.ClockUiState(-1,
-            com.clavierhaus.gnubg.clock.DELAY_MS, reserve, reserve)
-        _clockState.value = st
+        Engine.clockArm(com.clavierhaus.gnubg.clock.DELAY_MS.toInt(), reserve.toInt())
+        clockSideTracked = -2
+        clockHandTo(if (_gameState.value.phase == GamePhase.ENGINE_THINKING) 1 else 0)
         clockJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            var last = android.os.SystemClock.elapsedRealtime()
+            val out = IntArray(8)
             while (true) {
                 kotlinx.coroutines.delay(200)
-                val now = android.os.SystemClock.elapsedRealtime()
-                // A frozen process (Doze, backgrounding beyond ON_PAUSE) must
-                // never charge the bank: clamp any gap to one tick's worth.
-                val dt = (now - last).coerceAtMost(500L); last = now
-                val g = _gameState.value
-                val side = when {
-                    clockPaused -> -1
-                    g.phase == GamePhase.GAME_OVER -> -1
-                    g.phase == GamePhase.ENGINE_THINKING -> 1
-                    g.turn == 1 -> 1
-                    g.turn == 0 -> 0
-                    else -> -1
+                // The poller only settles, draws, and handles pause; every
+                // hand-over happens at the transition that causes it.
+                if (clockPaused) {
+                    clockHandTo(-1)
+                } else if (clockSideTracked == -1 &&
+                    _gameState.value.phase != GamePhase.GAME_OVER
+                ) {
+                    // Resuming from pause: rejoin whichever side the game is at.
+                    clockHandTo(
+                        if (_gameState.value.phase == GamePhase.ENGINE_THINKING) 1 else 0
+                    )
                 }
-                if (side != st.activeSide) {
-                    st = st.copy(activeSide = side,
-                        delayLeftMs = com.clavierhaus.gnubg.clock.DELAY_MS)
-                    _clockState.value = st
-                    continue
+                val ev = Engine.clockSettle()
+                if (Engine.clockState(out) >= 0) {
+                    _clockState.value = com.clavierhaus.gnubg.clock.ClockUiState(
+                        activeSide = out[2],
+                        delayLeftMs = out[3].toLong(),
+                        reserveYouMs = out[4].toLong(),
+                        reserveGnuMs = out[5].toLong(),
+                        timeoutSide = when {
+                            out[6] != 0 -> 0
+                            out[7] != 0 -> 1
+                            else -> null
+                        }
+                    )
                 }
-                if (side == -1) continue
-                var delay = st.delayLeftMs
-                var you = st.reserveYouMs
-                var gnu = st.reserveGnuMs
-                var rest = dt
-                if (delay > 0) {
-                    val used = minOf(delay, rest); delay -= used; rest -= used
-                }
-                if (rest > 0) {
-                    if (side == 0) you -= rest else gnu -= rest
-                }
-                st = st.copy(delayLeftMs = delay, reserveYouMs = you, reserveGnuMs = gnu)
-                if ((side == 0 && you <= 0) || (side == 1 && gnu <= 0)) {
-                    st = st.copy(timeoutSide = side)
-                    _clockState.value = st
-                    onClockTimeout(side)
+                if (ev == 1 || ev == 2) {
+                    onClockTimeout(ev - 1)
                     return@launch
                 }
-                _clockState.value = st
             }
         }
     }
@@ -482,6 +513,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             tutorAnalysis  = lastTutorAnalysis,
             analysisDetail = lastAnalysisDetail
         )
+        clockHandTo(if (phase == GamePhase.GAME_OVER) -1 else 0)
     }
 
     private fun startNewGame(isNewMatch: Boolean = true) {
@@ -1060,6 +1092,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _busyKind.value = kind
         val diceBase = Engine.peekLiveDice().let { if (it.size == 3) it[0] else 0 }
         _gameState.value = _gameState.value.copy(phase = GamePhase.ENGINE_THINKING, engineDice = null)
+        clockHandTo(1)
         watchEngineDice(diceBase)
     }
 
@@ -1069,6 +1102,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (gameOverLatched) return
         _busyKind.value = BusyKind.NONE
         _gameState.value = _gameState.value.copy(phase = GamePhase.COACH_REVIEW)
+        clockHandTo(0)
     }
 
     fun passTurn() {

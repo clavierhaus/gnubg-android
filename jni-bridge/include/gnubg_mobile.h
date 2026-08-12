@@ -182,6 +182,18 @@ int  gnubg_mobile_rollout_start(int max_n, unsigned int seed);
 int  gnubg_mobile_rollout_status(int out[206]);
 void gnubg_mobile_rollout_cancel(void);
 
+/* -- Match clock (engine-core/timecontrol.c via the facade) ---------------
+ * hand/settle/pause return a flag event (0 none, 1 player 0, 2 player 1),
+ * delivered exactly once. state fills out[8]: active, paused, side,
+ * delay-left ms, reserve[0] ms, reserve[1] ms, flag[0], flag[1]. */
+void gnubg_mobile_clock_arm(int delay_ms, int reserve_ms);
+void gnubg_mobile_clock_off(void);
+int  gnubg_mobile_clock_hand(int side);
+int  gnubg_mobile_clock_settle(void);
+int  gnubg_mobile_clock_pause(void);
+void gnubg_mobile_clock_resume(void);
+int  gnubg_mobile_clock_state(int out[8]);
+
 #ifdef __cplusplus
 }
 #endif
