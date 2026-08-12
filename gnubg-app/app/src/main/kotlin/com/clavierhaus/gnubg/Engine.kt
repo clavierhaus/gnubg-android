@@ -154,6 +154,18 @@ object Engine {
     external fun rolloutStatus(out: IntArray): Int
     external fun rolloutCancel()
 
+    /* Match clock: the pure-C timecontrol module behind the facade.
+     * hand/settle/pause return a flag event (0 none, 1 you, 2 engine),
+     * delivered exactly once. clockState fills out[8]: active, paused,
+     * side, delay-left ms, reserve-you ms, reserve-engine ms, flags. */
+    external fun clockArm(delayMs: Int, reserveMs: Int)
+    external fun clockOff()
+    external fun clockHand(side: Int): Int
+    external fun clockSettle(): Int
+    external fun clockPause(): Int
+    external fun clockResume()
+    external fun clockState(out: IntArray): Int
+
     // Files / SGF
     external fun loadGame(path: String): Boolean
     external fun saveGame(path: String): Boolean

@@ -2146,3 +2146,112 @@ int gnubg_mobile_tally_rolls(int out[8])
     pthread_mutex_unlock(&gnubg_lock);
     return 0;
 }
+
+/* -- Match clock ----------------------------------------------------------
+ * The tournament clock (engine-core/timecontrol.c): the same pure-C99
+ * module prepared for gnubg upstream, driven here through the facade.
+ * All state lives native-side behind tc_cbg_mutex; timestamps come from
+ * CLOCK_MONOTONIC, which on Android pauses during deep sleep -- a
+ * suspended device charges nobody, without any clamp heuristics. The
+ * Kotlin layer only decides WHOSE time runs (it knows the phases) and
+ * polls for display; every millisecond of arithmetic is the module's.
+ * A flag event is returned exactly once (module invariant I3); the app
+ * treats it as the match-deciding forfeit it is at a real table. */
+
+#include "timecontrol.h"
+
+static timecontrol tc_cbg;
+static pthread_mutex_t tc_cbg_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static uint64_t
+tc_cbg_now(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t) ts.tv_sec * 1000u + (uint64_t) ts.tv_nsec / 1000000u;
+}
+
+void
+gnubg_mobile_clock_arm(int delay_ms, int reserve_ms)
+{
+    pthread_mutex_lock(&tc_cbg_mutex);
+    tc_init(&tc_cbg, (uint64_t) delay_ms,
+            (uint64_t) reserve_ms, (uint64_t) reserve_ms);
+    pthread_mutex_unlock(&tc_cbg_mutex);
+}
+
+void
+gnubg_mobile_clock_off(void)
+{
+    pthread_mutex_lock(&tc_cbg_mutex);
+    tc_cbg.fActive = 0;
+    pthread_mutex_unlock(&tc_cbg_mutex);
+}
+
+int
+gnubg_mobile_clock_hand(int side)
+{
+    int ev;
+
+    pthread_mutex_lock(&tc_cbg_mutex);
+    ev = (int) tc_start_turn(&tc_cbg, side, tc_cbg_now());
+    pthread_mutex_unlock(&tc_cbg_mutex);
+    return ev;
+}
+
+int
+gnubg_mobile_clock_settle(void)
+{
+    int ev;
+
+    pthread_mutex_lock(&tc_cbg_mutex);
+    ev = (int) tc_settle(&tc_cbg, tc_cbg_now());
+    pthread_mutex_unlock(&tc_cbg_mutex);
+    return ev;
+}
+
+int
+gnubg_mobile_clock_pause(void)
+{
+    int ev;
+
+    pthread_mutex_lock(&tc_cbg_mutex);
+    ev = (int) tc_pause(&tc_cbg, tc_cbg_now());
+    pthread_mutex_unlock(&tc_cbg_mutex);
+    return ev;
+}
+
+void
+gnubg_mobile_clock_resume(void)
+{
+    pthread_mutex_lock(&tc_cbg_mutex);
+    tc_resume(&tc_cbg, tc_cbg_now());
+    pthread_mutex_unlock(&tc_cbg_mutex);
+}
+
+/* out[8]: active, paused, side, delay-left ms, reserve You ms,
+ * reserve engine ms, flag You, flag engine. Values fit int by
+ * construction (reserves are minutes-per-point scaled). */
+int
+gnubg_mobile_clock_state(int out[8])
+{
+    tcstate s;
+
+    pthread_mutex_lock(&tc_cbg_mutex);
+    /* Read-only by design: settling here could consume the once-only
+     * flag event that the caller's own settle/hand call must receive.
+     * The poller settles first, then reads; between polls the display
+     * is at most one tick stale. */
+    tc_state(&tc_cbg, &s);
+    pthread_mutex_unlock(&tc_cbg_mutex);
+
+    out[0] = s.fActive;
+    out[1] = s.fPaused;
+    out[2] = s.nActiveSide;
+    out[3] = (int) s.msDelayLeft;
+    out[4] = (int) s.amsReserve[0];
+    out[5] = (int) s.amsReserve[1];
+    out[6] = s.afFlagged[0];
+    out[7] = s.afFlagged[1];
+    return 1;
+}

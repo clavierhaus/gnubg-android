@@ -147,52 +147,49 @@ fun GameLayout(
                             Text("${gameState.humanScore}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         }
 
-                        // Match clock: one clock, the running side's reserve, in that
-                        // player's chequer colour (maintainer ruling). Galaxy-style
-                        // presentation (maintainer ruling 2026-08-02): while the
-                        // per-turn delay runs, the DELAY is the loud thing -- a big
-                        // countdown with the bank small beside it; only when the
-                        // grace expires does the bank take the stage. Sized to be
-                        // read across a table, not squinted at.
+                        // Match clock: the player's clock alone (maintainer ruling
+                        // 2026-08-12: GNU never thinks longer than the 12 s delay,
+                        // even at grandmaster level -- a chip that can never move
+                        // carries no information, so it is scrapped). One chip,
+                        // centered, no wider than its content: the delay slot is
+                        // reserved (empty when not counting) and every digit is
+                        // tabular over a fixed MM:SS bank, so nothing ever shifts.
+                        // Arithmetic -- both sides, full regulation -- lives
+                        // untouched in engine-core/timecontrol.c; this only draws
+                        // the human half.
                         viewModel.clockState.collectAsStateWithLifecycle().value?.let { ck ->
-                            if (ck.timeoutSide == null && ck.activeSide >= 0) {
+                            if (ck.timeoutSide == null) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                val you = ck.activeSide == 0
-                                Box(
+                                val tnum = androidx.compose.ui.text.TextStyle(
+                                    fontFeatureSettings = "tnum"
+                                )
+                                val t = (ck.reserveYouMs.coerceAtLeast(0L) + 999) / 1000
+                                val delay =
+                                    if (ck.activeSide == 0) (ck.delayLeftMs + 999) / 1000 else 0
+                                Row(
                                     modifier = Modifier
                                         .align(Alignment.CenterHorizontally)
-                                        .background(
-                                            if (you) pal.checkerLight else pal.checkerDark,
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                                        .background(pal.checkerLight, RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    val delay = (ck.delayLeftMs + 999) / 1000
-                                    val fg = if (you) pal.checkerDark else pal.checkerLight
-                                    if (delay > 0) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                "$delay",
-                                                color = fg,
-                                                fontSize = 26.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                com.clavierhaus.gnubg.clock.formatClock(ck.activeReserveMs),
-                                                color = fg.copy(alpha = 0.7f),
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    } else {
-                                        Text(
-                                            com.clavierhaus.gnubg.clock.formatClock(ck.activeReserveMs),
-                                            color = fg,
-                                            fontSize = 22.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                    Text(
+                                        if (delay > 0) "$delay" else "",
+                                        color = pal.checkerDark,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                        style = tnum,
+                                        modifier = Modifier.width(30.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "%02d:%02d".format(t / 60, t % 60),
+                                        color = pal.checkerDark,
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        style = tnum
+                                    )
                                 }
                             }
                         }

@@ -713,6 +713,16 @@ per-trial InvertEvaluationR placement.
   decided -- there is nothing to roll out") on every rollout action, and
   hostile-input rows (terminal / no-dice / garbage id) in the harness.
 
+### THE MASTER RULE (maintainer, 2026-08-11, stated at full strength)
+
+The FOSS edition IS the master of it all. Every feature that belongs in
+FOSS is built in FOSS, gated in FOSS, DEPLOYED AND PLAYED FROM FOSS --
+gnubg-android is a complete, first-class app, never a staging area.
+Plus receives only what will NEVER appear in FOSS. Handing the
+maintainer a Plus box to try a FOSS feature is a violation of this rule
+even when the code itself went FOSS-first (incident: the C-clock play
+box, 2026-08-11).
+
 ### THE UPSTREAM CLOCK RULING (maintainer, 2026-08-11) -- supersedes the
 ### app-layer clock architecture below
 
@@ -778,6 +788,21 @@ invisible grace period does not exist for the player.
 - Never guess external identifiers (ids, seeds, handles, URLs): mint or
   look up ground truth. A hand-invented position id cost a debugging
   detour (2026-08-02).
+- VERIFY THE COMMIT, NOT THE WORKTREE: after any commit -- and after
+  history surgery especially -- the decisive lines are read back from
+  the commit object itself (git show HEAD:file | grep). A gate that ran
+  on the worktree proves nothing about what shipped: an uncommitted
+  str_replace edit passed the Kotlin gate while reset --soft cut the
+  commit from an index that still held the old file, and two false
+  "structurally impossible" claims were made to the maintainer about a
+  display the repository did not contain (2026-08-12).
+- Verification greps must prove the ABSENCE of garbage, not just the
+  presence of features: a plus merge commit shipped raw conflict markers
+  while its "verification" grepped only for the new function names --
+  and the commands after a failed heredoc guard ran anyway because they
+  were newline-separated, the pipeline law violated in a new costume
+  (2026-08-12). Grep for markers, dead code, and the old thing's
+  remains, and chain post-guard commands with && on the guard itself.
 - Pipelines MASK exit codes: `guard.sh | tail` returns tail's status, and
   an && chain sailed past a red parity alarm and pushed (2026-08-02,
   minutes after this ledger was first written). Gate on the guard's OWN
