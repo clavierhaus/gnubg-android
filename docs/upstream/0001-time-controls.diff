@@ -1,0 +1,622 @@
+diff --git a/Makefile.am b/Makefile.am
+index 6158679..557aa72 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -150,6 +150,8 @@ gnubg_SOURCES = \
+ 		sound.h \
+ 		speed.c \
+ 		text.c \
++		timecontrol.c \
++		timecontrol.h \
+ 		timer.c \
+ 		util.h \
+ 		util.c 
+diff --git a/backgammon.h b/backgammon.h
+index 6fbb7b2..7d80e17 100644
+--- a/backgammon.h
++++ b/backgammon.h
+@@ -25,6 +25,7 @@
+ #include "analysis.h"
+ #include "eval.h"
+ #include "rollout.h"
++#include "timecontrol.h"
+ 
+ #define STRINGIZEAUX(num) #num
+ #define STRINGIZE(num) STRINGIZEAUX(num)
+@@ -702,6 +703,16 @@ extern void CommandSetCalibration(char *);
+ extern void CommandSetCheatEnable(char *);
+ extern void CommandSetCheatPlayer(char *);
+ extern void CommandSetCheatPlayerRoll(char *);
++/* Tournament match clock (timecontrol.c); see `set clock'. */
++extern timecontrol tcMatch;
++extern int fClockEnabled;       /* `set clock on|off' */
++extern int nClockDelay;         /* seconds of delay per move */
++extern int nClockReserve;       /* minutes of reserve per point */
++
++extern void CommandSetClockDelay(char *);
++extern void CommandSetClockOff(char *);
++extern void CommandSetClockOn(char *);
++extern void CommandSetClockReserve(char *);
+ extern void CommandSetClockwise(char *);
+ extern void CommandSetUseKeyNames(char *);
+ extern void CommandSetCommandWindow(char *);
+@@ -963,6 +974,7 @@ extern void CommandShowBuildInfo(char *);
+ extern void CommandShowCache(char *);
+ extern void CommandShowCalibration(char *);
+ extern void CommandShowCheat(char *);
++extern void CommandShowClock(char *);
+ extern void CommandShowClockwise(char *);
+ extern void CommandShowCommands(char *);
+ extern void CommandShowConfirm(char *);
+diff --git a/commands.inc b/commands.inc
+index 16d2147..e08dece 100644
+--- a/commands.inc
++++ b/commands.inc
+@@ -1123,6 +1123,17 @@ static command acSetVariation[] = {
+     N_("Play standard backgammon"),
+     NULL, NULL },
+   { NULL, NULL, NULL, NULL, NULL }
++}, acSetClock[] = {
++    { "delay", CommandSetClockDelay,
++      N_("Set the seconds of delay granted on every move"), szVALUE, NULL },
++    { "off", CommandSetClockOff, N_("Turn the tournament match clock off"),
++      NULL, NULL },
++    { "on", CommandSetClockOn, N_("Turn the tournament match clock on"),
++      NULL, NULL },
++    { "reserve", CommandSetClockReserve,
++      N_("Set the minutes of reserve per point of match length"),
++      szVALUE, NULL },
++    { NULL, NULL, NULL, NULL, NULL }
+ }, acSet[] = {
+     { "analysis", NULL, N_("Control parameters used when analysing moves"),
+       NULL, acSetAnalysis },
+@@ -1154,6 +1165,8 @@ static command acSetVariation[] = {
+     { "cheat", NULL,
+       N_("Control GNU Backgammon's manipulation of the dice"),
+       NULL, acSetCheat },
++    { "clock", NULL, N_("Control the tournament match clock"),
++      NULL, acSetClock },
+     { "clockwise", CommandSetClockwise, N_("Control the board orientation"),
+       szONOFF, &cOnOff },
+     { "colours", CommandSetAppearance,
+@@ -1351,6 +1364,8 @@ command  acShow[] = {
+       N_("Show the previously recorded evaluation speed"), NULL, NULL },
+     { "cheat", CommandShowCheat,
+       N_("Show parameters for dice manipulation"), NULL, NULL },
++    { "clock", CommandShowClock, N_("Show the tournament match clock"),
++      NULL, NULL },
+     { "clockwise", CommandShowClockwise, N_("Display the board orientation"),
+       NULL, NULL },
+     { "commands", CommandShowCommands, N_("List all available commands"),
+diff --git a/gnubg.c b/gnubg.c
+index f0266c7..4e4a711 100644
+--- a/gnubg.c
++++ b/gnubg.c
+@@ -218,6 +218,14 @@ int fTruncEqualPlayer0 = TRUE;
+ int fTutorChequer = TRUE;
+ int fTutorCube = TRUE;
+ int fTutor = FALSE;
++
++/* Tournament match clock: state machine in timecontrol.c, hooks in
++ * play.c, commands in set.c/show.c.  Defaults are the USBGF/WBGF
++ * tournament regulation. */
++timecontrol tcMatch;
++int fClockEnabled = FALSE;
++int nClockDelay = 12;           /* seconds of simple delay per move */
++int nClockReserve = 2;          /* minutes of reserve per point */
+ int fEvalSameAsAnalysis = FALSE;
+ int fJustSwappedPlayers = FALSE;
+ int nConfirmDefault = -1;
+diff --git a/play.c b/play.c
+index 01703c3..82b533e 100644
+--- a/play.c
++++ b/play.c
+@@ -799,6 +799,45 @@ DiceRolled(void)
+         ShowBoard();
+ }
+ 
++/*
++ * Tournament match clock (timecontrol.c).  The clock is charged at
++ * action boundaries using gnubg's monotonic millisecond timer -- no
++ * ticker anywhere, exactly as a physical clock runs while you think
++ * and settles when you act.  The per-move delay is granted on each
++ * change of the side to move: one press per turn.  A fallen flag is
++ * reported, never enforced -- under tournament rules, claiming the
++ * match is the operator's act, not the clock's.
++ */
++
++static int nClockLastSide = -1;
++
++static void
++ClockReportEvent(tcevent ev)
++{
++    if (ev == TC_EVENT_NONE)
++        return;
++    outputf(_("%s has run out of reserve time.\n"),
++            ap[ev == TC_EVENT_FLAG_PLAYER0 ? 0 : 1].szName);
++    outputl(_("Under tournament rules the match may now be claimed; "
++              "play continues."));
++}
++
++static void
++ClockHandOver(void)
++{
++    int nSide;
++
++    if (!fClockEnabled || !tcMatch.fActive)
++        return;
++    nSide = (ms.gs == GAME_PLAYING) ? ms.fTurn : -1;
++    if (nSide == nClockLastSide)
++        ClockReportEvent(tc_settle(&tcMatch, (uint64_t) get_time()));
++    else {
++        ClockReportEvent(tc_start_turn(&tcMatch, nSide, (uint64_t) get_time()));
++        nClockLastSide = nSide;
++    }
++}
++
+ static int
+ NewGame(void)
+ {
+@@ -923,6 +962,19 @@ NewGame(void)
+ 
+     UpdateSetting(&ms.fTurn);
+     UpdateSetting(&ms.gs);
++
++    if (fClockEnabled) {
++        if (!ms.anScore[0] && !ms.anScore[1]) {
++            /* first game: arm the match clock */
++            uint64_t msReserve = (uint64_t) nClockReserve * 60000 *
++                (ms.nMatchTo ? ms.nMatchTo : 1);
++
++            tc_init(&tcMatch, (uint64_t) nClockDelay * 1000, msReserve, msReserve);
++            nClockLastSide = -1;
++        }
++        ClockHandOver();
++    }
++
+     /* Play sound after initial dice decided */
+     DiceRolled();
+ #if defined (USE_GTK)
+@@ -1772,6 +1824,8 @@ NextTurn(int fPlayNext)
+     UpdateSetting(&ms.fTurn);
+     UpdateSetting(&ms.gs);
+ 
++    ClockHandOver();
++
+     if (GameStatus(msBoard(), ms.bgv) || ms.gs == GAME_DROP || ms.gs == GAME_RESIGNED) {
+         moverecord *pmr = (moverecord *) plGame->plNext->p;
+         xmovegameinfo *pmgi = &pmr->g;
+diff --git a/set.c b/set.c
+index 9e9e761..3dcedd8 100644
+--- a/set.c
++++ b/set.c
+@@ -758,6 +758,56 @@ CommandSetCalibration(char *sz)
+     outputf(_("The speed estimate has been set to %.0f static " "evaluations per second.\n"), rEvalsPerSec);
+ }
+ 
++extern void
++CommandSetClockOn(char *UNUSED(sz))
++{
++    fClockEnabled = TRUE;
++    if (tcMatch.fActive)
++        tc_resume(&tcMatch, (uint64_t) get_time());
++    outputf(_("The match clock is on (%d second delay, %d minute(s) reserve "
++              "per point).\n"), nClockDelay, nClockReserve);
++}
++
++extern void
++CommandSetClockOff(char *UNUSED(sz))
++{
++    fClockEnabled = FALSE;
++    if (tcMatch.fActive)
++        tc_pause(&tcMatch, (uint64_t) get_time());
++    outputl(_("The match clock is off."));
++}
++
++extern void
++CommandSetClockDelay(char *sz)
++{
++    int n;
++
++    if ((n = ParseNumber(&sz)) < 0 || n > 60) {
++        outputl(_("You must specify a delay between 0 and 60 seconds "
++                  "(see `help set clock delay')."));
++        return;
++    }
++    nClockDelay = n;
++    if (tcMatch.fActive)
++        tcMatch.msDelay = (uint64_t) n * 1000;
++    outputf(_("The clock delay is %d second(s) per move.\n"), n);
++}
++
++extern void
++CommandSetClockReserve(char *sz)
++{
++    int n;
++
++    if ((n = ParseNumber(&sz)) < 1 || n > 60) {
++        outputl(_("You must specify a reserve between 1 and 60 minutes per "
++                  "point (see `help set clock reserve')."));
++        return;
++    }
++    nClockReserve = n;
++    outputf(_("The clock reserve is %d minute(s) per point of match length, "
++              "taking effect when the next match starts.\n"), n);
++}
++
+ extern void
+ CommandSetClockwise(char *sz)
+ {
+diff --git a/show.c b/show.c
+index 2513a54..f30711f 100644
+--- a/show.c
++++ b/show.c
+@@ -565,6 +565,48 @@ CommandShowCalibration(char *UNUSED(sz))
+         outputl(_("No evaluation speed has been recorded."));
+ }
+ 
++static void
++FormatClockInterval(char *sz, uint64_t ms)
++{
++    unsigned int s = (unsigned int) (ms / 1000);
++
++    if (s >= 3600)
++        sprintf(sz, "%u:%02u:%02u", s / 3600, (s / 60) % 60, s % 60);
++    else
++        sprintf(sz, "%u:%02u", s / 60, s % 60);
++}
++
++extern void
++CommandShowClock(char *UNUSED(sz))
++{
++    tcstate tcs;
++    char szTime[32];
++    int i;
++
++    outputf(_("Match clock: %s (%d second delay, %d minute(s) reserve per "
++              "point).\n"), fClockEnabled ? _("on") : _("off"),
++            nClockDelay, nClockReserve);
++
++    if (!tcMatch.fActive) {
++        outputl(_("No clocked match is in progress."));
++        return;
++    }
++
++    tc_state(&tcMatch, &tcs);
++    for (i = 0; i < 2; ++i) {
++        FormatClockInterval(szTime, tcs.amsReserve[i]);
++        outputf("%-31s %s%s%s\n", ap[i].szName, szTime,
++                tcs.nActiveSide == i ? _(" (to move)") : "",
++                tcs.afFlagged[i] ? _(" [flag fallen]") : "");
++    }
++    if (tcs.nActiveSide >= 0 && tcs.msDelayLeft) {
++        FormatClockInterval(szTime, tcs.msDelayLeft);
++        outputf(_("Delay remaining this move: %s\n"), szTime);
++    }
++    if (tcs.fPaused)
++        outputl(_("The clock is paused."));
++}
++
+ extern void
+ CommandShowClockwise(char *UNUSED(sz))
+ {
+diff --git a/timecontrol.c b/timecontrol.c
+new file mode 100644
+index 0000000..d6c1020
+--- /dev/null
++++ b/timecontrol.c
+@@ -0,0 +1,186 @@
++/*
++ * timecontrol.c -- tournament match clock for GNU Backgammon.
++ *
++ * Copyright (C) 2026 the AUTHORS
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ *
++ * See timecontrol.h for the model.  Invariants maintained here:
++ *
++ *  I1  Reserves never underflow and never move while the delay has
++ *      remainder: a turn completed within the delay leaves the
++ *      reserve BIT-IDENTICAL to its previous value.
++ *  I2  Settling is insensitive to call frequency: many small settles
++ *      and one large settle over the same interval charge the same
++ *      amounts.
++ *  I3  A flag is raised exactly once per player and is latched; the
++ *      other player's clock continues to serve normally.
++ *  I4  Any non-decreasing timestamp source is legal; a decreasing
++ *      timestamp (a broken caller) charges nothing rather than
++ *      corrupting state.
++ *  I5  Paused time is charged to nobody.
++ */
++
++#include <stdio.h>
++#include <string.h>
++
++#include "timecontrol.h"
++
++extern void
++tc_init(timecontrol * ptc, uint64_t msDelay, uint64_t msReserve0, uint64_t msReserve1)
++{
++    memset(ptc, 0, sizeof *ptc);
++    ptc->fActive = 1;
++    ptc->nActiveSide = -1;
++    ptc->msDelay = msDelay;
++    ptc->amsReserve[0] = msReserve0;
++    ptc->amsReserve[1] = msReserve1;
++}
++
++/* Charge [msLast, msNow) to the running side, delay first.  The
++ * caller has checked fActive. */
++static tcevent
++settle(timecontrol * ptc, uint64_t msNow)
++{
++    uint64_t msElapsed;
++    int nSide = ptc->nActiveSide;
++
++    if (msNow <= ptc->msLast) {  /* I4: never charge on a broken source */
++        return TC_EVENT_NONE;
++    }
++    msElapsed = msNow - ptc->msLast;
++    ptc->msLast = msNow;
++
++    if (ptc->fPaused || nSide < 0)
++        return TC_EVENT_NONE;    /* I5: nobody is charged */
++
++    if (ptc->msDelayLeft >= msElapsed) {
++        ptc->msDelayLeft -= msElapsed;
++        return TC_EVENT_NONE;    /* I1: reserve untouched */
++    }
++    msElapsed -= ptc->msDelayLeft;
++    ptc->msDelayLeft = 0;
++
++    if (ptc->afFlagged[nSide])
++        return TC_EVENT_NONE;    /* I3: latched, reserve stays zero */
++
++    if (ptc->amsReserve[nSide] > msElapsed) {
++        ptc->amsReserve[nSide] -= msElapsed;
++        return TC_EVENT_NONE;
++    }
++    ptc->amsReserve[nSide] = 0;
++    ptc->afFlagged[nSide] = 1;
++    return nSide == 0 ? TC_EVENT_FLAG_PLAYER0 : TC_EVENT_FLAG_PLAYER1;
++}
++
++extern tcevent
++tc_settle(timecontrol * ptc, uint64_t msNow)
++{
++    if (!ptc->fActive)
++        return TC_EVENT_NONE;
++    return settle(ptc, msNow);
++}
++
++extern tcevent
++tc_start_turn(timecontrol * ptc, int nSide, uint64_t msNow)
++{
++    tcevent ev;
++
++    if (!ptc->fActive)
++        return TC_EVENT_NONE;
++
++    ev = settle(ptc, msNow);     /* the incumbent pays up to the hand-over */
++
++    if (nSide < 0 || nSide >= TC_PLAYERS) {
++        ptc->nActiveSide = -1;
++        ptc->msDelayLeft = 0;
++    } else {
++        ptc->nActiveSide = nSide;
++        ptc->msDelayLeft = ptc->msDelay;  /* every move earns a fresh delay */
++    }
++    return ev;
++}
++
++extern tcevent
++tc_pause(timecontrol * ptc, uint64_t msNow)
++{
++    tcevent ev;
++
++    if (!ptc->fActive || ptc->fPaused)
++        return TC_EVENT_NONE;
++    ev = settle(ptc, msNow);
++    ptc->fPaused = 1;
++    return ev;
++}
++
++extern void
++tc_resume(timecontrol * ptc, uint64_t msNow)
++{
++    if (!ptc->fActive || !ptc->fPaused)
++        return;
++    ptc->fPaused = 0;
++    if (msNow > ptc->msLast)
++        ptc->msLast = msNow;     /* the gap is charged to nobody (I5) */
++}
++
++extern void
++tc_state(const timecontrol * ptc, tcstate * pstate)
++{
++    int i;
++
++    pstate->fActive = ptc->fActive;
++    pstate->fPaused = ptc->fPaused;
++    pstate->nActiveSide = ptc->nActiveSide;
++    pstate->msDelayLeft = ptc->msDelayLeft;
++    for (i = 0; i < TC_PLAYERS; ++i) {
++        pstate->amsReserve[i] = ptc->amsReserve[i];
++        pstate->afFlagged[i] = ptc->afFlagged[i];
++    }
++}
++
++extern int
++tc_serialize(const timecontrol * ptc, char *sz, size_t cch)
++{
++    return snprintf(sz, cch, "tc1 %d %d %d %llu %llu %llu %llu %d %d %llu",
++                    ptc->fActive, ptc->fPaused, ptc->nActiveSide,
++                    (unsigned long long) ptc->msDelay,
++                    (unsigned long long) ptc->msDelayLeft,
++                    (unsigned long long) ptc->amsReserve[0],
++                    (unsigned long long) ptc->amsReserve[1],
++                    ptc->afFlagged[0], ptc->afFlagged[1],
++                    (unsigned long long) ptc->msLast);
++}
++
++extern int
++tc_deserialize(timecontrol * ptc, const char *sz)
++{
++    timecontrol tc;
++    unsigned long long d, dl, r0, r1, last;
++
++    memset(&tc, 0, sizeof tc);
++    if (sscanf(sz, "tc1 %d %d %d %llu %llu %llu %llu %d %d %llu",
++               &tc.fActive, &tc.fPaused, &tc.nActiveSide,
++               &d, &dl, &r0, &r1,
++               &tc.afFlagged[0], &tc.afFlagged[1], &last) != 10)
++        return -1;
++    if (tc.nActiveSide < -1 || tc.nActiveSide >= TC_PLAYERS)
++        return -1;
++    tc.msDelay = d;
++    tc.msDelayLeft = dl;
++    tc.amsReserve[0] = r0;
++    tc.amsReserve[1] = r1;
++    tc.msLast = last;
++    *ptc = tc;
++    return 0;
++}
+diff --git a/timecontrol.h b/timecontrol.h
+new file mode 100644
+index 0000000..9b53a05
+--- /dev/null
++++ b/timecontrol.h
+@@ -0,0 +1,122 @@
++/*
++ * timecontrol.h -- tournament match clock for GNU Backgammon.
++ *
++ * Copyright (C) 2026 the AUTHORS
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ *
++ *
++ * Design (see also the accompanying RFC):
++ *
++ * A pure state machine, C99, no dependencies -- not even glib.  The
++ * module never reads the system clock: every entry point takes a
++ * caller-supplied timestamp in milliseconds from any non-decreasing
++ * source.  That single decision makes the module deterministic,
++ * unit-testable to the millisecond on any host, and immune to the
++ * timer pathologies of any platform.
++ *
++ * The model is the tournament standard (USBGF/WBGF): a per-move
++ * "simple delay" (US delay / Bronstein style: the delay runs first on
++ * every turn, unused delay is never banked) in front of a per-player
++ * reserve.  A reserve reaching zero raises a flag EVENT; the module
++ * never enforces a result.  What a fallen flag means -- a forfeit
++ * under tournament regulations -- belongs to the operator, exactly as
++ * at a physical table, where the clock does not reach over and concede
++ * the match for you.
++ *
++ * Because it is timestamp-driven, no ticker is required anywhere: a
++ * command-line program simply settles elapsed time at action
++ * boundaries, which is precisely how a physical clock behaves -- it
++ * runs while you think and settles when you act.  tc_state() exposes
++ * everything a display could want; a graphical clock face is left as
++ * an exercise for whoever has waited twenty years to draw one.
++ */
++
++#ifndef TIMECONTROL_H
++#define TIMECONTROL_H
++
++#include <stdint.h>
++#include <stddef.h>
++
++#define TC_PLAYERS 2
++
++/* Events reported by settling calls.  A flag is raised exactly once
++ * per player; afterwards that player's reserve stays at zero and the
++ * clock keeps serving the other player normally. */
++typedef enum {
++    TC_EVENT_NONE = 0,
++    TC_EVENT_FLAG_PLAYER0,
++    TC_EVENT_FLAG_PLAYER1
++} tcevent;
++
++/* The complete clock state.  The struct is transparent in the house
++ * style; treat it as read-only outside timecontrol.c and mutate it
++ * only through the functions below. */
++typedef struct {
++    int fActive;                    /* clock in use for this match */
++    int fPaused;
++    int nActiveSide;                /* 0 or 1; -1 = no side running */
++    uint64_t msDelay;               /* configured per-move delay */
++    uint64_t msDelayLeft;           /* delay remaining this turn */
++    uint64_t amsReserve[TC_PLAYERS];
++    int afFlagged[TC_PLAYERS];      /* latched flag per player */
++    uint64_t msLast;                /* timestamp of the last settle */
++} timecontrol;
++
++/* Read-only snapshot for displays: everything a clock face needs. */
++typedef struct {
++    int fActive;
++    int fPaused;
++    int nActiveSide;
++    uint64_t msDelayLeft;
++    uint64_t amsReserve[TC_PLAYERS];
++    int afFlagged[TC_PLAYERS];
++} tcstate;
++
++/* Arm the clock: per-move delay and each player's reserve, in
++ * milliseconds.  Resets every flag and stops both clocks; the first
++ * tc_start_turn() begins play. */
++extern void tc_init(timecontrol * ptc, uint64_t msDelay,
++                    uint64_t msReserve0, uint64_t msReserve1);
++
++/* Hand the move to nSide (0 or 1) at time msNow: the incumbent side
++ * (if any) is settled up to msNow first, then nSide receives a fresh
++ * per-move delay.  Passing nSide == -1 settles and stops both clocks
++ * (between games, at match end).  Returns any flag event raised while
++ * settling the incumbent. */
++extern tcevent tc_start_turn(timecontrol * ptc, int nSide, uint64_t msNow);
++
++/* Charge elapsed time to the running side: delay first, then reserve.
++ * Call at any action boundary, and as often as convenient in between
++ * (a display poll may settle every frame; frequency never changes the
++ * arithmetic).  Returns a flag event at most once per player. */
++extern tcevent tc_settle(timecontrol * ptc, uint64_t msNow);
++
++/* Suspend/resume: time between tc_pause() and tc_resume() is charged
++ * to nobody. */
++extern tcevent tc_pause(timecontrol * ptc, uint64_t msNow);
++extern void tc_resume(timecontrol * ptc, uint64_t msNow);
++
++/* Fill a display snapshot. */
++extern void tc_state(const timecontrol * ptc, tcstate * pstate);
++
++/* One-line text serialization, for match save/restore.  tc_serialize
++ * writes at most cch bytes (NUL-terminated) and returns the number of
++ * characters that were (or would have been) written, or -1 on error;
++ * tc_deserialize parses a line produced by tc_serialize and returns 0
++ * on success, -1 on malformed input (leaving *ptc untouched). */
++extern int tc_serialize(const timecontrol * ptc, char *sz, size_t cch);
++extern int tc_deserialize(timecontrol * ptc, const char *sz);
++
++#endif                          /* TIMECONTROL_H */
