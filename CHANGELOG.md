@@ -16,9 +16,29 @@ the engine, or stopped hiding what the engine already knew.
 ## [0.22.8] -- upcoming release
 
 ### Added
-- Competition match clock in tournament mode: Off or Competition (12-second delay plus a 2-minutes-per-point bank), one clock shown in the running player's chequer colour, timeout loses the match. gnubg itself has no clock, so this is app-layer and never touches game logic.
+- Competition match clock in tournament mode: Off or Competition -- the
+  tournament regulation, a 12-second delay granted on every move in
+  front of a 2-minutes-per-point reserve; reserve expiration loses the
+  match. The clock's arithmetic is a self-contained C module
+  (engine-core/timecontrol.c) written to upstream GNU Backgammon
+  standards and offered to the gnubg project itself (docs/upstream/),
+  with a host test harness that proves it to the millisecond -- its
+  founding invariant: a 10-point match with every move completed inside
+  the delay ends with the reserve bit-identical to its start. The
+  display is one centered clock in your chequer colour, the running
+  delay counting beside a fixed MM:SS bank. GNU shows no clock: at any
+  strength its real thinking time never approaches the delay, and an
+  instrument that could never move would carry no information.
 
 ### Fixed
+- The match clock no longer drains the reserve while you play inside
+  the delay, and no longer times a match out on wall time. The old
+  clock discovered whose turn it was by sampling four times a second --
+  but the engine's whole turn takes milliseconds, so the hand-over was
+  never observed: one delay at the start of the match, then one side
+  charged continuously. Hand-overs are now events fired by the turn
+  transitions themselves, with a fresh delay on every real change of
+  the side to move.
 - The roll that ends a game or match now stays visible on the end screen (the engine's winning roll was never drawn at game over).
 
 - Documentation: docs/G4_VALIDATION.md -- how to verify the app's match
