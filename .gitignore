@@ -192,3 +192,6 @@ gnubg-app/app/src/main/jniLibs/
 tools/pilot/inputs_harness
 .native_build_stamp
 tools/clock_harness/tmp/
+
+# The rollout harness Makefile is hand-written, not autotools-generated:
+!tools/rollout_harness/Makefile

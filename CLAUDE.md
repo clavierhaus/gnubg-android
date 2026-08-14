@@ -808,6 +808,48 @@ invisible grace period does not exist for the player.
   minutes after this ledger was first written). Gate on the guard's OWN
   exit code -- capture it, or run the guard unpiped.
 
+### THE SINGLE-SOURCE LAW (maintainer, 2026-08-14 -- "This may never
+### ever happen again... Whatever it takes: make this a law never to
+### be broken again.")
+
+The Plus release carries liabilities. Every act in these repositories
+is performed to liability grade. Four clauses, each bought by the
+harness source-list incident of 2026-08-14:
+
+1. AUTHORITATIVE DEFINITIONS ARE READ WHOLE OR DERIVED MECHANICALLY --
+   never re-typed through a filter. A grep pattern silently missed the
+   last line of the add_library block (src/android-app.c, spelled
+   unlike its siblings); the hand-mirrored list produced a phantom
+   cascade of "missing" symbols, and a linker hack was iterated on top
+   of the phantom instead of questioning the mirror. Any copy of a
+   list, recipe, or configuration that must match another file is
+   GENERATED from that file at use time (tools/rollout_harness/Makefile
+   now derives its sources from jni-bridge/CMakeLists.txt), or, where
+   generation is impossible, diffed against the WHOLE original -- never
+   against another filtered view.
+
+2. VERIFICATION MUST BE INDEPENDENT of the process that produced the
+   artifact. Diffing a grep's output against the same grep proves the
+   grep, not the artifact. A check that shares the defect of the thing
+   it checks is not a check.
+
+3. CONFIDENCE MATCHES EVIDENCE, ALWAYS. "The Makefile was never
+   committed; the suite ran on a worktree-only file" was asserted as
+   settled fact when the evidence supported only: the runner calls
+   make, no visible commit contains a Makefile, and the transcript
+   cannot settle how it ran. When the record cannot prove a narrative,
+   the narrative is not spoken. "I cannot prove how this happened" is
+   the required sentence, and it is a complete answer.
+   (This clause's first application then PRODUCED the proof: git
+   itself named the mechanism -- a repo-root .gitignore rule for
+   autotools Makefiles had silently excluded the harness Makefile
+   from every add -A. Evidence closed the case a story could not.)
+
+4. THE MAINTAINER'S MACHINE IS THE REFERENCE. When he says the
+   reconstruction does not match what builds his binary, work stops,
+   the authoritative definition is re-read whole, and nothing is
+   committed until the discrepancy is explained from evidence.
+
 ### Shell conventions for the maintainer's machine
 
 stderr and stdout are NEVER silenced in suggested commands. Never pipe
