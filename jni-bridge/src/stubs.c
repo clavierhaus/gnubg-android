@@ -155,7 +155,28 @@ int  NetworkDice(unsigned int *pdice, int ndice)       { return -1; }
  * On Android they will be set by the Kotlin UI layer.
  */
 
+#include "movefilters.inc"
+
 rolloutcontext rcRollout = {
+    /* Evaluation contexts: desktop gnubg's own defaults, ported VERBATIM
+     * from gnubg.c:245-273 (1.07.001) -- evalcontext order {fCubeful,
+     * nPlies, fUsePrune, fDeterministic, rNoise}. The regulation preset
+     * sets 0 plies on cube and chequer, exactly as `set rollout
+     * chequerplay|cubedecision plies 0` does on desktop. GATE B FINDING
+     * (2026-08-14): these fields were previously ZEROED, which meant
+     * 0-ply CUBELESS, no-prune chequer play -- at 1-point that values
+     * gammons the regulation play ignores, so identical dice chose
+     * different moves. The maintainer asked whether Mersenne played a
+     * role: the per-trial reseed (see the worker) was one missing line;
+     * the eval contexts were the louder one. */
+    .aecCube         = { {TRUE, 0, TRUE, TRUE, 0.0f}, {TRUE, 0, TRUE, TRUE, 0.0f} },
+    .aecChequer      = { {TRUE, 0, TRUE, TRUE, 0.0f}, {TRUE, 0, TRUE, TRUE, 0.0f} },
+    .aecCubeLate     = { {TRUE, 2, TRUE, TRUE, 0.0f}, {TRUE, 2, TRUE, TRUE, 0.0f} },
+    .aecChequerLate  = { {TRUE, 0, TRUE, TRUE, 0.0f}, {TRUE, 0, TRUE, TRUE, 0.0f} },
+    .aecCubeTrunc    = {TRUE, 2, TRUE, TRUE, 0.0f},
+    .aecChequerTrunc = {TRUE, 2, TRUE, TRUE, 0.0f},
+    .aaamfChequer    = { MOVEFILTER_NORMAL, MOVEFILTER_NORMAL },
+    .aaamfLate       = { MOVEFILTER_NORMAL, MOVEFILTER_NORMAL },
     .fCubeful       = 1,
     .fVarRedn       = 1,
     .fInitial       = 0,
@@ -426,11 +447,22 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
         rolloutstat aarsStats[1][2];
         memset(aarsStats, 0, sizeof(aarsStats));
 
+        /* Per-trial RNG seeding, gnubg's own discipline VERBATIM from
+         * rollout.c:1158 (1.07.001): every trial re-seeds the sequential
+         * Mersenne stream as nSeed + (trial << 8). This is what makes
+         * desktop rollouts reproducible independent of threading -- and
+         * it is the line whose absence Gate B measured as the
+         * statistically-consistent-but-never-equal divergence
+         * (found 2026-08-14; the maintainer asked whether Mersenne
+         * played a role: it did, exactly here). */
+        InitRNGSeed((unsigned int) (barrier->prc->nSeed + ((unsigned int) task_index << 8)),
+                    barrier->prc->rngRollout, local_rng);
+
         /* Trial index as gnubg's iGame; dice from the ONE shared array. */
         BasicCubefulRolloutNoLocking(aanBoard, aarOutput,
                                       0, task_index,
                                       aci, afCubeDecTop, 1,
-                                      barrier->prc, aarsStats, 0,
+                                      barrier->prc, aarsStats, aci[0].nCube,
                                       barrier->dicePerms, local_rng, NULL);
 
         if (barrier->fInvert)
