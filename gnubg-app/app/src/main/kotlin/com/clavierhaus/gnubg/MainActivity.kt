@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
                             androidx.compose.material3.Text(
                                 "CBG stores matches as plain gnubg files (.sgf) in a folder " +
                                 "you pick -- browse them, back them up, open them anywhere " +
-                                "gnubg runs. The same folder works in both CBG and CBG Plus, " +
+                                "gnubg runs. The same folder works in both CBG and CBG Pro, " +
                                 "so upgrading never locks in or loses a match. Choose the " +
                                 "folder once; every save after that is silent."
                             )

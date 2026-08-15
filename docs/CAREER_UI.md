@@ -1,6 +1,6 @@
-# "Your career" — the UI of the signed record (CBG Plus)
+# "Your career" — the UI of the signed record (CBG Pro)
 
-**This documents a CBG Plus surface. The document itself is public by
+**This documents a CBG Pro surface. The document itself is public by
 principle: no CBG documentation ever resides behind the paywall.**
 
 This is the binding UI design for the career's user-facing surface,

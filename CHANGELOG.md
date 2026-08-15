@@ -114,6 +114,8 @@ the engine, or stopped hiding what the engine already knew.
   New match and Home remain available.
 
 ### Changed
+- The companion edition is named CBG Pro (formerly CBG Plus); the
+  folder dialog and the public design documents follow.
 
 - Replaced the redundant Engine settings tab (playing strength is chosen in
   the Play and Coach setup screens) with a Tips & Tricks tab that surfaces the
