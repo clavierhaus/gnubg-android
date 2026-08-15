@@ -111,7 +111,7 @@ fun HomeHubScreen(
                         fontWeight = FontWeight.Normal,
                         fontSize = 48.sp
                     )
-                ) { append("  Plus") }
+                ) { append("  Pro") }
             },
             style = HomeTitleStyle,
             modifier = Modifier
