@@ -195,3 +195,6 @@ tools/clock_harness/tmp/
 
 # The rollout harness Makefile is hand-written, not autotools-generated:
 !tools/rollout_harness/Makefile
+
+# compiled audit tool: built by build_audit.sh, never committed
+tools/narrator/audit/claim_audit
