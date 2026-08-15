@@ -17,7 +17,7 @@ Binaries: https://github.com/clavierhaus/gnubg-android/releases/download/v%v/app
 Builds:
   - versionName: 0.22.5
     versionCode: 23
-    commit: v0.22.5
+    commit: 7e79653a1e85a3283b3c0961ac41d54ac1574557
     subdir: gnubg-app/app
     sudo:
       - apt-get update
