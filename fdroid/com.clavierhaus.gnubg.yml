@@ -27,7 +27,7 @@ Builds:
     build:
       - cd ../../
       - ./build_native_android.sh
-    ndk: r27
+    ndk: 28.2.13676358
 
 AllowedAPKSigningKeys: 367c17e5719674d6c50511b6e41de8026cf762a63d065ed003775285333ab5e3
 

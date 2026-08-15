@@ -65,7 +65,16 @@ CUR_CODE="$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' "$GRADLE")"
 if [ -z "$VERSION" ]; then
   VERSION="$(echo "$CUR_NAME" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')"
 fi
-NEW_CODE=$((CUR_CODE + 1))
+# If the tree is already staged at the requested version (the version
+# jump was committed separately), release AS-IS: keep the versionCode
+# and skip the bump edits -- the 1.0.0 path.
+STAGED=0
+if [ "$VERSION" = "$CUR_NAME" ]; then
+  STAGED=1
+  NEW_CODE=$CUR_CODE
+else
+  NEW_CODE=$((CUR_CODE + 1))
+fi
 TAG="v$VERSION"
 
 hr
@@ -98,9 +107,11 @@ if [ "$DRY" -eq 1 ]; then
 fi
 
 # --- 2. bump + changelog --------------------------------------------------------
-sed -i "s/versionCode = $CUR_CODE/versionCode = $NEW_CODE/" "$GRADLE"
-sed -i "s/versionName = \"$CUR_NAME\"/versionName = \"$VERSION\"/" "$GRADLE"
-sed -i "s/^## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] -- $(date +%Y-%m-%d)/" CHANGELOG.md
+if [ "$STAGED" -eq 0 ]; then
+  sed -i "s/versionCode = $CUR_CODE/versionCode = $NEW_CODE/" "$GRADLE"
+  sed -i "s/versionName = \"$CUR_NAME\"/versionName = \"$VERSION\"/" "$GRADLE"
+  sed -i "s/^## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] -- $(date +%Y-%m-%d)/" CHANGELOG.md
+fi
 mkdir -p fastlane/metadata/android/en-US/changelogs
 printf '%s\n' "${SUMMARY:-Bug fixes and improvements.}" \
   > "fastlane/metadata/android/en-US/changelogs/$NEW_CODE.txt"

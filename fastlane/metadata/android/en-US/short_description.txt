@@ -1,1 +1,1 @@
-The first standalone backgammon app on F-Droid: play and analyse, fully offline
+The complete GNU Backgammon engine: play, coach, rollouts, career. Offline.
