@@ -724,41 +724,63 @@ fun AnalyseScreen(
                     )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GameButton(
-                        label = if (busy) "Working..." else "Analyse",
-                        color = pal.uiActionPositive,
-                        enabled = !busy && idText.isNotBlank()
-                    ) { applyId() }
-
-                    // Plus guidance: one tap from pasted ID to rolling
-                    // candidates -- the term the experienced player is
-                    // looking for, in the designation orange.
-                    GameButton(
-                        label = "Roll out",
-                        color = PlusUi.Interactive,
-                        enabled = !busy && idText.isNotBlank()
-                    ) { rolloutNext = true; applyId() }
-
-                    GameButton(
-                        label = "Copy current",
-                        color = pal.uiActionRoll,
-                        enabled = !busy
+                // Four actions in fixed 2x2 slots. The consolidation brought
+                // the Pro-only Set up button into what had been a three-button
+                // row; unweighted, the fourth clipped off the screen edge on a
+                // 20:9 phone (field screenshot, 2026-08-15) -- the same overflow
+                // class as the cube-row lesson above. Fixed slots by weight:
+                // fits by construction on every aspect ratio; nothing clips,
+                // nothing scrolls.
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        scope.launch {
-                            val ids = withContext(Dispatchers.Default) { Engine.currentIds() }
-                            if (ids != null && ids.size == 2) {
-                                idText = ids[0] + ":" + ids[1]
-                            }
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            GameButton(
+                                label = if (busy) "Working..." else "Analyse",
+                                color = pal.uiActionPositive,
+                                enabled = !busy && idText.isNotBlank()
+                            ) { applyId() }
+                        }
+                        // Plus guidance: one tap from pasted ID to rolling
+                        // candidates -- the term the experienced player is
+                        // looking for, in the designation orange.
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            GameButton(
+                                label = "Roll out",
+                                color = PlusUi.Interactive,
+                                enabled = !busy && idText.isNotBlank()
+                            ) { rolloutNext = true; applyId() }
                         }
                     }
-
-                    // Plus-only control: orange per the PlusUi convention.
-                    GameButton(
-                        label = "Set up",
-                        color = PlusUi.Interactive,
-                        enabled = !busy
-                    ) { beginEdit() }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            GameButton(
+                                label = "Copy current",
+                                color = pal.uiActionRoll,
+                                enabled = !busy
+                            ) {
+                                scope.launch {
+                                    val ids = withContext(Dispatchers.Default) { Engine.currentIds() }
+                                    if (ids != null && ids.size == 2) {
+                                        idText = ids[0] + ":" + ids[1]
+                                    }
+                                }
+                            }
+                        }
+                        // Plus-only control: orange per the PlusUi convention.
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            GameButton(
+                                label = "Set up",
+                                color = PlusUi.Interactive,
+                                enabled = !busy
+                            ) { beginEdit() }
+                        }
+                    }
                 }
 
                 val msg = status
