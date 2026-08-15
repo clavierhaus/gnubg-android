@@ -458,12 +458,30 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
         InitRNGSeed((unsigned int) (barrier->prc->nSeed + ((unsigned int) task_index << 8)),
                     barrier->prc->rngRollout, local_rng);
 
+        /* GATE B TAP (test-only, env-gated): hand the vendored logger a
+         * file and gnubg logs OUR trials in the same per-game sgf format
+         * the desktop writes with `set rollout log on` -- gnubg logging
+         * gnubg, both sides, so a diff names the exact trial and turn of
+         * any divergence. Inert unless GNUBG_ROLLOUT_LOG_DIR is set. */
+        FILE *gate_b_logfp = NULL;
+        {
+            const char *log_dir = getenv("GNUBG_ROLLOUT_LOG_DIR");
+            if (log_dir) {
+                char log_name[512];
+                snprintf(log_name, sizeof log_name, "%s/our-%7.7d-a.sgf",
+                         log_dir, task_index);
+                gate_b_logfp = fopen(log_name, "w");
+            }
+        }
+
         /* Trial index as gnubg's iGame; dice from the ONE shared array. */
         BasicCubefulRolloutNoLocking(aanBoard, aarOutput,
                                       0, task_index,
                                       aci, afCubeDecTop, 1,
                                       barrier->prc, aarsStats, aci[0].nCube,
-                                      barrier->dicePerms, local_rng, NULL);
+                                      barrier->dicePerms, local_rng, gate_b_logfp);
+        if (gate_b_logfp)
+            fclose(gate_b_logfp);
 
         if (barrier->fInvert)
             InvertEvaluationR(aarOutput[0], barrier->pci);
