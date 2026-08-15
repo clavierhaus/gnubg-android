@@ -46,7 +46,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "at.clavierhaus.backgammon"
+        applicationId = "com.clavierhaus.gnubg"
         minSdk = 31
         targetSdk = 36
         versionCode = 100

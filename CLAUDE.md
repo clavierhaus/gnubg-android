@@ -867,38 +867,16 @@ never enters this repo or the mirror. Engineering records
 
 ---
 
-## PLUS-REALM ADDENDUM — reconciled 2026-08-02
+## THE CONSOLIDATION -- 2026-08-15 (supersedes the Plus-realm addendum)
 
-Binding in this repository only; the FOSS edition never sees these.
-
-### The designation colour
-
-Orange (PlusUi.Interactive) IS the Plus designation. The TERM "Roll out" /
-"Rollout" wears it at every site it appears (maintainer ruling): the
-entry-row button, the editor button, the candidates-header button, the
-rolling title, the position-rollout button. FOSS keeps native neutral --
-PlusUi does not exist there, by construction.
-
-### The guidance ruling (maintainer, 2026-08-02)
-
-"FOSS may show the road; in Plus it's our job to guide experienced players
-to exactly where they want to go." Concretely: the thing a player came for
-gets a one-tap doorway AT ENTRY, in the designation colour -- the
-entry-row and editor Roll out buttons (rolloutNext flag, consumed when the
-analysis lands; a candidate-less analysis dissolves it silently). Apply
-the same standard to future Plus features.
-
-### Release discipline
-
-Pre-production releases are DEBUG-SIGNED: ./tools/plus/release_plus.sh
---debug (keystore guards skipped, asset suffixed -debug, notes warn that
-production signing will require reinstall). The release key signs nothing
-until production. The script is the only publish path -- it enforces
-sync, parity, the phrase gate, and signature verification, and it
-publishes the APK + sha256 to GitHub Releases itself.
-
-### The firewall
-
-Strategy, third-party names, correspondence, and market positioning live
-in cbg-private ONLY. This repository is source + product docs; invitees
-read everything here. Before any commit ask: may every invitee see this?
+By maintainer ruling, the two editions merged into ONE piece of
+software: CBG Pro, the signature release of clavierhaus, version 1.0.0,
+application id com.clavierhaus.gnubg (the published, reproducible
+F-Droid identity), signed with the one release key. The plus branch,
+the overlay manifest, the parity machinery, and the edition firewall
+are RETIRED -- this repository is the whole product, public, GPL3.
+Strategy and correspondence remain in cbg-private, the vault, forever.
+The historical Plus-realm addendum lives in git history at the commits
+that carried it; its surviving obligations (vault firewall, one-way
+nothing-network doctrine, data continuity in the user's folder) are now
+plain repository law above.
