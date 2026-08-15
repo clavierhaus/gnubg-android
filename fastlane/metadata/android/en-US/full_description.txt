@@ -1,31 +1,19 @@
-CBG Pro is a milestone for backgammon on Android: the complete GNU Backgammon engine -- the same code, the same neural nets, the same numbers as the desktop reference -- under a modern touch interface, with an analysis, training, and record-keeping suite that has no counterpart on the platform. Entirely offline: no server, no account, no ads, no telemetry -- the app does not request the network permission at all. Free software, GPL-3.0.
+CBG Pro is the complete GNU Backgammon engine on Android -- and 1.0.0 is a major update that turns a strong backgammon app into the most capable analysis and training tool on the platform. It is not "based on" GNU Backgammon: it IS GNU Backgammon 1.08.003, vendored verbatim, with neural-net weights byte-identical to the desktop release. Every number on screen is the engine's own. Entirely offline -- the app does not even request the network permission. Free software, GPL-3.0, with reproducible builds verified by F-Droid's own pipeline against the developer's published binary.
 
-Why there is nothing similar:
+New in the 1.0.0 major update:
 
-* The engine is not "based on" GNU Backgammon -- it IS GNU Backgammon, vendored verbatim with byte-identical neural-net weights. Every number on screen is the engine's own; the app never substitutes its own backgammon logic.
-* Regulation rollouts on a phone: 1296-trial, cubeful, variance-reduced, quasi-random -- the discipline desktop analysts use -- seed-reproducible, with the desktop-comparison harness published in the source repository.
-* A Coach that is correct or silent: every explanation is licensed by the engine's numbers; when the numbers don't justify a sentence, it says less rather than inventing a reason.
-* Your career, signed: finished matches enter a tamper-evident, cryptographically chained record -- your results, provable, in plain files you own.
-* Your Personal Stats: gnubg's own match analysis -- error rates, luck, cube handling -- every number labeled with what it is.
-* A tournament match clock, offered upstream to the GNU Backgammon project.
-* Reproducible builds, with the verification script in the repository.
+* Regulation rollouts on your phone: 1296-trial, cubeful, variance-reduced, quasi-random -- the discipline desktop analysts use -- seed-reproducible, with the desktop-comparison harness published in the source repository.
+* The Coach: every move judged against the engine -- best, fine-but-not-best (with what beat it), or flagged with the equity it cost. Tap any better alternative and watch it play out on the board against your own move. Cube actions judged too.
+* Position set-up editor: build any position by hand, or paste a GNU BG ID, Match ID, or XGID from a forum or a book. Chequer rankings with dice on; double/take/drop equities with dice off.
+* Your Personal Stats: match statistics computed by gnubg's own analysis -- error rates, luck, cube handling -- with every number labeled by what it is. No invented metrics.
+* Your career, signed: finished matches enter a tamper-evident, cryptographically chained record. Your results, provable, in plain files you own.
+* A tournament match clock (delay clock), offered upstream to the GNU Backgammon project itself.
 
-Play
+The foundation, as always:
 
-Full matches at any length, seven strength levels from Beginner to Grandmaster. The complete doubling cube, Crawford, Jacoby, automatic doubles, beavers, and the canonical match-equity tables. A live tutor and the match clock when you want them.
-
-Train
-
-The Coach judges every move: best, fine-but-not-best (with what beat it), or flagged (with the equity it cost). Tap any better alternative and watch it play out on the board against your own. Undo, try the better idea, feel the difference. In longer matches it judges your cube actions too.
-
-Analyse
-
-Paste a GNU BG ID, Match ID or XGID -- or build any position on the set-up editor board. With dice, the engine ranks the plays; without dice, the cube decision. When ranking isn't enough: roll the position out, right on the device.
-
-Review
-
-Save matches as standard SGF and step through them move by move: what you played, what the engine preferred, the cost, the verdict. Files open unchanged in desktop GNU Backgammon and Backgammon Studio.
-
-Your matches, your career, and your settings live in a folder you choose -- plain files, readable by desktop gnubg today and by anything else in twenty years. Nothing is sent anywhere; there is no "anywhere" in this app.
+* Full matches at any length, seven strength levels from Beginner to Grandmaster.
+* Complete cube play, Crawford, Jacoby, beavers, automatic doubles, and the canonical match-equity tables: Kazaross-XG2, Woolsey, Jacobs & Trice, Snowie, and the rest of gnubg's set.
+* Save and review matches as standard SGF -- step through what you played, what the engine preferred, and what it cost. Files open unchanged in desktop GNU Backgammon and Backgammon Studio.
+* Your matches and your career live in a folder you choose -- plain files, readable by anything, in twenty years too. Nothing is ever sent anywhere; there is no "anywhere" in this app.
 
 Requires Android 12 or newer and a 64-bit ARM device.
