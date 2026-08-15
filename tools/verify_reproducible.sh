@@ -38,6 +38,7 @@ echo "== verifying reproducibility of commit $HEAD_SHA =="
 
 WT="$ROOT/tmp/repro"
 rm -rf "$WT"
+git -C "$ROOT" worktree prune
 mkdir -p "$WT"
 
 build_one() {
