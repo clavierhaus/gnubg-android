@@ -13,7 +13,7 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
-## [0.22.8] -- upcoming release
+## [1.0.0] -- upcoming release
 
 ### Added
 - Competition match clock in tournament mode: Off or Competition -- the
