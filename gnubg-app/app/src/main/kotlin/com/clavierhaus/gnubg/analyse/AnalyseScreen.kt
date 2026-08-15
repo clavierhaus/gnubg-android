@@ -494,6 +494,8 @@ fun AnalyseScreen(
                         settings = settings,
                         gameState = BoardState(
                             board = editBoard,
+                            pipCountHuman = remember(editBoard) { Engine.pipCount(editBoard)[0] },
+                            pipCountEngine = remember(editBoard) { Engine.pipCount(editBoard)[1] },
                             dice = if (editD0 > 0 && editD1 > 0) Pair(editD0, editD1) else null,
                             matchScore = intArrayOf(editScoreH, editScoreE),
                             matchLength = editMatchTo,
@@ -516,6 +518,8 @@ fun AnalyseScreen(
                         settings = settings,
                         gameState = BoardState(
                             board = r.board,
+                            pipCountHuman = remember(r) { Engine.pipCount(r.board)[0] },
+                            pipCountEngine = remember(r) { Engine.pipCount(r.board)[1] },
                             dice = r.dice,
                             matchScore = intArrayOf(r.score.first, r.score.second),
                             matchLength = r.matchTo,

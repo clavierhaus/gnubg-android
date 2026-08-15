@@ -289,6 +289,8 @@ fun ReviewScreen(
                         settings = settings,
                         gameState = BoardState(
                             board = p.board,
+                            pipCountHuman = remember(p) { Engine.pipCount(p.board)[0] },
+                            pipCountEngine = remember(p) { Engine.pipCount(p.board)[1] },
                             dice = p.dice,
                             matchScore = intArrayOf(p.score.first, p.score.second),
                             matchLength = p.matchTo,

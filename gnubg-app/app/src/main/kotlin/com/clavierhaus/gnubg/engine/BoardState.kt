@@ -50,8 +50,13 @@ data class BoardState(
     val crawford: Boolean = false,   // gnubg's ms.fCrawford: THIS game is the Crawford game
     val unplayableDice: Set<Int> = emptySet(),  // die faces gnubg lists no move for; greyed in UI
     val resignation: Int = 0,                   // gnubg's ms.fResigned: 1 normal, 2 gammon, 3 backgammon
-    val pipCountHuman: Int = 167,
-    val pipCountEngine: Int = 167,
+    // 0 = not computed: the board then draws NO pip numbers (correct or
+    // silent). The old default of 167 rendered the starting count on any
+    // screen that forgot to compute pips -- Review showed 167/167 on
+    // mid-game positions (field screenshot 2026-08-15). Live play and
+    // every static board now pass Engine.pipCount of the rendered board.
+    val pipCountHuman: Int = 0,
+    val pipCountEngine: Int = 0,
     val phase: GamePhase = GamePhase.WAITING_FOR_ROLL,
     val winner: Int = -1,
     val nPoints: Int = 1,

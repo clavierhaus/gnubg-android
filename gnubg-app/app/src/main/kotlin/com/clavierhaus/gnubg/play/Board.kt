@@ -978,7 +978,7 @@ fun BackgammonBoard(
                     textAlign = android.graphics.Paint.Align.CENTER
                     isAntiAlias = true; isFakeBoldText = true
                 }
-                if (settings.showPipCount) {
+                if (settings.showPipCount && gameState.pipCountHuman > 0 && gameState.pipCountEngine > 0) {
                     canvas.nativeCanvas.drawText("${gameState.pipCountHuman}", barCX, topPipY, pipPaint)
                     canvas.nativeCanvas.drawText("${gameState.pipCountEngine}", barCX, botPipY, pipPaint)
                 }
