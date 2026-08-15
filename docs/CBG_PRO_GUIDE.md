@@ -1,11 +1,11 @@
-# CBG Plus — The Advanced Guide (CBG Plus)
+# CBG Pro — The Advanced Guide (CBG Pro)
 
 *The ultimate offline companion to everything you already play, analyse,
 and browse.*
 
 You have XG on the desktop, or you will. You play on Galaxy, or Heroes, or
 at the club with a clock ticking beside the board. You read BGO. Nothing
-here asks you to give any of that up — CBG Plus is built for the other
+here asks you to give any of that up — CBG Pro is built for the other
 half of your backgammon life: the plane, the train, the hotel bar, the
 tournament hall between rounds, the sofa when the Wi-Fi dies. It is a
 complete, world-class backgammon study environment that owes **nothing to
@@ -105,4 +105,4 @@ it does. This is the companion piece: complete when you are connected,
 and just as complete when you are not — with a signed career, on-device
 rollouts, and a coach under oath, none of which exist anywhere else.
 
-*CBG Plus. The whole game, in your pocket, owing nothing to anyone.*
+*CBG Pro. The whole game, in your pocket, owing nothing to anyone.*

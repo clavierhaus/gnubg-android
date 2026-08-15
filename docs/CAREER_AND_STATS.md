@@ -1,6 +1,6 @@
-# The Career and the Stats Panel (CBG Plus) — architecture and reasoning
+# The Career and the Stats Panel (CBG Pro) — architecture and reasoning
 
-**This documents CBG Plus features. The document itself is public by
+**This documents CBG Pro features. The document itself is public by
 principle: no CBG documentation ever resides behind the paywall. What it
 describes is part of the paid edition; the description is everyone's.** It is the maintainer's
 architecture note for the career/stats arc: what the stats panel is, what the
