@@ -13,6 +13,19 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [1.0.1] -- 2026-08-15
+
+### Fixed
+- Analyse: the entry action buttons (Analyse / Roll out / Copy current /
+  Set up) sit in fixed 2x2 slots and no longer clip off the screen edge
+  on tall displays.
+- Pip counts in Review Match and on the Analyse boards are computed
+  from the position actually shown; an uncomputed count is no longer
+  rendered as the starting 167.
+
+(1.0.0 was tagged and published on GitHub but never reached F-Droid;
+1.0.1 is the same major release with the two fixes above.)
+
 ## [1.0.0] -- upcoming release
 
 ### Added
