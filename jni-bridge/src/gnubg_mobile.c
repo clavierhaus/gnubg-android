@@ -668,6 +668,7 @@ FACADE_FILE_OP(gnubg_mobile_load_match,    CommandLoadMatch)
 FACADE_FILE_OP(gnubg_mobile_save_match,    CommandSaveMatch)
 FACADE_FILE_OP(gnubg_mobile_load_position, CommandLoadPosition)
 FACADE_FILE_OP(gnubg_mobile_save_position, CommandSavePosition)
+FACADE_FILE_OP(gnubg_mobile_import_file,   CommandImportAuto)
 #undef FACADE_FILE_OP
 
 /* ===========================================================================

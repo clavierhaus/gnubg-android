@@ -43,6 +43,7 @@ add_library(gnubg-engine SHARED
     ${ENGINE}/sgf_l.c
     ${ENGINE}/play.c
     ${ENGINE}/analysis.c
+    ${ENGINE}/import.c
     ${ENGINE}/format.c
     ${ENGINE}/formatgs.c
     ${ENGINE}/drawboard.c
