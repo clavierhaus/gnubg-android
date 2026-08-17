@@ -58,7 +58,18 @@ done
 
 CMAKE_BUILD="$ROOT/jni-bridge/build-android-arm64"
 JNILIBS="$ROOT/gnubg-app/app/src/main/jniLibs/arm64-v8a"
-NDK_TOOLCHAIN="/home/erweitert/android-sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake"
+# The NDK version, like the edition (APP_ID) below, lives in gradle -- read
+# it, never hardcode it. A stale hardcoded 27.x broke --reconfigure once
+# gradle moved to 28.x. Fall back to the newest installed NDK if the exact
+# version is absent, and fail loudly if none is found.
+SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/home/erweitert/android-sdk}}"
+NDK_VER="$(sed -nE 's/.*ndkVersion *= *"([0-9.]+)".*/\1/p' gnubg-app/app/build.gradle.kts | head -n1)"
+NDK_TOOLCHAIN="$SDK/ndk/$NDK_VER/build/cmake/android.toolchain.cmake"
+if [ ! -f "$NDK_TOOLCHAIN" ]; then
+    alt="$(ls -d "$SDK"/ndk/*/ 2>/dev/null | sort -V | tail -n1)"
+    NDK_TOOLCHAIN="${alt%/}/build/cmake/android.toolchain.cmake"
+fi
+[ -f "$NDK_TOOLCHAIN" ] || die "no NDK toolchain under $SDK/ndk (gradle wants $NDK_VER)"
 APP_DIR="$ROOT/gnubg-app"
 # The edition truth lives in gradle; hardcoding it here once launched the
 # free app after installing the Plus build -- an entire debugging session
