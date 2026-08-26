@@ -1,6 +1,6 @@
-CBG Pro is the complete GNU Backgammon engine on Android -- and 1.0.0 is a major update that turns a strong backgammon app into the most capable analysis and training tool on the platform. It is not "based on" GNU Backgammon: it IS GNU Backgammon 1.08.003, vendored verbatim, with neural-net weights byte-identical to the desktop release. Every number on screen is the engine's own. Entirely offline -- the app does not even request the network permission. Free software, GPL-3.0, with reproducible builds verified by F-Droid's own pipeline against the developer's published binary.
+CBG Pro is the complete GNU Backgammon engine on Android -- and 1.0 is a major update that turns a strong backgammon app into the most capable analysis and training tool on the platform. It is not "based on" GNU Backgammon: it IS GNU Backgammon 1.08.003, vendored verbatim, with neural-net weights byte-identical to the desktop release. Every number on screen is the engine's own. Entirely offline -- the app does not even request the network permission. Free software, GPL-3.0, with reproducible builds verified by F-Droid's own pipeline against the developer's published binary.
 
-New in the 1.0.0 major update:
+New in the 1.0 major update:
 
 * Regulation rollouts on your phone: 1296-trial, cubeful, variance-reduced, quasi-random -- the discipline desktop analysts use -- seed-reproducible, with the desktop-comparison harness published in the source repository.
 * The Coach: every move judged against the engine -- best, fine-but-not-best (with what beat it), or flagged with the equity it cost. Tap any better alternative and watch it play out on the board against your own move. Cube actions judged too.

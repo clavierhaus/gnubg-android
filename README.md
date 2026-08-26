@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Android-12%2B-brightgreen" alt="Android 12+">
 </p>
 
-**CBG Pro 1.0.0 is a milestone for backgammon on Android: the complete
+**CBG Pro 1.0 is a milestone for backgammon on Android: the complete
 GNU Backgammon engine — the same code, the same neural nets, the same
 numbers as the desktop reference — under a modern touch interface, with
 an analysis, training, and record-keeping suite that has no counterpart
