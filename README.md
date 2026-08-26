@@ -2,6 +2,16 @@
 
 *powered by GNU Backgammon*
 
+<p align="center">
+  <a href="https://f-droid.org/packages/com.clavierhaus.gnubg/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80"></a>
+</p>
+
+<p align="center">
+  <a href="https://f-droid.org/packages/com.clavierhaus.gnubg/"><img src="https://img.shields.io/f-droid/v/com.clavierhaus.gnubg" alt="F-Droid version"></a>
+  <img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License">
+  <img src="https://img.shields.io/badge/Android-12%2B-brightgreen" alt="Android 12+">
+</p>
+
 **CBG Pro 1.0.0 is a milestone for backgammon on Android: the complete
 GNU Backgammon engine — the same code, the same neural nets, the same
 numbers as the desktop reference — under a modern touch interface, with
