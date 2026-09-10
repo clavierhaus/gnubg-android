@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.R
+import com.clavierhaus.gnubg.shared.OnePicture
 
 @Composable
 fun HomeHubScreen(
@@ -45,18 +45,11 @@ fun HomeHubScreen(
     onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // The hub never scrolls, so on a pane shorter than the one its
-        // metrics were drawn for, the menu block is what must yield -- the
-        // same law as the game rail (issue #7). Every vertical measure of the
-        // menu (entry type, note type, the gaps between entries, the offset
-        // under the title) is one proportion of the pane height, capped at
-        // today's values: at or above the reference height nothing moves; on
-        // a shorter pane the whole block shrinks as one picture instead of
-        // losing its last entry past the floor (field report 2026-09-10:
-        // "Review Match" cut off at 2772x1272). The title, the gear and the
-        // colophon are anchored to the edges and keep their size.
-        val hubScale = (maxHeight / HUB_REFERENCE_HEIGHT).coerceAtMost(1f)
+    // The screen is one picture (shared/ScreenGrid.kt): drawn for the
+    // reference device in the dp and sp below, scaled as a whole on a smaller
+    // pane. The hub's own per-entry scaling of 2026-09-10 is replaced by it.
+    OnePicture { _ ->
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
             painter = painterResource(id = R.drawable.home_hub_background),
             contentDescription = null,
@@ -167,31 +160,31 @@ fun HomeHubScreen(
                 // Indented well clear of the title's 48dp left edge, so the
                 // header hangs to the left of the menu block and the two read
                 // as separate matter rather than one column.
-                .padding(start = 112.dp, top = 72.dp * hubScale)
+                .padding(start = 112.dp, top = 72.dp)
         ) {
-            HomeHubEntry("Play Tournament Match", onPlay, note = "with personal stats", scale = hubScale)
-            Spacer(modifier = Modifier.height(18.dp * hubScale))
+            HomeHubEntry("Play Tournament Match", onPlay, note = "with personal stats")
+            Spacer(modifier = Modifier.height(18.dp))
             // The fourth mode (docs/COACH.md): play gnubg with the engine
             // looking over your shoulder. Second position: learning sits
             // between competing and analysing.
-            HomeHubEntry("Train with the Coach", onCoach, note = "with explanations", scale = hubScale)
-            Spacer(modifier = Modifier.height(18.dp * hubScale))
+            HomeHubEntry("Train with the Coach", onCoach, note = "with explanations")
+            Spacer(modifier = Modifier.height(18.dp))
             // Second: the feature people still open XG Mobile for.
-            HomeHubEntry("Analyse Position", onAnalysePosition, note = "with the set-up editor", scale = hubScale)
-            Spacer(modifier = Modifier.height(18.dp * hubScale))
+            HomeHubEntry("Analyse Position", onAnalysePosition, note = "with the set-up editor")
+            Spacer(modifier = Modifier.height(18.dp))
             // Third, now that it exists.
-            HomeHubEntry("Review Match", onReviewMatch, scale = hubScale)
+            HomeHubEntry("Review Match", onReviewMatch)
         }
 
     }
+    } // end OnePicture
 }
 
 @Composable
 private fun HomeHubEntry(
     label: String,
     onClick: () -> Unit,
-    note: String? = null,
-    scale: Float = 1f
+    note: String? = null
 ) {
     // Emphasise the VERB: the first word (Play / Train / Analyse / Review) in
     // GNU-orange, the rest in the entry's default colour -- echoing the "GNU"
@@ -208,7 +201,7 @@ private fun HomeHubEntry(
                 withStyle(SpanStyle(color = GnuOrange)) { append(verb) }
                 append(rest)
             },
-            style = HomeEntryStyle.copy(fontSize = HomeEntryStyle.fontSize * scale)
+            style = HomeEntryStyle
         )
         // Indented second line rather than an inline suffix: a margin note sits
         // beside its line, and the entries are already long at 36sp on a
@@ -216,7 +209,7 @@ private fun HomeHubEntry(
         if (note != null) {
             BasicText(
                 text = note,
-                style = HomeNoteStyle.copy(fontSize = HomeNoteStyle.fontSize * scale),
+                style = HomeNoteStyle,
                 modifier = Modifier.padding(start = 28.dp, top = 0.dp)
             )
         }
@@ -238,13 +231,6 @@ private val DejaVuSerif = FontFamily(
 private const val HOME_SHADOW_OFFSET_PX = 2f
 private const val HOME_SHADOW_BLUR_PX = 8f
 private val GEAR_SIZE = 28.dp
-
-// The pane height the menu's metrics (36sp entries, 30sp notes, 18dp gaps,
-// 72dp offset) were drawn for. Chosen at or below the test device's landscape
-// height, so that device and anything taller render exactly as before; only
-// shorter panes scale down. Verified against the OnePlus 15 geometry
-// (1272 px tall) at densities 480 and 540 -- see the commit message.
-private val HUB_REFERENCE_HEIGHT = 448.dp
 
 private val HomeShadow = Shadow(
     color = Color.Black,

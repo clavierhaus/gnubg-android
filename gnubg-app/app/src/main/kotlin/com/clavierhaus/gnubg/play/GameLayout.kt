@@ -17,6 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clavierhaus.gnubg.shared.OnePicture
+import com.clavierhaus.gnubg.shared.Unscaled
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
 import com.clavierhaus.gnubg.engine.GameViewModel
@@ -97,6 +99,11 @@ fun GameLayout(
             onOpenSettings = onOpenSettings
         )
     } else {
+        // The screen is one picture (shared/ScreenGrid.kt): the rail and its
+        // controls are drawn for the reference device and scaled as a whole
+        // on a smaller pane; the board opts out below, being drawn from its
+        // own canvas size already.
+        OnePicture { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left panel -- fixed proportion of screen
@@ -111,34 +118,14 @@ fun GameLayout(
                     // devices (phone/tablet) like the board checkers do, rather than
                     // a fixed dp. Capped so it never dominates a very wide panel.
                     val avatarSize = (maxWidth * 0.29f).coerceIn(20.dp, 45.dp)
-                    // THE RAIL IS ONE PICTURE, SCALED. The rail never scrolls and
-                    // its tallest phases (a resignation offer: text, Accept,
-                    // Play on, above the lifecycle rows) fill the reference pane
-                    // to the floor. On a shorter pane nothing here may yield
-                    // piecemeal: a Column that is short of height hands its last
-                    // children a shrinking maximum, and a button so measured keeps
-                    // its padding and loses its label -- the green sliver where
-                    // "Accept" should have been, with "Play on" gone entirely
-                    // (2772x1272 at density 480, 2026-09-10). A blocking decision
-                    // the player cannot answer is a softlock, so this is not
-                    // cosmetic.
-                    //
-                    // So the rail lays out AS IF the pane were always the reference
-                    // height: below it, every dp and sp inside the rail is scaled
-                    // by the same factor through the density the children read.
-                    // Layout, drawing and hit-testing all go through that density,
-                    // so tap rectangles follow the drawing (layout law: one
-                    // rectangle). At or above the reference height the factor is 1
-                    // and nothing moves. The board pane is outside this scope.
-                    val railScale = (maxHeight / RAIL_REFERENCE_HEIGHT).coerceAtMost(1f)
-                    val outerDensity = androidx.compose.ui.platform.LocalDensity.current
-                    androidx.compose.runtime.CompositionLocalProvider(
-                        androidx.compose.ui.platform.LocalDensity provides
-                            androidx.compose.ui.unit.Density(
-                                density = outerDensity.density * railScale,
-                                fontScale = outerDensity.fontScale
-                            )
-                    ) {
+                    // The rail is scaled with the whole screen by OnePicture
+                    // above. Its tallest phase (a resignation offer: text,
+                    // Accept, Play on, above the lifecycle rows) fills the
+                    // reference pane to the floor, and a Column short of height
+                    // yields by squeezing its LAST children -- a GameButton so
+                    // measured keeps its padding and loses its label (the green
+                    // sliver where "Accept" was, 2026-09-10). Scaling the picture
+                    // is the only yield that keeps every control whole.
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
@@ -486,16 +473,16 @@ fun GameLayout(
                             }
                         }
                     }
-                    } // end rail density scope
                 }
 
-                // Board -- remaining space
+                // Board -- remaining space. Unscaled: the board is drawn from its
+                // own canvas size (layout law), so the device's density applies.
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(0.82f)
                 ) {
-                    BackgammonBoard(settings, gameState, viewModel, tutorMode)
+                    Unscaled { BackgammonBoard(settings, gameState, viewModel, tutorMode) }
                 }
             }
 
@@ -540,6 +527,7 @@ fun GameLayout(
                 }
             )
         }
+        } // end OnePicture
     }
     }
 }
@@ -551,12 +539,6 @@ private enum class PlayLifecycleAction {
     NEW_MATCH,
     LEAVE_MATCH
 }
-
-// The pane height the rail's metrics were drawn for -- chosen at or below the
-// test device's landscape height, so the Pixel 8 Pro and anything taller render
-// exactly as before and only shorter panes scale down. Same reference as the
-// hub (HomeHubScreen.kt).
-private val RAIL_REFERENCE_HEIGHT = 448.dp
 
 @Composable
 private fun PlayLifecyclePanel(
@@ -761,6 +743,11 @@ private fun MatchSetupScreen(
     onOpenSettings: (() -> Unit)? = null
 ) {
     val pal = LocalBoardPalette.current
+    // The screen is one picture (shared/ScreenGrid.kt): every control below is
+    // drawn for the reference device and scaled as a whole on a smaller pane,
+    // so the chip row, the clock note and the +/- column keep their labels
+    // instead of being clipped by a Column short of room (2026-09-10).
+    OnePicture { _ ->
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1063,6 +1050,7 @@ private fun MatchSetupScreen(
             }
         }
     }
+    } // end OnePicture
 }
 
 @Composable

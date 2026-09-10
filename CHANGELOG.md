@@ -14,22 +14,18 @@ the engine, or stopped hiding what the engine already knew.
 ## [Unreleased]
 
 ### Fixed
-- The buttons at the foot of the left rail during play -- New game, New
-  match, Home, Save match -- stay on the screen on every geometry. On
-  tall, narrow displays a completed match could push them past the
-  bottom edge, where they were invisible but still answered a tap
-  (reported from a 2772x1272 device). The rail now lays out as one
-  picture scaled to the height of the pane it has, so every phase --
-  including a resignation or cube offer, which must always be
-  answerable -- fits above those buttons with nothing squeezed.
-- The home hub's menu no longer loses "Review Match" past the bottom
-  edge on short, wide displays: the menu block scales with the height
-  of the screen it has, while the title and the engine colophon stay
-  where they are.
-- Tournament Match setup: the career note at the bottom left no longer
-  rises into the Chequer-play tutor buttons on short, wide displays. It
-  now sits in the same row as Start Match, and the controls above make
-  room for it.
+- Every screen now fits every display without losing a control. Each
+  screen is drawn for a reference size (the Pixel 8 Pro's landscape
+  box) and, on a smaller or differently shaped display, is scaled as
+  one picture -- type, buttons and spacing together -- instead of
+  shedding whatever fell past the edge. The board itself is unaffected;
+  it was already drawn relative to its own size. First reported from a
+  2772x1272 device: the New game / Save match buttons after a finished
+  game (issue #7), the hub's last menu entry, the career note over the
+  tutor buttons, and a resignation offer whose Accept / Play on
+  buttons were squeezed to nothing -- a blocking decision that could
+  not be answered. Converted so far: hub, Tournament Match setup, the
+  play screen.
 
 ## [1.0.1] -- 2026-08-15
 
