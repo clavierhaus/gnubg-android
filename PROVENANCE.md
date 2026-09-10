@@ -8,7 +8,8 @@ The source files in `engine-core/` are derived from the **GNU Backgammon** proje
 |---|---|
 | Project | GNU Backgammon (gnubg) |
 | Upstream URL | https://www.gnu.org/software/gnubg/ |
-| Source repository | https://gitlab.com/gnubg/gnubg |
+| Source repository | https://git.savannah.gnu.org/git/gnubg.git (the only source of truth; the GitLab mirror named here until 2026-09-10 does not serve anonymously) |
+| Vendoring base commit | 284efab7 (2026-06-07) for set.c; 7b2e857d (2026-05-31) for dice.c, multithread.c, rollout.c, sgf.c, analysis.c, renderprefs.c -- established by hash-matching each vendored file against upstream history, 2026-09-06/10 |
 | Version used | 1.08.003 (as identified by `engine-core/config.h: VERSION`) |
 | Licence | GNU General Public License v3 or later (GPL-3.0-or-later) |
 | Licence text | See `COPYING` in `upstream-source/gnubg/` |
@@ -380,7 +381,7 @@ itself and all NEON intrinsic code paths are unchanged.
 
 **To verify the diff:**
 ```bash
-git clone https://gitlab.com/gnubg/gnubg upstream-verify/
+git clone https://git.savannah.gnu.org/git/gnubg.git upstream-verify/
 diff upstream-verify/gnubg/lib/neuralnetsse.c engine-core/lib/neuralnetsse.c
 ```
 
@@ -466,7 +467,7 @@ identical to their upstream counterparts **except**:
 To verify unmodified files, clone the upstream repository and diff:
 
 ```bash
-git clone https://gitlab.com/gnubg/gnubg upstream-verify/
+git clone https://git.savannah.gnu.org/git/gnubg.git upstream-verify/
 diff upstream-verify/gnubg/eval.c engine-core/eval.c
 # Expected: no output (files identical)
 diff upstream-verify/gnubg/lib/neuralnet.c engine-core/lib/neuralnet.c

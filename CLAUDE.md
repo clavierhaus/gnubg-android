@@ -947,3 +947,46 @@ at the design, once. The test for any layout change is therefore ONE
 device -- the reference -- plus the geometry sweep (tools/geometry_sweep.sh,
 the wm size / wm density matrix, screenshots into tmp/) for the record. A
 new device report becomes a row in the sweep, not a session.
+
+## THE UPSTREAM SOURCE OF TRUTH (maintainer order, 2026-09-06; entered 2026-09-10)
+
+`https://git.savannah.gnu.org/git/gnubg.git` is the ONLY source of truth for
+upstream GNU Backgammon. Not `gitlab.com/gnubg/gnubg` (which PROVENANCE.md
+named until 2026-09-10 and which does not serve anonymously), not the
+bug-gnubg mailing list, not a distro tarball, not a mirror.
+
+The mailing list is a courtesy channel, not a review queue. TAKAHASHI Kaoru
+and Philippe Michel hold commit access and push their own work; a patch
+posted there with no reply is MERGED, not ignored (verified 2026-09-06:
+every one of Takahashi's August patches was in master within a day of its
+posting, and several fixes never touched the list at all). NEVER infer
+upstream state from list traffic. Read the repository.
+
+## THE MONTHLY UPSTREAM CHECK (maintainer order, 2026-09-06; entered 2026-09-10)
+
+On the FIRST DAY OF EVERY MONTH, check the source of truth against the
+vendoring base pinned in PROVENANCE.md. Next check: 2026-10-01.
+
+EVERY change in the source of truth is relevant and is carried into
+engine-core. There is no upstream change we decline.
+
+The VERSION NUMBER bumps only when the carried changes touch OUR PART:
+code compiled into libgnubg-engine.so AND reachable from the port. A
+change to a vendored file that lands in a branch we do not compile
+(USE_GTK, HAVE_LIBGMP, USE_MULTITHREAD) or an entry point nothing in
+jni-bridge calls is carried, recorded, and does NOT bump.
+
+That verdict is EVIDENCE, per commit, never a judgement of the subject
+line: name the compiled unit, name the caller in jni-bridge or the config
+macro that excludes it. "Looks like a GTK thing" is not a finding.
+
+## AN UPSTREAM SYNC SHIPS, AND IS ANNOUNCED (maintainer order, 2026-09-06; entered 2026-09-10)
+
+Every sync that bumps the version produces two artifacts, both required:
+
+1. An F-Droid release via release_fdroid.sh, whose CHANGELOG entry states
+   PER PATCH why it was incorporated -- which app-visible behaviour it
+   touches, in the port's own terms, not upstream's commit subject.
+2. A posting to bug-gnubg@gnu.org stating that the named upstream commits
+   have been merged into a new CBG release, with the commit hashes and the
+   F-Droid version. Upstream is told what its work reached.
