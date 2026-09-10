@@ -18,9 +18,10 @@ the engine, or stopped hiding what the engine already knew.
   match, Home, Save match -- stay on the screen on every geometry. On
   tall, narrow displays a completed match could push them past the
   bottom edge, where they were invisible but still answered a tap
-  (reported from a 2772x1272 device). The rail's phase content now
-  yields to those buttons instead of displacing them, and the rail's
-  vertical spacing scales with the height of the pane it has.
+  (reported from a 2772x1272 device). The rail now lays out as one
+  picture scaled to the height of the pane it has, so every phase --
+  including a resignation or cube offer, which must always be
+  answerable -- fits above those buttons with nothing squeezed.
 - The home hub's menu no longer loses "Review Match" past the bottom
   edge on short, wide displays: the menu block scales with the height
   of the screen it has, while the title and the engine colophon stay
