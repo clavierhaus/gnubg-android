@@ -25,6 +25,10 @@ the engine, or stopped hiding what the engine already knew.
   edge on short, wide displays: the menu block scales with the height
   of the screen it has, while the title and the engine colophon stay
   where they are.
+- Tournament Match setup: the career note at the bottom left no longer
+  rises into the Chequer-play tutor buttons on short, wide displays. It
+  now sits in the same row as Start Match, and the controls above make
+  room for it.
 
 ## [1.0.1] -- 2026-08-15
 
