@@ -58,7 +58,29 @@ done
 
 CMAKE_BUILD="$ROOT/jni-bridge/build-android-arm64"
 JNILIBS="$ROOT/gnubg-app/app/src/main/jniLibs/arm64-v8a"
-NDK_TOOLCHAIN="/home/erweitert/android-sdk/ndk/27.0.11718014/build/cmake/android.toolchain.cmake"
+# The NDK is resolved the way build_native_android.sh (the reproducible
+# build) resolves it, from the SAME pinned version -- read from that file,
+# never re-typed here (single-source law). A hard-coded r27 path lived on
+# this line until 2026-09-10; it broke the first --reconfigure after the
+# machine moved to the r28 the F-Droid build pins.
+NDK_VERSION="$(sed -n 's/^NDK_VERSION="\${NDK_VERSION:-\([^}]*\)}"/\1/p' "$ROOT/build_native_android.sh")"
+[ -n "$NDK_VERSION" ] || die "could not read NDK_VERSION from build_native_android.sh"
+SDK_ROOT=""
+for candidate in "${ANDROID_SDK_ROOT:-}" "${ANDROID_HOME:-}" "/home/erweitert/android-sdk"; do
+  [ -n "$candidate" ] && [ -d "$candidate/ndk" ] && { SDK_ROOT="$candidate"; break; }
+done
+[ -n "$SDK_ROOT" ] || die "Android SDK with an ndk/ directory not found (set ANDROID_SDK_ROOT)"
+if [ -n "${ANDROID_NDK_HOME:-}" ] && [ -d "$ANDROID_NDK_HOME" ]; then
+  NDK_ROOT="$ANDROID_NDK_HOME"
+elif [ -d "$SDK_ROOT/ndk/$NDK_VERSION" ]; then
+  NDK_ROOT="$SDK_ROOT/ndk/$NDK_VERSION"
+else
+  NDK_ROOT="$(find "$SDK_ROOT/ndk" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n1)"
+  [ -n "$NDK_ROOT" ] || die "no NDK installed under $SDK_ROOT/ndk (pinned: $NDK_VERSION)"
+  warn "pinned NDK $NDK_VERSION not installed; using $(basename "$NDK_ROOT")"
+fi
+NDK_TOOLCHAIN="$NDK_ROOT/build/cmake/android.toolchain.cmake"
+[ -f "$NDK_TOOLCHAIN" ] || die "toolchain file missing: $NDK_TOOLCHAIN"
 APP_DIR="$ROOT/gnubg-app"
 # The edition truth lives in gradle; hardcoding it here once launched the
 # free app after installing the Plus build -- an entire debugging session
