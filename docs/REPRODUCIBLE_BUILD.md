@@ -57,3 +57,38 @@ tell you so — that is the comparison doing its job.
 Both editions are signed with the same release key
 (`367c17e5…`). Verification never needs it: the claim is about the
 bytes before the signature, and those you can produce yourself.
+
+## F-Droid's environment, locally (added 2026-09-11)
+
+The check above proves this tree builds the same way twice **on one
+machine**. It does not prove it builds the same way in F-Droid's
+container, and for three releases that difference was met for the first
+time inside F-Droid's CI, forty minutes a round. The fourth release
+found three new ways to fail there before a single line of Gradle ran:
+a stale edit in the fdroiddata clone, a recipe rewrite that duplicated
+every published build block, and a hard-coded NDK path in the dev build.
+None of them was about the code.
+
+So the release now builds **in F-Droid's container, on the maintainer's
+machine, first**:
+
+    ./tools/fdroid_build_local.sh 102
+
+That script is fdroiddata's own `fdroid build` CI job, mirrored line by
+line (image `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie`,
+fdroidserver at master, `fdroid build --test --on-server --no-tarball`),
+with only the GitLab plumbing removed. The APK it leaves in
+`$FDROIDDATA/tmp/` is byte-for-byte what F-Droid's verifier will build
+for the same recipe commit -- it is the same program, in the same image,
+reading the same recipe.
+
+The cycle then runs in the only order that makes the verifier a
+confirmation rather than a step: build here in the container, sign that
+APK, attach it to the GitHub release, push the recipe, and F-Droid's
+comparison passes on its first run. A failure shows up here, in minutes,
+with the log in front of the maintainer -- and it is fixed in the recipe
+or the scripts *before* anything is tagged.
+
+The named volumes `fdroid-build-cache-ndk` and `fdroid-build-cache-gradle`
+keep the NDK and Gradle downloads between runs; `podman volume rm` them
+to start cold.
