@@ -170,11 +170,7 @@ MT_CreateThreads(void)
     for (i = 0; i < td.numThreads; i++) {
         ThreadLocalData *pTLD = MT_CreateThreadLocalData(i);
 
-#if GLIB_CHECK_VERSION (2,32,0)
         if (!(thread[i] = g_thread_try_new(NULL, MT_WorkerThreadFunction, pTLD, NULL)))
-#else
-        if (!(thread[i] = g_thread_create(MT_WorkerThreadFunction, pTLD, TRUE, NULL)))
-#endif
             printf(_("Failed to create thread\n"));
 #if defined(DEBUG_MULTITHREADED)
         else {

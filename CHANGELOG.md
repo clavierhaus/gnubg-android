@@ -13,6 +13,52 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Changed
+- Upstream sync with GNU Backgammon master at git.savannah.gnu.org,
+  commit b1b2772c (2026-09-10). Thirty-one upstream commits since the
+  previous vendoring (base 284efab7 / 7b2e857d, June 2026) are carried
+  into engine-core, every one of them; two change what the app does:
+  - The coach's ranked alternatives are ordered correctly when plays
+    tie. gnubg's move comparators never returned "equal", so two tied
+    plays could each sort before the other -- undefined in qsort, and
+    Android's C library sorts differently from the desktop's, so the
+    "1"/"2"/"3" alternatives could be ordered differently on the phone
+    than in desktop gnubg for the same position (upstream 0faafabb).
+  - Cube decisions at cube 128 and above no longer read a gammon price
+    from outside its table; the lookup is clamped to the table's last
+    level (upstream 9838b31c). Reachable: the app shows cube 64 in the
+    field.
+  Three more touch code the app runs and change nothing it shows:
+  the deterministic-noise hash buffer typed unsigned (8b28f715 -- ARM's
+  char is already unsigned, so the phone's numbers are identical);
+  the player-name limit written as MAX_NAME_LEN - 1, still 31
+  (a8a2df74); a tidied CopyName in the SGF writer (b1b2772c).
+  The remaining twenty-six are carried for fidelity and are inert in
+  this build, each for a named reason: GTK-only code moved to gtk/
+  (c2d01067, 8e1ec559, 58898f6e, c2406c6b, da3ab833 -- USE_GTK is not
+  defined); the multithreaded noise mutex (5cbe8e69 -- USE_MULTITHREAD
+  is not defined, and every strength the app offers uses deterministic
+  noise, the branch the mutex does not guard); bearoff and hypergammon
+  database readers (1c3fd39d, 82223647, and the bearoff.c half of
+  4ef92814 -- the app ships no .bd file, pbc1 is the heuristic); the
+  BBS random generator and dice files (f502a8f6, a57117a1, a4ebc5f1,
+  c0e31ecc, 499bbdb8 -- not selectable in the app); the rollout seed
+  cast (rollout.c half of 4ef92814 -- the app's rollout pool in
+  stubs.c already carried the unsigned cast); evaluation-cache resize
+  (7a01271d, ba044027 -- EvalCacheResize is never called by the app;
+  the cache is created once at the default size); the GLib floor
+  raised to 2.32 (2673059b -- the app builds against GLib 2.88);
+  resource leaks in export and SGF error paths (655022dc); the
+  external player, temp files and analyser hygiene (9da45d4c,
+  fd43960e, 522029b8, 9c392742, 1f922880, e98605cc, f1df4a73,
+  e6efa104 -- code the app never enters, or a comment).
+  The port's five documented seams (eval.c, eval.h, play.c,
+  multithread.h, lib/neuralnetsse.c; PROVENANCE.md) were re-applied by
+  three-way merge; multithread.h's condition-variable seam followed
+  upstream in dropping its pre-2.32 GLib branch. Verified: the host
+  rollout harness builds the port's exact engine subset and its
+  same-seed rollouts are byte-identical before and after the sync.
+
 ### Fixed
 - Every screen now fits every display without losing a control. Each
   screen is drawn for a reference size (the Pixel 8 Pro's landscape

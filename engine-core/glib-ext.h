@@ -13,8 +13,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * $Id: glib-ext.h,v 1.16 2021/08/22 15:20:33 plm Exp $
  */
 
 /* Map/GList extensions and utility functions for GLIB */
@@ -28,14 +26,9 @@
 #define GLIBEXT_MERGE(a,b)  a##b
 #define GLIBEXT_LABEL_(a,b) GLIBEXT_MERGE(a, b)
 
-#if ! GLIB_CHECK_VERSION(2,28,0)
-extern void g_list_free_full(GList * list, GDestroyNotify free_func);
-#endif
-
 typedef GList GMap;
 typedef GList GMapEntry;
 
-extern void glib_ext_init(void);
 extern GType g_list_boxed_get_type(void);
 extern GType g_map_boxed_get_type(void);
 extern GType g_mapentry_boxed_get_type(void);

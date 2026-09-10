@@ -796,6 +796,7 @@ CommandExportPositionSnowieTxt(char *sz)
 
     FILE *pf;
     char buffer[256];
+    int fDontClose = FALSE;
 
     sz = NextToken(&sz);
 
@@ -810,9 +811,10 @@ CommandExportPositionSnowieTxt(char *sz)
     if (!confirmOverwrite(sz, fConfirmSave))
         return;
 
-    if (!strcmp(sz, "-"))
+    if (!strcmp(sz, "-")) {
         pf = stdout;
-    else if (!(pf = g_fopen(sz, "w"))) {
+        fDontClose = TRUE;
+    } else if (!(pf = g_fopen(sz, "w"))) {
         outputerr(sz);
         return;
     }
@@ -821,7 +823,7 @@ CommandExportPositionSnowieTxt(char *sz)
     fputs(buffer, pf);
     fputs("\n", pf);
 
-    if (pf != stdout)
+    if (!fDontClose)
         fclose(pf);
 
     setDefaultFileName(sz);

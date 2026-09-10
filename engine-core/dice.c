@@ -51,7 +51,6 @@
 #include "SFMT.h"
 #include "isaac.h"
 #include <glib/gstdio.h>
-#include "glib-ext.h"
 
 #if USE_GTK
 #include "gtk/gtkgame.h"
@@ -188,7 +187,7 @@ InitRNGBBSFactors(char *sz0, char *sz1, rngcontext * rngctx)
         return -1;
     }
 
-    if (mpz_init_set_str(q, sz1, 10) || mpz_sgn(p) < 1) {
+    if (mpz_init_set_str(q, sz1, 10) || mpz_sgn(q) < 1) {
         mpz_clear(p);
         mpz_clear(q);
         return -1;
@@ -309,13 +308,16 @@ BBSCheckInitialSeed(rngcontext * rngctx)
     if (mpz_sgn(rngctx->zSeed) < 1)
         return BBSInitialSeedFailure(rngctx);
 
+    mpz_init(z);
+    mpz_init(zCycle);
+
     for (iAttempt = 0; iAttempt < 32; iAttempt++) {
-        mpz_init_set(z, rngctx->zSeed);
+        mpz_set(z, rngctx->zSeed);
 
         for (i = 0; i < 8; i++)
             mpz_powm_ui(z, z, 2, rngctx->zModulus);
 
-        mpz_init_set(zCycle, z);
+        mpz_set(zCycle, z);
 
         for (i = 0; i < 16; i++) {
             mpz_powm_ui(z, z, 2, rngctx->zModulus);
@@ -637,16 +639,9 @@ RNGSystemSeed(const rng rngx, void *p, unsigned long *pnSeed)
         /* Can be amended to support seeds > 32 bit */
         guint32 achState;
         mpz_t mpzn;
-
-#if GLIB_CHECK_VERSION (2,28,0)
         gint64 tv;
         tv = g_get_real_time();
         achState = (unsigned int) (((guint64)tv >> 32) ^ ((guint64)tv & 0xFFFFFFFF));
-#else
-        GTimeVal tv;
-        g_get_current_time(&tv);
-        achState = (unsigned int) tv.tv_sec ^ (unsigned int) tv.tv_usec;
-#endif
 
         mpz_init(mpzn);
         mpz_import(mpzn, 1, -1, sizeof(guint32), 0, 0, &achState);
@@ -692,15 +687,9 @@ RNGSystemSeed(const rng rngx, void *p, unsigned long *pnSeed)
 #endif
 
     if (!f) {
-#if GLIB_CHECK_VERSION (2,28,0)
         gint64 tv;
         tv = g_get_real_time();
         n = (unsigned int) (((guint64)tv >> 32) ^ ((guint64)tv & 0xFFFFFFFF));
-#else
-        GTimeVal tv;
-        g_get_current_time(&tv);
-        n = (unsigned int) tv.tv_sec ^ (unsigned int) tv.tv_usec;
-#endif
     }
 
     InitRNGSeed(n, rngx, rngctx);
@@ -719,6 +708,12 @@ extern void
 free_rngctx(rngcontext * rngctx)
 {
 #if defined(HAVE_LIBGMP)
+    if (rngctx->fZInit) {
+        mpz_clear(rngctx->zModulus);
+        mpz_clear(rngctx->zSeed);
+        mpz_clear(rngctx->zZero);
+        mpz_clear(rngctx->zOne);
+    }
     mpz_clear(rngctx->nz);
 #endif
     g_free(rngctx);
@@ -796,7 +791,7 @@ RollDice(unsigned int anDice[2], rng * prng, rngcontext * rngctx)
 
     case RNG_MD5:{
             union _hash {
-                char ach[16];
+                unsigned char auch[16];
                 md5_uint32 an[2];
             } h;
 
@@ -868,6 +863,7 @@ ReadDiceFile(rngcontext * rngctx)
 
     unsigned char uch;
     size_t n;
+    int fRewound = FALSE;
 
     if (rngctx->fDice == NULL)
         return (unsigned int) (-1);
@@ -879,9 +875,13 @@ ReadDiceFile(rngcontext * rngctx)
 
         if (feof(rngctx->fDice)) {
             /* end of file */
+            if (fRewound)
+                return (unsigned int) (-1);
+
             g_print(_("Rewinding dice file (%s)"), rngctx->szDiceFilename);
             g_printf("\n");
             fseek(rngctx->fDice, 0, SEEK_SET);
+            fRewound = TRUE;
         } else if (n != 1) {
             g_printerr("%s", rngctx->szDiceFilename);
             return (unsigned int) (-1);
@@ -902,7 +902,28 @@ GetDiceFileName(rngcontext * rngctx)
 rngcontext *
 CopyRNGContext(rngcontext * rngctx)
 {
-    rngcontext *newCtx = (rngcontext *) g_malloc(sizeof(rngcontext));
-    *newCtx = *rngctx;
+    rngcontext *newCtx = g_new0(rngcontext, 1);
+
+    newCtx->fDice = rngctx->fDice;
+    newCtx->szDiceFilename = rngctx->szDiceFilename;
+    newCtx->rc = rngctx->rc;
+    newCtx->nMD5 = rngctx->nMD5;
+    newCtx->sfmt = rngctx->sfmt;
+
+#if defined(HAVE_LIBGMP)
+    mpz_init_set(newCtx->nz, rngctx->nz);
+
+    if (rngctx->fZInit) {
+        InitRNGBBS(newCtx);
+        mpz_set(newCtx->zModulus, rngctx->zModulus);
+        mpz_set(newCtx->zSeed, rngctx->zSeed);
+        mpz_set(newCtx->zZero, rngctx->zZero);
+        mpz_set(newCtx->zOne, rngctx->zOne);
+    }
+#endif
+
+    newCtx->c = rngctx->c;
+    newCtx->n = rngctx->n;
+
     return newCtx;
 }

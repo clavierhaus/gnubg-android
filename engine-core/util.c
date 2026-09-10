@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <glib/gstdio.h>
 #include "common.h"
 
 char *prefsdir = NULL;
@@ -161,6 +162,7 @@ GetTemporaryFile(const char *nameTemplate, char **retName)
         close(tmpd);
 #endif
         if (retName && *retName) {
+            g_unlink(*retName);
             g_free(*retName);
             *retName = NULL;
         }

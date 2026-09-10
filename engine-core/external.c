@@ -589,7 +589,7 @@ CommandExternal(char *sz)
     struct sockaddr *psa;
     char szCommand[256];
     char *szResponse = NULL;
-    struct sockaddr_in saRemote;
+    struct sockaddr_in saRemote = { 0 };
     socklen_t saLen;
     scancontext scanctx;
     int fExit;
