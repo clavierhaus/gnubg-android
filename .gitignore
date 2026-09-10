@@ -198,3 +198,6 @@ tools/clock_harness/tmp/
 
 # compiled audit tool: built by build_audit.sh, never committed
 tools/narrator/audit/claim_audit
+
+# maintainer screenshots (device captures for reports and the geometry sweep)
+/screens/
