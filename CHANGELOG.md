@@ -13,6 +13,15 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Fixed
+- The buttons at the foot of the left rail during play -- New game, New
+  match, Home, Save match -- stay on the screen on every geometry. On
+  tall, narrow displays a completed match could push them past the
+  bottom edge, where they were invisible but still answered a tap
+  (reported from a 2772x1272 device). The rail's phase content now
+  yields to those buttons instead of displacing them, and the rail's
+  vertical spacing scales with the height of the pane it has.
+
 ## [1.0.1] -- 2026-08-15
 
 ### Fixed

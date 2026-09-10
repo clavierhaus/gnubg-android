@@ -111,6 +111,15 @@ fun GameLayout(
                     // devices (phone/tablet) like the board checkers do, rather than
                     // a fixed dp. Capped so it never dominates a very wide panel.
                     val avatarSize = (maxWidth * 0.29f).coerceIn(20.dp, 45.dp)
+                    // The rail's vertical pitch scales with the pane HEIGHT for the
+                    // same reason the avatar scales with its width: the pane never
+                    // scrolls, so on a short pane the spacing is what must yield.
+                    // 1.9% of the pane reproduces today's 8dp at the aspect ratios
+                    // measured in this file's layout law (a 20:9 phone) and tightens
+                    // on the tall-and-narrow geometries that arrived later (issue #7:
+                    // 2772x1272). Capped at both ends so a tablet does not inflate it
+                    // and a very short pane keeps the groups legibly apart.
+                    val railPitch = (maxHeight * 0.019f).coerceIn(4.dp, 8.dp)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
@@ -118,11 +127,32 @@ fun GameLayout(
                             .fillMaxSize()
                             .padding(start = 8.dp, end = 8.dp, top = 44.dp, bottom = 8.dp)
                     ) {
-                        // Top group: scoreboard + divider + phase content
+                        // Top group: scoreboard + divider + phase content.
+                        //
+                        // weight(1f, fill = false) is load-bearing, not decoration.
+                        // Both children of this SpaceBetween column used to be
+                        // unweighted, so each was measured at its natural height with
+                        // the whole pane to grow into, and nothing yielded when their
+                        // sum exceeded it: the terminal actions below were laid out
+                        // past the floor -- drawn outside the window, yet still
+                        // hit-testable inside their own bounds. That is issue #7
+                        // ("New game and Save match invisible after completing a
+                        // game", 2772x1272), and it is the buried-Roll-out failure of
+                        // 2026-08-02 in a new costume: a control under
+                        // variable-length content on a pane that never scrolls.
+                        // Weighting THIS group makes the phase content the thing that
+                        // yields -- it is measured last, against the space the
+                        // terminal actions did not take -- so those actions can no
+                        // longer be displaced by anything a phase puts above them.
+                        // fill = false keeps the present appearance exactly: the group
+                        // still hugs the top at its natural height whenever it fits,
+                        // and SpaceBetween still pushes the actions to the floor.
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            verticalArrangement = Arrangement.spacedBy(railPitch),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
                         ) {
                         // Single-row scoreboard: GNU score .... You score
                         Row(
@@ -394,7 +424,7 @@ fun GameLayout(
                             // wholesale -- so in tutor mode there was no way home at all.
                             // Mid-game the restart asks first; at game over there is
                             // nothing left to lose and it just starts.
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(railPitch))
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 LifecycleButton("New match", pal.uiChipOff, onClick = {
                                     if (gameState.phase == GamePhase.GAME_OVER)
@@ -428,7 +458,7 @@ fun GameLayout(
                             // the match is worth saving. gnubg writes the whole match so
                             // far, at any point, so it is always meaningful.
                             if (onSaveMatch != null) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(railPitch))
                                 LifecycleButton(
                                     label = "Save match",
                                     color = pal.uiActionRoll,
