@@ -187,13 +187,38 @@ if [ ! -f "$META" ]; then
   cp "$ROOT/fdroid/$APPID.yml" "$META"
   sed -i "s/^    commit: .*/    commit: $TAG_SHA/" "$META"
 else
-  sed -i -e "s/versionName: .*/versionName: $VERSION/" \
-         -e "s/versionCode: [0-9]*/versionCode: $NEW_CODE/" \
-         -e "s/^    commit: .*/    commit: $TAG_SHA/" \
-         -e "s/CurrentVersion: [0-9.]*/CurrentVersion: $VERSION/" \
-         -e "s/CurrentVersionCode: [0-9]*/CurrentVersionCode: $NEW_CODE/" \
-         -e "/^    disable:/d" \
-         "$META"
+  # APPEND a build block: the recipe keeps every published version, so a
+  # global sed over versionName/versionCode/commit rewrites ALL of them to the
+  # new one -- three identical blocks, "Builds has non-unique elements",
+  # "Found invalid versionCodes", no APK (1.0.2, 2026-09-10). The last block
+  # is copied with the three fields replaced and any disable: line dropped;
+  # everything above it is untouched. Re-runs are idempotent: an existing
+  # block for this versionCode is replaced, not duplicated.
+  python3 - "$META" "$VERSION" "$NEW_CODE" "$TAG_SHA" <<'PY' || die "recipe update failed"
+import re, sys
+meta, ver, code, sha = sys.argv[1:5]
+s = open(meta).read()
+m = re.search(r'^Builds:\n', s, re.M)
+if not m: sys.exit("no Builds: key in " + meta)
+body_start = m.end()
+tail = re.search(r'^\S', s[body_start:], re.M)          # next top-level key
+body_end = body_start + tail.start() if tail else len(s)
+blocks = re.split(r'(?=^  - versionName:)', s[body_start:body_end], flags=re.M)
+blocks = [b for b in blocks if b.strip()]
+if not blocks: sys.exit("no build blocks in " + meta)
+blocks = [b for b in blocks if not re.search(r'^    versionCode: %s$' % code, b, re.M)]
+new = blocks[-1]
+new = re.sub(r'^  - versionName: .*$', '  - versionName: %s' % ver, new, count=1, flags=re.M)
+new = re.sub(r'^    versionCode: .*$', '    versionCode: %s' % code, new, count=1, flags=re.M)
+new = re.sub(r'^    commit: .*$', '    commit: %s' % sha, new, count=1, flags=re.M)
+new = re.sub(r'^    disable:.*\n', '', new, flags=re.M)
+if not new.endswith('\n\n'): new = new.rstrip('\n') + '\n\n'
+blocks.append(new)
+s = s[:body_start] + ''.join(blocks) + s[body_end:]
+s = re.sub(r'^CurrentVersion: .*$', 'CurrentVersion: %s' % ver, s, flags=re.M)
+s = re.sub(r'^CurrentVersionCode: .*$', 'CurrentVersionCode: %s' % code, s, flags=re.M)
+open(meta, 'w').write(s)
+PY
 fi
 git add "$META"
 git commit -q -m "$APPID $VERSION ($NEW_CODE)"
