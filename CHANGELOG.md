@@ -68,8 +68,9 @@ the engine, or stopped hiding what the engine already knew.
   could differ in the third decimal, and occasionally more. Found on a
   12-core machine by the project's own determinism test; it had passed
   on the phone by chance. The pool now runs one worker. Rollouts take
-  correspondingly longer; a parallel pool returns when gnubg's locking
-  evaluation path is built into the app (planned for 1.1).
+  correspondingly longer; a parallel pool returns in 1.1, when gnubg's own
+  locking evaluation path is built into the app and the same-seed test is
+  green on a machine with as many cores as the pool uses.
 - Every screen now fits every display without losing a control. Each
   screen is drawn for a reference size (the Pixel 8 Pro's landscape
   box) and, on a smaller or differently shaped display, is scaled as

@@ -95,6 +95,17 @@ gh auth status >/dev/null 2>&1 || die "gh not authenticated"
 [ -f "gnubg-app/keystore.properties" ] || die "gnubg-app/keystore.properties missing (signing)"
 APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
 [ -n "$APKSIGNER" ] || die "apksigner not found under build-tools"
+# Engine gates. The harness runs its determinism test at the SHIPPED worker
+# count (single source: jni-bridge/src/stubs.c GNUBG_ROLLOUT_WORKERS) and
+# refuses on a host with fewer cores than that -- a gate imitated on a
+# one-core host is not a gate (2026-09-10). The host is recorded here so
+# the release log says where the gate ran.
+./tools/syntax_check.sh >/dev/null 2>&1 || die "tools/syntax_check.sh failed -- run it to see why"
+printf 'engine gate host: %s cores (%s)\n' "$(nproc)" "$(uname -srm)"
+./tools/rollout_harness/run_tests.sh > tmp/release_harness.log 2>&1 \
+  || die "tools/rollout_harness/run_tests.sh failed -- see tmp/release_harness.log"
+grep -q "ALL TESTS GREEN" tmp/release_harness.log || die "harness did not report ALL TESTS GREEN"
+grep -E "^host cores:|DIFFER at|identical at" tmp/release_harness.log
 ok "preflight clean"
 
 if [ "$DRY" -eq 1 ]; then
