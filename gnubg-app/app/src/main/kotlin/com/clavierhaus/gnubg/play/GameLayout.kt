@@ -195,7 +195,6 @@ fun GameLayout(
                         // the human half.
                         viewModel.clockState.collectAsStateWithLifecycle().value?.let { ck ->
                             if (ck.timeoutSide == null) {
-                                Spacer(modifier = Modifier.height(4.dp))
                                 val tnum = androidx.compose.ui.text.TextStyle(
                                     fontFeatureSettings = "tnum"
                                 )
@@ -264,7 +263,6 @@ fun GameLayout(
                                     textAlign = TextAlign.Center
                                 )
                                 viewModel.careerRecorded.collectAsStateWithLifecycle().value?.let { n ->
-                                    Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         "Recorded — match $n of your career.",
                                         color = pal.uiTextSecondary, fontSize = 12.sp
@@ -325,7 +323,15 @@ fun GameLayout(
                                     // match ended) -- every finished Play match offers
                                     // its stats. Orange = Plus. Compact: the pane
                                     // does not scroll.
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    //
+                                    // No Spacer children in this branch: the group
+                                    // is a spacedBy(8dp) column, so a 4dp Spacer
+                                    // child costs 4 + 8 + 8 = 20dp of gap, not 4.
+                                    // Three of them put the game-over phase over
+                                    // the reference height -- the "Recorded" line
+                                    // clipped to its top half and "Statistics"
+                                    // squeezed to nothing (2026-09-10). The pitch
+                                    // alone is the gap.
                                     Box(
                                         modifier = Modifier
                                             .background(
@@ -355,7 +361,6 @@ fun GameLayout(
                                     // the same place as in every other phase. "Exit" is
                                     // gone: the action is Home, and it is called Home
                                     // everywhere.
-                                    Spacer(modifier = Modifier.height(4.dp))
                                     // All-time tally: the tournament's own scoreboard,
                                     // offered at the moment the match concludes.
                                     // Deliberately not a hub entry -- statistics are
