@@ -24,8 +24,11 @@ the engine, or stopped hiding what the engine already knew.
   game (issue #7), the hub's last menu entry, the career note over the
   tutor buttons, and a resignation offer whose Accept / Play on
   buttons were squeezed to nothing -- a blocking decision that could
-  not be answered. Converted so far: hub, Tournament Match setup, the
-  play screen.
+  not be answered. Applied once, at the app root, for every screen.
+- Analyse Position: the "Start pos" preset placed black's checkers under
+  white's (black's pip count read 208, black seemed missing, erasing
+  white uncovered it). Black now starts where black starts. Reported by
+  mail with screenshots -- thank you.
 
 ## [1.0.1] -- 2026-08-15
 
