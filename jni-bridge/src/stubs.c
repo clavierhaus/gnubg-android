@@ -500,6 +500,14 @@ static void rollout_worker_func(gpointer data, gpointer user_data) {
 }
 
 
+/* THE shipped rollout worker count. Single source: run_tests.sh reads this
+ * line to run its determinism gate at exactly this count, and
+ * release_fdroid.sh refuses to release from a host with fewer cores than
+ * this (a determinism gate is only a gate at the shipped count, on a host
+ * that can run it -- CLAUDE.md, THE DETERMINISM GATE). 1 until the
+ * WithLocking family is compiled in (docs/MULTICORE_ANALYSIS.md section 3). */
+#define GNUBG_ROLLOUT_WORKERS 1
+
 void gnubg_init_rollout(void) {
     if (!rngctxRollout && rngctxCurrent)
         rngctxRollout = CopyRNGContext(rngctxCurrent);
@@ -526,7 +534,7 @@ void gnubg_init_rollout(void) {
          * docs/MULTICORE_ANALYSIS.md, the shelved sections), the pool is
          * serial: slower, and correct. GNUBG_ROLLOUT_THREADS overrides for
          * measurement only -- the harness uses it to show the race. */
-        gint max_threads = 1;
+        gint max_threads = GNUBG_ROLLOUT_WORKERS;
         const char *override = g_getenv("GNUBG_ROLLOUT_THREADS");
         if (override && *override) {
             int n = atoi(override);

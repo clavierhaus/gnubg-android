@@ -990,3 +990,27 @@ Every sync that bumps the version produces two artifacts, both required:
 2. A posting to bug-gnubg@gnu.org stating that the named upstream commits
    have been merged into a new CBG release, with the commit hashes and the
    F-Droid version. Upstream is told what its work reached.
+
+## THE DETERMINISM GATE (added 2026-09-11, after the assistant cited a one-core run)
+
+A determinism test is a gate ONLY at the thread count that ships, on a host
+with at least that many cores. Run anywhere else it is an imitation, and an
+imitation reported as "green" is worse than no run: on 2026-09-10 the
+assistant's one-core sandbox reported the rollout harness green for the
+upstream sync while the maintainer's twelve cores failed it on every run.
+
+Mechanics, all single-sourced:
+  - The shipped worker count is `GNUBG_ROLLOUT_WORKERS` in
+    jni-bridge/src/stubs.c and nowhere else.
+  - tools/rollout_harness/run_tests.sh reads it, runs T1 at exactly that
+    count, and REFUSES (exit 3) on a host with fewer cores. M1 runs at every
+    core and is informational: it records the race, it never gates.
+  - release_fdroid.sh runs syntax_check.sh and run_tests.sh in preflight and
+    prints the host it ran on. No green from the harness, no release.
+  - The assistant states its own core count before citing any harness run,
+    and never cites a run at fewer cores than the shipped count as a gate.
+
+Raising GNUBG_ROLLOUT_WORKERS above 1 requires the WithLocking evaluation
+family (USE_MULTITHREAD), the thread-count default inherited from upstream
+(never chosen by the port), and T1 green on a host with >= that many cores.
+That is the 1.1 acceptance test, in this order and none other.
