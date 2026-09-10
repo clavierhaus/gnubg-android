@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.clavierhaus.gnubg.shared.PlusUi
+import com.clavierhaus.gnubg.shared.Unscaled
 
 /*
  * Analyse Position.
@@ -490,23 +491,25 @@ fun AnalyseScreen(
             ) {
                 val r = result
                 if (editing) {
-                    BackgammonBoard(
-                        settings = settings,
-                        gameState = BoardState(
-                            board = editBoard,
-                            pipCountHuman = remember(editBoard) { Engine.pipCount(editBoard)[0] },
-                            pipCountEngine = remember(editBoard) { Engine.pipCount(editBoard)[1] },
-                            dice = if (editD0 > 0 && editD1 > 0) Pair(editD0, editD1) else null,
-                            matchScore = intArrayOf(editScoreH, editScoreE),
-                            matchLength = editMatchTo,
-                            cubeValue = editCube,
-                            cubeOwner = editCubeOwner,
-                            turn = editTurn
-                        ),
-                        viewModel = null,
-                        tutorMode = false,
-                        onEditTap = { zone -> editTap(zone) }
-                    )
+                    Unscaled {
+                        BackgammonBoard(
+                            settings = settings,
+                            gameState = BoardState(
+                                board = editBoard,
+                                pipCountHuman = remember(editBoard) { Engine.pipCount(editBoard)[0] },
+                                pipCountEngine = remember(editBoard) { Engine.pipCount(editBoard)[1] },
+                                dice = if (editD0 > 0 && editD1 > 0) Pair(editD0, editD1) else null,
+                                matchScore = intArrayOf(editScoreH, editScoreE),
+                                matchLength = editMatchTo,
+                                cubeValue = editCube,
+                                cubeOwner = editCubeOwner,
+                                turn = editTurn
+                            ),
+                            viewModel = null,
+                            tutorMode = false,
+                            onEditTap = { zone -> editTap(zone) }
+                        )
+                    }
                 } else if (r == null) {
                     Text(
                         "Paste a position to analyse, or set one up.",
@@ -514,21 +517,23 @@ fun AnalyseScreen(
                         fontSize = 16.sp
                     )
                 } else {
-                    BackgammonBoard(
-                        settings = settings,
-                        gameState = BoardState(
-                            board = r.board,
-                            pipCountHuman = remember(r) { Engine.pipCount(r.board)[0] },
-                            pipCountEngine = remember(r) { Engine.pipCount(r.board)[1] },
-                            dice = r.dice,
-                            matchScore = intArrayOf(r.score.first, r.score.second),
-                            matchLength = r.matchTo,
-                            cubeValue = r.cube,
-                            cubeOwner = r.cubeOwner
-                        ),
-                        viewModel = null,
-                        tutorMode = false
-                    )
+                    Unscaled {
+                        BackgammonBoard(
+                            settings = settings,
+                            gameState = BoardState(
+                                board = r.board,
+                                pipCountHuman = remember(r) { Engine.pipCount(r.board)[0] },
+                                pipCountEngine = remember(r) { Engine.pipCount(r.board)[1] },
+                                dice = r.dice,
+                                matchScore = intArrayOf(r.score.first, r.score.second),
+                                matchLength = r.matchTo,
+                                cubeValue = r.cube,
+                                cubeOwner = r.cubeOwner
+                            ),
+                            viewModel = null,
+                            tutorMode = false
+                        )
+                    }
                 }
             }
 

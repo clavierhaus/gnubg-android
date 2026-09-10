@@ -35,7 +35,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clavierhaus.gnubg.R
-import com.clavierhaus.gnubg.shared.OnePicture
 
 @Composable
 fun HomeHubScreen(
@@ -45,10 +44,8 @@ fun HomeHubScreen(
     onReviewMatch: () -> Unit,
     onOptions: () -> Unit,
 ) {
-    // The screen is one picture (shared/ScreenGrid.kt): drawn for the
-    // reference device in the dp and sp below, scaled as a whole on a smaller
-    // pane. The hub's own per-entry scaling of 2026-09-10 is replaced by it.
-    OnePicture { _ ->
+    // Drawn for the reference device in the dp and sp below; MainActivity's
+    // OnePicture scales it as a whole on a smaller pane (shared/ScreenGrid.kt).
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
             painter = painterResource(id = R.drawable.home_hub_background),
@@ -177,7 +174,6 @@ fun HomeHubScreen(
         }
 
     }
-    } // end OnePicture
 }
 
 @Composable

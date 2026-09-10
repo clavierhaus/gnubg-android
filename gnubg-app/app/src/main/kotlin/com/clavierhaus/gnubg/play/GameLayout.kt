@@ -17,7 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.clavierhaus.gnubg.shared.OnePicture
 import com.clavierhaus.gnubg.shared.Unscaled
 import com.clavierhaus.gnubg.engine.Difficulty
 import com.clavierhaus.gnubg.engine.GamePhase
@@ -99,11 +98,9 @@ fun GameLayout(
             onOpenSettings = onOpenSettings
         )
     } else {
-        // The screen is one picture (shared/ScreenGrid.kt): the rail and its
-        // controls are drawn for the reference device and scaled as a whole
-        // on a smaller pane; the board opts out below, being drawn from its
-        // own canvas size already.
-        OnePicture { _ ->
+        // Drawn for the reference device; MainActivity's OnePicture scales the
+        // rail as a whole on a smaller pane. The board opts out below, being
+        // drawn from its own canvas size already.
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left panel -- fixed proportion of screen
@@ -532,7 +529,6 @@ fun GameLayout(
                 }
             )
         }
-        } // end OnePicture
     }
     }
 }
@@ -748,11 +744,9 @@ private fun MatchSetupScreen(
     onOpenSettings: (() -> Unit)? = null
 ) {
     val pal = LocalBoardPalette.current
-    // The screen is one picture (shared/ScreenGrid.kt): every control below is
-    // drawn for the reference device and scaled as a whole on a smaller pane,
-    // so the chip row, the clock note and the +/- column keep their labels
-    // instead of being clipped by a Column short of room (2026-09-10).
-    OnePicture { _ ->
+    // Drawn for the reference device; MainActivity's OnePicture scales it as a
+    // whole on a smaller pane, so the chip row, the clock note and the +/-
+    // column keep their labels instead of being clipped (2026-09-10).
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1055,7 +1049,6 @@ private fun MatchSetupScreen(
             }
         }
     }
-    } // end OnePicture
 }
 
 @Composable
