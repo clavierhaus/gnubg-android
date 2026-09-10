@@ -1,0 +1,1 @@
+Rollouts reproducible again; every screen fits every display; upstream GNU Backgammon sync; Start pos preset fixed.

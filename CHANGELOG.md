@@ -13,6 +13,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [1.0.2] -- 2026-09-11
+
 ### Changed
 - Upstream sync with GNU Backgammon master at git.savannah.gnu.org,
   commit b1b2772c (2026-09-10). Thirty-one upstream commits since the
