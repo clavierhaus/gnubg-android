@@ -763,14 +763,15 @@ private fun MatchSetupScreen(
             }
         }
 
-        // The career lives where it is earned: tournament mode's own entry
-        // screen (maintainer ruling). An aligned corner child -- it does not
-        // touch the weighted setup Column, which was hard-won.
-        com.clavierhaus.gnubg.career.CareerEntryBlock(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 14.dp)
-        )
+        // The career block used to be an aligned corner child here, a
+        // BottomStart overlay that shared the pane's vertical space with the
+        // setup Column without either knowing about the other. Its width was
+        // then hand-tuned (340 -> 374dp) so that its top edge cleared the tutor
+        // chips on ONE device, the Pixel 8 Pro. On the 2772x1272 geometry at
+        // density 480 the first-run intro rose straight into the tutor row
+        // (field report 2026-09-10). It now lives in the foot row beside
+        // Start Match, below -- measured first, so the controls above yield
+        // to it and it can collide with nothing.
         // The Column owns the full height, so weighted spacers can distribute
         // what is left over after the controls have measured themselves. It must
         // NOT scroll: a scrollable Column measures with unbounded height, which
@@ -1009,12 +1010,30 @@ private fun MatchSetupScreen(
             // only green control here, set apart by colour and position. Settings
             // is not repeated -- it is one tap from the hub and from the board.
             Spacer(modifier = Modifier.height(8.dp))
-            GameButton(
-                label = if (engineReady) "Start Match" else "Loading engine...",
-                color = pal.uiActionPositive,
-                enabled = engineReady
+            // The foot is ONE row: career block left, Start Match centred, an
+            // equal-weight blank right. Two weight(1f) flanks keep the button
+            // exactly centred whatever the block's width; Bottom alignment
+            // keeps the button on the floor when the first-run intro makes
+            // the block taller than it. The row's height is the taller of the
+            // two, and the weighted region above is measured against what is
+            // left -- the same rule as the rail and the analyse buttons.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
             ) {
-                onStart()
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.BottomStart) {
+                    // The career lives where it is earned: tournament mode's
+                    // own entry screen (maintainer ruling).
+                    com.clavierhaus.gnubg.career.CareerEntryBlock()
+                }
+                GameButton(
+                    label = if (engineReady) "Start Match" else "Loading engine...",
+                    color = pal.uiActionPositive,
+                    enabled = engineReady
+                ) {
+                    onStart()
+                }
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
