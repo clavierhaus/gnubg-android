@@ -37,4 +37,17 @@ echo "== T4: all trials complete and labeled =="
 grep -q "DONE 36" tmp/ro_a.txt || { echo "FAIL"; exit 1; }
 echo "PASS"
 
+echo "== M1 (informational, never gates): the pool at every core, same seed twice =="
+# Documents the race the serial pool avoids (stubs.c gnubg_init_rollout):
+# the NoLocking evaluation family on one shared cEval. Expected to DIFFER
+# on a multi-core host until the WithLocking family is compiled in.
+N=$(nproc 2>/dev/null || echo 1)
+GNUBG_ROLLOUT_THREADS=$N ./tools/rollout_harness/harness "$ID" 12345 2 36 2>/dev/null > tmp/ro_m1a.txt
+GNUBG_ROLLOUT_THREADS=$N ./tools/rollout_harness/harness "$ID" 12345 2 36 2>/dev/null > tmp/ro_m1b.txt
+if diff -q tmp/ro_m1a.txt tmp/ro_m1b.txt >/dev/null; then
+    echo "identical at $N workers on this host (probability, not proof -- see stubs.c)"
+else
+    echo "DIFFER at $N workers on this host -- the documented race; the shipped pool is serial"
+fi
+
 echo "ALL TESTS GREEN"

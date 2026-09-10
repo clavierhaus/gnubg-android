@@ -60,6 +60,16 @@ the engine, or stopped hiding what the engine already knew.
   same-seed rollouts are byte-identical before and after the sync.
 
 ### Fixed
+- Rollouts are reproducible again: the same seed now gives the same
+  numbers, every time, as the seed shown on screen has always promised.
+  The rollout worker pool ran one trial per processor core through
+  gnubg's single-thread evaluation path, which shares one position
+  cache without locks; on a many-core device two runs of the same seed
+  could differ in the third decimal, and occasionally more. Found on a
+  12-core machine by the project's own determinism test; it had passed
+  on the phone by chance. The pool now runs one worker. Rollouts take
+  correspondingly longer; a parallel pool returns when gnubg's locking
+  evaluation path is built into the app (planned for 1.1).
 - Every screen now fits every display without losing a control. Each
   screen is drawn for a reference size (the Pixel 8 Pro's landscape
   box) and, on a smaller or differently shaped display, is scaled as

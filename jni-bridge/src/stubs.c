@@ -505,8 +505,33 @@ void gnubg_init_rollout(void) {
         rngctxRollout = CopyRNGContext(rngctxCurrent);
 
     if (!rollout_pool) {
-        gint max_threads = sysconf(_SC_NPROCESSORS_ONLN);
-        if (max_threads < 1) max_threads = 4;
+        /* ONE worker, deliberately (2026-09-10). The trial core is
+         * BasicCubefulRolloutNoLocking, and the NoLocking family (eval.c:71-94)
+         * reads and writes the single global evaluation cache cEval through
+         * CacheLookupNoLocking / CacheAddNoLocking. gnubg only ever runs that
+         * family at one thread; with more it rebinds to the WithLocking
+         * family, whose per-entry spinlocks exist only under USE_MULTITHREAD,
+         * which this port does not define. N workers on the lock-free family
+         * is a data race on cEval by construction: a hit promotion swaps two
+         * structs non-atomically (lib/cache.c CacheLookupWithLocking, the
+         * unlocked build), an add writes key and equities non-atomically, and
+         * a worker reading a matching key with half-written equities gets a
+         * wrong number for that position. Rare -- Gate B at 4 threads on the
+         * Pixel passed by probability -- and certain on a 12-core host, where
+         * tools/rollout_harness/run_tests.sh T1 (same seed twice) failed on
+         * every run, on the tree before the upstream sync as well as after.
+         *
+         * Same seed -> same numbers is the rollout's public promise. Until the
+         * WithLocking family is compiled in (USE_MULTITHREAD, MT_SetNumThreads;
+         * docs/MULTICORE_ANALYSIS.md, the shelved sections), the pool is
+         * serial: slower, and correct. GNUBG_ROLLOUT_THREADS overrides for
+         * measurement only -- the harness uses it to show the race. */
+        gint max_threads = 1;
+        const char *override = g_getenv("GNUBG_ROLLOUT_THREADS");
+        if (override && *override) {
+            int n = atoi(override);
+            if (n >= 1) max_threads = n;
+        }
         rollout_pool = g_thread_pool_new(rollout_worker_func, NULL, max_threads, FALSE, NULL);
     }
 }
