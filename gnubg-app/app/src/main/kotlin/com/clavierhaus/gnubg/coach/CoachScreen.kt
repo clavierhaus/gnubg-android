@@ -53,6 +53,7 @@ import com.clavierhaus.gnubg.play.BoardPalettes
 import com.clavierhaus.gnubg.play.GameButton
 import com.clavierhaus.gnubg.play.GameplayDecisions
 import com.clavierhaus.gnubg.play.LocalBoardPalette
+import com.clavierhaus.gnubg.shared.Unscaled
 import androidx.compose.runtime.CompositionLocalProvider
 
 /**
@@ -429,52 +430,56 @@ fun CoachScreen(
                         // BoardState defaults (167) lied on every study view
                         // and made mid-game positions masquerade as openings.
                         val pips = remember(shownBoard) { Engine.pipCount(shownBoard) }
-                        BackgammonBoard(
-                            settings = settings,
-                            gameState = com.clavierhaus.gnubg.engine.BoardState(
-                                board = shownBoard,
-                                dice = d,
-                                remainingDice = if (showAfter) emptyList() else fullRoll,
-                                matchScore = gameState.matchScore,
-                                matchLength = gameState.matchLength,
-                                pipCountHuman = pips[0],
-                                pipCountEngine = pips[1],
-                                phase = GamePhase.ENGINE_THINKING
-                            ),
-                            viewModel = null,
-                            tutorMode = false,
-                            coachTrace = if (showAfter)
-                                com.clavierhaus.gnubg.play.CoachTrace(
-                                    played = null,
-                                    best = selectedMove,
-                                    ghost = false
-                                ) else null,
-                            // On a study view the button RETURNS to the live
-                            // position (clears the toggle) rather than handing
-                            // the turn on -- so continuing is always a two-step,
-                            // unambiguous act: Back to reality, then GNU's turn.
-                            onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { { selectedAlt = -1; viewAfter = false } } else null,
-                            coachTurnLabel = "Back",
-                            cubePendingPulse = pulse
-                        )
+                        Unscaled {
+                            BackgammonBoard(
+                                settings = settings,
+                                gameState = com.clavierhaus.gnubg.engine.BoardState(
+                                    board = shownBoard,
+                                    dice = d,
+                                    remainingDice = if (showAfter) emptyList() else fullRoll,
+                                    matchScore = gameState.matchScore,
+                                    matchLength = gameState.matchLength,
+                                    pipCountHuman = pips[0],
+                                    pipCountEngine = pips[1],
+                                    phase = GamePhase.ENGINE_THINKING
+                                ),
+                                viewModel = null,
+                                tutorMode = false,
+                                coachTrace = if (showAfter)
+                                    com.clavierhaus.gnubg.play.CoachTrace(
+                                        played = null,
+                                        best = selectedMove,
+                                        ghost = false
+                                    ) else null,
+                                // On a study view the button RETURNS to the live
+                                // position (clears the toggle) rather than handing
+                                // the turn on -- so continuing is always a two-step,
+                                // unambiguous act: Back to reality, then GNU's turn.
+                                onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
+                                    { { selectedAlt = -1; viewAfter = false } } else null,
+                                coachTurnLabel = "Back",
+                                cubePendingPulse = pulse
+                            )
+                        }
                     } else {
                         // The live game board carries NO arrows (maintainer
                         // design): it simply shows the position the player's
                         // move produced. Arrows exist only inside the numbered
                         // alternative views.
-                        BackgammonBoard(
-                            settings = settings,
-                            gameState = gameState,
-                            viewModel = viewModel,
-                            tutorMode = false,
-                            onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
-                                { {
-                                    if (rawCubeGlance != null) viewModel.continueCoachCube()
-                                    else viewModel.continueCoachTurn()
-                                } } else null,
-                            cubePendingPulse = pulse
-                        )
+                        Unscaled {
+                            BackgammonBoard(
+                                settings = settings,
+                                gameState = gameState,
+                                viewModel = viewModel,
+                                tutorMode = false,
+                                onCoachTurn = if (gameState.phase == GamePhase.COACH_REVIEW)
+                                    { {
+                                        if (rawCubeGlance != null) viewModel.continueCoachCube()
+                                        else viewModel.continueCoachTurn()
+                                    } } else null,
+                                cubePendingPulse = pulse
+                            )
+                        }
                     }
                 }
 

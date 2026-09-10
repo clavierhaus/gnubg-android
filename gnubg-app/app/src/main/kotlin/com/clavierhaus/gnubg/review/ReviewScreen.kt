@@ -38,6 +38,7 @@ import com.clavierhaus.gnubg.play.BackgammonBoard
 import com.clavierhaus.gnubg.play.BoardPalettes
 import com.clavierhaus.gnubg.play.GameButton
 import com.clavierhaus.gnubg.play.LocalBoardPalette
+import com.clavierhaus.gnubg.shared.Unscaled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -285,28 +286,30 @@ fun ReviewScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else {
-                    BackgammonBoard(
-                        settings = settings,
-                        gameState = BoardState(
-                            board = p.board,
-                            pipCountHuman = remember(p) { Engine.pipCount(p.board)[0] },
-                            pipCountEngine = remember(p) { Engine.pipCount(p.board)[1] },
-                            dice = p.dice,
-                            matchScore = intArrayOf(p.score.first, p.score.second),
-                            matchLength = p.matchTo,
-                            cubeValue = p.cubeValue,
-                            cubeOwner = p.cubeOwner,
-                            turn = p.turn,
-                            // Not HUMAN_MOVING, so no Undo/Commit is drawn; not
-                            // WAITING_FOR_ROLL with turn 0, so no Roll button.
-                            phase = GamePhase.ENGINE_THINKING
-                        ),
-                        // viewModel = null makes the board read-only: Board.kt returns
-                        // from every tap before touching the engine. tutorMode stays
-                        // false so the cube is still drawn -- it is part of the record.
-                        viewModel = null,
-                        tutorMode = false
-                    )
+                    Unscaled {
+                        BackgammonBoard(
+                            settings = settings,
+                            gameState = BoardState(
+                                board = p.board,
+                                pipCountHuman = remember(p) { Engine.pipCount(p.board)[0] },
+                                pipCountEngine = remember(p) { Engine.pipCount(p.board)[1] },
+                                dice = p.dice,
+                                matchScore = intArrayOf(p.score.first, p.score.second),
+                                matchLength = p.matchTo,
+                                cubeValue = p.cubeValue,
+                                cubeOwner = p.cubeOwner,
+                                turn = p.turn,
+                                // Not HUMAN_MOVING, so no Undo/Commit is drawn; not
+                                // WAITING_FOR_ROLL with turn 0, so no Roll button.
+                                phase = GamePhase.ENGINE_THINKING
+                            ),
+                            // viewModel = null makes the board read-only: Board.kt returns
+                            // from every tap before touching the engine. tutorMode stays
+                            // false so the cube is still drawn -- it is part of the record.
+                            viewModel = null,
+                            tutorMode = false
+                        )
+                    }
                 }
             }
         }

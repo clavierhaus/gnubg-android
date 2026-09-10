@@ -198,6 +198,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // THE SCREEN IS ONE PICTURE (shared/ScreenGrid.kt): every mode,
+                // and the settings overlay, is drawn for the reference device
+                // and scaled as a whole on a smaller pane -- once, here, so no
+                // screen can forget it. Board canvases opt out with Unscaled at
+                // their call sites.
+                com.clavierhaus.gnubg.shared.OnePicture { _ ->
                 androidx.compose.foundation.layout.Box(
                     modifier = androidx.compose.ui.Modifier.fillMaxSize()
                 ) {
@@ -263,6 +269,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 }
+                } // end OnePicture
             }
         }
     }
