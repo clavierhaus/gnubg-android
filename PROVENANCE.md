@@ -9,7 +9,7 @@ The source files in `engine-core/` are derived from the **GNU Backgammon** proje
 | Project | GNU Backgammon (gnubg) |
 | Upstream URL | https://www.gnu.org/software/gnubg/ |
 | Source repository | https://git.savannah.gnu.org/git/gnubg.git (the only source of truth; the GitLab mirror named here until 2026-09-10 does not serve anonymously) |
-| Vendoring base commit | 284efab7 (2026-06-07) for set.c; 7b2e857d (2026-05-31) for dice.c, multithread.c, rollout.c, sgf.c, analysis.c, renderprefs.c -- established by hash-matching each vendored file against upstream history, 2026-09-06/10 |
+| Vendoring base commit | b1b2772c (2026-09-10, git.savannah.gnu.org master). Every vendored file is at this commit, or is one of the five documented seams (eval.c, eval.h, play.c, multithread.h, lib/neuralnetsse.c) three-way merged to it. Previous bases: 284efab7 / 7b2e857d (June 2026). The monthly check (CLAUDE.md) diffs upstream master against this commit. |
 | Version used | 1.08.003 (as identified by `engine-core/config.h: VERSION`) |
 | Licence | GNU General Public License v3 or later (GPL-3.0-or-later) |
 | Licence text | See `COPYING` in `upstream-source/gnubg/` |
