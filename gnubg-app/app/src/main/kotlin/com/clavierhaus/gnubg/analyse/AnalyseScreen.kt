@@ -584,12 +584,24 @@ fun AnalyseScreen(
                         GameButton("Black", if (editTool == 1) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 1 }
                         GameButton("Erase", if (editTool == 2) pal.uiChipOn else pal.uiChipOff, compact = true) { editTool = 2 }
                         GameButton("Start pos", pal.uiButtonNeutral, compact = true) {
-                            // The standard opening, in the editor's own board
-                            // encoding (b[25+(p-1)] human point p; b[24-p] engine
-                            // frame; verified against editTap): 2 on 24, 5 on 13,
-                            // 3 on 8, 5 on 6, mirrored.
+                            // The standard opening in the editor's own encoding.
+                            // Human half, b[24+p] for human point p: 2 on 24,
+                            // 5 on 13, 3 on 8, 5 on 6 -> b[48]=2 b[37]=5 b[32]=3
+                            // b[30]=5. Engine half is the ENGINE'S OWN frame,
+                            // b[i-1] for engine point i, and the engine's opening
+                            // is the same four points in its own numbering:
+                            // b[23]=2 b[12]=5 b[7]=3 b[5]=5.
+                            //
+                            // The first version mirrored the HUMAN'S point
+                            // numbers through b[24-p] instead (b[0], b[11],
+                            // b[16], b[18] = engine points 1, 12, 17, 19), which
+                            // draw at display points 24, 13, 8, 6 -- exactly
+                            // under the white checkers. Black looked absent,
+                            // erasing white uncovered it, and black's pip count
+                            // read 208 (2*1 + 5*12 + 3*17 + 5*19), not 167.
+                            // Field report with screenshots, 2026-09-10.
                             editBoard = intArrayOf(
-                                2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
                                 0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0
                             )
                         }
