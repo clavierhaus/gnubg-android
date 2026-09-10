@@ -111,15 +111,34 @@ fun GameLayout(
                     // devices (phone/tablet) like the board checkers do, rather than
                     // a fixed dp. Capped so it never dominates a very wide panel.
                     val avatarSize = (maxWidth * 0.29f).coerceIn(20.dp, 45.dp)
-                    // The rail's vertical pitch scales with the pane HEIGHT for the
-                    // same reason the avatar scales with its width: the pane never
-                    // scrolls, so on a short pane the spacing is what must yield.
-                    // 1.9% of the pane reproduces today's 8dp at the aspect ratios
-                    // measured in this file's layout law (a 20:9 phone) and tightens
-                    // on the tall-and-narrow geometries that arrived later (issue #7:
-                    // 2772x1272). Capped at both ends so a tablet does not inflate it
-                    // and a very short pane keeps the groups legibly apart.
-                    val railPitch = (maxHeight * 0.019f).coerceIn(4.dp, 8.dp)
+                    // THE RAIL IS ONE PICTURE, SCALED. The rail never scrolls and
+                    // its tallest phases (a resignation offer: text, Accept,
+                    // Play on, above the lifecycle rows) fill the reference pane
+                    // to the floor. On a shorter pane nothing here may yield
+                    // piecemeal: a Column that is short of height hands its last
+                    // children a shrinking maximum, and a button so measured keeps
+                    // its padding and loses its label -- the green sliver where
+                    // "Accept" should have been, with "Play on" gone entirely
+                    // (2772x1272 at density 480, 2026-09-10). A blocking decision
+                    // the player cannot answer is a softlock, so this is not
+                    // cosmetic.
+                    //
+                    // So the rail lays out AS IF the pane were always the reference
+                    // height: below it, every dp and sp inside the rail is scaled
+                    // by the same factor through the density the children read.
+                    // Layout, drawing and hit-testing all go through that density,
+                    // so tap rectangles follow the drawing (layout law: one
+                    // rectangle). At or above the reference height the factor is 1
+                    // and nothing moves. The board pane is outside this scope.
+                    val railScale = (maxHeight / RAIL_REFERENCE_HEIGHT).coerceAtMost(1f)
+                    val outerDensity = androidx.compose.ui.platform.LocalDensity.current
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalDensity provides
+                            androidx.compose.ui.unit.Density(
+                                density = outerDensity.density * railScale,
+                                fontScale = outerDensity.fontScale
+                            )
+                    ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
@@ -149,7 +168,7 @@ fun GameLayout(
                         // and SpaceBetween still pushes the actions to the floor.
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(railPitch),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f, fill = false)
@@ -424,7 +443,7 @@ fun GameLayout(
                             // wholesale -- so in tutor mode there was no way home at all.
                             // Mid-game the restart asks first; at game over there is
                             // nothing left to lose and it just starts.
-                            Spacer(modifier = Modifier.height(railPitch))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 LifecycleButton("New match", pal.uiChipOff, onClick = {
                                     if (gameState.phase == GamePhase.GAME_OVER)
@@ -458,7 +477,7 @@ fun GameLayout(
                             // the match is worth saving. gnubg writes the whole match so
                             // far, at any point, so it is always meaningful.
                             if (onSaveMatch != null) {
-                                Spacer(modifier = Modifier.height(railPitch))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 LifecycleButton(
                                     label = "Save match",
                                     color = pal.uiActionRoll,
@@ -467,6 +486,7 @@ fun GameLayout(
                             }
                         }
                     }
+                    } // end rail density scope
                 }
 
                 // Board -- remaining space
@@ -531,6 +551,12 @@ private enum class PlayLifecycleAction {
     NEW_MATCH,
     LEAVE_MATCH
 }
+
+// The pane height the rail's metrics were drawn for -- chosen at or below the
+// test device's landscape height, so the Pixel 8 Pro and anything taller render
+// exactly as before and only shorter panes scale down. Same reference as the
+// hub (HomeHubScreen.kt).
+private val RAIL_REFERENCE_HEIGHT = 448.dp
 
 @Composable
 private fun PlayLifecyclePanel(
