@@ -14,8 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * $Id: multithread.h,v 1.62 2021/12/18 19:37:38 plm Exp $
  */
 
 #ifndef MULTITHREAD_H
@@ -66,21 +64,13 @@ typedef struct {
 } ThreadLocalData;
 
 typedef struct {
-#if GLIB_CHECK_VERSION (2,32,0)
-    pthread_cond_t cond;
-#else
-    GCond *cond;
-#endif
+    pthread_cond_t cond;        /* port seam (PROVENANCE.md, multithread.h mod 1): upstream has GCond cond */
     int signalled;
 } * ManualEvent;	/* a ManualEvent is a pointer to this struct */
 
 typedef GPrivate *TLSItem;
 
-#if GLIB_CHECK_VERSION (2,32,0)
 typedef GMutex Mutex;
-#else
-typedef GMutex *Mutex;
-#endif
 
 typedef struct {
     GList *tasks;
@@ -152,17 +142,8 @@ extern unsigned int MT_GetNumThreads(void);
 #define MT_Get_nnState() ((ThreadLocalData *)TLSGet(td.tlsItem))->pnnState
 #define MT_Get_aMoves() ((ThreadLocalData *)TLSGet(td.tlsItem))->aMoves
 
-#if GLIB_CHECK_VERSION (2,30,0)
 #define MT_SafeIncValue(x) (g_atomic_int_add(x, 1) + 1)
 #define MT_SafeIncCheck(x) (g_atomic_int_add(x, 1))
-#else
-#define MT_SafeIncValue(x) (g_atomic_int_exchange_and_add(x, 1) + 1)
-#define MT_SafeIncCheck(x) (g_atomic_int_exchange_and_add(x, 1))
-#endif
-/*
- * We don't use the value returned by the next three
- * Pre-2.30 void atomic_int_add() is ok
- */
 #define MT_SafeInc(x) g_atomic_int_add(x, 1)
 #define MT_SafeAdd(x, y) g_atomic_int_add(x, y)
 #define MT_SafeDec(x) g_atomic_int_add(x, -1)

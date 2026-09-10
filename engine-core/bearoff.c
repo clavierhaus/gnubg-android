@@ -14,8 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * $Id: bearoff.c,v 1.109 2022/07/26 21:16:44 plm Exp $
  */
 
 #include "config.h"
@@ -261,14 +259,13 @@ ReadBearoffFile(const bearoffcontext * pbc, unsigned int offset, unsigned char *
 {
     MT_Exclusive();
 
-    if ((fseek(pbc->pf, (long) offset, SEEK_SET) < 0) || (fread(buf, 1, nBytes, pbc->pf) < nBytes)) {
+    if ((fseek(pbc->pf, (long) offset, SEEK_SET) != 0) || (fread(buf, 1, nBytes, pbc->pf) < nBytes)) {
         if (errno)
             perror(_("bearoff database"));
         else
             fprintf(stderr, _("Error reading bearoff database"));
 
         memset(buf, 0, nBytes);
-        return;
     }
 
     MT_Release();
@@ -351,13 +348,13 @@ ReadHypergammon(const bearoffcontext * pbc, const unsigned int iPos, float arOut
     if (arOutput)
         for (i = 0; i < NUM_OUTPUTS; ++i) {
             us = pc[3 * i] | (pc[3 * i + 1]) << 8 | (pc[3 * i + 2]) << 16;
-            arOutput[i] = (float) us / 16777215.0f;
+            arOutput[i] = (float) ((double) us / 16777215.0);
         }
 
     if (arEquity)
         for (i = 0; i < 4; ++i) {
             us = pc[15 + 3 * i] | (pc[15 + 3 * i + 1]) << 8 | (pc[15 + 3 * i + 2]) << 16;
-            arEquity[i] = ((float) us / 16777215.0f - 0.5f) * 6.0f;
+            arEquity[i] = ((float) ((double) us / 16777215.0) - 0.5f) * 6.0f;
         }
 
     return 0;
@@ -754,7 +751,7 @@ ReadIntoMemory(bearoffcontext * pbc)
 }
 
 /*
- * Check whether this is a exact bearoff file 
+ * Check whether this is a exact bearoff file
  *
  * The first long must be 73457356
  * The second long must be 100
@@ -764,7 +761,10 @@ ReadIntoMemory(bearoffcontext * pbc)
 static inline unsigned int
 MakeInt(unsigned char a, unsigned char b, unsigned char c, unsigned char d)
 {
-    return (a | b << 8 | c << 16 | d << 24);
+    return ((unsigned int) a |
+            (unsigned int) b << 8 |
+            (unsigned int) c << 16 |
+            (unsigned int) d << 24);
 }
 
 static void
@@ -829,7 +829,7 @@ BearoffInit(const char *szFilename, const unsigned int bo, void (*p) (unsigned i
         InvalidDb(pbc);
         return NULL;
     }
-    /* 
+    /*
      * Read header bearoff file
      */
 
@@ -921,8 +921,8 @@ BearoffInit(const char *szFilename, const unsigned int bo, void (*p) (unsigned i
         break;
     }
 
-    /* 
-     * read database into memory if requested 
+    /*
+     * read database into memory if requested
      */
 
     if (bo & BO_IN_MEMORY) {

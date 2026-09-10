@@ -166,6 +166,9 @@ movefilter defaultFilters[MAX_FILTER_PLIES][MAX_FILTER_PLIES] = MOVEFILTER_NORMA
 
 /* Random context, for generating non-deterministic noisy evaluations. */
 static randctx rc;
+#if defined(USE_MULTITHREAD)
+static GMutex noiseRNGMutex;
+#endif
 
 /*
  * predefined settings
@@ -2111,7 +2114,8 @@ Noise(const evalcontext * pec, const TanBoard anBoard, int iOutput)
     float r;
 
     if (pec->fDeterministic) {
-        char auchBoard[50], auch[16];
+        char auchBoard[50];
+        unsigned char auch[16];
         int i;
 
         for (i = 0; i < 25; i++) {
@@ -2139,11 +2143,17 @@ Noise(const evalcontext * pec, const TanBoard anBoard, int iOutput)
         /* Box-Muller transform of a point in the unit circle. */
         float x, y;
 
+#if defined(USE_MULTITHREAD)
+        g_mutex_lock(&noiseRNGMutex);
+#endif
         do {
             x = (float) irand(&rc) * 2.0f / (float) UB4MAXVAL - 1.0f;
             y = (float) irand(&rc) * 2.0f / (float) UB4MAXVAL - 1.0f;
             r = x * x + y * y;
         } while (r > 1.0f || r == 0.0f);
+#if defined(USE_MULTITHREAD)
+        g_mutex_unlock(&noiseRNGMutex);
+#endif
 
         r = y * sqrtf(-2.0f * logf(r) / r);
         (void) x;
@@ -2682,8 +2692,21 @@ extern int
 CompareMoves(const move * pm0, const move * pm1)
 {
 
-    /*high score first */
-    return (pm1->rScore > pm0->rScore || (pm1->rScore == pm0->rScore && pm1->rScore2 > pm0->rScore2)) ? 1 : -1;
+    /* return (pm1->rScore > pm0->rScore || (pm1->rScore == pm0->rScore && pm1->rScore2 > pm0->rScore2)) ? 1 : -1; */
+    /* high score first */
+    if (pm0->rScore > pm1->rScore)
+        return -1;
+    if (pm0->rScore < pm1->rScore)
+        return 1;
+
+    if (pm0->rScore2 > pm1->rScore2)
+        return -1;
+    if (pm0->rScore2 < pm1->rScore2)
+        return 1;
+
+    /* (pm0->rScore == pm1->rScore) && (pm0->rScore2 == pm1->rScore2)
+     * when it is used directly as a qsort() comparator */
+    return 0;
 }
 
 static int
@@ -2719,9 +2742,9 @@ CompareMovesGeneral(const move * pm0, const move * pm1)
      * always be chosen. */
 
     /* Winning now is always at least as good as winning later */
-    if (back[0] == -1)
+    if (back[0] == -1 && back[1] != -1)
         return -1;
-    if (back[1] == -1)
+    if (back[1] == -1 && back[0] != -1)
         return 1;
 
     if (pm0->rScore != pm1->rScore || pm0->rScore2 != pm1->rScore2)
@@ -2734,7 +2757,12 @@ CompareMovesGeneral(const move * pm0, const move * pm1)
         return -1;
 
     /* If everything else is equal "back" chequer at high point bad */
-    return (back[0] > back[1] ? 1 : -1);
+    if (back[0] > back[1])
+        return 1;
+    if (back[0] < back[1])
+        return -1;
+
+    return 0;
 }
 
 extern int
@@ -2941,21 +2969,18 @@ StatusNeuralNet(neuralnet * pnn, char *szTitle, char *sz)
 static void
 StatusRace(char *sz)
 {
-
     StatusNeuralNet(&nnRace, _("Race"), sz);
 }
 
 static void
 StatusCrashed(char *sz)
 {
-
-    StatusNeuralNet(&nnContact, _("Crashed"), sz);
+    StatusNeuralNet(&nnCrashed, _("Crashed"), sz);
 }
 
 static void
 StatusContact(char *sz)
 {
-
     StatusNeuralNet(&nnContact, _("Contact"), sz);
 }
 
@@ -3101,8 +3126,15 @@ GetCacheMB(int size)
 extern int
 EvalCacheResize(unsigned int cNew)
 {
-    cCache = CacheResize(&cEval, cNew);
-    return cCache;
+    int cActual = CacheResize(&cEval, cNew);
+
+    if (cActual < 0) {
+        outputerrf(_("Evaluation cache resize failed; keeping the previous size\n"));
+        return -1;
+    }
+
+    cCache = (unsigned int) cActual;
+    return cActual;
 }
 
 #if CACHE_STATS
@@ -3159,27 +3191,21 @@ SetCubeInfoMatch(cubeinfo * pci, const int nCube, const int fCubeOwner,
     pci->fCrawford = fCrawford;
     pci->bgv = bgv;
 
-    /*
-     * FIXME: calculate gammon price when initializing program
-     * instead of recalculating it again and again, or cache it.
-     */
-
     {
-
         int nAway0 = pci->nMatchTo - pci->anScore[0] - 1;
         int nAway1 = pci->nMatchTo - pci->anScore[1] - 1;
+        int nCubeIndex = MIN(LogCube(pci->nCube), MAXCUBELEVEL - 1);
 
         if ((!nAway0 || !nAway1) && !fCrawford) {
             if (!nAway0)
-                memcpy(pci->arGammonPrice, aaaafGammonPricesPostCrawford[LogCube(pci->nCube)]
+                memcpy(pci->arGammonPrice, aaaafGammonPricesPostCrawford[nCubeIndex]
                        [nAway1][0], 4 * sizeof(float));
             else
-                memcpy(pci->arGammonPrice, aaaafGammonPricesPostCrawford[LogCube(pci->nCube)]
+                memcpy(pci->arGammonPrice, aaaafGammonPricesPostCrawford[nCubeIndex]
                        [nAway0][1], 4 * sizeof(float));
         } else
-            memcpy(pci->arGammonPrice, aaaafGammonPrices[LogCube(pci->nCube)]
+            memcpy(pci->arGammonPrice, aaaafGammonPrices[nCubeIndex]
                    [nAway0][nAway1], 4 * sizeof(float));
-
     }
 
     return 0;
@@ -4896,7 +4922,7 @@ getPercent(const cubedecision cd, const float arDouble[])
 extern void
 RefreshMoveList(movelist * pml, int *ai)
 {
-    movelist ml;
+    static movelist ml;
 
     if (!pml->cMoves)
         return;

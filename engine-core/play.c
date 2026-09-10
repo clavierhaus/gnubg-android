@@ -529,13 +529,20 @@ PopGame(const listOLD * plDelete, int fInclusive)
 {
 
     listOLD *pl;
-    int i;
+#if defined (USE_GTK)
+    int i = 0;
+#endif
 
-    for (i = 0, pl = lMatch.plNext; pl != &lMatch && pl->p != plDelete; pl = pl->plNext, i++);
+    for (pl = lMatch.plNext; pl != &lMatch && pl->p != plDelete; pl = pl->plNext);
 
+#if defined (USE_GTK)
+    i++;
+#endif
     if (pl->p && !fInclusive) {
         pl = pl->plNext;
+#if defined (USE_GTK)
         i++;
+#endif
     }
 
     if (!pl->p)

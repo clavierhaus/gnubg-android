@@ -130,17 +130,16 @@ locations.
 
 **Modification 1 -- ManualEvent condition variable type (~line 70):**
 
-Upstream declares the `cond` field as `GCond cond;`. engine-core wraps the
-field in a GLib version check that selects the POSIX pthread type under
-modern GLib:
+Upstream declares the `cond` field as `GCond cond;`. engine-core uses the
+POSIX pthread type:
 
 ```c
-#if GLIB_CHECK_VERSION (2,32,0)
     pthread_cond_t cond;
-#else
-    GCond *cond;
-#endif
 ```
+
+(Until the 2026-09-10 sync the seam carried a `GLIB_CHECK_VERSION (2,32,0)`
+branch with `GCond *cond` for older GLib; upstream 2673059b raised its GLib
+floor to 2.32 and removed that branch, and the seam followed.)
 
 **Modification 2 -- AsyncTask mutex types (~lines 94-95):**
 

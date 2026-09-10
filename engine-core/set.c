@@ -61,13 +61,13 @@
 #include "set.h"
 
 #if defined(USE_GTK)
-#include "gtklocdefs.h"
+#include "gtk/gtklocdefs.h"
 #include "gtk/gtkgame.h"
-#include "gtkoptions.h"
-#include "gtkprefs.h"
+#include "gtk/gtkoptions.h"
+#include "gtk/gtkprefs.h"
 #include "gtk/gtkchequer.h"
 #include "gtk/gtkwindows.h"
-#include "gtkscoremap.h"
+#include "gtk/gtkscoremap.h"
 #endif                          /* USE_GTK */
 
 #include "matchequity.h"
@@ -1565,8 +1565,8 @@ CommandSetPlayerName(char *sz)
         return;
     }
 
-    if (strlen(sz) > 31)
-        sz[31] = 0;
+    if (strlen(sz) >= MAX_NAME_LEN)
+        sz[MAX_NAME_LEN - 1] = 0;
 
     if ((*sz == '0' || *sz == '1') && !sz[1]) {
         outputf(_("`%c' is not a valid name.\n"), *sz);
@@ -1916,7 +1916,7 @@ CommandSetRolloutMaxError(char *sz)
 
     prcSet->rStdLimit = r;
 
-    outputf(_("Rollouts can stop when the estimated equities' STD are less than " "%5.4f)\n"), r);
+    outputf(_("Rollouts can stop when the estimated equities' STD are less than " "%5.4f\n"), r);
 }
 
 extern void
@@ -4351,6 +4351,34 @@ CommandSetExportPNGSize(char *sz)
 static void
 SetVariation(const bgvariation bgvx)
 {
+
+    switch (bgvx) {
+    case VARIATION_HYPERGAMMON_1:
+        if (apbcHyper[0] == NULL) {
+            outputf(_("Cannot set variation to `%s': %s is not available.\n"),
+                    gettext(aszVariations[bgvx]), "hyper1.bd");
+            return;
+        }
+        break;
+    case VARIATION_HYPERGAMMON_2:
+        if (apbcHyper[1] == NULL) {
+            outputf(_("Cannot set variation to `%s': %s is not available.\n"),
+                    gettext(aszVariations[bgvx]), "hyper2.bd");
+            return;
+        }
+        break;
+    case VARIATION_HYPERGAMMON_3:
+        if (apbcHyper[2] == NULL) {
+            /* TRANSLATORS: The first %s is a translated variation name.
+             * The second %s is a database filename, e.g. "hyper3.bd". */
+            outputf(_("Cannot set variation to `%s': %s is not available.\n"),
+                    gettext(aszVariations[bgvx]), "hyper3.bd");
+            return;
+        }
+        break;
+    default:
+        break;
+    }
 
     bgvDefault = bgvx;
     CommandShowVariation(NULL);
