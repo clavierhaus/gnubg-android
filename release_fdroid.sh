@@ -38,12 +38,18 @@ warn() { printf '  %s!!%s %s\n' "$B" "$X" "$*"; }
 die()  { printf '  %sx%s  %s\n' "$B" "$X" "$*" >&2; exit 1; }
 hr()   { printf -- '----------------------------------------------------------\n'; }
 
-VERSION=""; SUMMARY=""; DRY=0
+VERSION=""; SUMMARY=""; DRY=0; RESUME=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --version) VERSION="$2"; shift 2 ;;
     --summary) SUMMARY="$2"; shift 2 ;;
     --dry-run) DRY=1; shift ;;
+    # --resume: the bump is committed and the tag + GitHub release exist
+    # (steps 2-3 done); redo only the fdroiddata push, CI wait, sign,
+    # clobber (steps 4-6). Refuses unless the tree is AT --version and the
+    # tag resolves. Added 2026-09-11 after step 4 aborted on a dirty
+    # fdroiddata clone and a plain re-run would have bumped 1.0.2 -> 1.0.3.
+    --resume) RESUME=1; shift ;;
     *) die "unknown argument: $1" ;;
   esac
 done
@@ -117,7 +123,14 @@ if [ "$DRY" -eq 1 ]; then
   exit 0
 fi
 
+if [ "$RESUME" -eq 1 ]; then
+  [ "$STAGED" -eq 1 ] || die "--resume: tree is at $CUR_NAME, not $VERSION -- nothing to resume"
+  git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || die "--resume: tag $TAG does not exist"
+  ok "resume: bump and tag $TAG already done, skipping to fdroiddata"
+fi
+
 # --- 2. bump + changelog --------------------------------------------------------
+if [ "$RESUME" -eq 0 ]; then
 if [ "$STAGED" -eq 0 ]; then
   sed -i "s/versionCode = $CUR_CODE/versionCode = $NEW_CODE/" "$GRADLE"
   sed -i "s/versionName = \"$CUR_NAME\"/versionName = \"$VERSION\"/" "$GRADLE"
@@ -142,6 +155,7 @@ ok "version bumped, pushed"
 # --- 3. GitHub release (tag + placeholder APK) ----------------------------------
 ./release.sh || die "release.sh failed"
 ok "GitHub release $TAG published (placeholder reference APK)"
+fi # RESUME
 
 # F-Droid review rule: commit: must be the full commit hash, never a tag name.
 TAG_SHA="$(git rev-list -n1 "$TAG")"
@@ -155,10 +169,19 @@ fi
 
 # --- 4. fdroiddata fork: recipe -> new version, push -> CI ----------------------
 cd "$FDROIDDATA"
+META="metadata/$APPID.yml"
+# The fork clone must be clean before the branch is rebuilt from
+# upstream/master. Only our own recipe may be dirty -- it is a leftover of a
+# previous run and is regenerated below, so it is restored, and said so.
+# Anything else dirty is not ours to discard.
+if [ -n "$(git status --porcelain -- "$META")" ]; then
+  warn "restoring local edits to $META in $FDROIDDATA (leftover of a previous run; regenerated below)"
+  git checkout -q -- "$META"
+fi
+[ -z "$(git status --porcelain)" ] || die "fdroiddata clone is dirty beyond $META -- inspect: git -C $FDROIDDATA status"
 git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://gitlab.com/fdroid/fdroiddata.git
 git fetch -q upstream master
 git checkout -q -B "$BUILD_BRANCH" upstream/master
-META="metadata/$APPID.yml"
 if [ ! -f "$META" ]; then
   # app not merged upstream yet: seed from the in-repo reference recipe
   cp "$ROOT/fdroid/$APPID.yml" "$META"
