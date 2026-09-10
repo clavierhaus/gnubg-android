@@ -880,3 +880,33 @@ The historical Plus-realm addendum lives in git history at the commits
 that carried it; its surviving obligations (vault firewall, one-way
 nothing-network doctrine, data continuity in the user's folder) are now
 plain repository law above.
+
+## THE SCREEN IS ONE PICTURE (added 2026-09-10, maintainer order)
+
+Every screen is drawn ONCE, for the reference device -- Pixel 8 Pro,
+1344x2992 px at 480 dpi, 997x448 dp landscape, measured -- in the dp and
+sp values in its source. Those values ARE the design. No screen is ever
+fitted to another device by hand: a spacer nudged, a width tuned "so it
+clears the chips on a Pixel", a phase given its own pitch. Those are
+band-aids, they move the overflow to the next tenant, and every new
+device report reopens them (the 2772x1272 day, 2026-09-10: four in a row).
+
+The mechanism is gnubg-app/.../shared/ScreenGrid.kt and it is the only one:
+
+  - Every screen's root is OnePicture. On a smaller pane the whole screen
+    is scaled by min(w/997, h/448, 1) through the density its children
+    read. Layout, drawing and hit-testing share that density, so tap
+    rectangle equals drawn rectangle by construction.
+  - A screen is a PARTITION: ScreenRows / ScreenCols by weight. Cells tile
+    the pane and cannot overlap. Corner controls are cells, never overlays.
+    There is no unweighted child in a partition.
+  - Content drawn from its own canvas size (the board) is wrapped in
+    Unscaled. Nothing else is.
+  - Below MIN_SCALE the screen says so. Correct-or-silent applies to
+    geometry.
+
+A screen that fits on the reference device fits everywhere, by
+arithmetic. The test for any layout change is therefore ONE device --
+the reference -- plus the geometry sweep (tools/geometry_sweep.sh, the
+wm size / wm density matrix) for the record. A new device report becomes
+a row in the sweep, not a session.
