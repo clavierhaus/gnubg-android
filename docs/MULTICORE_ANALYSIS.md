@@ -444,3 +444,31 @@ likely command() plus a stored-eval read), or `set rollout log on` with
 per-game .sgf records -- the STRONGEST form, since comparing game records
 asserts dice-identical trials, not just matching aggregates. Next
 session's first item.
+
+
+## 3. The race, found (2026-09-10)
+
+`tools/rollout_harness/run_tests.sh` T1 -- same seed twice, byte-identical --
+failed on every run on the maintainer's 12-core host, on the tree before the
+upstream sync (`b73e374`) as well as after it. It had passed on the Pixel 8 Pro
+at four threads (Gate B) and in a one-core sandbox: by probability, not by
+construction.
+
+Cause, read in the source: the pool's trial core is
+`BasicCubefulRolloutNoLocking`, and `eval.c:71-94` binds the NoLocking
+evaluation family, which reaches `CacheLookupNoLocking` / `CacheAddNoLocking`
+on the single global `cEval`. gnubg runs that family only at one thread; at
+N > 1 it rebinds to the WithLocking family, whose per-entry spinlocks
+(`lib/cache.c` cache_lock / cache_unlock) are compiled only under
+`USE_MULTITHREAD`. Section 1's concern about the shared cache (lines 160-166)
+applied to the rollout pool too; the pivot in 2.5 inherited it.
+
+There is no cache-off in gnubg (`CacheCreate(0)` produces a mask over a
+zero-byte allocation), so the only gnubg-faithful remedy is the WithLocking
+family -- which means unshelving the USE_MULTITHREAD sections above, with a
+determinism gate at 12 threads as acceptance.
+
+Until then the pool is serial (`stubs.c` gnubg_init_rollout: one worker;
+`GNUBG_ROLLOUT_THREADS` overrides for measurement). `run_tests.sh` M1 runs the
+pool at every core and reports, informationally, whether this host reproduces
+the race. Gate B's "threads 1 vs 4 identical" line is withdrawn.
