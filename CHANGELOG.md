@@ -21,6 +21,10 @@ the engine, or stopped hiding what the engine already knew.
   (reported from a 2772x1272 device). The rail's phase content now
   yields to those buttons instead of displacing them, and the rail's
   vertical spacing scales with the height of the pane it has.
+- The home hub's menu no longer loses "Review Match" past the bottom
+  edge on short, wide displays: the menu block scales with the height
+  of the screen it has, while the title and the engine colophon stay
+  where they are.
 
 ## [1.0.1] -- 2026-08-15
 
