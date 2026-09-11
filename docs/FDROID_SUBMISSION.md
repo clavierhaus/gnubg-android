@@ -115,3 +115,30 @@ Note (0.22.0): the coaching-insight corpus (insights_v0.json) and its
 matcher are no longer part of this application as of 0.22.0. The coach
 shows gnubg's own evaluations directly. Statements above about the corpus
 describe releases up to 0.21.7 only.
+
+## The release cycle since 1.0.2 (2026-09-11)
+
+One command, `release_fdroid.sh`, and its header is the specification.
+The properties an F-Droid reviewer sees, and why they need no discussion:
+
+- **The reference APK on the GitHub release is our own reproducible
+  build**, signed with the key named in `AllowedAPKSigningKeys`. Before
+  it is published, the same commit is built twice in independent
+  worktrees on the maintainer's machine and the unsigned APKs are
+  byte-identical (`tools/verify_reproducible.sh`, a release gate).
+- **F-Droid's CI rebuild on the fork branch matches it**, so the
+  pipeline attached to the merge request is green before the request is
+  opened. If it were not, the release would not have been made: the
+  script refuses to proceed and never uploads F-Droid's build over ours.
+- **The recipe grows one build block per version**; earlier blocks are
+  never rewritten.
+- **The versions the build depends on are pinned in the repository**
+  (NDK, Gradle, AGP, Kotlin, compileSdk, glib) and the maintainer's
+  machine is checked against them before every release (CLAUDE.md,
+  THE F-DROID BUILD CHECK).
+
+What changed to make this true: until 1.0.1 the glib build compiled
+its checkout path into three libraries, so no two builds matched and
+the script shipped F-Droid's own build re-signed. That is fixed at the
+source (`build_glib_android.sh`: prefix `/`, placed by `DESTDIR`), and
+the workaround is gone.

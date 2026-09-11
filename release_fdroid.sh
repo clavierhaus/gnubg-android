@@ -1,25 +1,37 @@
 #!/usr/bin/env bash
 #
-# release_fdroid.sh -- one-command GitHub + F-Droid release.
+# release_fdroid.sh -- one-command GitHub + F-Droid release, reproducible.
 #
-#   ./release_fdroid.sh                       auto-bump patch (0.21.7 -> 0.21.8)
-#   ./release_fdroid.sh --version 0.22.0      explicit version
-#   ./release_fdroid.sh --summary "..."       fastlane changelog text
-#   ./release_fdroid.sh --dry-run             show the plan, change nothing
+#   ./release_fdroid.sh --version 1.0.2 --summary "..."   the release
+#   ./release_fdroid.sh --dry-run ...                     preflight + plan only
+#   ./release_fdroid.sh --resume ...                      redo steps 4-5 after an abort
 #
-# What it does, start to finish:
-#   1. bump versionName/versionCode, roll CHANGELOG, write fastlane changelog
-#   2. commit + push to GitHub
-#   3. ./release.sh  (signed tag, local build, GitHub release -- the local APK
-#      is a PLACEHOLDER reference; Fedora builds never match F-Droid's, see
-#      docs/FDROID_SUBMISSION.md)
-#   4. update the fdroiddata fork recipe to the new version, push -> CI builds
-#      the app in F-Droid's own environment
-#   5. wait for the 'fdroid build' job. It FAILS BY DESIGN (compares against
-#      the placeholder), but uploads the unsigned APK artifact.
-#   6. download the artifact, sign it with the project key, clobber it onto
-#      the GitHub release. The reference is now F-Droid's own bytes, signed.
-#      F-Droid's buildserver verification then passes by construction.
+# The cycle (2026-09-11; replaces the placeholder design of 0.21-1.0.1):
+#   0. preflight: clean tree, gh auth, engine gates (syntax_check, the rollout
+#      harness at the shipped worker count), and the REPRODUCIBILITY PROOF --
+#      tools/verify_reproducible.sh builds this commit twice in independent
+#      worktrees; the unsigned APKs must be byte-identical. No proof, no release.
+#   1. bump versionName/versionCode, roll CHANGELOG, write fastlane changelog,
+#      commit + push.
+#   2. ./release.sh -- signed tag, the same build again, GitHub release with
+#      the SIGNED APK. That APK is the reference F-Droid compares against:
+#      the recipe's Binaries: points at it, AllowedAPKSigningKeys names our key.
+#   3. append a build block for this version to the fdroiddata fork recipe,
+#      push the branch -> F-Droid's CI rebuilds the app in its own environment
+#      and compares its bytes with the reference.
+#   4. wait for the 'fdroid build' job. success = F-Droid reproduced our APK;
+#      the merge request can be opened with a green pipeline and nothing to
+#      explain. failed = a real finding: the job log says whether the build
+#      failed (recipe/environment) or differed (diffoscope names the file);
+#      it is fixed in the build and re-tagged. NOTHING is ever uploaded over
+#      the reference to make the comparison pass -- that was the old design,
+#      and it hid a non-reproducible glib build for three releases.
+#
+# Why the old design existed: glib compiled its install prefix (a path under
+# the checkout) into libglib/libgio/libgirepository, so no two checkouts
+# matched and the script shipped F-Droid's own build re-signed. Fixed in
+# build_glib_android.sh (prefix "/", placed by DESTDIR). See
+# CLAUDE.md, THE F-DROID BUILD CHECK, for the version table this relies on.
 #
 set -euo pipefail
 
@@ -45,8 +57,7 @@ while [ $# -gt 0 ]; do
     --summary) SUMMARY="$2"; shift 2 ;;
     --dry-run) DRY=1; shift ;;
     # --resume: the bump is committed and the tag + GitHub release exist
-    # (steps 2-3 done); redo only the fdroiddata push, CI wait, sign,
-    # clobber (steps 4-6). Refuses unless the tree is AT --version and the
+    # (steps 1-2 done); redo only the fdroiddata push and the CI wait. Refuses unless the tree is AT --version and the
     # tag resolves. Added 2026-09-11 after step 4 aborted on a dirty
     # fdroiddata clone and a plain re-run would have bumped 1.0.2 -> 1.0.3.
     --resume) RESUME=1; shift ;;
@@ -112,6 +123,14 @@ printf 'engine gate host: %s cores (%s)\n' "$(nproc)" "$(uname -srm)"
   || die "tools/rollout_harness/run_tests.sh failed -- see tmp/release_harness.log"
 grep -q "ALL TESTS GREEN" tmp/release_harness.log || die "harness did not report ALL TESTS GREEN"
 grep -E "^host cores:|DIFFER at|identical at" tmp/release_harness.log
+# The reproducibility proof: two independent worktrees of this commit build
+# the same unsigned APK. Without it there is no claim to publish, and the
+# APK release.sh attaches is what F-Droid's verifier will compare against.
+./tools/verify_reproducible.sh > tmp/release_repro.log 2>&1 \
+  || die "tools/verify_reproducible.sh: NOT REPRODUCIBLE -- see tmp/release_repro.log; fix the build, never the release"
+REPRO_SHA="$(sed -n 's/^build a: //p' tmp/release_repro.log | head -n1)"
+[ -n "$REPRO_SHA" ] || die "could not read the unsigned APK sha256 from tmp/release_repro.log"
+ok "reproducible: unsigned APK $REPRO_SHA (two independent worktrees)"
 ok "preflight clean"
 
 if [ "$DRY" -eq 1 ]; then
@@ -119,7 +138,7 @@ if [ "$DRY" -eq 1 ]; then
   printf '    bump %s -> %s (code %s), roll CHANGELOG, fastlane %s.txt\n' "$CUR_NAME" "$VERSION" "$NEW_CODE" "$NEW_CODE"
   printf '    commit+push main, ./release.sh (tag %s, GitHub release)\n' "$TAG"
   printf '    update %s recipe -> push branch %s -> CI build\n' "$FDROIDDATA" "$BUILD_BRANCH"
-  printf '    download CI unsigned APK, sign, clobber onto release %s\n' "$TAG"
+  printf '    wait for the fdroid build job: success = verified, open the MR; failed = fix the build, re-tag\n'
   exit 0
 fi
 
@@ -148,13 +167,13 @@ if [ -f "fdroid/$APPID.yml" ]; then
          "fdroid/$APPID.yml"
 fi
 git add "$GRADLE" CHANGELOG.md "fastlane/metadata/android/en-US/changelogs/$NEW_CODE.txt" "fdroid/$APPID.yml" 2>/dev/null
-git commit -q -m "release: $VERSION"
+git commit -q -m "release: $VERSION" || ok "nothing to commit: tree already staged at $VERSION"
 git push -q origin main
 ok "version bumped, pushed"
 
-# --- 3. GitHub release (tag + placeholder APK) ----------------------------------
+# --- 3. GitHub release (tag + the reference APK, signed) ------------------------
 ./release.sh || die "release.sh failed"
-ok "GitHub release $TAG published (placeholder reference APK)"
+ok "GitHub release $TAG published with the reference APK (unsigned bytes $REPRO_SHA, signed by our key)"
 fi # RESUME
 
 # F-Droid review rule: commit: must be the full commit hash, never a tag name.
@@ -194,31 +213,7 @@ else
   # is copied with the three fields replaced and any disable: line dropped;
   # everything above it is untouched. Re-runs are idempotent: an existing
   # block for this versionCode is replaced, not duplicated.
-  python3 - "$META" "$VERSION" "$NEW_CODE" "$TAG_SHA" <<'PY' || die "recipe update failed"
-import re, sys
-meta, ver, code, sha = sys.argv[1:5]
-s = open(meta).read()
-m = re.search(r'^Builds:\n', s, re.M)
-if not m: sys.exit("no Builds: key in " + meta)
-body_start = m.end()
-tail = re.search(r'^\S', s[body_start:], re.M)          # next top-level key
-body_end = body_start + tail.start() if tail else len(s)
-blocks = re.split(r'(?=^  - versionName:)', s[body_start:body_end], flags=re.M)
-blocks = [b for b in blocks if b.strip()]
-if not blocks: sys.exit("no build blocks in " + meta)
-blocks = [b for b in blocks if not re.search(r'^    versionCode: %s$' % code, b, re.M)]
-new = blocks[-1]
-new = re.sub(r'^  - versionName: .*$', '  - versionName: %s' % ver, new, count=1, flags=re.M)
-new = re.sub(r'^    versionCode: .*$', '    versionCode: %s' % code, new, count=1, flags=re.M)
-new = re.sub(r'^    commit: .*$', '    commit: %s' % sha, new, count=1, flags=re.M)
-new = re.sub(r'^    disable:.*\n', '', new, flags=re.M)
-if not new.endswith('\n\n'): new = new.rstrip('\n') + '\n\n'
-blocks.append(new)
-s = s[:body_start] + ''.join(blocks) + s[body_end:]
-s = re.sub(r'^CurrentVersion: .*$', 'CurrentVersion: %s' % ver, s, flags=re.M)
-s = re.sub(r'^CurrentVersionCode: .*$', 'CurrentVersionCode: %s' % code, s, flags=re.M)
-open(meta, 'w').write(s)
-PY
+  python3 "$ROOT/tools/fdroid_recipe_append.py" "$META" "$VERSION" "$NEW_CODE" "$TAG_SHA" || die "recipe update failed"
 fi
 git add "$META"
 git commit -q -m "$APPID $VERSION ($NEW_CODE)"
@@ -252,38 +247,23 @@ done
 printf '\n'
 [ -n "$JOB_ID" ] && [ "$JOB_ID" != " " ] || die "CI job '$JOB_NAME' not found for $SHA"
 case "$JOB_STATUS" in
-  success) ok "CI build verified on first pass (reference already matched)" ;;
-  failed)  ok "CI build finished (comparison failed against placeholder -- expected)" ;;
-  *) die "CI job did not finish in time (status: $JOB_STATUS). Re-run later steps manually." ;;
+  success)
+    ok "F-Droid's CI rebuilt $TAG and it MATCHED the reference APK -- the reproducibility claim, proven by F-Droid" ;;
+  failed)
+    hr
+    printf '  x  F-Droid'"'"'s CI build of %s did NOT match the reference APK.\n' "$TAG" >&2
+    printf '     Job: %s/clavierhaus/gnubg-android/-/jobs/%s\n' "$GL_HOST" "$JOB_ID" >&2
+    printf '     Read the job log. If the build failed before comparing, it is the recipe or\n' >&2
+    printf '     the environment. If it built and differed, download the artifact and run\n' >&2
+    printf '     diffoscope against gnubg-app/app/build/outputs/apk/release/app-release-unsigned.apk;\n' >&2
+    printf '     the differing file names the component (CLAUDE.md, THE F-DROID BUILD CHECK).\n' >&2
+    printf '     Nothing is replaced on the GitHub release: the reference APK is what we\n' >&2
+    printf '     claim, and the claim is fixed in the build, then re-tagged -- never by\n' >&2
+    printf '     uploading F-Droid'"'"'s own build as if it were ours.\n' >&2
+    die "release $TAG is NOT verified; do not open the fdroiddata merge request" ;;
+  *) die "CI job did not finish in time (status: $JOB_STATUS). Re-run with --resume later." ;;
 esac
 
-# --- 6. fetch the CI-built unsigned APK, sign, clobber --------------------------
-WORK="$(mktemp -d)"
-curl -sfL -o "$WORK/artifacts.zip" \
-  "$GL_HOST/clavierhaus/gnubg-android/-/jobs/$JOB_ID/artifacts/download" \
-  || die "artifact download failed (job $JOB_ID)"
-unzip -qo "$WORK/artifacts.zip" -d "$WORK"
-# On a verified pass the unsigned APK lands in unsigned/; when the comparison
-# fails (placeholder reference -- the normal first pass of every release) the
-# built APK is kept as tmp/<appid>_<code>.apk instead. Accept either.
-UNSIGNED="$(find "$WORK" -path "*unsigned*" -name "*.apk" | head -n1)"
-[ -n "$UNSIGNED" ] || UNSIGNED="$(find "$WORK" -path "*tmp*" -name "${APPID}_${NEW_CODE}.apk" | head -n1)"
-[ -n "$UNSIGNED" ] || die "no CI-built APK in artifacts (looked in unsigned/ and tmp/)"
-ok "CI-built APK: $(basename "$UNSIGNED")"
-
-KS_FILE="$(sed -n 's/^storeFile=//p' gnubg-app/keystore.properties)"
-KS_PASS="$(sed -n 's/^storePassword=//p' gnubg-app/keystore.properties)"
-KEY_PASS="$(sed -n 's/^keyPassword=//p' gnubg-app/keystore.properties)"
-KEY_ALIAS="$(sed -n 's/^keyAlias=//p' gnubg-app/keystore.properties)"
-"$APKSIGNER" sign --ks "$KS_FILE" --ks-key-alias "$KEY_ALIAS" \
-  --ks-pass "pass:$KS_PASS" --key-pass "pass:$KEY_PASS" \
-  --out "$WORK/app-release.apk" "$UNSIGNED" || die "apksigner failed"
-( cd "$WORK" && sha256sum app-release.apk > app-release.apk.sha256 )
-gh release upload "$TAG" "$WORK/app-release.apk" "$WORK/app-release.apk.sha256" --clobber \
-  || die "gh release upload failed"
-rm -rf "$WORK"
-ok "reference APK replaced with signed CI build"
-
 hr
-ok "released $VERSION -- GitHub done; F-Droid's buildserver verifies + publishes on its next cycle"
+ok "released $VERSION -- verified by F-Droid's CI. Open the merge request from branch $BUILD_BRANCH of the fork; its pipeline is already green."
 hr
