@@ -1014,3 +1014,50 @@ Raising GNUBG_ROLLOUT_WORKERS above 1 requires the WithLocking evaluation
 family (USE_MULTITHREAD), the thread-count default inherited from upstream
 (never chosen by the port), and T1 green on a host with >= that many cores.
 That is the 1.1 acceptance test, in this order and none other.
+
+## THE F-DROID BUILD CHECK (maintainer order, 2026-09-11)
+
+Before a release, the maintainer's machine is verified to be a valid
+reproducer of F-Droid's build -- by COMPARING VERSIONS, not by building in
+a container and not by re-deriving the pipeline. The pipeline is done
+(release_fdroid.sh, verify_reproducible.sh, the fdroiddata recipe); what
+can drift is the environment, and the drift is a short table.
+
+F-Droid's side, and where each value is pinned:
+
+  NDK           recipe `ndk:` == build_native_android.sh NDK_VERSION   bytes
+  JDK           openjdk 21 (fdroiddata CI installs it; trixie 21.0.x)  major only
+  Gradle        gnubg-app/gradle/wrapper/gradle-wrapper.properties     bytes
+  AGP / Kotlin  gnubg-app/gradle/libs.versions.toml + lockfiles        bytes
+  compileSdk    gnubg-app/app/build.gradle.kts (platform android-N)    bytes
+  glib / pcre2  build_glib_android.sh GLIB_VERSION, PCRE2_VERSION      bytes
+  cmake/meson/  recipe `sudo:` apt list (trixie versions; any newer    run/fail
+  ninja         local version is fine; meson must satisfy glib)        only
+  signing key   recipe AllowedAPKSigningKeys; comparison is UNSIGNED   n/a
+
+Everything marked "bytes" is pinned INSIDE the repository except the JDK,
+which the machine supplies. So the check is: NDK present at the pinned
+version, javac 21 selected, platform android-N present, meson new enough
+for the pinned glib. The assistant prints the expected values from the
+pins and hands the maintainer this block; the maintainer pastes its output:
+
+  cd /home/erweitert/gnubg-android
+  ls /home/erweitert/android-sdk/ndk/            # expect NDK_VERSION
+  javac -version; java -version 2>&1 | head -1   # expect 21.x selected
+  ls /home/erweitert/android-sdk/platforms/      # expect android-<compileSdk>
+  cmake --version | head -1; meson --version; ninja --version
+  grep distributionUrl gnubg-app/gradle/wrapper/gradle-wrapper.properties
+  grep -n 'GLIB_VERSION=\|PCRE2_VERSION=' build_glib_android.sh
+
+Then ./tools/verify_reproducible.sh gives the unsigned APK's sha256 from two
+independent worktrees. F-Droid's CI build of the same recipe commit either
+matches it -- the claim, proven -- or diffoscope on the pair names the row
+above that drifted. That comparison is the release's proof and is recorded
+in the release notes.
+
+What this order forbids, because it cost a release's worth of quota on
+2026-09-11: proposing to run F-Droid's container locally, rewriting the
+release script's ordering, or treating the fourth release as the first.
+The recipe's build blocks are APPENDED per version (release_fdroid.sh);
+the fdroiddata clone is cleaned of our own recipe leftovers only; and
+--resume redoes steps 4-6 when a run aborts after the tag exists.
