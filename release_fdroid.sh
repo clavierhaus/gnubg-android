@@ -113,7 +113,6 @@ git fetch -q origin
 [ "$(git rev-parse main)" = "$(git rev-parse origin/main)" ] || die "main not in sync with origin"
 command -v gh >/dev/null || die "gh CLI required"
 gh auth status >/dev/null 2>&1 || die "gh not authenticated"
-[ -d "$FDROIDDATA/.git" ] || die "fdroiddata clone not found at $FDROIDDATA (set FDROIDDATA=...)"
 [ -f "gnubg-app/keystore.properties" ] || die "gnubg-app/keystore.properties missing (signing)"
 APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
 [ -n "$APKSIGNER" ] || die "apksigner not found under build-tools"
@@ -122,6 +121,7 @@ APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksign
 # on a scratch copy of the fork's recipe and yield valid YAML. A missing
 # helper or a broken appender is found here in a second, not after the
 # reproducibility proof has built the app twice (2026-09-11).
+mkdir -p tmp
 for helper in tools/syntax_check.sh tools/rollout_harness/run_tests.sh \
               tools/verify_reproducible.sh tools/fdroid_recipe_append.py release.sh; do
   [ -f "$helper" ] || die "missing helper: $helper (is it committed?)"
