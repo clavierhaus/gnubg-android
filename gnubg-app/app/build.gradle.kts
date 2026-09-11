@@ -32,7 +32,14 @@ fun gitOut(vararg args: String): String = try {
     val p = ProcessBuilder(listOf("git", *args)).redirectErrorStream(true).start()
     p.inputStream.bufferedReader().readText().trim().also { p.waitFor() }
 } catch (e: Exception) { "" }
-val gitCommit = gitOut("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
+// REPRODUCIBLE: a fixed 8-character prefix of the full hash. `rev-parse
+// --short` is a MINIMUM: git extends it on ambiguity, so a large clone gave
+// 8 characters where F-Droid's fresh clone gave 7 (2026-09-11, classes2.dex).
+val gitCommit = gitOut("rev-parse", "HEAD").take(8).ifEmpty { "unknown" }
+// The dirty marker is DEBUG-ONLY. F-Droid's build tree is always dirty by
+// its own process (fdroidserver edits the gradle files to strip signing
+// configs), so a release APK that encodes tree state can never reproduce.
+// Release trees are guarded by release.sh's clean-tree check instead.
 val gitDirty = gitOut("status", "--porcelain").isNotEmpty()
 val buildStampUtc = SimpleDateFormat("yyyy-MM-dd HH:mm 'UTC'").apply {
     timeZone = TimeZone.getTimeZone("UTC")
@@ -54,7 +61,7 @@ android {
         ndk {
             abiFilters += "arm64-v8a"
         }
-        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit${if (gitDirty) "+dirty" else ""}\"")
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
         buildConfigField("String", "BUILD_STAMP_UTC", "\"$buildStampUtc\"")
     }
 
@@ -85,6 +92,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "GIT_COMMIT", "\"$gitCommit${if (gitDirty) "+dirty" else ""}\"")
+        }
         release {
             isMinifyEnabled = false
             // AGP 8.13 aapt2 spends ~53 s CPU crunching the 13.5 MB hub

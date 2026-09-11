@@ -101,10 +101,15 @@ if [ "$DO_NATIVE" -eq 1 ]; then
   fi
   if [ ! -f "$CMAKE_BUILD/CMakeCache.txt" ]; then
     printf '%sconfiguring CMake...%s\n' "$B" "$X"
+    # REPRO_ROOT/REPRO_NDK: CMakeLists.txt binds the reproducibility flags to
+    # the target and requires the two paths (see build_native_android.sh).
     cmake -B "$CMAKE_BUILD" \
           -DANDROID_ABI=arm64-v8a \
           -DANDROID_PLATFORM=android-23 \
+          -DANDROID_USE_LEGACY_TOOLCHAIN_FILE=ON \
           -DCMAKE_BUILD_TYPE=Debug \
+          -DREPRO_ROOT="$ROOT" \
+          -DREPRO_NDK="$NDK_ROOT" \
           -DCMAKE_TOOLCHAIN_FILE="$NDK_TOOLCHAIN" \
           "$ROOT/jni-bridge/" || die "cmake configure failed."
     ok "cmake configured"

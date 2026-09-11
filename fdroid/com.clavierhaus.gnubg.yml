@@ -15,8 +15,8 @@ Repo: https://github.com/clavierhaus/gnubg-android.git
 Binaries: https://github.com/clavierhaus/gnubg-android/releases/download/v%v/app-release.apk
 
 Builds:
-  - versionName: 0.22.5
-    versionCode: 23
+  - versionName: 1.0.2
+    versionCode: 102
     commit: 614eb230e8c3ba5cad688c7a05fe265709d9f689
     subdir: gnubg-app/app
     sudo:
@@ -33,5 +33,5 @@ AllowedAPKSigningKeys: 367c17e5719674d6c50511b6e41de8026cf762a63d065ed0037752853
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.22.5
-CurrentVersionCode: 23
+CurrentVersion: 1.0.2
+CurrentVersionCode: 102

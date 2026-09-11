@@ -314,6 +314,22 @@ DESTDIR="$INSTALL_DIR" ninja \
     -C "$BUILD_DIR" \
     install
 
+# REPRODUCIBILITY: meson writes a build-time RUNPATH into the libraries
+# ($ORIGIN/../subprojects/libffi-.../src:$ORIGIN/../glib:...) for its internal
+# subproject links, and what it does with that entry at install time is
+# VERSION-DEPENDENT -- meson 1.11 blanks it with X characters, meson 1.7
+# (Debian trixie, F-Droid's builder) leaves it in place. Same source, same
+# compiler, different bytes (2026-09-11: libgobject, libgmodule, libgthread).
+# Android's linker ignores DT_RUNPATH entirely. tools/blank_runpath.py does
+# exactly what the newer meson does -- blanks the string in place, entry and
+# length untouched -- so both hosts converge on the same bytes (verified on
+# F-Droid's and the maintainer's libgobject/libgmodule/libgthread, identical
+# after blanking). patchelf is NOT used: --remove-rpath leaves the string
+# bytes in .dynstr, so the two sides stay different.
+echo
+echo "==> Normalising RUNPATH strings (meson-version-dependent, unused on Android)"
+python3 "$PROJECT_ROOT/tools/blank_runpath.py" "$INSTALL_DIR"/lib/*.so
+
 required_files=(
     "$INSTALL_DIR/include/glib-2.0/glib.h"
     "$INSTALL_DIR/include/libintl.h"

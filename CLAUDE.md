@@ -1032,7 +1032,10 @@ F-Droid's side, and where each value is pinned:
   compileSdk    gnubg-app/app/build.gradle.kts (platform android-N)    bytes
   glib / pcre2  build_glib_android.sh GLIB_VERSION, PCRE2_VERSION      bytes
   cmake/meson/  recipe `sudo:` apt list (trixie versions; any newer    run/fail
-  ninja         local version is fine; meson must satisfy glib)        only
+  ninja         local version is fine; meson must satisfy glib).       only --
+                Version differences that once moved bytes (CMake's     the bytes
+                toolchain re-assignment, meson's RUNPATH handling) are are pinned
+                neutralised in CMakeLists.txt / build_glib_android.sh.  by us
   signing key   recipe AllowedAPKSigningKeys; comparison is UNSIGNED   n/a
 
 Everything marked "bytes" is pinned INSIDE the repository except the JDK,
@@ -1054,6 +1057,14 @@ independent worktrees. F-Droid's CI build of the same recipe commit either
 matches it -- the claim, proven -- or diffoscope on the pair names the row
 above that drifted. That comparison is the release's proof and is recorded
 in the release notes.
+
+ONE BUILD PATH. The recipe's `build:` line is `./build_native_android.sh`
+and `gradle: yes`. release.sh runs exactly that, produces the UNSIGNED APK,
+compares its sha256 with the two-worktree proof, and signs only those bytes.
+No script may carry its own cmake invocation for a release (release.sh did,
+with Debug flags and stale glib, until 2026-09-11: every native library
+differed from F-Droid's rebuild). build_and_deploy.sh is the DEBUG path and
+stays one.
 
 What this order forbids, because it cost a release's worth of quota on
 2026-09-11: proposing to run F-Droid's container locally, rewriting the

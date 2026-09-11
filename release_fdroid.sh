@@ -129,7 +129,7 @@ done
 [ -d "$FDROIDDATA/.git" ] || die "fdroiddata clone not found at $FDROIDDATA (set FDROIDDATA=...)"
 if [ -f "$FDROIDDATA/metadata/$APPID.yml" ]; then
   cp "$FDROIDDATA/metadata/$APPID.yml" tmp/recipe_selfcheck.yml
-  python3 tools/fdroid_recipe_append.py tmp/recipe_selfcheck.yml "$VERSION" "$NEW_CODE" 0000000000000000000000000000000000000000 >/dev/null \
+  python3 tools/fdroid_recipe_append.py tmp/recipe_selfcheck.yml "$VERSION" "$NEW_CODE" 0000000000000000000000000000000000000000 "fdroid/$APPID.yml" >/dev/null \
     || die "recipe appender failed on a copy of $FDROIDDATA/metadata/$APPID.yml"
   python3 -c "import sys,yaml; d=yaml.safe_load(open(sys.argv[1])); b=[x['versionCode'] for x in d['Builds']]; assert len(b)==len(set(b)), 'duplicate versionCode'; assert int(sys.argv[2]) in b" tmp/recipe_selfcheck.yml "$NEW_CODE" \
     || die "recipe appender produced an invalid recipe (see tmp/recipe_selfcheck.yml)"
@@ -188,10 +188,13 @@ printf '%s\n' "${SUMMARY:-Bug fixes and improvements.}" \
   > "fastlane/metadata/android/en-US/changelogs/$NEW_CODE.txt"
 # keep the in-repo reference recipe in step with reality
 if [ -f "fdroid/$APPID.yml" ]; then
-  sed -i -e "s/versionName: $CUR_NAME/versionName: $VERSION/" \
-         -e "s/versionCode: $CUR_CODE/versionCode: $NEW_CODE/" \
-         -e "s/CurrentVersion: $CUR_NAME/CurrentVersion: $VERSION/" \
-         -e "s/CurrentVersionCode: $CUR_CODE/CurrentVersionCode: $NEW_CODE/" \
+  # The reference recipe carries ONE block; set its version fields whatever
+  # they held (a sed keyed on the old version silently did nothing when the
+  # file had drifted -- it sat at 0.22.5 through two releases).
+  sed -i -e "0,/^  - versionName: .*/s//  - versionName: $VERSION/" \
+         -e "0,/^    versionCode: .*/s//    versionCode: $NEW_CODE/" \
+         -e "s/^CurrentVersion: .*/CurrentVersion: $VERSION/" \
+         -e "s/^CurrentVersionCode: .*/CurrentVersionCode: $NEW_CODE/" \
          "fdroid/$APPID.yml"
 fi
 git add "$GRADLE" CHANGELOG.md "fastlane/metadata/android/en-US/changelogs/$NEW_CODE.txt" "fdroid/$APPID.yml" 2>/dev/null
@@ -200,7 +203,7 @@ git push -q origin main
 ok "version bumped, pushed"
 
 # --- 3. GitHub release (tag + the reference APK, signed) ------------------------
-./release.sh || die "release.sh failed"
+EXPECT_UNSIGNED_SHA="$REPRO_SHA" ./release.sh || die "release.sh failed"
 ok "GitHub release $TAG published with the reference APK (unsigned bytes $REPRO_SHA, signed by our key)"
 fi # RESUME
 
@@ -244,7 +247,9 @@ else
   # is copied with the three fields replaced and any disable: line dropped;
   # everything above it is untouched. Re-runs are idempotent: an existing
   # block for this versionCode is replaced, not duplicated.
-  python3 "$ROOT/tools/fdroid_recipe_append.py" "$META" "$VERSION" "$NEW_CODE" "$TAG_SHA" || die "recipe update failed"
+  # The new block's shape comes from the repository's reference recipe
+  # (fdroid/$APPID.yml): sudo:, build:, ndk: are versioned WITH the code.
+  python3 "$ROOT/tools/fdroid_recipe_append.py" "$META" "$VERSION" "$NEW_CODE" "$TAG_SHA" "$ROOT/fdroid/$APPID.yml" || die "recipe update failed"
 fi
 git add "$META"
 git commit -q -m "$APPID $VERSION ($NEW_CODE)"

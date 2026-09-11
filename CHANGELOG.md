@@ -16,6 +16,17 @@ the engine, or stopped hiding what the engine already knew.
 ## [1.0.2] -- 2026-09-11
 
 ### Changed
+- The release build is reproducible across machines, and F-Droid verifies
+  it. Four causes of drift found and fixed by comparing F-Droid's rebuild
+  of this version with ours, byte by byte: glib compiled its install path
+  into three libraries; meson's build-time RUNPATH was handled differently
+  by different meson versions; the CMake toolchain file overrode the
+  reproducibility flags on newer CMake; and the build stamp encoded a
+  variable-length commit prefix and the tree's dirty state. The release
+  script now runs exactly the build F-Droid's recipe runs, checks its
+  unsigned bytes against a two-worktree proof, and signs only those.
+
+### Changed
 - Upstream sync with GNU Backgammon master at git.savannah.gnu.org,
   commit b1b2772c (2026-09-10). Thirty-one upstream commits since the
   previous vendoring (base 284efab7 / 7b2e857d, June 2026) are carried

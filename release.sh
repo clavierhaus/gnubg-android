@@ -118,46 +118,48 @@ ok "gh authenticated as $ACTIVE_LOGIN"
 
 # --- 2. build ----------------------------------------------------------------
 if [ "$DO_BUILD" -eq 1 ]; then
-  printf '%sbuilding signed release APK...%s\n' "$B" "$X"
+  printf '%sbuilding the release APK -- the recipe's build, then signed%s\n' "$B" "$X"
 
-  # Native library, built directly here (no cross-script coupling): release
-  # needs only the .so plus a signed assembleRelease, and shelling into
-  # build_and_deploy.sh dragged in its debug/install path. Auto-discover the
-  # NDK toolchain rather than pin a version/home that drifts between machines.
-  CMAKE_BUILD="$ROOT/jni-bridge/build-android-arm64"
-  JNILIBS="$APP_DIR/app/src/main/jniLibs/arm64-v8a"
-  SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
-  NDK_TOOLCHAIN=""
-  if [ -n "${ANDROID_NDK_HOME:-}" ] && [ -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" ]; then
-    NDK_TOOLCHAIN="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
-  elif [ -d "$SDK_ROOT/ndk" ]; then
-    ndk_dir="$(find "$SDK_ROOT/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -n1)"
-    [ -n "$ndk_dir" ] && NDK_TOOLCHAIN="$ndk_dir/build/cmake/android.toolchain.cmake"
-  fi
-  [ -n "$NDK_TOOLCHAIN" ] && [ -f "$NDK_TOOLCHAIN" ] \
-    || die "Android NDK toolchain not found (set ANDROID_NDK_HOME or ANDROID_SDK_ROOT)"
+  # ONE build path. Until 2026-09-11 this script ran its own cmake configure
+  # (CMAKE_BUILD_TYPE=Debug, android-23, no reproducibility flags, whichever
+  # NDK sorted last) and never rebuilt glib, so the "reference APK" it
+  # published was not the build F-Droid's recipe runs and not the build the
+  # two-worktree proof had just verified: F-Droid's rebuild differed in every
+  # native library. The recipe's build: line is `./build_native_android.sh`;
+  # that is the only native build a release may use.
+  ./build_native_android.sh || die "build_native_android.sh failed"
+  ok "native libraries built by the recipe's own script"
 
-  # Always wipe and reconfigure: a cached CMakeCache.txt pins the NDK toolchain
-  # path, so reusing it after the NDK moves/changes fails with "not a full path
-  # to an existing compiler". A release must be clean and reproducible anyway.
-  rm -rf "$CMAKE_BUILD"
-  cmake -B "$CMAKE_BUILD" \
-    -DANDROID_ABI=arm64-v8a \
-    -DANDROID_PLATFORM=android-23 \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DCMAKE_TOOLCHAIN_FILE="$NDK_TOOLCHAIN" \
-    "$ROOT/jni-bridge/" || die "cmake configure failed"
-  cmake --build "$CMAKE_BUILD" || die "native build failed"
-  mkdir -p "$JNILIBS"
-  cp "$CMAKE_BUILD/libgnubg-engine.so" "$JNILIBS/libgnubg-engine.so" || die "copying .so failed"
-  ok "native library built"
-
-  # Signed release APK. keystore.properties (in gnubg-app/, the gradle root)
-  # supplies the signing config; without it gradle emits app-release-unsigned.apk
-  # and the guard below fails loudly.
+  # The UNSIGNED release APK first, so its bytes can be compared with the
+  # proof (verify_reproducible.sh builds this same unsigned artifact), then
+  # signed with apksigner. keystore.properties is moved aside for the gradle
+  # run so gradle cannot sign; the signature is attached to proven bytes.
+  KSP="$APP_DIR/keystore.properties"
+  [ -f "$KSP" ] || die "$KSP missing -- the release key is needed to sign (see docs/RELEASE_SIGNING.md)"
+  mv "$KSP" "$KSP.release-aside"
+  trap 'mv -f "$KSP.release-aside" "$KSP" 2>/dev/null || true' EXIT
   rm -rf "$APP_DIR/.gradle" "$APP_DIR/app/build"
   ( cd "$APP_DIR" && ./gradlew assembleRelease ) || die "gradle assembleRelease failed"
-  ok "signed release APK built"
+  mv -f "$KSP.release-aside" "$KSP"; trap - EXIT
+  UNSIGNED_APK="$APP_DIR/app/build/outputs/apk/release/app-release-unsigned.apk"
+  [ -f "$UNSIGNED_APK" ] || die "no app-release-unsigned.apk produced"
+  UNSIGNED_SHA="$(sha256sum "$UNSIGNED_APK" | cut -d' ' -f1)"
+  ok "unsigned release APK: $UNSIGNED_SHA"
+  # If the caller (release_fdroid.sh) proved a hash, this build must be it.
+  if [ -n "${EXPECT_UNSIGNED_SHA:-}" ] && [ "$EXPECT_UNSIGNED_SHA" != "$UNSIGNED_SHA" ]; then
+    die "this build ($UNSIGNED_SHA) is not the proven build ($EXPECT_UNSIGNED_SHA); nothing is published"
+  fi
+
+  KS_FILE="$(sed -n 's/^storeFile=//p' "$KSP")"; KS_PASS="$(sed -n 's/^storePassword=//p' "$KSP")"
+  KEY_PASS="$(sed -n 's/^keyPassword=//p' "$KSP")"; KEY_ALIAS="$(sed -n 's/^keyAlias=//p' "$KSP")"
+  case "$KS_FILE" in /*) ;; *) KS_FILE="$APP_DIR/app/$KS_FILE" ;; esac   # gradle's file() resolves against app/
+  APKSIGNER="$(find "${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
+  [ -n "$APKSIGNER" ] || die "apksigner not found under build-tools"
+  "$APKSIGNER" sign --ks "$KS_FILE" --ks-key-alias "$KEY_ALIAS" \
+    --ks-pass "pass:$KS_PASS" --key-pass "pass:$KEY_PASS" \
+    --out "$APP_DIR/app/build/outputs/apk/release/app-release.apk" "$UNSIGNED_APK" \
+    || die "apksigner sign failed"
+  ok "signed release APK built (signature attached to the proven bytes)"
 else
   warn "skipping build (--no-build) -- using existing APK"
 fi
@@ -166,11 +168,9 @@ fi
 # release APK means gradle did not find keystore.properties (it must live in
 # $APP_DIR/keystore.properties, the gradle root). Fail loudly rather than
 # publish an unsigned or unusable artifact.
-APK="$( { find "$APP_DIR/app/build/outputs/apk/release" -name 'app-release.apk' 2>/dev/null || true; } | head -n1)"
-if [ -z "$APK" ] || [ ! -f "$APK" ]; then
-  die "no SIGNED release APK found (only app-release-unsigned.apk?). gradle did not pick up the signing key -- ensure $APP_DIR/keystore.properties exists with real storeFile/passwords (see RELEASING.md)."
-fi
-APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
+APK="$APP_DIR/app/build/outputs/apk/release/app-release.apk"
+[ -f "$APK" ] || die "no signed release APK at $APK"
+APKSIGNER="$(find "${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
 if [ -n "$APKSIGNER" ]; then
   "$APKSIGNER" verify --print-certs "$APK" >/dev/null 2>&1 \
     || die "release APK failed apksigner verify -- it is not correctly signed"

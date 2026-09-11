@@ -88,3 +88,25 @@ set_source_files_properties(${_vendored} PROPERTIES COMPILE_OPTIONS "-w")
 set_source_files_properties(
     src/stubs.c src/native-lib.c src/gnubg_mobile.c "${ENGINE}/timecontrol.c"
     PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra")
+
+# REPRODUCIBLE BUILD -- flags bound to the TARGET, not to CMAKE_*_FLAGS.
+# The NDK toolchain file re-assigns CMAKE_C_FLAGS / CMAKE_SHARED_LINKER_FLAGS
+# after the command line is read, and CMake 3.31 (F-Droid's) and CMake 4.x
+# (the maintainer's) resolve that differently: on 2026-09-11 the maintainer's
+# engine kept a .note.gnu.build-id and 118 KB more .text than F-Droid's build
+# of the same commit. Target options are applied last, per target, by every
+# CMake version identically. REPRO_ROOT and REPRO_NDK come from
+# build_native_android.sh.
+#   -O2 explicitly: the last -O wins in clang, so the toolchain's per-type
+#       default (which differs between its legacy and new files) is moot.
+#   --build-id=none: last --build-id wins in lld.
+if(NOT DEFINED REPRO_ROOT OR NOT DEFINED REPRO_NDK)
+    message(FATAL_ERROR "REPRO_ROOT and REPRO_NDK must be given (build_native_android.sh does)")
+endif()
+target_compile_options(gnubg-engine PRIVATE
+    -O2
+    "-ffile-prefix-map=${REPRO_ROOT}=."
+    "-ffile-prefix-map=${REPRO_NDK}=/ndk"
+    -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__=)
+target_link_options(gnubg-engine PRIVATE
+    -Wl,--build-id=none -Wl,-z,max-page-size=16384)

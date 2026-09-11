@@ -102,24 +102,26 @@ echo "==> Configuring GNUbg native engine"
 
 rm -rf "$CMAKE_BUILD"
 
-# Reproducible-build flags. Two distinct causes for non-deterministic .so:
+# Reproducible-build flags (now in CMakeLists.txt). Two distinct causes for non-deterministic .so:
 #  (1) embedded build paths -> -ffile-prefix-map (compiler)
 #  (2) the linker's .note.gnu.build-id, a per-link hash that makes EVERY .so
 #      differ even with identical object code -> --build-id=none (linker).
 # The build-id is why libz/libintl/libgirepository (which we do not compile)
 # also differed: the difference is applied at link time, uniformly.
-REPRO_CFLAGS="-ffile-prefix-map=$ROOT=. -ffile-prefix-map=$NDK_ROOT=/ndk -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__="
-REPRO_LDFLAGS="-Wl,--build-id=none -Wl,-z,max-page-size=16384"
-
+# The flags themselves live in jni-bridge/CMakeLists.txt as TARGET options
+# (immune to the toolchain file's re-assignment of CMAKE_*_FLAGS, which
+# CMake 3.31 and 4.x resolve differently -- 2026-09-11). Only the two paths
+# they need are passed here. ANDROID_USE_LEGACY_TOOLCHAIN_FILE is pinned so
+# both CMake generations take the same toolchain path.
 cmake \
     -S "$ROOT/jni-bridge" \
     -B "$CMAKE_BUILD" \
     -DANDROID_ABI="$ANDROID_ABI" \
     -DANDROID_PLATFORM="$ANDROID_PLATFORM" \
+    -DANDROID_USE_LEGACY_TOOLCHAIN_FILE=ON \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    -DCMAKE_C_FLAGS="$REPRO_CFLAGS" \
-    -DCMAKE_CXX_FLAGS="$REPRO_CFLAGS" \
-    -DCMAKE_SHARED_LINKER_FLAGS="$REPRO_LDFLAGS" \
+    -DREPRO_ROOT="$ROOT" \
+    -DREPRO_NDK="$NDK_ROOT" \
     -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN"
 
 echo
