@@ -39,7 +39,7 @@ APPID="com.clavierhaus.gnubg"
 GL_PROJ="clavierhaus%2Fgnubg-android"      # GitLab fork (URL-encoded path)
 GL_HOST="https://gitlab.com"
 JOB_NAME="fdroid build"
-FDROIDDATA="${FDROIDDATA:-$HOME/fdroiddata}"
+FDROIDDATA="${FDROIDDATA:-}"                # default set below: sibling of the repo, never $HOME
 BUILD_BRANCH="$APPID"                       # fork branch the CI builds from
 POLL_SECS=30
 POLL_MAX=90                                 # 45 min ceiling
@@ -74,6 +74,11 @@ done
 [ -n "$ROOT" ] || die "repo root not found"
 cd "$ROOT"
 GRADLE="gnubg-app/app/build.gradle.kts"
+# The fdroiddata clone lives BESIDE the repository (/home/erweitert/fdroiddata
+# next to /home/erweitert/gnubg-android), never under $HOME: the shell user
+# and the tree's owner differ on the maintainer's machine, and $HOME pointed
+# at a clone owned by another uid (git: "dubious ownership", 2026-09-11).
+[ -n "$FDROIDDATA" ] || FDROIDDATA="$(dirname "$ROOT")/fdroiddata"
 
 # --- 0. current + next version -----------------------------------------------
 CUR_NAME="$(sed -n 's/.*versionName = "\(.*\)"/\1/p' "$GRADLE")"
