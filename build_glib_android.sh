@@ -263,11 +263,20 @@ mkdir -p "$INSTALL_DIR"
 echo
 echo "==> Configuring GLib"
 
+# REPRODUCIBILITY: the prefix is NOT the install directory. glib compiles
+# its prefix into libglib/libgio/libgirepository as data (GLIB_LOCALSTATEDIR,
+# GIO_MODULE_DIR, the typelib path) -- strings, which -ffile-prefix-map never
+# sees. With the prefix under the worktree, two checkouts at different paths
+# produced different libraries (verify_reproducible.sh, 2026-09-11: engine
+# identical, three glib libraries not). The prefix is therefore the fixed,
+# path-free "/" and DESTDIR places the files where they always went:
+# $INSTALL_DIR/lib, $INSTALL_DIR/include. None of the baked-in paths is
+# used at runtime on Android (no GIO modules, no typelibs, no locale data).
 meson setup \
     "$BUILD_DIR" \
     "$GLIB_SRC" \
     --cross-file "$CROSS_FILE" \
-    --prefix "$INSTALL_DIR" \
+    --prefix / \
     --libdir lib \
     --includedir include \
     --buildtype release \
@@ -278,7 +287,7 @@ meson setup \
     -Ddocumentation=false \
     -Dman-pages=disabled \
     -Dintrospection=disabled \
-    -Dgio_module_dir="$INSTALL_DIR/gio-modules" \
+    -Dgio_module_dir=/gio-modules \
     -Dselinux=disabled \
     -Dxattr=false \
     -Dlibelf=disabled \
@@ -301,7 +310,7 @@ ninja \
 echo
 echo "==> Installing GLib"
 
-DESTDIR="" ninja \
+DESTDIR="$INSTALL_DIR" ninja \
     -C "$BUILD_DIR" \
     install
 
