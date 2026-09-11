@@ -33,7 +33,11 @@ command -v git >/dev/null || die "git is required"
 [ -x "$ROOT/build_native_android.sh" ] || die "build_native_android.sh not found -- run from a full checkout"
 git -C "$ROOT" diff --quiet || die "worktree has uncommitted changes -- the claim is about a COMMIT; commit or stash first"
 
-HEAD_SHA=$(git -C "$ROOT" rev-parse HEAD) || die "cannot resolve HEAD"
+# The commit to prove: HEAD by default, or a ref given as the first argument
+# (release_fdroid.sh --resume proves the TAGGED commit, not whatever HEAD has
+# become since -- the build stamp is the commit time, so a different commit
+# is a different APK by design, not a reproducibility failure).
+HEAD_SHA=$(git -C "$ROOT" rev-parse "${1:-HEAD}") || die "cannot resolve ${1:-HEAD}"
 echo "== verifying reproducibility of commit $HEAD_SHA =="
 
 WT="$ROOT/tmp/repro"

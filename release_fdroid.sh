@@ -131,8 +131,11 @@ grep -E "^host cores:|DIFFER at|identical at" tmp/release_harness.log
 # The reproducibility proof: two independent worktrees of this commit build
 # the same unsigned APK. Without it there is no claim to publish, and the
 # APK release.sh attaches is what F-Droid's verifier will compare against.
-./tools/verify_reproducible.sh > tmp/release_repro.log 2>&1 \
-  || die "tools/verify_reproducible.sh: NOT REPRODUCIBLE -- see tmp/release_repro.log; fix the build, never the release"
+# On --resume the tag exists: prove THAT commit, not HEAD (which has moved on
+# by the recipe-sync commit at least); a different commit is a different APK.
+PROVE_REF=HEAD; [ "$RESUME" -eq 1 ] && PROVE_REF="$TAG"
+./tools/verify_reproducible.sh "$PROVE_REF" > tmp/release_repro.log 2>&1 \
+  || die "tools/verify_reproducible.sh $PROVE_REF: NOT REPRODUCIBLE -- see tmp/release_repro.log; fix the build, never the release"
 REPRO_SHA="$(sed -n 's/^build a: //p' tmp/release_repro.log | head -n1)"
 [ -n "$REPRO_SHA" ] || die "could not read the unsigned APK sha256 from tmp/release_repro.log"
 ok "reproducible: unsigned APK $REPRO_SHA (two independent worktrees)"
@@ -202,7 +205,10 @@ if [ -n "$(git status --porcelain -- "$META")" ]; then
   warn "restoring local edits to $META in $FDROIDDATA (leftover of a previous run; regenerated below)"
   git checkout -q -- "$META"
 fi
-[ -z "$(git status --porcelain)" ] || die "fdroiddata clone is dirty beyond $META -- inspect: git -C $FDROIDDATA status"
+# Untracked files are fdroid's own working dirs (tmp/, unsigned/, logs/,
+# build/ ...) and do not affect checkout -B; only TRACKED modifications do.
+[ -z "$(git status --porcelain --untracked-files=no)" ] \
+  || die "fdroiddata clone has tracked modifications beyond $META -- inspect: git -C $FDROIDDATA status --porcelain --untracked-files=no"
 git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://gitlab.com/fdroid/fdroiddata.git
 git fetch -q upstream master
 git checkout -q -B "$BUILD_BRANCH" upstream/master
