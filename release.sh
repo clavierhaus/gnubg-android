@@ -155,10 +155,21 @@ if [ "$DO_BUILD" -eq 1 ]; then
   case "$KS_FILE" in /*) ;; *) KS_FILE="$APP_DIR/app/$KS_FILE" ;; esac   # gradle's file() resolves against app/
   APKSIGNER="$(find "${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
   [ -n "$APKSIGNER" ] || die "apksigner not found under build-tools"
+  # v1 (JAR) signing OFF: it adds META-INF/*.SF/*.RSA/MANIFEST.MF as zip
+  # ENTRIES, which shift every later entry's offset and re-pad the
+  # alignment. F-Droid's verifier strips the v2/v3 signing block, not zip
+  # entries, so with v1 on, two APKs whose contents were byte-identical
+  # still failed the container digest (2026-09-11, the last difference).
+  # minSdk 31 never reads v1 anyway. v2 + v3 are the signature.
   "$APKSIGNER" sign --ks "$KS_FILE" --ks-key-alias "$KEY_ALIAS" \
     --ks-pass "pass:$KS_PASS" --key-pass "pass:$KEY_PASS" \
+    --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true \
     --out "$APP_DIR/app/build/outputs/apk/release/app-release.apk" "$UNSIGNED_APK" \
     || die "apksigner sign failed"
+  # The signed APK must contain exactly the unsigned APK's entries: no v1 files.
+  if unzip -l "$APP_DIR/app/build/outputs/apk/release/app-release.apk" | grep -qE 'META-INF/.*\.(SF|RSA|DSA|EC)$|META-INF/MANIFEST\.MF'; then
+    die "signed APK carries v1 signature entries -- the container would not match F-Droid's build"
+  fi
   ok "signed release APK built (signature attached to the proven bytes)"
 else
   warn "skipping build (--no-build) -- using existing APK"
