@@ -117,6 +117,26 @@ gh auth status >/dev/null 2>&1 || die "gh not authenticated"
 [ -f "gnubg-app/keystore.properties" ] || die "gnubg-app/keystore.properties missing (signing)"
 APKSIGNER="$(find "${ANDROID_HOME:-$HOME/Android/Sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)"
 [ -n "$APKSIGNER" ] || die "apksigner not found under build-tools"
+# Self-check FIRST, before anything that costs CPU: every helper this script
+# calls must exist and be executable, and the recipe appender must succeed
+# on a scratch copy of the fork's recipe and yield valid YAML. A missing
+# helper or a broken appender is found here in a second, not after the
+# reproducibility proof has built the app twice (2026-09-11).
+for helper in tools/syntax_check.sh tools/rollout_harness/run_tests.sh \
+              tools/verify_reproducible.sh tools/fdroid_recipe_append.py release.sh; do
+  [ -f "$helper" ] || die "missing helper: $helper (is it committed?)"
+done
+[ -d "$FDROIDDATA/.git" ] || die "fdroiddata clone not found at $FDROIDDATA (set FDROIDDATA=...)"
+if [ -f "$FDROIDDATA/metadata/$APPID.yml" ]; then
+  cp "$FDROIDDATA/metadata/$APPID.yml" tmp/recipe_selfcheck.yml
+  python3 tools/fdroid_recipe_append.py tmp/recipe_selfcheck.yml "$VERSION" "$NEW_CODE" 0000000000000000000000000000000000000000 >/dev/null \
+    || die "recipe appender failed on a copy of $FDROIDDATA/metadata/$APPID.yml"
+  python3 -c "import sys,yaml; d=yaml.safe_load(open(sys.argv[1])); b=[x['versionCode'] for x in d['Builds']]; assert len(b)==len(set(b)), 'duplicate versionCode'; assert int(sys.argv[2]) in b" tmp/recipe_selfcheck.yml "$NEW_CODE" \
+    || die "recipe appender produced an invalid recipe (see tmp/recipe_selfcheck.yml)"
+  ok "self-check: helpers present, recipe appender yields a valid recipe with one $NEW_CODE block"
+else
+  warn "no metadata/$APPID.yml in $FDROIDDATA yet (first release?) -- appender not self-checked"
+fi
 # Engine gates. The harness runs its determinism test at the SHIPPED worker
 # count (single source: jni-bridge/src/stubs.c GNUBG_ROLLOUT_WORKERS) and
 # refuses on a host with fewer cores than that -- a gate imitated on a
