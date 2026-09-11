@@ -104,10 +104,11 @@ rm -rf "$CMAKE_BUILD"
 
 # Reproducible-build flags (now in CMakeLists.txt). Two distinct causes for non-deterministic .so:
 #  (1) embedded build paths -> -ffile-prefix-map (compiler)
-#  (2) the linker's .note.gnu.build-id, a per-link hash that makes EVERY .so
-#      differ even with identical object code -> --build-id=none (linker).
-# The build-id is why libz/libintl/libgirepository (which we do not compile)
-# also differed: the difference is applied at link time, uniformly.
+#  (2) the linker's .note.gnu.build-id is a hash of the OUTPUT: it differs
+#      only when the content does, so with (1) fixed it is reproducible and
+#      is left at the NDK's default (--build-id=sha1). The old --build-id=none
+#      override is gone: it applied on one CMake generation and not the
+#      other (2026-09-11).
 # The flags themselves live in jni-bridge/CMakeLists.txt as TARGET options
 # (immune to the toolchain file's re-assignment of CMAKE_*_FLAGS, which
 # CMake 3.31 and 4.x resolve differently -- 2026-09-11). Only the two paths

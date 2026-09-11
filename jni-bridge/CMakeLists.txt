@@ -99,7 +99,13 @@ set_source_files_properties(
 # build_native_android.sh.
 #   -O2 explicitly: the last -O wins in clang, so the toolchain's per-type
 #       default (which differs between its legacy and new files) is moot.
-#   --build-id=none: last --build-id wins in lld.
+#   NO --build-id flag from us. The NDK toolchain links with
+#       --build-id=sha1, a hash of the output: with identical content it is
+#       identical, so it is reproducible by nature. Overriding it with
+#       --build-id=none was a symptom fix from when paths leaked (the
+#       content differed, so the hash did), and it lost on F-Droid's CMake
+#       and won on the maintainer's -- the ONLY remaining difference between
+#       the two engines on 2026-09-11 was that 128-byte note.
 if(NOT DEFINED REPRO_ROOT OR NOT DEFINED REPRO_NDK)
     message(FATAL_ERROR "REPRO_ROOT and REPRO_NDK must be given (build_native_android.sh does)")
 endif()
@@ -109,4 +115,4 @@ target_compile_options(gnubg-engine PRIVATE
     "-ffile-prefix-map=${REPRO_NDK}=/ndk"
     -Wno-builtin-macro-redefined -D__DATE__= -D__TIME__= -D__TIMESTAMP__=)
 target_link_options(gnubg-engine PRIVATE
-    -Wl,--build-id=none -Wl,-z,max-page-size=16384)
+    -Wl,-z,max-page-size=16384)
