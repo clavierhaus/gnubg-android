@@ -161,11 +161,31 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # entries, so with v1 on, two APKs whose contents were byte-identical
   # still failed the container digest (2026-09-11, the last difference).
   # minSdk 31 never reads v1 anyway. v2 + v3 are the signature.
+  # --alignment-preserved: since build-tools 35, apksigner RE-ALIGNS stored
+  # entries by default, rewriting their padding as 0xD935 zipalign extra
+  # fields -- 4 bytes more per entry, every later offset shifted. F-Droid
+  # copies our signature onto ITS unsigned APK, whose entries carry gradle's
+  # plain zero padding, so the container digests differed while every file
+  # inside was identical (2026-09-11, first differing byte at offset 285).
+  # The signature must be attached to the unsigned bytes exactly as built.
   "$APKSIGNER" sign --ks "$KS_FILE" --ks-key-alias "$KEY_ALIAS" \
     --ks-pass "pass:$KS_PASS" --key-pass "pass:$KEY_PASS" \
     --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true \
+    --alignment-preserved \
     --out "$APP_DIR/app/build/outputs/apk/release/app-release.apk" "$UNSIGNED_APK" \
     || die "apksigner sign failed"
+  # CONTAINER CHECK: the signed APK's zip entries -- names, order, headers,
+  # extra fields, offsets -- must be exactly the unsigned APK's. Only the
+  # signing block may differ. This is what F-Droid's verifier compares.
+  python3 - "$UNSIGNED_APK" "$APP_DIR/app/build/outputs/apk/release/app-release.apk" <<'PY' || die "signed APK's zip container differs from the unsigned build -- F-Droid would reject it"
+import sys, zipfile
+u, s = (zipfile.ZipFile(p).infolist() for p in sys.argv[1:3])
+key = lambda i: (i.filename, i.compress_type, i.file_size, i.compress_size, i.CRC, i.date_time, i.header_offset, i.extra, i.flag_bits)
+bad = [a.filename for a, b in zip(u, s) if key(a) != key(b)]
+if len(u) != len(s) or bad:
+    sys.exit("container differs: %d entries changed, e.g. %s" % (len(bad), bad[:3]))
+print("container check: %d entries identical to the unsigned build" % len(u))
+PY
   # The signed APK must contain exactly the unsigned APK's entries: no v1 files.
   if unzip -l "$APP_DIR/app/build/outputs/apk/release/app-release.apk" | grep -qE 'META-INF/.*\.(SF|RSA|DSA|EC)$|META-INF/MANIFEST\.MF'; then
     die "signed APK carries v1 signature entries -- the container would not match F-Droid's build"
