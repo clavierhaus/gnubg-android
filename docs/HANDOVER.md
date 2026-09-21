@@ -1,4 +1,4 @@
-# HANDOVER -- current state for a fresh session (written 2026-09-10, evening)
+# HANDOVER -- current state for a fresh session (updated 2026-09-21)
 
 ## BOOTSTRAP -- paste this as the FIRST message of a new chat
 
@@ -31,6 +31,103 @@ The token stays in the chat, never in a commit. Ask for it once, early,
 in the first message that needs a push. Do not propose patch files,
 base64 blocks or any other workaround -- that cost a session in September.
 
+## THE X1 -- where every path lives (read before writing any command for the maintainer)
+
+The maintainer's shell user is `peter`; the tree's owner is `erweitert`.
+`~` and `$HOME` therefore resolve to the WRONG home on his machine, and
+every script default that leans on `$HOME` (release.sh and
+release_fdroid.sh look for apksigner under `${ANDROID_HOME:-$HOME/Android/Sdk}`)
+resolves to nothing. RULE: every path in every command block is absolute
+and starts with `/home/erweitert/`. Never `~`, never `$HOME`, never a
+relative path that assumes a cwd the block did not set.
+
+| What                    | Absolute path on the X1                                   | Who needs it |
+|-------------------------|-----------------------------------------------------------|--------------|
+| repository              | /home/erweitert/gnubg-android                             | everything |
+| fdroiddata fork clone   | /home/erweitert/fdroiddata (SIBLING of the repo; release_fdroid.sh defaults to `$(dirname "$ROOT")/fdroiddata`, or `FDROIDDATA=...`) | release_fdroid.sh step 4 |
+| Android SDK             | /home/erweitert/android-sdk (must ALSO be exported as `ANDROID_HOME`, see below) | build_native_android.sh, build_glib_android.sh, release.sh (apksigner), release_fdroid.sh (apksigner) |
+| NDK (pinned)            | /home/erweitert/android-sdk/ndk/28.2.13676358 (`NDK_VERSION` in build_native_android.sh == recipe `ndk:`) | native build |
+| platform (compileSdk)   | /home/erweitert/android-sdk/platforms/android-36 (`compileSdk = 36` in gnubg-app/app/build.gradle.kts) | gradle |
+| build-tools / apksigner | /home/erweitert/android-sdk/build-tools/<newest>/apksigner (found by `find "$ANDROID_HOME/build-tools" -name apksigner`) | release.sh, release_fdroid.sh |
+| signing config          | /home/erweitert/gnubg-android/gnubg-app/keystore.properties (gitignored; `storeFile=` inside it names the .jks) | release.sh |
+| release keystore        | whatever `storeFile=` in keystore.properties says -- verify it, do not assume `~/gnubg-release.jks` from RELEASING.md | release.sh |
+| scratch                 | /home/erweitert/gnubg-android/tmp (never /tmp) | scripts |
+
+`ANDROID_HOME` is the one thing the scripts do NOT default to
+/home/erweitert: build_native_android.sh and build_glib_android.sh try
+`/home/erweitert/android-sdk` as a last resort, but release.sh and
+release_fdroid.sh find apksigner ONLY through `$ANDROID_HOME`
+(or `$ANDROID_SDK_ROOT`). If it is unset in the shell that runs the
+release, preflight dies with "apksigner not found under build-tools".
+Every release block therefore begins by exporting it.
+
+### The path check -- paste BEFORE any release, read every line
+
+Expected values are printed from the pins in the tree, then the machine
+is asked for what it has. Every `MISSING` or mismatch is a stop.
+
+```
+export ANDROID_HOME=/home/erweitert/android-sdk
+export ANDROID_SDK_ROOT=/home/erweitert/android-sdk
+cd /home/erweitert/gnubg-android
+echo "== tree =="; pwd; git status --porcelain; git rev-parse --abbrev-ref HEAD; git log --oneline -1
+echo "== pins (expected) =="
+grep -n '^NDK_VERSION=' build_native_android.sh
+grep -n 'compileSdk' gnubg-app/app/build.gradle.kts
+grep -n 'GLIB_VERSION=\|PCRE2_VERSION=' build_glib_android.sh
+grep distributionUrl gnubg-app/gradle/wrapper/gradle-wrapper.properties
+grep -n 'ndk:' fdroid/com.clavierhaus.gnubg.yml
+echo "== SDK on this machine (actual) =="
+ls -d /home/erweitert/android-sdk                      || echo "MISSING: SDK"
+ls /home/erweitert/android-sdk/ndk/                    || echo "MISSING: ndk/ (expect 28.2.13676358)"
+ls /home/erweitert/android-sdk/platforms/              || echo "MISSING: platforms/ (expect android-36)"
+find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n1 || echo "MISSING: apksigner"
+echo "== toolchain =="
+javac -version; java -version 2>&1 | head -1
+cmake --version | head -1; meson --version; ninja --version
+nproc
+echo "== signing =="
+ls -l /home/erweitert/gnubg-android/gnubg-app/keystore.properties || echo "MISSING: keystore.properties"
+KS="$(sed -n 's/^storeFile=//p' /home/erweitert/gnubg-android/gnubg-app/keystore.properties)"
+echo "storeFile=$KS"; case "$KS" in ~*|\$HOME*) echo "STOP: storeFile uses ~ or \$HOME -- make it /home/erweitert/...";; esac
+ls -l "$KS" || echo "MISSING: keystore file named by storeFile"
+echo "== fdroiddata =="
+ls -d /home/erweitert/fdroiddata/.git                  || echo "MISSING: /home/erweitert/fdroiddata clone"
+git -C /home/erweitert/fdroiddata remote -v
+git -C /home/erweitert/fdroiddata status --porcelain --untracked-files=no
+echo "== auth =="
+gh auth status
+ssh -T git@gitlab.com 2>&1 | head -1
+echo "== helpers =="
+ls -l tools/syntax_check.sh tools/rollout_harness/run_tests.sh tools/verify_reproducible.sh tools/fdroid_recipe_append.py release.sh release_fdroid.sh
+```
+
+What a correct output looks like, line by line:
+- tree: clean (`git status --porcelain` prints nothing), on `main`, at the
+  head the assistant named in the pull box.
+- ndk/ lists `28.2.13676358` and it equals both `NDK_VERSION=` and the
+  recipe's `ndk:` line. platforms/ lists `android-36`.
+- apksigner: one path printed under /home/erweitert/android-sdk/build-tools.
+- javac and java both 21.x. meson must satisfy the pinned glib's
+  `meson_version` (build_glib_android.sh's `meson setup` fails loudly at
+  configure if it does not); cmake/ninja any current version (the bytes
+  are pinned by us, see CLAUDE.md THE F-DROID BUILD CHECK).
+- nproc >= `GNUBG_ROLLOUT_WORKERS` in jni-bridge/src/stubs.c (currently 1)
+  or run_tests.sh refuses with exit 3.
+- keystore.properties present; `storeFile` an absolute /home/erweitert path
+  that `ls` finds. RELEASING.md's `~/gnubg-release.jks` is an example,
+  not the truth -- the truth is the line in keystore.properties.
+- fdroiddata: `.git` present; remotes `origin` (the gitlab.com fork,
+  SSH) and `upstream` (https://gitlab.com/fdroid/fdroiddata.git --
+  release_fdroid.sh adds it if absent); no tracked modifications beyond
+  metadata/com.clavierhaus.gnubg.yml.
+- `gh auth status` logged in as clavierhaus; the gitlab ssh line greets
+  by name ("Welcome to GitLab, @...").
+
+Only when every line reads right does the release start
+(`./release_fdroid.sh --dry-run ...` first, then without `--dry-run`).
+The maintainer runs it; the assistant never does.
+
 ## Environment (verified 2026-09-10)
 - Maintainer: Fedora, 12 cores, gcc 15, Pixel 8 Pro (1344x2992 @ 480 dpi
   = 997x448 dp landscape, THE reference device), Android SDK at
@@ -49,47 +146,54 @@ base64 blocks or any other workaround -- that cost a session in September.
   anonymously; the GitLab URL does not). Vendoring base: b1b2772c
   (PROVENANCE.md). Next monthly check: 2026-10-01.
 
-## State at handover
+## State at handover (2026-09-21)
 main = see `git log --oneline -20`; everything below is merged and pushed.
-Version in tree is still 1.0.1 (code 101): release_fdroid.sh does the bump.
-[Unreleased] in CHANGELOG.md is the 1.0.2 content. The maintainer runs:
+Version in tree is 1.0.2 (code 102), released and verified reproducible
+on F-Droid (recipe commit 0a28f12b6c51915636d0589f9509ca16891d8262).
+[Unreleased] in CHANGELOG.md is the 1.0.3 content: issues #11, #12, #13.
+release_fdroid.sh does the bump. The maintainer runs, on the X1, after
+the path check above reads clean:
 
+    export ANDROID_HOME=/home/erweitert/android-sdk
+    export ANDROID_SDK_ROOT=/home/erweitert/android-sdk
+    cd /home/erweitert/gnubg-android
     ./tools/syntax_check.sh
-    ./tools/rollout_harness/run_tests.sh      # T1-T4 green; M1 "DIFFER at 12" is expected
-    ./build_and_deploy.sh --reconfigure
-    ./release_fdroid.sh --dry-run --version 1.0.2 --summary "..."
-    ./release_fdroid.sh --version 1.0.2 --summary "..."
+    ./tools/rollout_harness/run_tests.sh      # T1 at GNUBG_ROLLOUT_WORKERS; M1 informational
+    ./build_and_deploy.sh --reconfigure       # C changed (new facade verb): full native rebuild
+    ./release_fdroid.sh --dry-run --version 1.0.3 --summary "GNU's move traced on the board; Analyse: Edit the analysed position; opponent-on-roll boards drawn from the opponent's side"
+    ./release_fdroid.sh --version 1.0.3 --summary "GNU's move traced on the board; Analyse: Edit the analysed position; opponent-on-roll boards drawn from the opponent's side"
 
-Done today (2026-09-10), each its own commit, all compile/harness-gated:
-- THE SCREEN IS ONE PICTURE (CLAUDE.md, shared/ScreenGrid.kt): OnePicture at
-  MainActivity's mode switch, every board call site Unscaled, the law in
-  the contract, tools/geometry_sweep.sh. Replaces four same-day band-aids.
-  Issue #7 (OnePlus 15, 2772x1272) is fixed by it; reply drafted, post
-  after the maintainer's device shows the rail whole at reset.
-- Game-over rail fit at reference: no Spacer CHILDREN in a pitched column.
-- Analyse "Start pos" preset: engine half in the engine's frame (was under
-  white; proven by the 208-pip count in the mailed screenshots). Closes #1.
-- Upstream sync to b1b2772c: 31 commits carried, 5 seams 3-way merged,
-  per-commit verdicts in CHANGELOG. Same-seed rollouts byte-identical.
-- The 6 September orders entered in CLAUDE.md; PROVENANCE names Savannah.
-- build_and_deploy.sh derives the NDK from the pinned version.
-- ROLLOUT POOL IS SERIAL (stubs.c gnubg_init_rollout). The NoLocking
-  evaluation family shares cEval without locks; at 12 workers same-seed
-  rollouts differed on every run, on the pre-sync tree too. Proven on the
-  maintainer's machine: 12/12 identical at 1 worker, 12 distinct at 12.
-  MULTICORE_ANALYSIS.md section 3. Gate B's 1-vs-4 claim withdrawn.
-  GNUBG_ROLLOUT_THREADS overrides for measurement; run_tests.sh M1 shows it.
+Done 2026-09-21, three commits on main, C gate + compileDebugKotlin green:
+- #12: gnubg_mobile_get_last_move (newest MOVE_NORMAL of plGame, anMove +
+  fPlayer) -> Engine.getLastMove -> BoardState.engineLastMove, set at the
+  projection only when the record is GNU's. Board.kt traces it in GNU's
+  frame (display point 24-i, count board[i], bar = top half) until the
+  player's first sub-move. There was never an animation; the trace is the
+  answer to "the board jumped".
+- #13: Analyse result now passes turn = onRoll (it passed none). Point
+  numbers on STUDY boards (viewModel == null) count from the on-roll
+  player's bear-off as gnubg's drawboard.c does by fRoll; dice were
+  already on the on-roll side. Live board keeps the human's numbering.
+- #11: Edit button in the Analyse result view -> beginEdit(), which seeds
+  the editor from the result. The position was never locked; Back led to
+  the paste view where Set up starts empty.
+
+Done 2026-09-10/11 (1.0.2): ONE PICTURE (ScreenGrid.kt), upstream sync to
+b1b2772c, serial rollout pool, reproducible release pipeline (release.sh
+runs build_native_android.sh; two-worktree proof; apksigner
+--alignment-preserved). Details in CHANGELOG 1.0.2 and git log.
 
 ## Open issues (tracker)
-- #7: fixed on main, awaiting device confirmation and the reply.
-- #8 hypergammon: upstream question; the maintainer's thread is on
-  bug-gnubg (2026-09-10). Tracker reply drafted; issue stays open, tag
-  `upstream`. Requires hyper*.bd (port ships no .bd) and a MET decision.
-- #1, #3, #4, #5: maintainer said he closes these (#5 delivered in 1.0.0;
-  #1 delivered + preset fix; #4 is a feature: replay to prior decision).
+- #10: fixed in 1.0.2 -- reply drafted (close).
+- #11, #12, #13: fixed on main, ship in 1.0.3. Replies drafted; the #12
+  reply must say "GNU's move is traced on the board" -- NOT a speed
+  setting (an earlier draft promised one; nothing of the kind was built).
+- #8 hypergammon: upstream question (bug-gnubg thread 2026-09-10); tag
+  `upstream`, stays open.
+- #4 (undo after both dice): feature, queued.
 
 ## Queued next, in order
-1. Post: #7 reply; the bug-gnubg sync announcement (docs/upstream, below).
+1. Release 1.0.3 (block above); then post the #10/#11/#12/#13 replies.
 2. Read tmp/stale-worktree-edits.diff WITH the maintainer: it is what his
    tree carried uncommitted since before the consolidation (TutorAnalyzer,
    GameViewModel, Engine.kt, gnubg_mobile.c ...). Decide keep/drop.
