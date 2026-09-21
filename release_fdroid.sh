@@ -148,20 +148,33 @@ printf 'engine gate host: %s cores (%s)\n' "$(nproc)" "$(uname -srm)"
   || die "tools/rollout_harness/run_tests.sh failed -- see tmp/release_harness.log"
 grep -q "ALL TESTS GREEN" tmp/release_harness.log || die "harness did not report ALL TESTS GREEN"
 grep -E "^host cores:|DIFFER at|identical at" tmp/release_harness.log
-# The reproducibility proof: two independent worktrees of this commit build
+# The reproducibility proof: two independent worktrees of ONE commit build
 # the same unsigned APK. Without it there is no claim to publish, and the
 # APK release.sh attaches is what F-Droid's verifier will compare against.
-# On --resume the tag exists: prove THAT commit, not HEAD (which has moved on
-# by the recipe-sync commit at least); a different commit is a different APK.
-PROVE_REF=HEAD; [ "$RESUME" -eq 1 ] && PROVE_REF="$TAG"
-./tools/verify_reproducible.sh "$PROVE_REF" > tmp/release_repro.log 2>&1 \
-  || die "tools/verify_reproducible.sh $PROVE_REF: NOT REPRODUCIBLE -- see tmp/release_repro.log; fix the build, never the release"
-REPRO_SHA="$(sed -n 's/^build a: //p' tmp/release_repro.log | head -n1)"
-[ -n "$REPRO_SHA" ] || die "could not read the unsigned APK sha256 from tmp/release_repro.log"
-ok "reproducible: unsigned APK $REPRO_SHA (two independent worktrees)"
+# The commit proven MUST be the commit release.sh builds and tags: the APK
+# embeds versionName, versionCode and GIT_COMMIT (build.gradle.kts), so the
+# pre-bump HEAD and the "release: X.Y.Z" commit are two different APKs by
+# design. Until 2026-09-21 the proof ran here, in preflight, on the
+# pre-bump HEAD, and release.sh then built the bump commit: the 1.0.3 run
+# proved 3d6ce6c0... and built 485be093..., and died with the bump already
+# pushed. (1.0.2 passed only because every completed run was --resume,
+# which proves the tag.) The proof now runs in prove_reproducible, called
+# AFTER the bump commit exists (step 2) and on --resume against the tag.
+prove_reproducible() {
+  _ref="$1"
+  ./tools/verify_reproducible.sh "$_ref" > tmp/release_repro.log 2>&1 \
+    || die "tools/verify_reproducible.sh $_ref: NOT REPRODUCIBLE -- see tmp/release_repro.log; fix the build, never the release"
+  REPRO_SHA="$(sed -n 's/^build a: //p' tmp/release_repro.log | head -n1)"
+  [ -n "$REPRO_SHA" ] || die "could not read the unsigned APK sha256 from tmp/release_repro.log"
+  ok "reproducible: unsigned APK $REPRO_SHA (two independent worktrees of $(git rev-parse --short "$_ref"))"
+}
 ok "preflight clean"
 
 if [ "$DRY" -eq 1 ]; then
+  # Dry run: prove the tree as it stands. The bump commit changes only the
+  # version strings, so a reproducible pre-bump HEAD is the evidence the
+  # real run will reproduce too; the real run proves its own commit.
+  prove_reproducible HEAD
   hr; ok "DRY RUN -- would do:"
   printf '    bump %s -> %s (code %s), roll CHANGELOG, fastlane %s.txt\n' "$CUR_NAME" "$VERSION" "$NEW_CODE" "$NEW_CODE"
   printf '    commit+push main, ./release.sh (tag %s, GitHub release)\n' "$TAG"
@@ -174,6 +187,8 @@ if [ "$RESUME" -eq 1 ]; then
   [ "$STAGED" -eq 1 ] || die "--resume: tree is at $CUR_NAME, not $VERSION -- nothing to resume"
   git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || die "--resume: tag $TAG does not exist"
   ok "resume: bump and tag $TAG already done, skipping to fdroiddata"
+  # The tagged commit is what F-Droid builds; prove exactly that.
+  prove_reproducible "$TAG"
 fi
 
 # --- 2. bump + changelog --------------------------------------------------------
@@ -203,6 +218,10 @@ git push -q origin main
 ok "version bumped, pushed"
 
 # --- 3. GitHub release (tag + the reference APK, signed) ------------------------
+# Prove THE commit release.sh is about to build and tag: HEAD, which is now
+# the bump commit (or the staged tree). release.sh builds HEAD and refuses
+# to publish any bytes but these.
+prove_reproducible HEAD
 EXPECT_UNSIGNED_SHA="$REPRO_SHA" ./release.sh || die "release.sh failed"
 ok "GitHub release $TAG published with the reference APK (unsigned bytes $REPRO_SHA, signed by our key)"
 fi # RESUME
