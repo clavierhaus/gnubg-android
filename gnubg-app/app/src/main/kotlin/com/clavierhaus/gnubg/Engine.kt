@@ -71,6 +71,11 @@ object Engine {
     external fun getResignation(): Int
     external fun getLastEngineDice(): IntArray
     external fun getMoveRecordDice(): IntArray
+    /** gnubg's own record of the current game's last chequer move: [fPlayer,
+     *  anMove x 8] in the MOVER'S frame (native-lib.c getLastMove), or empty
+     *  when the game has none yet. Drawn on the board so GNU's move can be
+     *  followed after it has been made (issue #12). */
+    external fun getLastMove(): IntArray
 
     // Board utilities
     external fun swapBoard(board: IntArray): IntArray

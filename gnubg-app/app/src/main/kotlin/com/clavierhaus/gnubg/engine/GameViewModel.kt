@@ -542,6 +542,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (turn == 0 && remainingDice.isNotEmpty())
                 unplayableDiceFor(oldBoard, legalMoves, remainingDice)
             else emptySet()
+        // GNU's last chequer move, from gnubg's own move record (issue #12:
+        // the board jumped from before to after GNU's move with nothing to
+        // show where the checkers came from). Read here, at the projection,
+        // like every other engine-derived field; the board traces it while
+        // it is the human's turn. Null unless the newest record is GNU's.
+        val lastMove = Engine.getLastMove()
+        val engineLastMove =
+            if (lastMove.size == 9 && lastMove[0] == 1) lastMove.copyOfRange(1, 9) else null
         _gameState.value = BoardState(
             matchScore     = score,
             matchLength    = matchLength,
@@ -556,6 +564,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pipCountEngine = pips[1],
             phase          = phase,
             engineDice     = engineDice,
+            engineLastMove = engineLastMove,
             winner         = winner,
             nPoints        = nPoints,
             humanScore     = score[0],

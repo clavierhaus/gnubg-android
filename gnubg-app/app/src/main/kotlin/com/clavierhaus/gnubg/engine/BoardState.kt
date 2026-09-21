@@ -37,6 +37,11 @@ data class BoardState(
     val dice: Pair<Int, Int>? = null,
     val originalDice: Pair<Int, Int>? = null,
     val engineDice: Pair<Int, Int>? = null,
+    /** GNU's last chequer move as gnubg recorded it (anMove x 8, GNU's own
+     *  frame), read at the projection from Engine.getLastMove() when the last
+     *  record is GNU's. Null when the last move was the human's or the game
+     *  has none. Display only: the board traces it until the human moves. */
+    val engineLastMove: IntArray? = null,
     val remainingDice: List<Int> = emptyList(),
     val moveHistory: List<MoveSnapshot> = emptyList(),
     val matchScore: IntArray = IntArray(2),
@@ -84,7 +89,8 @@ data class BoardState(
                phase == other.phase &&
                winner == other.winner &&
                tutorAnalysis == other.tutorAnalysis &&
-               analysisDetail == other.analysisDetail
+               analysisDetail == other.analysisDetail &&
+               (engineLastMove?.contentEquals(other.engineLastMove) ?: (other.engineLastMove == null))
     }
 
     override fun hashCode(): Int {
@@ -105,6 +111,7 @@ data class BoardState(
         result = 31 * result + winner
         result = 31 * result + (tutorAnalysis?.hashCode() ?: 0)
         result = 31 * result + (analysisDetail?.hashCode() ?: 0)
+        result = 31 * result + (engineLastMove?.contentHashCode() ?: 0)
         return result
     }
 }

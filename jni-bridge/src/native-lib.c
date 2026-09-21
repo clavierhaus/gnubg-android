@@ -125,6 +125,25 @@ Java_com_clavierhaus_gnubg_Engine_getMoveRecordDice(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+/* getLastMove: wraps gnubg_mobile_get_last_move. Returns 9 ints -- [fPlayer,
+ * anMove x 8] in the mover's frame -- or an empty array when the current game
+ * has no chequer move yet. Marshalling only. */
+JNIEXPORT jintArray JNICALL
+Java_com_clavierhaus_gnubg_Engine_getLastMove(JNIEnv *env, jobject thiz) {
+    (void)thiz;
+    int move[8];
+    int player;
+    if (!gnubg_mobile_get_last_move(move, &player))
+        return (*env)->NewIntArray(env, 0);
+    jint buf[9];
+    int i;
+    buf[0] = (jint)player;
+    for (i = 0; i < 8; i++) buf[1 + i] = (jint)move[i];
+    jintArray result = (*env)->NewIntArray(env, 9);
+    (*env)->SetIntArrayRegion(env, result, 0, 9, buf);
+    return result;
+}
+
 void gnubg_on_board_changed(void) {
     /* Display-layer cache: copy ms.anDice before TurnDone clears it, so the
      * UI can show what gnubg just rolled. Never written back into ms.anDice
