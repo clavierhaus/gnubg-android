@@ -13,6 +13,28 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Added
+- GNU's move is shown, not just its result. After GNU replies, its move is
+  traced on the board -- an arrow per leg, from where each checker left to
+  where it landed, from gnubg's own move record (the last MOVE_NORMAL of
+  the game record) -- and stays until the player makes the first sub-move
+  of their turn. The board used to jump from before to after with nothing
+  in between (issue #12).
+- Analyse Position: an Edit button in the result view opens the position
+  editor seeded with the analysed position, so a position can be varied
+  and re-analysed. Before, the analysed board could only be left with Back,
+  and Set up then started from an empty board -- the position read as
+  locked (issue #11).
+
+### Fixed
+- Analyse Position and Review Match: when the opponent is on roll, the
+  dice are drawn on the opponent's side and the point numbers count from
+  the opponent's bear-off, the way gnubg numbers its board for the player
+  on roll (drawboard.c, fRoll). The Analyse result did not pass the player
+  on roll to the board at all, so every position was drawn as if the
+  player were to move, and gnubg's move list named points the labels did
+  not show (issue #13). The live game keeps the player's numbering.
+
 ## [1.0.2] -- 2026-09-11
 
 ### Changed
