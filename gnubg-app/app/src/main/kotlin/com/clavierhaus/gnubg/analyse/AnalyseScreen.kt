@@ -522,6 +522,11 @@ fun AnalyseScreen(
                             settings = settings,
                             gameState = BoardState(
                                 board = r.board,
+                                // Player on roll (ms.fTurn): the board draws
+                                // the dice on that player's side and numbers
+                                // the points from their bear-off, as gnubg
+                                // does (issue #13). Same as Review passes.
+                                turn = r.onRoll,
                                 pipCountHuman = remember(r) { Engine.pipCount(r.board)[0] },
                                 pipCountEngine = remember(r) { Engine.pipCount(r.board)[1] },
                                 dice = r.dice,
@@ -1057,13 +1062,22 @@ fun AnalyseScreen(
                 } // end weighted state region
 
                 // Pinned foot: always-present exit. In the result view it is
-                // Back, which drops the verdict and returns to the paste/setup
-                // entry; everywhere else it is Home, to the hub.
+                // Edit -- the editor seeded with the analysed position, so
+                // the player can vary it (issue #11: the result view read as
+                // "locked", and Back then offered only an empty board) --
+                // and Back, which drops the verdict and returns to the
+                // paste/setup entry; everywhere else it is Home, to the hub.
                 if (result != null && !editing) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
+                        GameButton(
+                            label = "Edit",
+                            color = PlusUi.Interactive,
+                            enabled = !busy && !candRolling,
+                            compact = true
+                        ) { beginEdit() }
                         GameButton(
                             label = "Back",
                             color = pal.uiButtonNeutral,

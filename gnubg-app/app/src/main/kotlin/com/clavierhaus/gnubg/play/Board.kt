@@ -796,6 +796,21 @@ fun BackgammonBoard(
                 }
             }
 
+            // Issue #12: GNU's last move, traced from gnubg's own move record
+            // (BoardState.engineLastMove, GNU's frame), shown on the live board
+            // from the moment GNU's reply is projected until the player makes
+            // the first sub-move of their own turn (moveHistory non-empty).
+            // Muted colour (the frame numbers'), no ghost: a record of what
+            // just happened, not a suggestion. Never over a coach trace.
+            val engineTrace = gameState.engineLastMove
+            if (engineTrace != null && coachTrace == null && viewModel != null &&
+                gameState.turn == 0 && gameState.moveHistory.isEmpty() &&
+                gameState.phase != GamePhase.ENGINE_THINKING &&
+                gameState.phase != GamePhase.GAME_OVER) {
+                drawMoveTrace(g, engineTrace, gameState.board, p.numbers,
+                    g.checkerR * 0.22f, ghost = false, p, engineFrame = true)
+            }
+
             // During WAITING_FOR_ROLL: show engine dice (left half) + Roll button (right half)
             if (gameState.phase == GamePhase.WAITING_FOR_ROLL && gameState.turn == 0) {
                 // Engine dice -- left half, grayed
@@ -992,19 +1007,33 @@ fun BackgammonBoard(
                     color = p.uiActionPositive.toArgb()
                     isFakeBoldText = true
                 }
+                // Point numbers follow the player ON ROLL, as gnubg draws its
+                // board: numbered 1-24 from that player's bear-off. Display
+                // column n carries the human's number n; when GNU is on roll
+                // it carries GNU's number 25-n, so gnubg's move list ("13/7
+                // 8/7") names the same points the labels show (issue #13:
+                // an opponent-to-play position in Analyse was numbered from
+                // the human's side, and the moves could not be followed).
+                // Landing-point highlights are human-turn only, so their
+                // numbers are the human's. Study boards only (viewModel ==
+                // null: Analyse, Review): the live board keeps the human's
+                // numbering throughout, so the labels do not flip on every
+                // GNU turn.
+                val gnuNumbering = viewModel == null && gameState.turn == 1
+                fun labelFor(n: Int) = if (gnuNumbering) (25 - n).toString() else n.toString()
                 if (settings.showPointNumbers || highlightedLandingPoints.isNotEmpty()) {
                     for (n in 13..24) {
                         val paint = if (n in highlightedLandingPoints) hintNumPaint else numPaint
                         if (settings.showPointNumbers || n in highlightedLandingPoints) {
                             canvas.nativeCanvas.drawText(
-                                n.toString(), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, paint)
+                                labelFor(n), ux(pointCentreX(n)), uy(BRD_H) * 0.85f, paint)
                         }
                     }
                     for (n in 12 downTo 1) {
                         val paint = if (n in highlightedLandingPoints) hintNumPaint else numPaint
                         if (settings.showPointNumbers || n in highlightedLandingPoints) {
                             canvas.nativeCanvas.drawText(
-                                n.toString(), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, paint)
+                                labelFor(n), ux(pointCentreX(n)), uy(TOT_H) - uy(BRD_H) * 0.15f, paint)
                         }
                     }
                 }
@@ -1113,14 +1142,48 @@ private fun traceDestAnchor(g: BoardGeom, internalPt: Int, srcY: Float): Offset 
     }
 }
 
+/* GNU-frame anchors (issue #12). gnubg records anMove in the MOVER's frame;
+ * for GNU that is board[0..24]: internal point i is display point 24-i, its
+ * count is board[i], and GNU's bar (24) is the TOP half of the bar column with
+ * count board[24] (the same slot formula the engine bar stack is drawn with).
+ * Bear-off (dst < 0) is GNU's tray at the right edge, same as the human's. */
+private fun traceSourceAnchorEngine(g: BoardGeom, internalPt: Int, board: IntArray): Offset {
+    if (internalPt == 24) {
+        val barR = g.checkerR * 0.9f
+        val count = board[24]
+        return Offset(
+            g.pointRect(6).right + (g.pointRect(19).left - g.pointRect(6).right) / 2f,
+            g.uy(BRD_H + 9f) + barR + count * barR * 2.1f
+        )
+    }
+    val n = 24 - internalPt
+    val r = g.pointRect(n)
+    val cx = r.left + r.width / 2f
+    val slot = minOf(board[internalPt], 5)
+    val y = if (n in 13..24)
+        g.boardTop + g.checkerInset + g.checkerR + slot * g.checkerStep
+    else
+        g.boardBottom - g.checkerInset - g.checkerR - slot * g.checkerStep
+    return Offset(cx, y)
+}
+
+private fun traceDestAnchorEngine(g: BoardGeom, internalPt: Int, srcY: Float): Offset = when {
+    internalPt < 0 -> Offset(g.w * 0.985f, srcY)
+    else -> g.pointRect(24 - internalPt).let { r ->
+        val y = if (24 - internalPt in 13..24) r.top + r.height * 0.30f else r.bottom - r.height * 0.30f
+        Offset(r.left + r.width / 2f, y)
+    }
+}
+
 private fun DrawScope.drawMoveTrace(
-    g: BoardGeom, anMove: IntArray, board: IntArray, color: Color, stroke: Float, ghost: Boolean, p: BoardPalette
+    g: BoardGeom, anMove: IntArray, board: IntArray, color: Color, stroke: Float, ghost: Boolean, p: BoardPalette,
+    engineFrame: Boolean = false
 ) {
     var i = 0
     while (i < 8 && i + 1 < anMove.size && anMove[i] >= 0) {
         val src = anMove[i]; val dst = anMove[i + 1]
-        val a = traceSourceAnchor(g, src, board)
-        val b = traceDestAnchor(g, dst, a.y)
+        val a = if (engineFrame) traceSourceAnchorEngine(g, src, board) else traceSourceAnchor(g, src, board)
+        val b = if (engineFrame) traceDestAnchorEngine(g, dst, a.y) else traceDestAnchor(g, dst, a.y)
         // The leg: a clean line with an arrowhead at the target -- no source
         // dot (maintainer design) -- so a compound move reads as its hops.
         drawLine(color, a, b, strokeWidth = stroke, cap = StrokeCap.Round)

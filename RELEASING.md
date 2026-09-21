@@ -132,5 +132,6 @@ Authoritative verification happens on F-Droid's buildserver when it picks up
 the new tag, by which time the reference is correct.
 
 Requires: gh authenticated, SSH push access to the gitlab fork, the
-fdroiddata clone at ~/fdroiddata (or FDROIDDATA=...), keystore.properties in
+fdroiddata clone BESIDE the repository (/home/erweitert/fdroiddata next to
+/home/erweitert/gnubg-android; or FDROIDDATA=...; never under $HOME), keystore.properties in
 gnubg-app/, and apksigner in the SDK build-tools.

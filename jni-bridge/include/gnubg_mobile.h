@@ -61,6 +61,7 @@ int gnubg_mobile_get_match_state(int out_state[13]);
 int gnubg_mobile_get_cube_info(int out_cube[3]);
 int gnubg_mobile_get_dice(int out_dice[2]);
 int gnubg_mobile_get_move_record_dice(int out_dice[2]);
+int gnubg_mobile_get_last_move(int out_move[8], int *out_player);
 int gnubg_mobile_get_game_result(int out_result[2]);
 int gnubg_mobile_get_match_score(int out_score[3]);
 int gnubg_mobile_get_match_winner(void);

@@ -561,6 +561,36 @@ int gnubg_mobile_get_move_record_dice(int out_dice[2]) {
     return 2;
 }
 
+/* The last chequer move of the current game, as gnubg recorded it: the
+ * newest MOVE_NORMAL in plGame, walked from the tail exactly as
+ * analyze_replay() walks it. out_move receives pmr->n.anMove (8 ints, in
+ * the MOVER'S frame -- ApplyMoveRecord applies it after SwapSides to that
+ * player, play.c FixMatchState/ApplyMoveRecord), out_player pmr->fPlayer.
+ * Pure read of gnubg's own record; the board draws it so the human can see
+ * where GNU's checkers came from (issue #12). Returns 1 if a record exists,
+ * 0 otherwise. */
+int gnubg_mobile_get_last_move(int out_move[8], int *out_player) {
+    int found = 0;
+    int i;
+    for (i = 0; i < 8; i++) out_move[i] = -1;
+    *out_player = -1;
+    pthread_mutex_lock(&gnubg_lock);
+    if (plGame && plGame->plNext != plGame) {
+        listOLD *plScan;
+        for (plScan = plGame->plPrev; plScan != plGame; plScan = plScan->plPrev) {
+            moverecord *pm = (moverecord *) plScan->p;
+            if (pm && pm->mt == MOVE_NORMAL) {
+                for (i = 0; i < 8; i++) out_move[i] = pm->n.anMove[i];
+                *out_player = pm->fPlayer;
+                found = 1;
+                break;
+            }
+        }
+    }
+    pthread_mutex_unlock(&gnubg_lock);
+    return found;
+}
+
 int gnubg_mobile_get_game_result(int out_result[2]) {
     out_result[0] = -1;
     out_result[1] = 0;
