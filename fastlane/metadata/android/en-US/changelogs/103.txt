@@ -1,0 +1,1 @@
+GNU's move traced on the board; Analyse: Edit the analysed position; opponent-on-roll boards drawn from the opponent's side

@@ -13,6 +13,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [1.0.3] -- 2026-09-21
+
 ### Added
 - GNU's move is shown, not just its result. After GNU replies, its move is
   traced on the board -- an arrow per leg, from where each checker left to
