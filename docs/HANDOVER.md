@@ -19,12 +19,14 @@ To enable your git push I will paste a GitHub PAT on request.
 ```
 
 ## Credentials -- read this before asking for anything else
-A fresh sandbox has NO credential: no token in env, no ~/.git-credentials,
-no ssh key, no gh. The maintainer pastes a PAT into the chat; install it:
+A fresh sandbox has NO credential: no token in env, no
+/root/.git-credentials, no ssh key, no gh. (These are SANDBOX paths --
+the assistant's container runs as root -- never paths on the X1.) The
+maintainer pastes a PAT into the chat; install it:
 
     git config --global credential.helper store
-    printf 'https://clavierhaus:%s@github.com\n' '<PAT>' > ~/.git-credentials
-    chmod 600 ~/.git-credentials
+    printf 'https://clavierhaus:%s@github.com\n' '<PAT>' > /root/.git-credentials
+    chmod 600 /root/.git-credentials
     git -C /home/claude/repo remote set-url origin https://github.com/clavierhaus/gnubg-android.git
 
 The token stays in the chat, never in a commit. Ask for it once, early,
