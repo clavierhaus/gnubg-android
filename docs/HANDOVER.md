@@ -59,7 +59,7 @@ relative path that assumes a cwd the block did not set.
 | platform (compileSdk)   | /home/erweitert/android-sdk/platforms/android-36 (`compileSdk = 36` in gnubg-app/app/build.gradle.kts) | gradle |
 | build-tools / apksigner | /home/erweitert/android-sdk/build-tools/<newest>/apksigner (found by `find "$ANDROID_HOME/build-tools" -name apksigner`) | release.sh, release_fdroid.sh |
 | signing config          | /home/erweitert/gnubg-android/gnubg-app/keystore.properties (gitignored; `storeFile=` inside it names the .jks) | release.sh |
-| release keystore        | whatever `storeFile=` in keystore.properties says -- verify it, do not assume `~/gnubg-release.jks` from RELEASING.md | release.sh |
+| release keystore        | /home/peter/.keys/gnubg-release.jks (the `storeFile=` line in keystore.properties, verified 2026-09-21; the ONE path legitimately under /home/peter -- it is the shell user's key, absolute, and must stay absolute) | release.sh |
 | scratch                 | /home/erweitert/gnubg-android/tmp (never /tmp) | scripts |
 
 `ANDROID_HOME` is the one thing the scripts do NOT default to
@@ -136,6 +136,13 @@ What a correct output looks like, line by line:
 Only when every line reads right does the release start
 (`./release_fdroid.sh --dry-run ...` first, then without `--dry-run`).
 The maintainer runs it; the assistant never does.
+
+Verified on the X1, 2026-09-21 (path check output): SDK at
+/home/erweitert/android-sdk with ndk 27.0.12077973, 27.2.12479018,
+28.2.13676358; platforms android-34..37.1; apksigner build-tools/36.0.0;
+javac/java 21.0.7; cmake 4.3.0, meson 1.11.2, ninja 1.13.2; 12 cores;
+fdroiddata origin git@gitlab.com:clavierhaus/gnubg-android.git + upstream;
+gh logged in as clavierhaus (https); gitlab ssh OK.
 
 ## Environment (verified 2026-09-10)
 - Maintainer: Fedora, 12 cores, gcc 15, Pixel 8 Pro (1344x2992 @ 480 dpi
