@@ -201,3 +201,6 @@ tools/narrator/audit/claim_audit
 
 # maintainer screenshots (device captures for reports and the geometry sweep)
 /screens/
+
+# The book-conformance Makefile is hand-written too (same rule, same reason)
+!tools/book_conformance/Makefile
