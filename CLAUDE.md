@@ -1110,6 +1110,15 @@ door that was never built.
     second reference for the opening and is sampled the same way; its
     version-string gate is not ours -- agreement is.
 
-Until the 2026-09-26 divergence is found and fixed, the gate stands red
-by definition, and that is the correct state: a release that ships a
-known disagreement with gnubg is not a release of a gnubg port.
+The 2026-09-26 divergence was pinpointed the same evening
+(tools/book_conformance/README.md): gnubg's own SIMD sigmoid takes the
+hardware reciprocal approximation under -ffast-math, which upstream's
+configure always sets and our CMake build never did; the port's code is
+upstream's, its arithmetic is one of gnubg's two branches. Two
+consequences bind the gate: (1) the epsilon is MEASURED -- the spread
+between upstream's own builds (x86 fast-math vs exact, and NEON, whose
+branches upstream admits do not match x86) -- never assumed zero and
+never widened to make a run pass; (2) the reference build's flags are
+recorded beside its version, because the version string alone does not
+name the numbers. Which sigmoid branch the port ships is a maintainer
+ruling, recorded in docs/HANDOVER.md when made.

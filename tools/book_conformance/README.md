@@ -64,23 +64,57 @@ Mechanisms tested and killed for the residual, all on that play:
   cubeless-then-cubeful passes cannot cross-contaminate.
 
 Decided the same evening on the maintainer's desktop gnubg (Fedora
-`1.08.003 20260116`, the worker's exact settings): the desktop gives
-24/18 6/5 = +0.005, the book's number. **The book is faithful to gnubg;
-the deviation is ours.** Ply bisection on that position, desktop vs this
-harness, cubeful equities:
+`1.08.003 20260116`): 24/18 6/5 = +0.005 at 3-ply, the book's number. Ply
+bisection, desktop vs this harness, cubeful equities: 0-ply and 1-ply
+match to 3 dp on every play; 2-ply diverges on that one play (+0.003 vs
++0.0000) and the offset carries to 3-ply.
 
-    ply  play          desktop   ours
-    0    all ten       match to 3 dp (24/18 6/5: +0.020 / +0.0202)
-    1    all ten       match to 3 dp (24/18 6/5: +0.026 / +0.0262)
-    2    24/18 6/5     +0.003    +0.0000   <- first divergence
-    2    the other 9   match to 3 dp
-    3    24/18 6/5     +0.005    +0.0022
+## Pinpointed (2026-09-26, later the same evening)
 
-So 0-ply (net inputs, weights, MET) and 1-ply (reply search, prune nets)
-agree; the divergence enters at 2-ply, for one play, and persists as a
-~3e-3 offset. eval.c is upstream's verbatim (diffed against b1b2772c:
-the port's only edits are the input enum moved to eval.h, CalculateHalfInputs
-un-static, and a LegalMove wrapper). Next: for that play, print the reply
-chosen and its 1-ply cubeful value per roll (21 rolls) from this harness,
-and ask the desktop to `eval` the same 21 positions at 1-ply -- whichever
-disagrees, the choice or the value, names the code path.
+`engine-core/lib/neuralnetsse.c`, `sigmoid_positive_ps`, lines 204-226:
+gnubg's SIMD sigmoid computes `1/(1+e^-x)` with the hardware
+**reciprocal approximation** (`_mm_rcp_ps` / `_mm256_rcp_ps`, ~12 bits)
+when the compiler defines `__FAST_MATH__`, and with an exact division
+otherwise. Upstream's `configure.ac` (line 594) appends `-ffast-math` to
+`AM_CFLAGS` unconditionally for gcc, so every desktop gnubg -- Fedora's,
+Ubuntu's, the book's grinder -- runs the approximate branch. Our device
+build (`jni-bridge/CMakeLists.txt`, `-O2`, no fast-math) runs the exact
+branch. The net outputs then differ at ~1e-4 relative; at 2 plies and
+deeper the cubeful lookahead's reply pruning occasionally flips on that,
+and the play's equity moves by up to ~3e-3. On NEON the same function has
+its own two branches (one Newton-Raphson step under fast-math, two
+otherwise) with upstream's own comment: "TODO: Check how many
+Newton-Raphson iterations are needed to match x86 rcp and div accuracy"
+-- upstream's ARM builds do not match its x86 builds either.
+
+Evidence, all on 24/18 6/5 at 6-0/16, 2-ply cubeful (book: +0.003):
+
+    build                                              result
+    upstream b1b2772c, gcc, --enable-simd=no           +0.000
+    upstream b1b2772c, gcc, --enable-threads, simd=no  +0.000
+    upstream b1b2772c, gcc, simd=avx (configure adds
+      -O3 -ffast-math)                                 +0.003
+    same, bearoff databases removed                    +0.003
+    this harness, gcc -O2, scalar                      0.000010
+    this harness, gcc -O2 -DUSE_AVX / SSE2 / FMA3      0.000010
+    this harness, gcc -O3 -DUSE_AVX                    0.000010
+    this harness, gcc -O3 -ffast-math, scalar          0.000010
+    this harness, gcc -O2 -ffast-math -DUSE_AVX        0.003241
+    this harness, gcc -O2 -ffast-math -DUSE_SSE2       0.003241
+    this harness, clang -O2 -ffast-math -DUSE_AVX      0.003241
+    this harness, clang -O2 -DUSE_AVX                  0.000010
+    upstream 76e5ef70 (2026-01-05), gcc, simd=no       +0.000
+
+Killed on the way, each by a run: the MET (Zadeh vs Kazaross shifts every
+equity by ~0.010 -- the first thing found, and the reason a version
+string is not a gate), the upstream sync (pre-sync engine identical), the
+tie-comparator commit 0faafabb (reverted: identical), the grinder's
+movefilter override (lookahead prunes by net), eval-cache cross-talk
+(EvalKey carries fCubeful), the bearoff databases (removed from an
+upstream build: identical), threads, -O3, SIMD without fast-math,
+gcc-vs-clang, hint's FindnSaveBestMoves path vs ScoreMove per play
+(BOOK_HINT=1 mode: identical).
+
+So: the port's code is upstream's; the port's ARITHMETIC differs from the
+desktop's by one compiler flag that selects one of gnubg's own two sigmoid
+branches. Which branch "is gnubg" is a maintainer ruling (docs/HANDOVER.md).

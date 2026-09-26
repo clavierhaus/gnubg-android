@@ -99,6 +99,34 @@ int main(int argc, char **argv) {
            xgid, plies, ms.nMatchTo, ms.anScore[0], ms.anScore[1], ms.nCube,
            ms.fCubeOwner, ms.fJacoby, ml.cMoves);
 
+    /* HINT mode (env BOOK_HINT=1): score exactly as gnubg's hint does --
+     * FindnSaveBestMoves with a movefilter that keeps 8 plays at every
+     * level -- instead of one ScoreMove per play. Same numbers if the
+     * evaluation is order-independent; the experiment of 2026-09-26. */
+    if (getenv("BOOK_HINT")) {
+        movefilter aamf[MAX_FILTER_PLIES][MAX_FILTER_PLIES];
+        int a, b;
+        for (a = 0; a < MAX_FILTER_PLIES; a++)
+            for (b = 0; b < MAX_FILTER_PLIES; b++) {
+                aamf[a][b].Accept = 8; aamf[a][b].Extra = 0; aamf[a][b].Threshold = 0.0f;
+            }
+        g_free(ml.amMoves);
+        memset(&ml, 0, sizeof(ml));
+        if (FindnSaveBestMoves(&ml, (int) ms.anDice[0], (int) ms.anDice[1], (ConstTanBoard) ms.anBoard,
+                               NULL, FALSE, 0.0f, &ci, &ecCubeful, aamf) < 0) {
+            fprintf(stderr, "FindnSaveBestMoves failed\n");
+            return 1;
+        }
+        for (i = 0; i < ml.cMoves; i++) {
+            move *pm = &ml.amMoves[i];
+            printf("HINT");
+            for (j = 0; j < 8; j++) printf(" %d", pm->anMove[j]);
+            printf(" PLIES %u CF %.6f\n", pm->esMove.ec.nPlies, pm->rScore);
+        }
+        g_free(ml.amMoves);
+        return 0;
+    }
+
     for (i = 0; i < ml.cMoves; i++) {
         move *pm = &ml.amMoves[i];
         float probs[5];
