@@ -233,12 +233,10 @@ runs build_native_android.sh; two-worktree proof; apksigner
   agreement gate, to be made to the author from strength, after our fix.
 
 ## Queued next, in order (maintainer ruling 2026-09-26, 23:07)
-1. r/backgammon reply -- the maintainer posts it (draft in the claude.ai
-   project, private). A thank-you with stated intent; no link, no
-   version, no "release". Nothing else goes public before step 2 is
-   PUBLISHED on f-droid.org.
-2. Phase 0 -- the add-on package on F-Droid, end to end, before any 2.0
-   code (docs/OPENING_BOOK.md section 3; the plan of 2026-09-26 22:46):
+1. Phase 0 -- the add-on package on F-Droid, end to end, FIRST: it is the
+   long pole (a new package, its own review, hurdles that take time), and
+   the reddit reply is worth less with every day it precedes the thing it
+   promises. Started 2026-09-26 23:10. (docs/OPENING_BOOK.md section 3):
    a. measure subset sizes (depth 1 all contexts; depth 2 to 15-away;
       depth 3 to 5-away + money) -> table for the maintainer's choice;
    b. repository clavierhaus/cbg-opening-book: minimal Android project
@@ -258,6 +256,9 @@ runs build_native_android.sh; two-worktree proof; apksigner
    f. acceptance: published on f-droid.org, F-Droid's build byte-identical
       to our proof, installs beside CBG Pro 1.0.3 on the Pixel with neither
       app noticing the other.
+2. r/backgammon reply -- the maintainer posts it (draft in the claude.ai
+   project, private) once the package is real. No link, no version, no
+   "release".
 3. tools/fidelity_gate per CLAUDE.md (reference = upstream autotools build,
    fast-math off, on the X1; seeded self-play sampler; device via adb).
    Engine work, independent of 2; not a blocker for 2, a blocker for 2.0.
