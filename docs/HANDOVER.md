@@ -233,8 +233,11 @@ runs build_native_android.sh; two-worktree proof; apksigner
   agreement gate, to be made to the author from strength, after our fix.
 
 ## Queued next, in order
-0. Maintainer ruling on the sigmoid branch (fast-math or exact) and the
-   gate epsilon; then build tools/fidelity_gate per CLAUDE.md.
+0. tools/fidelity_gate per CLAUDE.md (reference = upstream autotools
+   build, fast-math off; seeded self-play sampler; device via adb).
+   Then docs/OPENING_BOOK.md phases (data APK, agreement gate, trainer).
+   The r/backgammon reply draft is in the claude.ai project (private),
+   not in this repo; the maintainer edits and posts it.
 1. Release 1.0.3 (block above); then post the #10/#11/#12/#13 replies.
 2. Read tmp/stale-worktree-edits.diff WITH the maintainer: it is what his
    tree carried uncommitted since before the consolidation (TutorAnalyzer,

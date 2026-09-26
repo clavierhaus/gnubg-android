@@ -1073,52 +1073,67 @@ The recipe's build blocks are APPENDED per version (release_fdroid.sh);
 the fdroiddata clone is cleaned of our own recipe leftovers only; and
 --resume redoes steps 4-6 when a run aborts after the tag exists.
 
-## THE FIDELITY GATE (maintainer order, 2026-09-26)
+## THE FIDELITY GATE (maintainer order, 2026-09-26; ruling of the same evening)
 
 The one rule -- gnubg is the sole authority -- was enforced only by
 READING: call the right function, use the named instance, cite the line.
 It was never enforced by MEASUREMENT. No test in this port's history put
-a position through our engine and through desktop gnubg and compared the
-numbers; the determinism gate proves we agree with ourselves, Gate B
-covered rollouts only and was withdrawn. On 2026-09-26 the first such
-measurement (tools/book_conformance, thirty opening positions against
-the BackgammonDB book) found our 2-ply cubeful equity off desktop
-gnubg's by up to 3e-3 on one play in five, with 0-ply and 1-ply exact.
-That divergence could sit in every release from the first commit to
-1.0.3 with every order honoured to the letter. This order closes the
-door that was never built.
+a position through our engine and through an independent build of gnubg
+and compared the numbers; the determinism gate proves we agree with
+ourselves, Gate B covered rollouts only and was withdrawn. On 2026-09-26
+the first such measurement (tools/book_conformance, thirty opening
+positions against the BackgammonDB book) found our 2-ply cubeful equity
+off a distro gnubg's by up to 3e-3 on one play in five. The cause was
+pinpointed the same evening (tools/book_conformance/README.md): gnubg's
+SIMD sigmoid takes the hardware reciprocal approximation under
+-ffast-math (lib/neuralnetsse.c:204-226), which upstream's configure
+appends unconditionally and our build never did. The port's code is
+upstream's; the port's arithmetic is the EXACT branch. This order closes
+the door that was never built, and records the ruling on what the truth
+is.
 
-  - The reference is DESKTOP GNUBG on the maintainer's machine, scripted
-    (`gnubg -t -q -r`), never a recollection of what gnubg would say.
+THE RULING. The SOURCE at git.savannah.gnu.org is gnubg. A distribution's
+binary is one compiler's rendering of it, carrying an approximation
+upstream opted into for speed and never checked across architectures
+(their own TODO on the NEON branch). Such binaries are not a precision
+reference for this project and are not run for anything that depends on
+precision. This port ships the exact-arithmetic rendering of the source
+(division, not reciprocal estimate; two Newton-Raphson steps on NEON),
+which on 2026-09-26 was identical across scalar, SSE2, AVX, FMA3, gcc and
+clang, and identical to upstream's own build system with fast-math off.
+PROVENANCE.md states this; the About screen's honesty line states it to
+the user; a user comparing our n-ply cubeful equities with a desktop
+package will see differences of a few thousandths and is told why.
+
+THE GATE, mechanics:
+  - The reference is INDEPENDENT of the port (SINGLE-SOURCE LAW, clause
+    2): the upstream source at the base pinned in PROVENANCE.md, built on
+    the maintainer's machine by UPSTREAM'S OWN build system (autotools,
+    not our CMake, not our stubs), `CFLAGS="-O2 -fno-fast-math"`, SIMD
+    on, threads off, run scripted (`gnubg -t -q -r`). Its commit, flags
+    and `--version` are printed in every run. Never a package, never a
+    recollection.
   - The sample is RANDOM, drawn fresh every run from a printed seed:
     positions from gnubg's own play (self-play from the seed) across the
     classes -- opening, contact, crashed, race, bearoff, cube live and
     dead, Crawford and post-Crawford, money with and without Jacoby --
     evaluated at 0, 1, 2 and 3 plies, cubeless and cubeful, by the host
-    harness and by the reference, and compared to a stated epsilon. The
-    seed goes in the release log; a red run is reproduced from it, not
-    argued from a screenshot.
+    harness AND, where adb is present, by the device build, against the
+    reference. In the exact regime the expected difference is zero to
+    six decimals; the epsilon is the one that measurement supports, never
+    widened to make a run pass. The seed goes in the release log; a red
+    run is reproduced from it, not argued from a screenshot.
   - Beside the random rows, FIXED rows: every position that ever failed
     is added permanently, first of them 24/18 6/5 at 6-0/16 with 61
     rolled (XGID -b----E-C---eE---c-e----B-:0:0:1:61:0:6:0:16:10). A
     defect once found cannot return unnoticed.
   - release_fdroid.sh runs the gate in preflight, after the rollout
-    harness, and prints seed, sample size, host and reference version.
-    No agreement, no release. A gate imitated where the reference is
-    absent is not a gate (THE DETERMINISM GATE applies).
-  - The book (data CC-BY-4.0, 4.2M gnubg 3-ply opening entries) is a
-    second reference for the opening and is sampled the same way; its
-    version-string gate is not ours -- agreement is.
+    harness, and prints seed, sample size, host, reference commit and
+    flags. No agreement, no release. No reference present, no gate (THE
+    DETERMINISM GATE applies).
+  - The BackgammonDB book is gnubg-as-packaged (x86, fast-math). It is a
+    second reference for the opening at the MEASURED distro epsilon
+    (~3e-3 in n-ply cubeful, ~1e-5 elsewhere), never at zero, and its
+    version-string gate is not ours -- agreement is, with the arithmetic
+    named.
 
-The 2026-09-26 divergence was pinpointed the same evening
-(tools/book_conformance/README.md): gnubg's own SIMD sigmoid takes the
-hardware reciprocal approximation under -ffast-math, which upstream's
-configure always sets and our CMake build never did; the port's code is
-upstream's, its arithmetic is one of gnubg's two branches. Two
-consequences bind the gate: (1) the epsilon is MEASURED -- the spread
-between upstream's own builds (x86 fast-math vs exact, and NEON, whose
-branches upstream admits do not match x86) -- never assumed zero and
-never widened to make a run pass; (2) the reference build's flags are
-recorded beside its version, because the version string alone does not
-name the numbers. Which sigmoid branch the port ships is a maintainer
-ruling, recorded in docs/HANDOVER.md when made.

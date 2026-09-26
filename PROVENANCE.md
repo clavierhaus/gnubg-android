@@ -384,6 +384,34 @@ git clone https://git.savannah.gnu.org/git/gnubg.git upstream-verify/
 diff upstream-verify/gnubg/lib/neuralnetsse.c engine-core/lib/neuralnetsse.c
 ```
 
+### Arithmetic: the exact branch of gnubg's own sigmoid (ruling 2026-09-26)
+
+`lib/neuralnetsse.c` `sigmoid_positive_ps` (lines 204–226) has two branches
+in upstream's own source: under `__FAST_MATH__` it returns the hardware
+reciprocal estimate (`_mm_rcp_ps` / `_mm256_rcp_ps`, about 12 bits; one
+Newton-Raphson step on NEON), otherwise an exact division (two
+Newton-Raphson steps on NEON). Upstream's `configure.ac` appends
+`-ffast-math` unconditionally for gcc, so every desktop package runs the
+approximate branch. This port is built without fast-math
+(`jni-bridge/CMakeLists.txt`, `-O2`) and runs the EXACT branch. The source is
+unmodified; the choice is a compile flag.
+
+Consequence, measured 2026-09-26 (tools/book_conformance/README.md): net
+outputs differ from a desktop package's by ~1e-4; at two plies and deeper
+the cubeful lookahead's reply pruning occasionally flips on that, and an
+equity can differ by a few thousandths. The exact branch was identical
+across scalar, SSE2, AVX, FMA3, gcc and clang builds of this tree, and
+identical to upstream's own build system with `CFLAGS="-O2 -fno-fast-math"`.
+Upstream's NEON comment ("TODO: Check how many Newton-Raphson iterations are
+needed to match x86 rcp and div accuracy") records that its own ARM and x86
+packages do not agree either.
+
+Ruling (maintainer, 2026-09-26): the source is gnubg; a package is one
+compiler's rendering of it. This port ships the exact rendering and says so.
+A user comparing CBG Pro's n-ply cubeful equities with a desktop package will
+see those few thousandths; the numbers computed here are the ones without
+the approximation.
+
 ## jni-bridge globals re-provided from gnubg.c
 
 The de-GTK-d build omits gnubg gnubg.c, which on desktop defines many
