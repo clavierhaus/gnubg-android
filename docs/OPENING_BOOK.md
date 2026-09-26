@@ -89,14 +89,41 @@ No interpretation, no phrase library: numbers and the book's own plays.
   installs the book from F-Droid like any app and CBG Pro lights the
   features up on next start. Without the book: the hub entry says what
   to install, once; nothing else changes.
-- **Subset**: depth 1 (all 351 contexts, opening rolls), depth 2 (every
-  reply, ≤ 15-away), depth 3 for the small contexts (≤ 5-away and money)
-  — measured before fixing: per-entry ~408 bytes, so the target is tens
-  of MB, not a gigabyte. Assembled by `tools/book_subset/` from the
-  release's per-context JSONL files, verified against the release's
-  SHA256SUMS, into a git repository that the F-Droid recipe pulls as a
-  `srclib` at a pinned commit. The subset repository records the
-  upstream release tag, its SHA256SUMS, and the exact extraction command.
+- **Subset** — MEASURED 2026-09-26 on the complete v1.0 release (all 351
+  per-context files downloaded and verified against SHA256SUMS; the
+  earlier "tens of MB for depth 2" was an estimate from the author's
+  per-entry average and was wrong by a factor of five). Each context
+  ships at ONE depth (its deepest), so tiers are by decision number, not
+  by file:
+
+      decision 1 (opening roll)      10,125 checker entries,  22 MB raw JSON
+      decision 2 (every reply)    1,075,081 entries,        2,115 MB raw JSON
+      decision 3 (third roll)     3,221,264 entries,        5,902 MB raw JSON
+
+  A JSON entry is ~2 KB (8 plays with 6-dp floats plus successor strings).
+  A compact encoding of our own (packed key, moves as bytes, probabilities
+  and equities as 16-bit fixed point) is ~190 bytes per entry; decision-2
+  replies then cost, cumulatively by score class:
+
+      money only                 7,350 entries    ~1 MB
+      + <= 2-away               32,508           ~6 MB
+      + <= 3-away               61,404          ~12 MB
+      + <= 5-away              140,049          ~27 MB
+      + <= 7-away              248,451          ~47 MB
+      + <= 9-away              389,613          ~74 MB
+      + <= 15-away           1,016,106         ~193 MB
+      + 17..25-away diagonals 1,034,481         ~197 MB
+
+  Proposal for the maintainer's choice: package v1 = ALL decision-1
+  entries (every score to 25-away; the trainer and the score table are
+  complete) + decision-2 replies for money and <= 7-away (~50 MB APK,
+  to be confirmed by the real encoder). Third decisions do not ship in
+  v1. A second, larger package for the reply tier to 15-away is
+  possible later without touching CBG Pro. Assembled by
+  `tools/book_subset/` from the per-context files against SHA256SUMS
+  into a git repository that the F-Droid recipe pulls as a `srclib` at
+  a pinned commit; the repository records the release tag, the
+  checksums, the extraction command and the encoding spec.
 - **Reproducible**: no native code, no gradle surprise; two worktrees
   build the same bytes as for the main app (verify_reproducible.sh
   runs unchanged against the book project).
