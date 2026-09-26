@@ -232,24 +232,41 @@ runs build_native_android.sh; two-worktree proof; apksigner
   equity by 0.010 under the same string. Argument for a fingerprint /
   agreement gate, to be made to the author from strength, after our fix.
 
-## Queued next, in order
-0. tools/fidelity_gate per CLAUDE.md (reference = upstream autotools
-   build, fast-math off; seeded self-play sampler; device via adb).
-   Then docs/OPENING_BOOK.md phases (data APK, agreement gate, trainer).
-   The r/backgammon reply draft is in the claude.ai project (private),
-   not in this repo; the maintainer edits and posts it.
-1. Release 1.0.3 (block above); then post the #10/#11/#12/#13 replies.
-2. Read tmp/stale-worktree-edits.diff WITH the maintainer: it is what his
-   tree carried uncommitted since before the consolidation (TutorAnalyzer,
-   GameViewModel, Engine.kt, gnubg_mobile.c ...). Decide keep/drop.
-3. 1.1: the WithLocking family -- USE_MULTITHREAD + MT_SetNumThreads per
-   MULTICORE_ANALYSIS.md sections 2.1-2.3 (unshelve) and 3; thread count
-   from upstream's default (Takahashi's Sept 2026 patch, MIN(cores,4)),
-   never chosen by the port; acceptance = run_tests.sh T1 green at 12.
-4. Issue #4 (undo after both dice): replay to the previous decision point.
-5. Insight layer per docs/COMPANION.md + CORPUS_*; the August bug-gnubg
-   licensing thread (nets trained on 2-ply output) is relevant reading.
+## Queued next, in order (maintainer ruling 2026-09-26, 23:07)
+1. r/backgammon reply -- the maintainer posts it (draft in the claude.ai
+   project, private). A thank-you with stated intent; no link, no
+   version, no "release". Nothing else goes public before step 2 is
+   PUBLISHED on f-droid.org.
+2. Phase 0 -- the add-on package on F-Droid, end to end, before any 2.0
+   code (docs/OPENING_BOOK.md section 3; the plan of 2026-09-26 22:46):
+   a. measure subset sizes (depth 1 all contexts; depth 2 to 15-away;
+      depth 3 to 5-away + money) -> table for the maintainer's choice;
+   b. repository clavierhaus/cbg-opening-book: minimal Android project
+      com.clavierhaus.gnubg.book (About activity only, no permissions),
+      subset SQLite in assets, tools/subset.py against the upstream
+      release's SHA256SUMS, PROVENANCE.md, fastlane, CHANGELOG, fdroid/
+      reference recipe, COPYING + DATA-LICENSE, docs/FDROID_SUBMISSION.md
+      with the reviewer answers (data-only add-on precedent, rebuildable
+      from a CC-BY release + GPL generator + gnubg, tracked data not a
+      binary);
+   c. reproducibility: verify_reproducible.sh unchanged; AllowedAPKSigningKeys
+      = the release key; release.sh signs proven bytes only;
+   d. release_fdroid.sh gains a --project parameter (repo root, app id,
+      recipe path) -- parametrise, never rewrite (F-DROID BUILD CHECK);
+   e. first-release path: recipe seeded from fdroid/, fork branch, CI,
+      merge request with the reviewer notes; the maintainer runs it;
+   f. acceptance: published on f-droid.org, F-Droid's build byte-identical
+      to our proof, installs beside CBG Pro 1.0.3 on the Pixel with neither
+      app noticing the other.
+3. tools/fidelity_gate per CLAUDE.md (reference = upstream autotools build,
+   fast-math off, on the X1; seeded self-play sampler; device via adb).
+   Engine work, independent of 2; not a blocker for 2, a blocker for 2.0.
+4. 2.0.0 per docs/OPENING_BOOK.md phases: reader + Learn trainer, coach/
+   analyse book rows + Verify, score table, reply drill, career opening
+   stats, About honesty line. Then the follow-up post in his thread.
+5. Tracker replies #10-#13 (drafted; #12 says "move trace", never "speed").
 6. 2026-10-01: monthly upstream check against b1b2772c.
+7. 1.1 WithLocking family (MULTICORE_ANALYSIS.md), issue #4 undo replay.
 
 ## Conventions that kept this working (see CLAUDE.md for the binding form)
 - Read every file/symbol before asserting anything about it.
