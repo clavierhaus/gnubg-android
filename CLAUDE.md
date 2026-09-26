@@ -1072,3 +1072,44 @@ release script's ordering, or treating the fourth release as the first.
 The recipe's build blocks are APPENDED per version (release_fdroid.sh);
 the fdroiddata clone is cleaned of our own recipe leftovers only; and
 --resume redoes steps 4-6 when a run aborts after the tag exists.
+
+## THE FIDELITY GATE (maintainer order, 2026-09-26)
+
+The one rule -- gnubg is the sole authority -- was enforced only by
+READING: call the right function, use the named instance, cite the line.
+It was never enforced by MEASUREMENT. No test in this port's history put
+a position through our engine and through desktop gnubg and compared the
+numbers; the determinism gate proves we agree with ourselves, Gate B
+covered rollouts only and was withdrawn. On 2026-09-26 the first such
+measurement (tools/book_conformance, thirty opening positions against
+the BackgammonDB book) found our 2-ply cubeful equity off desktop
+gnubg's by up to 3e-3 on one play in five, with 0-ply and 1-ply exact.
+That divergence could sit in every release from the first commit to
+1.0.3 with every order honoured to the letter. This order closes the
+door that was never built.
+
+  - The reference is DESKTOP GNUBG on the maintainer's machine, scripted
+    (`gnubg -t -q -r`), never a recollection of what gnubg would say.
+  - The sample is RANDOM, drawn fresh every run from a printed seed:
+    positions from gnubg's own play (self-play from the seed) across the
+    classes -- opening, contact, crashed, race, bearoff, cube live and
+    dead, Crawford and post-Crawford, money with and without Jacoby --
+    evaluated at 0, 1, 2 and 3 plies, cubeless and cubeful, by the host
+    harness and by the reference, and compared to a stated epsilon. The
+    seed goes in the release log; a red run is reproduced from it, not
+    argued from a screenshot.
+  - Beside the random rows, FIXED rows: every position that ever failed
+    is added permanently, first of them 24/18 6/5 at 6-0/16 with 61
+    rolled (XGID -b----E-C---eE---c-e----B-:0:0:1:61:0:6:0:16:10). A
+    defect once found cannot return unnoticed.
+  - release_fdroid.sh runs the gate in preflight, after the rollout
+    harness, and prints seed, sample size, host and reference version.
+    No agreement, no release. A gate imitated where the reference is
+    absent is not a gate (THE DETERMINISM GATE applies).
+  - The book (data CC-BY-4.0, 4.2M gnubg 3-ply opening entries) is a
+    second reference for the opening and is sampled the same way; its
+    version-string gate is not ours -- agreement is.
+
+Until the 2026-09-26 divergence is found and fixed, the gate stands red
+by definition, and that is the correct state: a release that ships a
+known disagreement with gnubg is not a release of a gnubg port.
