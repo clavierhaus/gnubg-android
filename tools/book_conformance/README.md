@@ -63,6 +63,24 @@ Mechanisms tested and killed for the residual, all on that play:
 - the eval cache: `EvalKey` carries the cubeful bit, so the grinder's
   cubeless-then-cubeful passes cannot cross-contaminate.
 
-Not yet tested, and decisive: desktop gnubg 1.08.003 on the same position
-with the worker's exact settings. If the desktop reproduces the book, the
-residual is a port seam; if it reproduces us, the residual is the grind's.
+Decided the same evening on the maintainer's desktop gnubg (Fedora
+`1.08.003 20260116`, the worker's exact settings): the desktop gives
+24/18 6/5 = +0.005, the book's number. **The book is faithful to gnubg;
+the deviation is ours.** Ply bisection on that position, desktop vs this
+harness, cubeful equities:
+
+    ply  play          desktop   ours
+    0    all ten       match to 3 dp (24/18 6/5: +0.020 / +0.0202)
+    1    all ten       match to 3 dp (24/18 6/5: +0.026 / +0.0262)
+    2    24/18 6/5     +0.003    +0.0000   <- first divergence
+    2    the other 9   match to 3 dp
+    3    24/18 6/5     +0.005    +0.0022
+
+So 0-ply (net inputs, weights, MET) and 1-ply (reply search, prune nets)
+agree; the divergence enters at 2-ply, for one play, and persists as a
+~3e-3 offset. eval.c is upstream's verbatim (diffed against b1b2772c:
+the port's only edits are the input enum moved to eval.h, CalculateHalfInputs
+un-static, and a LegalMove wrapper). Next: for that play, print the reply
+chosen and its 1-ply cubeful value per roll (21 rolls) from this harness,
+and ask the desktop to `eval` the same 21 positions at 1-ply -- whichever
+disagrees, the choice or the value, names the code path.

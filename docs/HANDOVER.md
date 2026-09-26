@@ -208,7 +208,25 @@ runs build_native_android.sh; two-worktree proof; apksigner
   `upstream`, stays open.
 - #4 (undo after both dice): feature, queued.
 
+## Opening book (BackgammonDB) -- state 2026-09-26
+- Book: github.com/chalkstreamdev/bgdb-opening-book, data CC-BY-4.0, code
+  GPL-3, gnubg 1.08.003 3-ply, 4.2M entries, per-context files (~9 KB at
+  depth 1). Its reader gates on the `gnubg --version` string (reader.py:51).
+- Delivery idea (maintainer): a separate data APK on F-Droid, no network in
+  CBG. F-Droid policy has no rule against free data assets; `srclibs:` is
+  the pinned-git route. Depth 1+2 subset is tens of MB.
+- tools/book_conformance: host harness + check.py, the agreement gate.
+  FINDING: 4 of 5 plays match desktop gnubg / the book to 6 dp; 1 in 5
+  deviates at 2-ply cubeful by up to 3e-3 -- OURS deviates, the book is
+  faithful (desktop gnubg reproduced it). Bisection in the README: 0- and
+  1-ply match, 2-ply diverges on 24/18 6/5 at 6-0/16. This is a port
+  fidelity defect to find BEFORE any book work or any message to the author.
+- The version-string gate is the wrong gate: Zadeh vs Kazaross moved every
+  equity by 0.010 under the same string. Argument for a fingerprint /
+  agreement gate, to be made to the author from strength, after our fix.
+
 ## Queued next, in order
+0. Find the 2-ply cubeful divergence (tools/book_conformance/README.md).
 1. Release 1.0.3 (block above); then post the #10/#11/#12/#13 replies.
 2. Read tmp/stale-worktree-edits.diff WITH the maintainer: it is what his
    tree carried uncommitted since before the consolidation (TutorAnalyzer,
