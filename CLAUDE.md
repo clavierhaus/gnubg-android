@@ -723,6 +723,29 @@ maintainer a Plus box to try a FOSS feature is a violation of this rule
 even when the code itself went FOSS-first (incident: the C-clock play
 box, 2026-08-11).
 
+### THE UPSTREAM-FIRST RULING (maintainer, 2026-10-26)
+
+Two kinds of feature, and only two:
+
+- UI DRIVEN BY THE ORIGINAL ENGINE: allowed, the maintainer's call alone.
+  The app may call gnubg's own verbs on the player's behalf (example: an
+  "always play on" setting that answers GNU's resignation with gnubg's
+  CommandDecline -- GNU still decides to resign, gnubg still records the
+  decline). Self-contained ADDITIONS compiled beside an unmodified gnubg
+  also count (example: engine-core/timecontrol.c, driven from JNI; no
+  vendored gnubg file calls it).
+- ENGINE PATCH -- any change to the behaviour of vendored gnubg code
+  (play.c, set.c, eval.c, ...), a new gnubg command, a new computer-player
+  setting: goes to the bug-gnubg mailing list FIRST and is built only
+  after upstream ACCEPTS it. No deadline. Rejected means not built.
+  Example: a "GNU never resigns" option or a resignation-threshold
+  slider (request by email, 2026-10-26) is an engine patch.
+
+The test: does gnubg's own code behave differently? If yes, upstream
+first. If no, it is UI. docs/upstream/0001-time-controls.diff (the clock's
+play.c/set.c hooks) is a submission under this rule and stays unapplied
+until accepted.
+
 ### THE UPSTREAM CLOCK RULING (maintainer, 2026-08-11) -- supersedes the
 ### app-layer clock architecture below
 
