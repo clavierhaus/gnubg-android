@@ -17,7 +17,7 @@ Binaries: https://github.com/clavierhaus/gnubg-android/releases/download/v%v/app
 Builds:
   - versionName: 1.0.4
     versionCode: 104
-    commit: bd1b2d2dcaca41875c6252a1f33ca6b308a75bfd
+    commit: 307485d6568799b86d22ff84d09b76dbc0790552
     subdir: gnubg-app/app
     sudo:
       - apt-get update
