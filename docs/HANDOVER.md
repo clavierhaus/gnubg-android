@@ -1,4 +1,4 @@
-# HANDOVER -- current state for a fresh session (updated 2026-09-21)
+# HANDOVER -- current state for a fresh session (updated 2026-11-09)
 
 ## BOOTSTRAP -- paste this as the FIRST message of a new chat
 
@@ -161,6 +161,22 @@ gh logged in as clavierhaus (https); gitlab ssh OK.
 - Upstream: git.savannah.gnu.org/git/gnubg.git ONLY (clone works
   anonymously; the GitLab URL does not). Vendoring base: b1b2772c
   (PROVENANCE.md). Next monthly check: 2026-10-01.
+
+## State 2026-11-09 -- 1.0.4 on main, release pending
+main carries issues #14, #16, #18, #19, #21 and the facade verbs behind them.
+CHANGELOG [Unreleased] is the 1.0.4 content and RELEASE_NOTES.md is already
+written from it. The maintainer runs release_fdroid.sh; the assistant never does.
+
+Maintainer rulings, 2026-11-09:
+- 1.0.4 ships without a device pass and without tools/fidelity_gate, which
+  CLAUDE.md requires of a release but which does not exist yet. Problems are
+  left to surface in the tracker. The ruling was given for this release.
+- XGIDs are drawn turned round to match XG; GNU BG IDs are left as they are.
+- The System theme stays, although it draws the same as Ocean.
+
+Still open: the monthly upstream checks of 2026-10-01 and 2026-11-01 have left
+no trace; #15 and the main claim of #16 need the reporters' evidence; #21's
+import needs its file type; tracker replies for #7, #11, #12 and #14 to #21.
 
 ## State at handover (2026-09-21)
 main = see `git log --oneline -20`; everything below is merged and pushed.
