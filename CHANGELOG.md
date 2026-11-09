@@ -13,6 +13,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [1.0.4] -- 2026-11-09
+
 ### Added
 - Two new board themes, Monte Carlo and Chocolate, in Settings under Board.
   Their field, frame, points, checkers, dice and cube come from the reference

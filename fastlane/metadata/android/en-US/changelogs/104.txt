@@ -1,0 +1,1 @@
+Monte Carlo and Chocolate board themes; Analyse: XGIDs drawn as in XG, tap a move for its chances and arrow, move list pages, last ID kept; Review opens at the first position and shows each roll
