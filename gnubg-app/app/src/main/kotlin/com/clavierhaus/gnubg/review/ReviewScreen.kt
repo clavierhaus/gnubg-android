@@ -150,11 +150,19 @@ fun ReviewScreen(
         // loadMatch goes through FACADE_FILE_OP, which returns 1 unconditionally, so
         // its Boolean means "the call was made". Whether a match arrived is answered
         // by the matchstate, not by the return value.
-        val p = readBack()
-        if (!ok || p.gameState == 0) {
+        // Read before moving the cursor: at a game's opening record gnubg's own
+        // ms.gs is GAME_NONE, which would read as a failed load.
+        val loaded = readBack()
+        if (!ok || loaded.gameState == 0) {
             status = "gnubg could not read that file as a match."
         } else {
-            pos = p
+            // Issue #21: gnubg leaves the cursor at the end of the last game.
+            // Start where a study starts, with the first roll on the board.
+            withContext(Dispatchers.Default) {
+                Engine.firstGame()
+                Engine.showOpeningRoll()
+            }
+            pos = readBack()
             status = ""
             verdict = readVerdict()
         }
@@ -166,7 +174,9 @@ fun ReviewScreen(
         busy = true
         scope.launch {
             withContext(Dispatchers.Default) {
-                if (backwards) Engine.commandPrevious() else Engine.commandNext()
+                // gnubg's "rolled" steps a move and shows the next one's dice;
+                // a plain step clears them (play.c ApplyMoveRecord), issue #21.
+                if (backwards) Engine.commandPrevious("rolled") else Engine.commandNext("rolled")
             }
             pos = readBack()
             verdict = readVerdict()
@@ -180,6 +190,7 @@ fun ReviewScreen(
         scope.launch {
             withContext(Dispatchers.Default) {
                 if (backwards) Engine.commandPrevious("game") else Engine.commandNext("game")
+                Engine.showOpeningRoll()
             }
             pos = readBack()
             verdict = readVerdict()
@@ -294,6 +305,11 @@ fun ReviewScreen(
                                 pipCountHuman = remember(p) { Engine.pipCount(p.board)[0] },
                                 pipCountEngine = remember(p) { Engine.pipCount(p.board)[1] },
                                 dice = p.dice,
+                                // None of these dice is spent: the board draws
+                                // any die not listed here in its used colour.
+                                remainingDice = p.dice?.let { (a, b) ->
+                                    if (a == b) List(4) { a } else listOf(a, b)
+                                } ?: emptyList(),
                                 matchScore = intArrayOf(p.score.first, p.score.second),
                                 matchLength = p.matchTo,
                                 cubeValue = p.cubeValue,

@@ -25,6 +25,13 @@ object Engine {
     // Same argument grammar as commandNext: "" for one record, or
     // "game" / "roll" / "rolled" / "marked", or a count.
     external fun commandPrevious(argument: String = "")
+
+    // Review Match. PORT: CommandFirstGame.
+    external fun firstGame()
+    // Puts the first roll on the board when the cursor is at a game's start;
+    // anywhere else it does nothing. PORT: gnubg's "next roll".
+    external fun showOpeningRoll()
+
     external fun commandAccept()
     external fun commandReject()
     external fun commandDecline()
@@ -243,6 +250,13 @@ object Engine {
     // ints (gnubg anMove: four src/dst pairs). Returns the count written, 0 when
     // the position has no dice, -1 on error.
     external fun hintMoves(maxN: Int, outEquity: FloatArray, outMoves: IntArray): Int
+
+    // As hintMoves, plus gnubg's own outcome probabilities per candidate in
+    // outOutputs (maxN*5 floats: win, win gammon, win backgammon, lose gammon,
+    // lose backgammon, from the mover's side).
+    external fun hintMovesOutputs(
+        maxN: Int, outEquity: FloatArray, outMoves: IntArray, outOutputs: FloatArray
+    ): Int
 
     // Restricted GNUbg command bridge for translated Android settings.
     external fun runCommand(command: String): Boolean
