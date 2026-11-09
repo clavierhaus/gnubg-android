@@ -258,7 +258,7 @@ private fun GameSettingsTab(settings: GameSettings, vm: GameViewModel) {
 private fun BoardSettingsTab(settings: GameSettings, vm: GameViewModel) {
     SettingsSection("Appearance") {
         BoardTheme.values().forEachIndexed { i, theme ->
-            SettingsRow(theme.name.lowercase().replaceFirstChar { it.uppercase() }) {
+            SettingsRow(theme.label) {
                 RadioButton(
                     selected = settings.boardTheme == theme,
                     onClick = { vm.setBoardTheme(theme) },

@@ -37,6 +37,13 @@ data class BoardPalette(
     val uiActionRoll:     Color,  // roll / primary action (blue family)
     val uiActionPositive: Color,  // confirm / accept / new (green family)
     val uiActionNegative: Color,  // resign / drop / undo (red family)
+    // --- Optional: the defaults are what these elements have always drawn ---
+    val dicePipLight:     Color = dicePip,            // pips on the human's die
+    val diceUsedLight:    Color = Color(0xFF6F8FB8),  // the human's spent die
+    val diceUsedDark:     Color = Color(0xFF1F3F6E),  // GNU's spent die
+    val hintTrace:        Color = uiActionPositive,   // hint arrows, frame-number highlights
+    val engineTrace:      Color = numbers,            // arrow for GNU's last move
+    val facingPointsOpposite: Boolean = false,        // points across the board differ in colour
 )
 
 object BoardPalettes {
@@ -55,7 +62,7 @@ object BoardPalettes {
         checkerLightRim  = Color(0xFFB3C9F0),
         checkerHighlight = Color(0x47FFFFFF),
         diceDark         = Color(0xFF0D47A1),
-        diceLight        = Color(0xFF1976D2),
+        diceLight        = Color(0xFF0D47A1),  // the human's die: same as triangleB
         dicePip          = Color(0xFFFFFFFF),
         cubeFace         = Color(0xFF0D47A1),
         cubeDot          = Color(0xFF1976D2),
@@ -90,7 +97,7 @@ object BoardPalettes {
         checkerLightRim  = Color(0xFF444444),  // same -- unifies the palette
         checkerHighlight = Color(0x47FFFFFF),
         diceDark         = Color(0xFF1A1A1A),
-        diceLight        = Color(0xFF444444),  // light gray -- same as triangleA
+        diceLight        = Color(0xFF1A1A1A),  // the human's die: same as triangleB
         dicePip          = Color(0xFFFFFFFF),
         cubeFace         = Color(0xFF1A1A1A),
         cubeDot          = Color(0xFF444444),
@@ -125,7 +132,7 @@ object BoardPalettes {
         checkerLightRim  = Color(0xFFB9F6CA),
         checkerHighlight = Color(0x47FFFFFF),
         diceDark         = Color(0xFF1B5E20),
-        diceLight        = Color(0xFF388E3C),
+        diceLight        = Color(0xFF1B5E20),  // the human's die: same as triangleB
         dicePip          = Color(0xFFFFFFFF),
         cubeFace         = Color(0xFF1B5E20),
         cubeDot          = Color(0xFF388E3C),
@@ -146,11 +153,98 @@ object BoardPalettes {
         uiActionNegative = Color(0xFF8B1A1A),
     )
 
+    // Issue #19. Frame, field, points, checkers, dice and cube are sampled from
+    // the reporter's reference images. Rims, trays and chrome are derived: chrome
+    // stays dark because panels and buttons carry white text, and the two arrow
+    // colours are chosen to read on this field and these points.
+    val MONTE_CARLO = BoardPalette(
+        frame            = Color(0xFF423022),
+        boardField       = Color(0xFF496439),
+        triangleA        = Color(0xFFCAB797),
+        triangleB        = Color(0xFFFF4421),
+        bar              = Color(0xFF423022),
+        bearoff          = Color(0xFF6A5240),
+        numbers          = Color(0xFFCAB797),
+        checkerDark      = Color(0xFF0D0E13),
+        checkerDarkRim   = Color(0xFF2B2C33),
+        checkerLight     = Color(0xFFFFFFFF),
+        checkerLightRim  = Color(0xFFD8D4CC),
+        checkerHighlight = Color(0x47FFFFFF),
+        diceDark         = Color(0xFF0D0E13),
+        diceLight        = Color(0xFFFFFFFF),
+        dicePip          = Color(0xFFFFFFFF),
+        cubeFace         = Color(0xFF8D662F),
+        cubeDot          = Color(0xFF8D662F),
+        cubeText         = Color(0xFFEDEAF3),
+        pipText          = Color(0xFFCAB797),
+        trayOutline      = Color(0x8CFFFFFF),
+        trayDarkBorder   = Color(0xFF2A1E15),
+        uiPanel          = Color(0xFF5A4431),
+        uiPanelDeep      = Color(0xFF423022),
+        uiChipOn         = Color(0xFF8D662F),
+        uiChipOff        = Color(0xFF2F2218),
+        uiTextPrimary    = Color(0xFFFFFFFF),
+        uiTextSecondary  = Color(0xFFCAB797),
+        uiTextDisabled   = Color(0xFF8F806A),
+        uiButtonNeutral  = Color(0xFF33261B),
+        uiActionRoll     = Color(0xFFD9381A),
+        uiActionPositive = Color(0xFF3E8E41),
+        uiActionNegative = Color(0xFF8B1A1A),
+        dicePipLight     = Color(0xFF0D0E13),
+        diceUsedLight    = Color(0xFFB8B2A6),
+        diceUsedDark     = Color(0xFF3A3B40),
+        hintTrace        = Color(0xFFB2FF59),
+        engineTrace      = Color(0xFFFFFFFF),
+        facingPointsOpposite = true,
+    )
+
+    val CHOCOLATE = BoardPalette(
+        frame            = Color(0xFF392D21),
+        boardField       = Color(0xFFE9C8A5),
+        triangleA        = Color(0xFFBB6A28),
+        triangleB        = Color(0xFF4A3C2F),
+        bar              = Color(0xFF392D21),
+        bearoff          = Color(0xFF6B5642),
+        numbers          = Color(0xFFE9C8A5),
+        checkerDark      = Color(0xFF000000),
+        checkerDarkRim   = Color(0xFF2A211A),
+        checkerLight     = Color(0xFFFFFFFF),
+        checkerLightRim  = Color(0xFFCDB79C),
+        checkerHighlight = Color(0x47FFFFFF),
+        diceDark         = Color(0xFF000000),
+        diceLight        = Color(0xFFFFFFFF),
+        dicePip          = Color(0xFFFFFFFF),
+        cubeFace         = Color(0xFF000000),
+        cubeDot          = Color(0xFF000000),
+        cubeText         = Color(0xFFFFFFFF),
+        pipText          = Color(0xFFE9C8A5),
+        trayOutline      = Color(0x8CFFFFFF),
+        trayDarkBorder   = Color(0xFF1F1810),
+        uiPanel          = Color(0xFF4A3C2F),
+        uiPanelDeep      = Color(0xFF392D21),
+        uiChipOn         = Color(0xFFBB6A28),
+        uiChipOff        = Color(0xFF2A2118),
+        uiTextPrimary    = Color(0xFFFFFFFF),
+        uiTextSecondary  = Color(0xFFE9C8A5),
+        uiTextDisabled   = Color(0xFFA08C75),
+        uiButtonNeutral  = Color(0xFF57483A),
+        uiActionRoll     = Color(0xFFA65A1E),
+        uiActionPositive = Color(0xFF2E7D32),
+        uiActionNegative = Color(0xFF8B1A1A),
+        dicePipLight     = Color(0xFF000000),
+        diceUsedLight    = Color(0xFFC9B8A3),
+        diceUsedDark     = Color(0xFF3A3026),
+        engineTrace      = Color(0xFF000000),
+        facingPointsOpposite = true,
+    )
+
     fun from(theme: BoardTheme): BoardPalette = when (theme) {
-        BoardTheme.OCEAN   -> OCEAN
-        BoardTheme.CLASSIC -> CLASSIC
-        BoardTheme.FOREST  -> FOREST
-        BoardTheme.SYSTEM  -> OCEAN  // resolved dynamically in Board.kt
+        BoardTheme.OCEAN       -> OCEAN
+        BoardTheme.CLASSIC     -> CLASSIC
+        BoardTheme.FOREST      -> FOREST
+        BoardTheme.MONTE_CARLO -> MONTE_CARLO
+        BoardTheme.CHOCOLATE   -> CHOCOLATE
+        BoardTheme.SYSTEM      -> OCEAN  // resolved dynamically in Board.kt
     }
 }
 

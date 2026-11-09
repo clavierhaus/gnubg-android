@@ -552,7 +552,7 @@ fun BackgammonBoard(
                 // Bottom triangles: points 1-12, alternate starting with A at point 1
                 // Top triangles: points 13-24, must alternate opposite to bottom
                 val bottomColor = if (n % 2 == 1) p.triangleA else p.triangleB
-                val topColor    = if (n % 2 == 1) p.triangleB else p.triangleA
+                val topColor    = if ((n % 2 == 1) != p.facingPointsOpposite) p.triangleB else p.triangleA
                 drawTriangle(topColor,    ux(x), uy(BRD_H),         ux(PT_W), uy(PT_H), true)
                 drawTriangle(bottomColor, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
             }
@@ -734,13 +734,13 @@ fun BackgammonBoard(
                         // (unplayableDice, from the legal-move list), or the whole-
                         // turn no-move case. Used dice keep their spent styling.
                         val dimmed = !isUsed && (diceDimmed || face in gameState.unplayableDice)
-                        val baseColor = if (isUsed) Color(0xFF6F8FB8) else p.triangleB
+                        val baseColor = if (isUsed) p.diceUsedLight else p.diceLight
                         drawDie(r.left, r.top, r.width, r.height, face,
                             if (dimmed) Color(0xFF888888) else baseColor,
-                            if (dimmed) Color(0xFF444444) else p.dicePip, p.frame)
+                            if (dimmed) Color(0xFF444444) else p.dicePipLight, p.frame)
                     } else {
                         drawDie(r.left, r.top, r.width, r.height, face,
-                            if (isUsed) Color(0xFF1F3F6E) else p.diceDark, p.dicePip, p.frame)
+                            if (isUsed) p.diceUsedDark else p.diceDark, p.dicePip, p.frame)
                     }
                 }
             }
@@ -791,7 +791,7 @@ fun BackgammonBoard(
                     // as the 1-24 frame-number highlights (maintainer order;
                     // a white-for-P variant was an unordered invention, and a
                     // near-invisible one on light points).
-                    drawMoveTrace(g, it, gameState.board, p.uiActionPositive,
+                    drawMoveTrace(g, it, gameState.board, p.hintTrace,
                         g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
                 }
             }
@@ -807,7 +807,7 @@ fun BackgammonBoard(
                 gameState.turn == 0 && gameState.moveHistory.isEmpty() &&
                 gameState.phase != GamePhase.ENGINE_THINKING &&
                 gameState.phase != GamePhase.GAME_OVER) {
-                drawMoveTrace(g, engineTrace, gameState.board, p.numbers,
+                drawMoveTrace(g, engineTrace, gameState.board, p.engineTrace,
                     g.checkerR * 0.22f, ghost = false, p, engineFrame = true)
             }
 
@@ -1004,7 +1004,7 @@ fun BackgammonBoard(
                     isAntiAlias = true
                 }
                 val hintNumPaint = android.graphics.Paint(numPaint).apply {
-                    color = p.uiActionPositive.toArgb()
+                    color = p.hintTrace.toArgb()
                     isFakeBoldText = true
                 }
                 // Point numbers follow the player ON ROLL, as gnubg draws its

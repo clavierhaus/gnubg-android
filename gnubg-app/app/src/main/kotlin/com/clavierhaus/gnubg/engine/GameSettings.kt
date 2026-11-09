@@ -1,6 +1,13 @@
 package com.clavierhaus.gnubg.engine
 
-enum class BoardTheme { OCEAN, CLASSIC, FOREST, SYSTEM }
+enum class BoardTheme(val label: String) {
+    OCEAN("Ocean"),
+    CLASSIC("Classic"),
+    FOREST("Forest"),
+    MONTE_CARLO("Monte Carlo"),
+    CHOCOLATE("Chocolate"),
+    SYSTEM("System")
+}
 
 enum class Difficulty(val label: String, val subtitle: String, val settingIndex: Int) {
     // gnubg's own predefined levels (aecSettings / SETTINGS_*, eval.c:187).
