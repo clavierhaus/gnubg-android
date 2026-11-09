@@ -1137,6 +1137,64 @@ Java_com_clavierhaus_gnubg_Engine_hintMoves(JNIEnv *env, jobject thiz, jint maxN
     return (jint) n;
 }
 
+/* Engine.hintMovesOutputs(maxN, outEquity, outMoves, outOutputs): Int
+ * Engine.hintMoves plus gnubg's five outcome probabilities per candidate;
+ * outOutputs holds maxN*5 floats (NUM_OUTPUTS). Marshalling only. */
+JNIEXPORT jint JNICALL
+Java_com_clavierhaus_gnubg_Engine_hintMovesOutputs(JNIEnv *env, jobject thiz, jint maxN,
+                                                  jfloatArray jEquity, jintArray jMoves,
+                                                  jfloatArray jOutputs) {
+    (void) thiz;
+    float *eq, *op;
+    int *mv;
+    jint *jbuf;
+    int n, i;
+
+    if (maxN < 1 || !jEquity || !jMoves || !jOutputs) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jEquity) < maxN) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jMoves) < maxN * 8) return (jint) -1;
+    if ((*env)->GetArrayLength(env, jOutputs) < maxN * 5) return (jint) -1;
+
+    eq = (float *) malloc(sizeof(float) * (size_t) maxN);
+    mv = (int *) malloc(sizeof(int) * (size_t) maxN * 8);
+    op = (float *) malloc(sizeof(float) * (size_t) maxN * 5);
+    if (!eq || !mv || !op) { free(eq); free(mv); free(op); return (jint) -1; }
+
+    n = gnubg_mobile_hint_moves_outputs((int) maxN, eq, mv, op);
+
+    if (n > 0) {
+        (*env)->SetFloatArrayRegion(env, jEquity, 0, n, (const jfloat *) eq);
+        (*env)->SetFloatArrayRegion(env, jOutputs, 0, n * 5, (const jfloat *) op);
+        jbuf = (jint *) malloc(sizeof(jint) * (size_t) n * 8);
+        if (jbuf) {
+            for (i = 0; i < n * 8; i++) jbuf[i] = (jint) mv[i];
+            (*env)->SetIntArrayRegion(env, jMoves, 0, n * 8, jbuf);
+            free(jbuf);
+        } else {
+            n = -1;
+        }
+    }
+
+    free(eq);
+    free(mv);
+    free(op);
+    return (jint) n;
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_firstGame(JNIEnv *env, jobject thiz) {
+    (void) env;
+    (void) thiz;
+    (void) gnubg_mobile_first_game();
+}
+
+JNIEXPORT void JNICALL
+Java_com_clavierhaus_gnubg_Engine_showOpeningRoll(JNIEnv *env, jobject thiz) {
+    (void) env;
+    (void) thiz;
+    (void) gnubg_mobile_show_opening_roll();
+}
+
 /* Engine.getMatchState(): IntArray(13) -- one consistent snapshot under one
  * lock, rather than four separate getters that can tear. Marshalling only.
  * Layout is the facade's: [0] gs, [1] fTurn, [2] fMove, [3] dice0, [4] dice1,

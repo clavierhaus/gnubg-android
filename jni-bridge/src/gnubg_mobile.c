@@ -225,6 +225,33 @@ int gnubg_mobile_command_resign(const char *value) {
  * Both refuse when plGame is NULL, printing to the log and returning void, so a
  * caller cannot distinguish "moved" from "refused" -- read the match state after.
  */
+/* Review Match opens at the start of the match. PORT: CommandFirstGame
+ * (play.c:3240), the routine gnubg's own gotofirstgame option runs after a
+ * load (sgf.c:1585). */
+int gnubg_mobile_first_game(void) {
+    pthread_mutex_lock(&gnubg_lock);
+    CommandFirstGame(NULL);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
+/* Put the first roll of the game on the board. PORT: gnubg's "next roll"
+ * (CommandNextRoll, play.c:3247), but only with the cursor on the game's
+ * opening record and a normal move next: anywhere else "next roll" can advance
+ * a whole move (play.c:3265), and "next game" on the last game leaves the
+ * cursor where it was (play.c:3225). */
+int gnubg_mobile_show_opening_roll(void) {
+    char arg[] = "roll";
+
+    pthread_mutex_lock(&gnubg_lock);
+    if (plGame && plLastMove == plGame->plNext && !ms.anDice[0] &&
+        plLastMove->plNext && plLastMove->plNext->p &&
+        ((moverecord *) plLastMove->plNext->p)->mt == MOVE_NORMAL)
+        CommandNext(arg);
+    pthread_mutex_unlock(&gnubg_lock);
+    return 1;
+}
+
 int gnubg_mobile_command_previous(const char *argument) {
     pthread_mutex_lock(&gnubg_lock);
     CommandPrevious((char *)(argument ? argument : ""));
@@ -1617,7 +1644,7 @@ int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
  *
  * Returns the number of candidates written (0 if the position has no dice, so
  * there is no chequer play to rank), or -1 on error. */
-int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
+static int hint_moves_core(int max_n, float out_equity[], int out_moves[], float out_outputs[]) {
     movelist ml;
     cubeinfo ci;
     unsigned int i, n;
@@ -1655,11 +1682,28 @@ int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
     for (i = 0; i < n; i++) {
         out_equity[i] = ml.amMoves[i].rScore;
         memcpy(out_moves + i * 8, ml.amMoves[i].anMove, 8 * sizeof(int));
+        if (out_outputs)
+            memcpy(out_outputs + i * NUM_OUTPUTS, ml.amMoves[i].arEvalMove,
+                   NUM_OUTPUTS * sizeof(float));
     }
 
     g_free(ml.amMoves);
     pthread_mutex_unlock(&gnubg_lock);
     return (int) n;
+}
+
+int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]) {
+    return hint_moves_core(max_n, out_equity, out_moves, NULL);
+}
+
+/* The same candidates plus gnubg's own outcome probabilities for each:
+ * move.arEvalMove[OUTPUT_WIN..OUTPUT_LOSEBACKGAMMON] (eval.h:272), written by
+ * ScoreMove (eval.c:5475) after InvertEvaluationR, so from the mover's side.
+ * out_outputs holds max_n * NUM_OUTPUTS floats. */
+int gnubg_mobile_hint_moves_outputs(int max_n, float out_equity[], int out_moves[],
+                                    float out_outputs[]) {
+    if (!out_outputs) return -1;
+    return hint_moves_core(max_n, out_equity, out_moves, out_outputs);
 }
 
 /* -- Rollouts (Analyse mode's study tool) -----------------------------------

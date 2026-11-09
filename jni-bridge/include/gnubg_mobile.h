@@ -29,6 +29,8 @@ int gnubg_mobile_set_beavers(int n);
 int gnubg_mobile_command_new_session(int games);
 int gnubg_mobile_command_end_game(void);
 int gnubg_mobile_command_resign(const char *value);
+int gnubg_mobile_first_game(void);          /* PORT: CommandFirstGame */
+int gnubg_mobile_show_opening_roll(void);   /* PORT: "next roll" at a game's start */
 int gnubg_mobile_command_next(const char *argument);
 int gnubg_mobile_command_previous(const char *argument);  /* PORT: CommandPrevious */
 int gnubg_mobile_command_accept(void);
@@ -175,6 +177,12 @@ int gnubg_mobile_current_ids(char *out_pos, int pos_cap,
  * named instances the tutor uses. Fills out_equity[n] and out_moves[n*8].
  * Returns n, 0 when the position has no dice, or -1 on error. */
 int gnubg_mobile_hint_moves(int max_n, float out_equity[], int out_moves[]);
+
+/* As hint_moves, plus gnubg's outcome probabilities for each candidate in
+ * out_outputs[n*5]: move.arEvalMove win, win gammon, win backgammon, lose
+ * gammon, lose backgammon, from the mover's side. */
+int gnubg_mobile_hint_moves_outputs(int max_n, float out_equity[], int out_moves[],
+                                    float out_outputs[]);
 
 /* Engine responds to a human double already on the table (take!=0 -> take). */
 
