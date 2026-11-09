@@ -53,10 +53,20 @@ import com.clavierhaus.gnubg.shared.Unscaled
  *    CommandSetGNUbgID ends with ShowBoard(), which prints the position together
  *    with the score and cube, for exactly this reason.
  *
- *  - SetGNUbgID returns 2 when the position has the player on roll drawn on top.
+ *  - SetGNUbgID returns 2 when an XGID has the player on roll drawn on top.
  *    gnubg asks whether to swap. So does this screen; it is never answered on
  *    the user's behalf.
+ *
+ * One view rule of its own (issue #14). gnubg's player 1 is XG's bottom player,
+ * but this app draws player 1 on top, as GNU. A pasted XGID is therefore shown
+ * turned round, so it looks as it does in XG. Only the picture and its labels
+ * turn; gnubg's position, candidates and cube numbers are untouched.
  */
+
+/* SetXGID is static (set.c:4622) and both dialects return 0, so gnubg cannot be
+ * asked which one it took. Its own first step reads nine ':' fields (set.c:4664);
+ * a GNU BG ID has at most two colons. */
+private fun isXgidText(text: String): Boolean = text.count { it == ':' } >= 9
 
 private data class Candidate(val text: String, val equity: Float)
 private data class RolloutCand(val text: String, val equity: Float, val done: Int)
@@ -125,6 +135,9 @@ fun AnalyseScreen(
     var idText by remember { mutableStateOf("") }
     var status by remember { mutableStateOf<String?>(null) }
     var askSwap by remember { mutableStateOf(false) }
+    // The view rule in the header comment: true while the shown position is
+    // drawn turned round. An overlay on gnubg's state, never written back to it.
+    var viewFlipped by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<AnalyseResult?>(null) }
     var busy by remember { mutableStateOf(false) }
     // Rollout of the analysed position: gnubg_mobile_rollout's means + std
@@ -150,7 +163,10 @@ fun AnalyseScreen(
 
     suspend fun readBack(): AnalyseResult = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
-        val display = Engine.getMatchBoardHuman()
+        val flip = viewFlipped
+        val humanFrame = Engine.getMatchBoardHuman()
+        val display = if (flip) humanFrame.copyOfRange(25, 50) + humanFrame.copyOfRange(0, 25)
+                      else humanFrame
         val raw = Engine.getMatchBoard()
         val d0 = st[3]
         val d1 = st[4]
@@ -190,11 +206,11 @@ fun AnalyseScreen(
             rawBoard = raw,
             dice = if (d0 > 0 && d1 > 0) Pair(d0, d1) else null,
             matchTo = st[12],
-            score = Pair(st[10], st[11]),
+            score = if (flip) Pair(st[11], st[10]) else Pair(st[10], st[11]),
             cube = st[7],
-            cubeOwner = st[6],
+            cubeOwner = if (flip && st[6] >= 0) 1 - st[6] else st[6],
             crawford = st[8] != 0,
-            onRoll = st[2],
+            onRoll = if (flip) 1 - st[2] else st[2],
             candidates = cands,
             noDice = n == 0,
             cubeText = cubeText,
@@ -246,11 +262,14 @@ fun AnalyseScreen(
                         "after a game ended will not load."
                 }
                 rc == 2 -> {
+                    // Only SetXGID returns 2: XG's top player is on roll.
+                    viewFlipped = true
                     askSwap = true
                     status = null
                     result = readBack()
                 }
                 else -> {
+                    viewFlipped = isXgidText(idText)
                     askSwap = false
                     status = null
                     result = readBack()
@@ -265,7 +284,10 @@ fun AnalyseScreen(
         busy = true
         rolloutRes = null
         scope.launch {
-            withContext(Dispatchers.Default) { Engine.swapPlayers() }
+            // The answer to gnubg's question is which way round to look at the
+            // position. The port's CommandSwapPlayers exchanges the scores and
+            // leaves the board alone, so it is not called here.
+            viewFlipped = !viewFlipped
             askSwap = false
             result = readBack()
             busy = false
@@ -530,6 +552,11 @@ fun AnalyseScreen(
                                 pipCountHuman = remember(r) { Engine.pipCount(r.board)[0] },
                                 pipCountEngine = remember(r) { Engine.pipCount(r.board)[1] },
                                 dice = r.dice,
+                                // None of these dice is spent: the board draws
+                                // any die not listed here in its used colour.
+                                remainingDice = r.dice?.let { (a, b) ->
+                                    if (a == b) List(4) { a } else listOf(a, b)
+                                } ?: emptyList(),
                                 matchScore = intArrayOf(r.score.first, r.score.second),
                                 matchLength = r.matchTo,
                                 cubeValue = r.cube,
