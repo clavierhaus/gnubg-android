@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import com.clavierhaus.gnubg.play.BackgammonBoard
+import com.clavierhaus.gnubg.play.CoachTrace
 import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_ENGINE
 import com.clavierhaus.gnubg.play.EDIT_ZONE_BAR_HUMAN
 import com.clavierhaus.gnubg.play.EDIT_ZONE_TRAY
@@ -42,7 +43,7 @@ import com.clavierhaus.gnubg.shared.Unscaled
  * GNU BG ID ("PositionID:MatchID") or an XGID and discriminates the dialects
  * itself. Nothing here parses an ID, ranks a move, or judges a position: the
  * board comes from getMatchBoardHuman, the context from getMatchState, the
- * candidates from hintMoves (FindnSaveBestMoves), and each move's text from
+ * candidates from hintMovesOutputs (FindnSaveBestMoves), and each move's text from
  * formatMove.
  *
  * Two display rules, both taken from gnubg's own behaviour:
@@ -68,7 +69,12 @@ import com.clavierhaus.gnubg.shared.Unscaled
  * a GNU BG ID has at most two colons. */
 private fun isXgidText(text: String): Boolean = text.count { it == ':' } >= 9
 
-private data class Candidate(val text: String, val equity: Float)
+private data class Candidate(
+    val text: String,
+    val equity: Float,
+    val anMove: IntArray,      // gnubg's anMove, in the mover's frame
+    val outputs: FloatArray    // gnubg's move.arEvalMove[0..4], from the mover's side
+)
 private data class RolloutCand(val text: String, val equity: Float, val done: Int)
 private data class RolloutSnap(
     val active: Boolean, val nCand: Int, val current: Int,
@@ -100,6 +106,11 @@ private const val MAX_CANDIDATES = 8
 
 private fun pct(f: Float): String = String.format("%.1f%%", f * 100f)
 private fun eq(f: Float): String = String.format("%+.3f", f)
+
+/* All gnubg's numbers. "Lose" is display subtraction, as in the cube panel. */
+private fun outputsLine(o: FloatArray): String =
+    "Win " + pct(o[0]) + " (G " + pct(o[1]) + ", BG " + pct(o[2]) + ")    " +
+        "Lose " + pct(1f - o[0]) + " (G " + pct(o[3]) + ", BG " + pct(o[4]) + ")"
 
 /* gamestate, in gnubg's declared order (lib/gnubg-types.h):
  * GAME_NONE, GAME_PLAYING, GAME_OVER, GAME_RESIGNED, GAME_DROP */
@@ -142,6 +153,8 @@ fun AnalyseScreen(
     // how many rows the pane holds, published from the list's measured height.
     var listCapacity by remember { mutableStateOf(MAX_CANDIDATES) }
     var listPage by remember { mutableStateOf(0) }
+    // Issue #16: the ranked move tapped for its chances and arrow.
+    var selectedMove by remember { mutableStateOf<Int?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
     var askSwap by remember { mutableStateOf(false) }
     // The view rule in the header comment: true while the shown position is
@@ -170,7 +183,7 @@ fun AnalyseScreen(
         onDispose { rootView.keepScreenOn = false }
     }
 
-    LaunchedEffect(result) { listPage = 0 }
+    LaunchedEffect(result) { listPage = 0; selectedMove = null }
 
     suspend fun readBack(): AnalyseResult = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
@@ -184,12 +197,16 @@ fun AnalyseScreen(
 
         val equities = FloatArray(MAX_CANDIDATES)
         val moves = IntArray(MAX_CANDIDATES * 8)
-        val n = Engine.hintMoves(MAX_CANDIDATES, equities, moves)
+        val outputs = FloatArray(MAX_CANDIDATES * 5)
+        val n = Engine.hintMovesOutputs(MAX_CANDIDATES, equities, moves, outputs)
 
         val cands = if (n > 0) {
             (0 until n).map { i ->
                 val mv = IntArray(8) { j -> moves[i * 8 + j] }
-                Candidate(Engine.formatMove(raw, mv), equities[i])
+                Candidate(
+                    Engine.formatMove(raw, mv), equities[i], mv,
+                    FloatArray(5) { k -> outputs[i * 5 + k] }
+                )
             }
         } else {
             emptyList()
@@ -576,7 +593,18 @@ fun AnalyseScreen(
                                 cubeOwner = r.cubeOwner
                             ),
                             viewModel = null,
-                            tutorMode = false
+                            tutorMode = false,
+                            // Issue #16: the tapped move, as gnubg recorded it.
+                            // Not during a rollout view, which has no selection.
+                            coachTrace = selectedMove
+                                ?.takeIf { candSnap == null }
+                                ?.let { r.candidates.getOrNull(it) }
+                                ?.let {
+                                    CoachTrace(
+                                        played = null, best = it.anMove, ghost = false,
+                                        engineFrame = r.onRoll == 1
+                                    )
+                                }
                         )
                     }
                 }
@@ -1091,6 +1119,14 @@ fun AnalyseScreen(
                         val cs = candSnap
                         if (cs == null) {
                         val best = if (r.candidates.isEmpty()) 0f else r.candidates[0].equity
+                        val sel = selectedMove?.let { r.candidates.getOrNull(it) }
+                        Text(
+                            if (sel == null) "Tap a move for its chances and arrow."
+                            else outputsLine(sel.outputs),
+                            color = pal.uiTextSecondary,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
                         // Rows tile the space left in the pane, so how many fit
                         // is arithmetic. The row height follows the text, which
                         // grows with the system font size.
@@ -1104,7 +1140,16 @@ fun AnalyseScreen(
                                 r.candidates.forEachIndexed { i, c ->
                                     if (i >= page * capacity && i < (page + 1) * capacity) {
                                         Row(
-                                            modifier = Modifier.fillMaxWidth().height(rowH),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(rowH)
+                                                .background(
+                                                    if (selectedMove == i) pal.uiChipOff
+                                                    else Color.Transparent
+                                                )
+                                                .clickable {
+                                                    selectedMove = if (selectedMove == i) null else i
+                                                },
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(

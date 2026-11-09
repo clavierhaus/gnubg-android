@@ -312,7 +312,9 @@ private fun barEntryPoints(gameState: BoardState): Set<Int> {
 class CoachTrace(
     val played: IntArray?,
     val best: IntArray?,
-    val ghost: Boolean = true
+    val ghost: Boolean = true,
+    // anMove is in the top player's frame: the mover is the one drawn on top.
+    val engineFrame: Boolean = false
 )
 
 @Composable
@@ -792,7 +794,8 @@ fun BackgammonBoard(
                     // a white-for-P variant was an unordered invention, and a
                     // near-invisible one on light points).
                     drawMoveTrace(g, it, gameState.board, p.hintTrace,
-                        g.checkerR * 0.30f, ghost = coachTrace.ghost, p)
+                        g.checkerR * 0.30f, ghost = coachTrace.ghost, p,
+                        engineFrame = coachTrace.engineFrame)
                 }
             }
 
