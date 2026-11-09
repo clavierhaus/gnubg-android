@@ -132,7 +132,16 @@ fun AnalyseScreen(
     val palette = remember(settings.boardTheme) { BoardPalettes.from(settings.boardTheme) }
     val scope = rememberCoroutineScope()
 
-    var idText by remember { mutableStateOf("") }
+    // Issue #18: the last analysed ID survives leaving this screen and closing
+    // the app. It is only pre-filled: installing an ID replaces the match the
+    // engine holds (SetMatchID -> FreeMatch), so that stays the user's tap.
+    val lastIdPrefs = androidx.compose.ui.platform.LocalContext.current
+        .getSharedPreferences("analyse_position", android.content.Context.MODE_PRIVATE)
+    var idText by remember { mutableStateOf(lastIdPrefs.getString("last_id", "") ?: "") }
+    // The ranked list pages instead of scrolling (issue #18). listCapacity is
+    // how many rows the pane holds, published from the list's measured height.
+    var listCapacity by remember { mutableStateOf(MAX_CANDIDATES) }
+    var listPage by remember { mutableStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
     var askSwap by remember { mutableStateOf(false) }
     // The view rule in the header comment: true while the shown position is
@@ -160,6 +169,8 @@ fun AnalyseScreen(
         rootView.keepScreenOn = candRolling
         onDispose { rootView.keepScreenOn = false }
     }
+
+    LaunchedEffect(result) { listPage = 0 }
 
     suspend fun readBack(): AnalyseResult = withContext(Dispatchers.Default) {
         val st = Engine.getMatchState()
@@ -266,12 +277,14 @@ fun AnalyseScreen(
                     viewFlipped = true
                     askSwap = true
                     status = null
+                    lastIdPrefs.edit().putString("last_id", idText.trim()).apply()
                     result = readBack()
                 }
                 else -> {
                     viewFlipped = isXgidText(idText)
                     askSwap = false
                     status = null
+                    lastIdPrefs.edit().putString("last_id", idText.trim()).apply()
                     result = readBack()
                 }
             }
@@ -773,8 +786,20 @@ fun AnalyseScreen(
                         singleLine = false,
                         textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
                         cursorBrush = SolidColor(Color.White),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().padding(end = 52.dp)
                     )
+                    // The kept ID must not get in the way of pasting a new one.
+                    if (idText.isNotEmpty()) {
+                        Text(
+                            "Clear",
+                            color = pal.uiTextSecondary,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .clickable { idText = ""; status = null }
+                                .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
+                        )
+                    }
                 }
 
                 // Four actions in fixed 2x2 slots. The consolidation brought
@@ -869,6 +894,10 @@ fun AnalyseScreen(
                     ) {
                     MatchContext(r)
 
+                    val capacity = listCapacity.coerceAtLeast(1)
+                    val pageCount = (r.candidates.size + capacity - 1) / capacity
+                    val page = listPage.coerceAtMost((pageCount - 1).coerceAtLeast(0))
+
                     if (r.cubeText == null) {
                         // The header row hosts the Roll out control: the pane
                         // never scrolls (game-view law), and seven candidates
@@ -889,6 +918,29 @@ fun AnalyseScreen(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f)
                             )
+                            if (candSnap == null && pageCount > 1) {
+                                GameButton(
+                                    label = "<",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = page > 0,
+                                    compact = true
+                                ) { listPage = page - 1 }
+                                Text(
+                                    "" + (page * capacity + 1) + "-" +
+                                        minOf((page + 1) * capacity, r.candidates.size) +
+                                        " of " + r.candidates.size,
+                                    color = pal.uiTextSecondary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp)
+                                )
+                                GameButton(
+                                    label = ">",
+                                    color = pal.uiButtonNeutral,
+                                    enabled = page < pageCount - 1,
+                                    compact = true
+                                ) { listPage = page + 1 }
+                                Spacer(Modifier.width(8.dp))
+                            }
                             if (candSnap == null && !candRolling && r.candidates.isNotEmpty()) {
                                 GameButton(
                                     label = "Roll out",
@@ -1039,20 +1091,39 @@ fun AnalyseScreen(
                         val cs = candSnap
                         if (cs == null) {
                         val best = if (r.candidates.isEmpty()) 0f else r.candidates[0].equity
-                        r.candidates.forEachIndexed { i, c ->
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    "" + (i + 1) + ". " + c.text,
-                                    color = if (i == 0) Color.White else pal.uiTextSecondary,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    if (i == 0) String.format("%+.3f", c.equity)
-                                    else String.format("%+.3f", c.equity - best),
-                                    color = if (i == 0) Color.White else pal.uiTextDisabled,
-                                    fontSize = 14.sp
-                                )
+                        // Rows tile the space left in the pane, so how many fit
+                        // is arithmetic. The row height follows the text, which
+                        // grows with the system font size.
+                        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                            val rowH = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                14.sp.toDp()
+                            } * 1.7f
+                            val fit = (maxHeight / rowH).toInt().coerceAtLeast(1)
+                            SideEffect { if (listCapacity != fit) listCapacity = fit }
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                r.candidates.forEachIndexed { i, c ->
+                                    if (i >= page * capacity && i < (page + 1) * capacity) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().height(rowH),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                "" + (i + 1) + ". " + c.text,
+                                                color = if (i == 0) Color.White else pal.uiTextSecondary,
+                                                fontSize = 14.sp,
+                                                maxLines = 1,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Text(
+                                                if (i == 0) String.format("%+.3f", c.equity)
+                                                else String.format("%+.3f", c.equity - best),
+                                                color = if (i == 0) Color.White else pal.uiTextDisabled,
+                                                fontSize = 14.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                         } else {
