@@ -6,8 +6,8 @@ import com.clavierhaus.gnubg.engine.BoardTheme
 data class BoardPalette(
     val frame:            Color,
     val boardField:       Color,
-    val triangleA:        Color,  // dominant
-    val triangleB:        Color,  // recessive
+    val triangleA:        Color,  // even points: 2, 4, ... 24
+    val triangleB:        Color,  // odd points: 1 (bottom right), 3, ... 23
     val bar:              Color,
     val bearoff:          Color,
     val numbers:          Color,
@@ -43,7 +43,6 @@ data class BoardPalette(
     val diceUsedDark:     Color = Color(0xFF1F3F6E),  // GNU's spent die
     val hintTrace:        Color = uiActionPositive,   // hint arrows, frame-number highlights
     val engineTrace:      Color = numbers,            // arrow for GNU's last move
-    val facingPointsOpposite: Boolean = false,        // points across the board differ in colour
 )
 
 object BoardPalettes {
@@ -160,8 +159,8 @@ object BoardPalettes {
     val MONTE_CARLO = BoardPalette(
         frame            = Color(0xFF423022),
         boardField       = Color(0xFF496439),
-        triangleA        = Color(0xFFCAB797),
-        triangleB        = Color(0xFFFF4421),
+        triangleA        = Color(0xFFFF4421),  // red: even points
+        triangleB        = Color(0xFFCAB797),  // cream: odd points, as in the reference
         bar              = Color(0xFF423022),
         bearoff          = Color(0xFF6A5240),
         numbers          = Color(0xFFCAB797),
@@ -195,14 +194,13 @@ object BoardPalettes {
         diceUsedDark     = Color(0xFF3A3B40),
         hintTrace        = Color(0xFFB2FF59),
         engineTrace      = Color(0xFFFFFFFF),
-        facingPointsOpposite = true,
     )
 
     val CHOCOLATE = BoardPalette(
         frame            = Color(0xFF392D21),
         boardField       = Color(0xFFE9C8A5),
-        triangleA        = Color(0xFFBB6A28),
-        triangleB        = Color(0xFF4A3C2F),
+        triangleA        = Color(0xFF4A3C2F),  // dark brown: even points
+        triangleB        = Color(0xFFBB6A28),  // orange: odd points, as in the reference
         bar              = Color(0xFF392D21),
         bearoff          = Color(0xFF6B5642),
         numbers          = Color(0xFFE9C8A5),
@@ -235,7 +233,6 @@ object BoardPalettes {
         diceUsedLight    = Color(0xFFC9B8A3),
         diceUsedDark     = Color(0xFF3A3026),
         engineTrace      = Color(0xFF000000),
-        facingPointsOpposite = true,
     )
 
     fun from(theme: BoardTheme): BoardPalette = when (theme) {

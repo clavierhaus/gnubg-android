@@ -13,6 +13,12 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Fixed
+- Monte Carlo and Chocolate boards: the points are now coloured as in the
+  reference images of issue #19, so points facing each other across the board,
+  such as 12 and 13, differ, as on every other board. 1.0.4 drew every such
+  pair in the same colour (issue #23).
+
 ## [1.0.4] -- 2026-11-09
 
 ### Added

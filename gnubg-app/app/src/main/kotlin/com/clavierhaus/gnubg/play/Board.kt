@@ -548,15 +548,19 @@ fun BackgammonBoard(
                 topLeft = Offset(ux(BRD_W), uy(BRD_H)),
                 size = Size(ux(TOT_W - 2 * BRD_W), uy(TOT_H - 2 * BRD_H)))
 
-            // 3. Triangles
+            // 3. Triangles -- one per point: 13-24 on top, 1-12 at the bottom.
+            // The colour alternates along the track (odd points triangleB, even
+            // points triangleA), so 12/13 and every facing pair n / 25-n differ.
+            // This loop used to draw a top AND a bottom triangle for every n;
+            // pointX(n) == pointX(25-n), so each column was painted twice and the
+            // second pass decided the colours, not the comments (issue #23).
             for (n in 1..24) {
-                val x = pointX(n)
-                // Bottom triangles: points 1-12, alternate starting with A at point 1
-                // Top triangles: points 13-24, must alternate opposite to bottom
-                val bottomColor = if (n % 2 == 1) p.triangleA else p.triangleB
-                val topColor    = if ((n % 2 == 1) != p.facingPointsOpposite) p.triangleB else p.triangleA
-                drawTriangle(topColor,    ux(x), uy(BRD_H),         ux(PT_W), uy(PT_H), true)
-                drawTriangle(bottomColor, ux(x), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
+                val color = if (n % 2 == 1) p.triangleB else p.triangleA
+                if (n >= 13) {
+                    drawTriangle(color, ux(pointX(n)), uy(BRD_H),         ux(PT_W), uy(PT_H), true)
+                } else {
+                    drawTriangle(color, ux(pointX(n)), uy(TOT_H - BRD_H), ux(PT_W), uy(PT_H), false)
+                }
             }
 
             // 4. Bearoff trays
