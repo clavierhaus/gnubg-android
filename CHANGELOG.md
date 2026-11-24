@@ -13,6 +13,8 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+## [1.0.5] -- 2026-11-24
+
 ### Fixed
 - Monte Carlo and Chocolate boards: the points are now coloured as in the
   reference images of issue #19, so points facing each other across the board,
