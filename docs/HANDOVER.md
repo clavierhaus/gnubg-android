@@ -1,4 +1,4 @@
-# HANDOVER -- current state for a fresh session (updated 2026-11-09)
+# HANDOVER -- current state for a fresh session (updated 2026-11-24)
 
 ## BOOTSTRAP -- paste this as the FIRST message of a new chat
 
@@ -15,30 +15,55 @@ Then read, in this order, before saying anything else:
 
 My tree is /home/erweitert/gnubg-android. Give me only full pastable
 command blocks. Never run release_fdroid.sh yourself.
-To enable your git push I will paste a GitHub PAT on request.
+To push, attach the repository to the session with write access
+(docs/HANDOVER.md, Credentials). No PAT is needed.
 ```
 
 ## Credentials -- read this before asking for anything else
-A fresh sandbox has NO credential: no token in env, no
-/root/.git-credentials, no ssh key, no gh. (These are SANDBOX paths --
-the assistant's container runs as root -- never paths on the X1.) The
-maintainer pastes a PAT into the chat; install it:
+Pushes go through the sandbox's git proxy, which supplies GitHub's
+credential only for repositories attached to the session. Verified
+2026-11-24:
+
+- A fresh session's first push answers "access denied by the git proxy:
+  clavierhaus/gnubg-android is not in this session's authorized repository
+  set ... To fix, add the repository to the session's sources." Do exactly
+  that: attach the repository with write access (the session's
+  add-repository tool, access "push"), clone it where that tool says
+  (/home/claude/gnubg-android), and push from that clone. No token is
+  involved. The maintainer has asked for this; do it without asking him.
+  If the attach is refused, say so once, with the refusal's reason, and ask
+  him to confirm; on 2026-11-24 the second request went through after he did.
+- The PAT route below does NOT work today. The fine-grained token "Claude
+  access for gnubg-android" (created 2026-11-09) has no repository access
+  and no permissions, and GitHub lists it as never used. Sent as a header it
+  reaches GitHub (a fake token is answered "Invalid username or token"),
+  authenticates as clavierhaus, and is refused the write. The 2026-11-09
+  push to main went out from a session that had attached the repository.
+  Whether any earlier token ever carried a push cannot be proven from the
+  record.
+
+Fallback only, with a token that has Contents: Read and write on
+clavierhaus/gnubg-android. A fresh sandbox has NO credential: no token in
+env, no /root/.git-credentials, no ssh key, no gh. (These are SANDBOX
+paths -- the assistant's container runs as root -- never paths on the X1.)
+Install a pasted PAT:
 
     git config --global credential.helper store
     printf 'https://clavierhaus:%s@github.com\n' '<PAT>' > /root/.git-credentials
     chmod 600 /root/.git-credentials
     git -C /home/claude/repo remote set-url origin https://github.com/clavierhaus/gnubg-android.git
 
-If a push answers "access denied by the git proxy ... will not inject a
-credential" (the sandbox's egress proxy owns GitHub auth and ignores the
-credential store), pass the PAT as a header on that one command instead:
+The proxy ignores the credential store for an unattached repository, so
+pass the PAT as a header on the push itself:
 
     TOKEN=$(sed -n 's#https://clavierhaus:\([^@]*\)@github.com#\1#p' /root/.git-credentials)
     git -C /home/claude/repo -c http.extraHeader="Authorization: Basic $(printf 'clavierhaus:%s' "$TOKEN" | base64 -w0)" push origin main
 
-The token stays in the chat, never in a commit. Ask for it once, early,
-in the first message that needs a push. Do not propose patch files,
-base64 blocks or any other workaround -- that cost a session in September.
+"Permission to clavierhaus/gnubg-android.git denied to clavierhaus" means
+the token reached GitHub and lacks write access; the token's settings page
+on GitHub says which. The token stays in the chat, never in a commit. Do not
+propose patch files, base64 blocks or any other workaround -- that cost a
+session in September.
 
 ## THE X1 -- where every path lives (read before writing any command for the maintainer)
 
@@ -161,6 +186,17 @@ gh logged in as clavierhaus (https); gitlab ssh OK.
 - Upstream: git.savannah.gnu.org/git/gnubg.git ONLY (clone works
   anonymously; the GitLab URL does not). Vendoring base: b1b2772c
   (PROVENANCE.md). Next monthly check: 2026-10-01.
+
+## State 2026-11-24 -- #23 fixed on main, not yet built
+7623cd7 (issue #23): one triangle per point, odd points triangleB and even
+points triangleA, which is what Ocean, Classic and Forest always rendered;
+facingPointsOpposite removed; Monte Carlo and Chocolate have their two point
+colours swapped, so every point matches the issue #19 reference images
+(point 1 cream / orange). CHANGELOG [Unreleased] carries it. The sandbox
+Kotlin gate did NOT run (Maven Central answered 429 on the dependency
+download and the maintainer chose to build it himself), so his
+`./build_and_deploy.sh --apk-only` is the first compile. No reply posted on
+#23 yet.
 
 ## State 2026-11-09 -- 1.0.4 on main, release pending
 main carries issues #14, #16, #18, #19, #21 and the facade verbs behind them.
