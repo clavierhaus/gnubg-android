@@ -367,16 +367,23 @@ fun GameLayout(
                                     })
                                 }
                             }
+                            // In tutor mode both decisions are drawn in place of the
+                            // tutor block below instead: this group is the one that
+                            // yields its height, and the tutor block squeezed it to
+                            // nothing -- GNU's double waited unseen while the clock
+                            // ran (issue #22).
                             gameState.phase == GamePhase.CUBE_OFFERED -> {
-                                GameplayDecisions(viewModel, gameState.phase,
-                                    gameState.resignation, gameState.cubeValue)
+                                if (!tutorMode)
+                                    GameplayDecisions(viewModel, gameState.phase,
+                                        gameState.resignation, gameState.cubeValue)
                             }
                             // GNU resigns by itself when the position is lost
                             // (play.c:1335). gnubg refuses every roll until this is
                             // answered, so it must be asked, not assumed.
                             gameState.phase == GamePhase.RESIGNATION_OFFERED -> {
-                                GameplayDecisions(viewModel, gameState.phase,
-                                    gameState.resignation, gameState.cubeValue)
+                                if (!tutorMode)
+                                    GameplayDecisions(viewModel, gameState.phase,
+                                        gameState.resignation, gameState.cubeValue)
                             }
                             gameState.phase == GamePhase.ENGINE_THINKING -> {
                                 val d = gameState.engineDice
@@ -405,7 +412,15 @@ fun GameLayout(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             if (tutorMode) {
-                                TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail, settings.showEquity)
+                                // A decision gnubg is waiting on takes the tutor
+                                // block's place until it is answered (issue #22);
+                                // the verdict returns with the next phase.
+                                if (gameState.phase == GamePhase.CUBE_OFFERED ||
+                                    gameState.phase == GamePhase.RESIGNATION_OFFERED)
+                                    GameplayDecisions(viewModel, gameState.phase,
+                                        gameState.resignation, gameState.cubeValue)
+                                else
+                                    TutorAnalysisPanel(gameState.tutorAnalysis, gameState.analysisDetail, settings.showEquity)
                             } else {
                                 // Resign / New game are LIVE-PLAY actions. When the
                                 // MATCH is decided neither is valid -- no game to

@@ -13,6 +13,16 @@ the engine, or stopped hiding what the engine already knew.
 
 ## [Unreleased]
 
+### Fixed
+- Tutor mode no longer freezes a game when GNU doubles or resigns. The Take/Drop
+  and Accept/Decline buttons now take the tutor block's place until you answer;
+  before, the tutor block pushed them out of sight while the clock kept running
+  (issue #22).
+- Tutor mode is chosen only on the match setup screen ("Chequer-play tutor"),
+  which makes the match a single 1-point game. The switch in Settings → Analysis
+  is gone: turned on during a longer match, it hid the cube of a match gnubg was
+  still playing.
+
 ## [1.0.5] -- 2026-11-24
 
 ### Fixed
