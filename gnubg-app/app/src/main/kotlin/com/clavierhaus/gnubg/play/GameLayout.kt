@@ -90,9 +90,8 @@ fun GameLayout(
             onSelectLength = { viewModel.setMatchLength(it) },
             onSelectDifficulty = { viewModel.setDifficulty(it) },
             onToggleTutor = { viewModel.setTutorMode(it) },
-            // Length is not forced behind the user's back: enabling the tutor
-            // pins it to 1 visibly (see setTutorMode), and the setup screen
-            // says why. startMatch simply honours what is shown.
+            // The tutor does not touch the length (gnubg's tutor is a setting,
+            // set.c:3866). startMatch simply honours what is shown.
             onStart = { viewModel.startMatch(settings.matchLength) },
             onReturnToHub = onReturnToHub,
             onOpenSettings = onOpenSettings
@@ -939,24 +938,9 @@ private fun MatchSetupScreen(
                         fontSize = 18.sp
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    if (tutorMode) {
-                        // The tutored game is a single game: at 1 point the cube
-                        // is out of play (you cannot double past the match), so
-                        // the tutor only ever has chequer decisions to comment
-                        // on. Say so, rather than showing four dead chips.
-                        Text(
-                            "Single game",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "The cube is not in play,\nso the tutor comments on\nchequer play only.",
-                            color = pal.uiTextDisabled,
-                            fontSize = 13.sp
-                        )
-                    } else {
+                    // Offered with the tutor on or off: gnubg's tutor never
+                    // touches the match length (issue #22).
+                    run {
                         // 1, 3 and 5 are fixed shortcuts. The fourth slot is
                         // flexible: it shows whatever length is actually set when
                         // that length is not one of the shortcuts, so an 11-point

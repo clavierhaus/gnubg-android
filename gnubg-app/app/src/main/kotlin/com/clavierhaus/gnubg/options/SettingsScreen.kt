@@ -356,11 +356,11 @@ private fun TipsSettingsTab() {
 
 @Composable
 private fun AnalysisTutorSettingsTab(settings: GameSettings, vm: GameViewModel) {
-    // No Tutor mode switch here: the tutor is chosen on the match setup screen,
-    // which pins the match to 1 point. Switched on here mid-match, it hid the
-    // cube of a 5- or 7-point match that gnubg was still playing, and GNU's
-    // double could not be answered (issue #22).
     SettingsSection("Tutor") {
+        SettingsRow("Tutor mode", "Comments on your chequer play.") {
+            Switch(settings.tutorMode, { vm.setTutorMode(it) }, colors = switchColors)
+        }
+        SettingsDivider()
         SettingsRow("Hint", "Placeholder preference; board action comes later") {
             Switch(settings.hint, { vm.setHint(it) }, colors = switchColors)
         }

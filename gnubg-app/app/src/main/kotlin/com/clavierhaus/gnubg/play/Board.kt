@@ -322,6 +322,8 @@ fun BackgammonBoard(
     settings: GameSettings = GameSettings(),
     gameState: BoardState = BoardState(),
     viewModel: GameViewModel? = null,
+    // Unused since issue #22: the board draws gnubg's state the same in every
+    // mode. Kept so the six call sites need not change in this fix.
     tutorMode: Boolean = false,
     coachTrace: CoachTrace? = null,
     /** Coach review only: the on-board button on the left half (mirror of Roll).
@@ -414,7 +416,7 @@ fun BackgammonBoard(
                                   gameState.cubeOwner, diceCountOf(gameState))
 
                 // Cube -- first, so it is not intercepted by the bar or Roll.
-                if (!tutorMode && g.cubeRect.contains(offset)) {
+                if (g.cubeRect.contains(offset)) {
                     // Engine is the sole authority (gnubg_can_double). The UI does not
                     // reimplement any subset of the cube rule; it reads the flag computed
                     // on the engine thread in readMatchState.
@@ -634,29 +636,28 @@ fun BackgammonBoard(
             // - centred cube (no owner): middle of the bar, display 64
             // - engine-owned cube: one cube-height above centre
             // - human-owned cube: one cube-height below centre
-            // Cube is not part of tutor / live-analysis mode: no doubling, so
-            // nothing to draw (not even the centred 64).
-            if (!tutorMode) {
-                // Pending-double glow: a soft ring that breathes around the
-                // cube while a coach double awaits GNU's answer. Drawn UNDER
-                // the cube so the face stays crisp. pulse 0..1 -> alpha and a
-                // little extra radius.
-                if (cubePendingPulse > 0f) {
-                    val cx = g.cubeRect.left + g.cubeSize / 2f
-                    val cy = g.cubeRect.top + g.cubeSize / 2f
-                    val baseR = g.cubeSize * 0.72f
-                    val r = baseR + g.cubeSize * 0.12f * cubePendingPulse
-                    val a = 0.20f + 0.45f * cubePendingPulse
-                    drawCircle(
-                        color = p.uiActionRoll.copy(alpha = a),
-                        radius = r, center = Offset(cx, cy),
-                        style = Stroke(width = g.cubeSize * 0.10f)
-                    )
-                }
-                val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
-                drawCube(g.cubeRect.left, g.cubeRect.top, g.cubeSize, cubeDisplayValue,
-                    p.cubeFace, p.cubeDot, p.cubeText)
+            // Drawn in EVERY mode, tutor included: the cube is gnubg's state,
+            // and gnubg's tutor (set tutor mode, set.c:3866) never removes it.
+            // Hiding it in tutor mode let a live cube go unseen (issue #22).
+            // Pending-double glow: a soft ring that breathes around the
+            // cube while a coach double awaits GNU's answer. Drawn UNDER
+            // the cube so the face stays crisp. pulse 0..1 -> alpha and a
+            // little extra radius.
+            if (cubePendingPulse > 0f) {
+                val cx = g.cubeRect.left + g.cubeSize / 2f
+                val cy = g.cubeRect.top + g.cubeSize / 2f
+                val baseR = g.cubeSize * 0.72f
+                val r = baseR + g.cubeSize * 0.12f * cubePendingPulse
+                val a = 0.20f + 0.45f * cubePendingPulse
+                drawCircle(
+                    color = p.uiActionRoll.copy(alpha = a),
+                    radius = r, center = Offset(cx, cy),
+                    style = Stroke(width = g.cubeSize * 0.10f)
+                )
             }
+            val cubeDisplayValue = if (gameState.cubeOwner == -1) 64 else gameState.cubeValue
+            drawCube(g.cubeRect.left, g.cubeRect.top, g.cubeSize, cubeDisplayValue,
+                p.cubeFace, p.cubeDot, p.cubeText)
 
             // 6. Checkers from live board state
             for (n in 1..24) {
